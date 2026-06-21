@@ -158,7 +158,16 @@
   --radius-lg: calc(var(--radius) + 2px);
   --radius-xl: calc(var(--radius) + 4px);
 
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-sans: "Absans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+@font-face {
+  font-family: "Absans";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/__l5e/assets-v1/8e7b6beb-d473-46ab-9b96-54d5be7f8acf/Absans-Regular.woff2") format("woff2"),
+       url("/__l5e/assets-v1/fbc7ea11-9dc3-4359-85b6-0945eaa2c224/Absans-Regular.woff") format("woff");
 }
 
 * {
