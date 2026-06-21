@@ -29,7 +29,7 @@ function Audit() {
   return (
     <div>
       <PageHeader title="Audit Trail" description="System-wide audit log of all staff and user actions."
-        actions={<Btn variant="outline" icon={IconDownload} onClick={() => downloadCSV("audit-trail.csv", filtered.map(({ before, after, ...r }) => ({ ...r, before: JSON.stringify(before ?? {}), after: JSON.stringify(after ?? {}) })))}>Export CSV</Btn>} />
+        actions={<Btn variant="outline" icon={IconDownload} onClick={() => downloadCSV("audit-trail.csv", filtered.map((l) => ({ timestamp: l.timestamp, user: l.user, role: l.role, action: l.action, module: l.module, target: l.target, ip: l.ip, before: JSON.stringify(l.before ?? {}), after: JSON.stringify(l.after ?? {}) })))}>Export CSV</Btn>} />
       <div className="rounded-lg border bg-surface p-3 mb-4 grid grid-cols-2 md:grid-cols-5 gap-2">
         <Selectish value={user} onChange={(e) => setUser(e.target.value)}>
           <option value="all">All users</option>
