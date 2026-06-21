@@ -9,9 +9,7 @@ import {
   IconFileText,
   IconChevronRight,
   IconId,
-  IconCertificate,
-  IconReportAnalytics,
-  IconFileCertificate,
+  IconBook2,
 } from "@tabler/icons-react";
 
 import { cn } from "@/lib/utils";
@@ -27,10 +25,8 @@ function classify(status?: string): Status {
 }
 
 const DOC_ICONS: Record<string, typeof IconFileText> = {
-  "Certificate of Registration": IconCertificate,
-  "Grade Report / TOR": IconReportAnalytics,
-  "Valid Government ID": IconId,
-  "Birth Certificate (PSA)": IconFileCertificate,
+  "Student ID": IconId,
+  "Course History": IconBook2,
 };
 
 const STATUS_CLS: Record<Status, string> = {
