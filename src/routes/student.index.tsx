@@ -28,6 +28,12 @@ function StudentHome() {
   return (
     <div>
       <PageHeader title={`Welcome, ${firstName}`} description="Here's your TES application overview." />
+
+      <div className="mb-4">
+        <DashboardMascot completion={completion} studentName={profile?.full_name ?? undefined} />
+      </div>
+
+
       {docsLoading ? (
         <StatGridSkeleton />
       ) : (
