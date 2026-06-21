@@ -8,6 +8,7 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
+import { useSessionListener } from "@/hooks/use-session";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -111,8 +112,14 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <SessionBridge />
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
     </QueryClientProvider>
   );
+}
+
+function SessionBridge() {
+  useSessionListener();
+  return null;
 }
