@@ -156,14 +156,15 @@ function Stat({ label, value, tone }: { label: string; value: number; tone: stri
 
 function DocRow({ req, doc: d }: Item) {
   const status = classify(d?.status);
-  const { Icon, cls } = ICONS[status];
+  const Icon = DOC_ICONS[req] ?? IconFileText;
+  const cls = STATUS_CLS[status];
   return (
     <Link
       to="/student/upload"
       className="group grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-xl border bg-surface p-3 sm:p-3.5 hover:border-primary/40 hover:shadow-sm active:scale-[0.995] transition"
     >
       <div className={cn("h-10 w-10 shrink-0 rounded-xl grid place-items-center", cls)}>
-        <Icon size={18} />
+        <Icon size={20} stroke={1.75} />
       </div>
       <div className="min-w-0">
         <p className="text-sm font-medium truncate">{req}</p>
@@ -188,5 +189,3 @@ function DocRow({ req, doc: d }: Item) {
   );
 }
 
-// Keep import referenced for tree-shaking robustness across statuses.
-void IconCircleDashed;
