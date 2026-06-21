@@ -30,7 +30,7 @@ function StudentProfile() {
       />
 
       <div className="mb-4 rounded-lg border bg-surface p-4 flex items-center gap-3">
-        <UserAvatar name={displayName} email={email ?? undefined} avatarUrl={profile?.avatar_url ?? null} size={56} />
+        <UserAvatar seed={email || displayName} path={profile?.avatar_url ?? null} size={56} alt={displayName} />
         <div className="min-w-0">
           <p className="text-sm font-semibold truncate">{displayName}</p>
           <p className="text-xs text-text-muted truncate">{email}</p>
