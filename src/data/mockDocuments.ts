@@ -16,9 +16,10 @@ export interface DocumentItem {
 }
 
 export const requiredDocs = [
-  "Student ID",
-  "Course History",
-  "Selfie with ID",
+  "Certificate of Registration",
+  "Grade Report / TOR",
+  "Valid Government ID",
+  "Birth Certificate (PSA)",
 ];
 
 
