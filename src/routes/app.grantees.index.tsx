@@ -6,8 +6,7 @@ import { SearchInput } from "@/components/ui/search-input";
 import { Selectish } from "@/components/ui/form-field";
 import { DataTable, THead, Tr, Th, Td } from "@/components/ui/data-table";
 import { StatusBadge, statusVariantFor, formatStatus } from "@/components/ui/status-badge";
-import { mockGrantees } from "@/data/mockGrantees";
-import { mockBatches } from "@/data/mockBatches";
+import { useGrantees, useBatches } from "@/hooks/queries";
 import { IconDownload, IconChevronLeft, IconChevronRight } from "@tabler/icons-react";
 import { downloadCSV } from "@/lib/csv";
 
@@ -18,6 +17,8 @@ export const Route = createFileRoute("/app/grantees/")({
 const PAGE = 15;
 
 function GranteeList() {
+  const { data: grantees = [], isLoading } = useGrantees();
+  const { data: batches = [] } = useBatches();
   const [q, setQ] = useState("");
   const [batch, setBatch] = useState("all");
   const [acc, setAcc] = useState("all");
@@ -26,7 +27,7 @@ function GranteeList() {
   const [risk, setRisk] = useState("all");
   const [page, setPage] = useState(1);
 
-  const filtered = useMemo(() => mockGrantees.filter((g) => {
+  const filtered = useMemo(() => grantees.filter((g) => {
     if (q && !`${g.firstName} ${g.lastName} ${g.studentNumber}`.toLowerCase().includes(q.toLowerCase())) return false;
     if (batch !== "all" && g.batchId !== batch) return false;
     if (acc !== "all" && g.accountStatus !== acc) return false;
@@ -34,7 +35,7 @@ function GranteeList() {
     if (elig !== "all" && g.eligibility !== elig) return false;
     if (risk !== "all" && g.risk !== risk) return false;
     return true;
-  }), [q, batch, acc, sub, elig, risk]);
+  }), [grantees, q, batch, acc, sub, elig, risk]);
 
   const pages = Math.max(1, Math.ceil(filtered.length / PAGE));
   const visible = filtered.slice((page - 1) * PAGE, page * PAGE);
@@ -51,7 +52,7 @@ function GranteeList() {
         <SearchInput placeholder="Search by name or student #" value={q} onChange={(e) => setQ(e.target.value)} className="md:col-span-2" />
         <Selectish value={batch} onChange={(e) => setBatch(e.target.value)}>
           <option value="all">All batches</option>
-          {mockBatches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+          {batches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
         </Selectish>
         <Selectish value={acc} onChange={(e) => setAcc(e.target.value)}>
           <option value="all">All accounts</option>
@@ -79,6 +80,8 @@ function GranteeList() {
           <Tr><Th>Student #</Th><Th>Name</Th><Th>Program</Th><Th>Batch</Th><Th>Account</Th><Th>Submission</Th><Th>Eligibility</Th><Th>Risk</Th></Tr>
         </THead>
         <tbody>
+          {isLoading && <Tr><Td colSpan={8} className="text-center text-text-muted py-6">Loading…</Td></Tr>}
+          {!isLoading && visible.length === 0 && <Tr><Td colSpan={8} className="text-center text-text-muted py-6">No grantees found.</Td></Tr>}
           {visible.map((g) => (
             <Tr key={g.id}>
               <Td className="font-mono text-xs">{g.studentNumber}</Td>

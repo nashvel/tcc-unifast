@@ -3,11 +3,16 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Btn } from "@/components/ui/btn";
 import { DataTable, THead, Tr, Th, Td } from "@/components/ui/data-table";
 import { StatusBadge, statusVariantFor, formatStatus } from "@/components/ui/status-badge";
-import { mockBatches } from "@/data/mockBatches";
+import { useBatches } from "@/hooks/queries";
 import { IconPlus } from "@tabler/icons-react";
 
 export const Route = createFileRoute("/app/batches/")({
-  component: () => (
+  component: BatchesPage,
+});
+
+function BatchesPage() {
+  const { data: batches = [], isLoading } = useBatches();
+  return (
     <div>
       <PageHeader
         title="Batches"
@@ -22,7 +27,9 @@ export const Route = createFileRoute("/app/batches/")({
           </Tr>
         </THead>
         <tbody>
-          {mockBatches.map((b) => (
+          {isLoading && <Tr><Td colSpan={9} className="text-center text-text-muted py-6">Loading…</Td></Tr>}
+          {!isLoading && batches.length === 0 && <Tr><Td colSpan={9} className="text-center text-text-muted py-6">No batches yet.</Td></Tr>}
+          {batches.map((b) => (
             <Tr key={b.id}>
               <Td><Link to="/app/batches/$id" params={{ id: b.id }} className="font-medium hover:text-primary">{b.name}</Link></Td>
               <Td className="text-text-muted">{b.academicYear}</Td>
@@ -38,5 +45,5 @@ export const Route = createFileRoute("/app/batches/")({
         </tbody>
       </DataTable>
     </div>
-  ),
-});
+  );
+}

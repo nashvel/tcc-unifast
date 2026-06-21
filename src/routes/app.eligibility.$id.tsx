@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Btn } from "@/components/ui/btn";
 import { StatusBadge, statusVariantFor, formatStatus } from "@/components/ui/status-badge";
 import { ConfirmModal } from "@/components/ui/modal";
-import { mockGrantees } from "@/data/mockGrantees";
+import { useGrantee } from "@/hooks/queries";
 import { IconArrowLeft, IconCheck, IconX } from "@tabler/icons-react";
 
 export const Route = createFileRoute("/app/eligibility/$id")({
@@ -21,8 +21,9 @@ const criteria = [
 
 function EvalDetail() {
   const { id } = useParams({ from: "/app/eligibility/$id" });
-  const g = mockGrantees.find((x) => x.id === id);
+  const { data: g, isLoading } = useGrantee(id);
   const [confirm, setConfirm] = useState<null | "eligible" | "ineligible">(null);
+  if (isLoading) return <div className="text-sm text-text-muted">Loading…</div>;
   if (!g) return <div className="text-sm text-text-muted">Not found.</div>;
 
   return (

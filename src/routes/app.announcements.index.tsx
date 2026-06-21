@@ -2,16 +2,23 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { PageHeader } from "@/components/ui/page-header";
 import { Btn } from "@/components/ui/btn";
 import { StatusBadge, statusVariantFor, formatStatus } from "@/components/ui/status-badge";
-import { mockAnnouncements } from "@/data/mockAnnouncements";
+import { useAnnouncements } from "@/hooks/queries";
 import { IconPlus, IconMail, IconMessage, IconDeviceMobile } from "@tabler/icons-react";
 
 export const Route = createFileRoute("/app/announcements/")({
-  component: () => (
+  component: AnnouncementsPage,
+});
+
+function AnnouncementsPage() {
+  const { data: announcements = [], isLoading } = useAnnouncements();
+  return (
     <div>
       <PageHeader title="Announcements" description="Broadcast updates to grantees by audience and channel."
         actions={<Link to="/app/announcements/new"><Btn variant="primary" icon={IconPlus}>New announcement</Btn></Link>} />
       <div className="space-y-2">
-        {mockAnnouncements.map((a) => (
+        {isLoading && <p className="text-sm text-text-muted">Loading…</p>}
+        {!isLoading && announcements.length === 0 && <p className="text-sm text-text-muted">No announcements yet.</p>}
+        {announcements.map((a) => (
           <div key={a.id} className="rounded-lg border bg-surface p-4 flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
@@ -35,5 +42,5 @@ export const Route = createFileRoute("/app/announcements/")({
         ))}
       </div>
     </div>
-  ),
-});
+  );
+}
