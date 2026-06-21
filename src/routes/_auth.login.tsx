@@ -124,7 +124,7 @@ function LoginPage() {
             </button>
           ))}
         </div>
-        <p className="mt-2 text-[10px] text-text-soft">Click a role to prefill the email, then enter the demo password to sign in.</p>
+        <p className="mt-2 text-[10px] text-text-soft">Click a role to sign in instantly with that demo account.</p>
       </div>
     </div>
   );
