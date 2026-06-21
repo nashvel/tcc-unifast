@@ -32,7 +32,7 @@ export function StudentBottomNav() {
             : pathname.startsWith(it.to);
           const Icon = it.icon;
           return (
-            <li key={it.to} className={cn(active ? "flex-1" : "flex-none")}>
+            <li key={it.to}>
               <Link
                 to={it.to}
                 aria-label={it.label}
