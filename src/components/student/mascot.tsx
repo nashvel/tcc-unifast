@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useEffect, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 
 interface Props {
   /** % of required documents submitted (0–100). */
@@ -9,88 +9,49 @@ interface Props {
 
 /**
  * Friendly study-buddy mascot for the student dashboard.
- * - Eyes track the cursor / touch position.
+ * Pure-CSS cartoon character (woman at a laptop).
+ * - Eyes animate side-to-side on hover / tap.
  * - Blinks every ~4s and on tap.
- * - Tap or hover cycles encouraging messages contextual to progress.
+ * - Tap cycles encouraging messages contextual to progress.
  */
 export function DashboardMascot({ completion, studentName }: Props) {
-  const wrapRef = useRef<HTMLDivElement>(null);
-  const [pupil, setPupil] = useState({ x: 0, y: 0 });
-  const [blink, setBlink] = useState(false);
   const [bubbleIdx, setBubbleIdx] = useState(0);
-  const [waving, setWaving] = useState(false);
+  const [looking, setLooking] = useState(false);
+  const [blink, setBlink] = useState(false);
 
   const firstName = (studentName || "").split(" ")[0];
   const greet = firstName ? `Hi, ${firstName}!` : "Hi there!";
 
   const lines =
     completion >= 100
-      ? [
-          `${greet} 🎉`,
-          "All documents in — nice work!",
-          "Sit tight, we're reviewing.",
-        ]
+      ? [`${greet} 🎉`, "All documents in — nice work!", "Sit tight, we're reviewing."]
       : completion >= 50
-      ? [
-          `${greet} 👋`,
-          "You're more than halfway there.",
-          "Tap a missing doc to upload it.",
-        ]
-      : [
-          `${greet} 👋`,
-          "Let's get your TES set up.",
-          "Start with your Student ID.",
-        ];
+      ? [`${greet} 👋`, "You're more than halfway there.", "Tap a missing doc to upload."]
+      : [`${greet} 👋`, "Let's get your TES set up.", "Start with your Student ID."];
 
-  // Eye tracking
-  useEffect(() => {
-    function move(e: PointerEvent) {
-      const el = wrapRef.current;
-      if (!el) return;
-      const r = el.getBoundingClientRect();
-      const cx = r.left + r.width / 2;
-      const cy = r.top + r.height / 2;
-      const dx = e.clientX - cx;
-      const dy = e.clientY - cy;
-      const len = Math.hypot(dx, dy) || 1;
-      const max = 3; // pixel travel inside eye
-      setPupil({
-        x: (dx / len) * Math.min(max, len / 40),
-        y: (dy / len) * Math.min(max, len / 40),
-      });
-    }
-    window.addEventListener("pointermove", move);
-    return () => window.removeEventListener("pointermove", move);
-  }, []);
-
-  // Idle blink
   useEffect(() => {
     const t = setInterval(() => {
       setBlink(true);
-      setTimeout(() => setBlink(false), 140);
+      setTimeout(() => setBlink(false), 150);
     }, 4200);
     return () => clearInterval(t);
   }, []);
 
-  // Auto-cycle bubble
   useEffect(() => {
-    const t = setInterval(() => setBubbleIdx((i) => (i + 1) % lines.length), 5000);
+    const t = setInterval(() => setBubbleIdx((i) => (i + 1) % lines.length), 5200);
     return () => clearInterval(t);
   }, [lines.length]);
 
   function poke() {
+    setLooking(true);
     setBlink(true);
-    setWaving(true);
     setBubbleIdx((i) => (i + 1) % lines.length);
     setTimeout(() => setBlink(false), 160);
-    setTimeout(() => setWaving(false), 900);
+    setTimeout(() => setLooking(false), 1600);
   }
 
   return (
-    <div
-      ref={wrapRef}
-      className="relative flex items-end gap-3 select-none"
-    >
+    <div className="relative flex items-end gap-3 select-none">
       {/* Speech bubble */}
       <div className="relative flex-1 min-w-0 pb-2">
         <AnimatePresence mode="wait">
@@ -111,117 +72,288 @@ export function DashboardMascot({ completion, studentName }: Props) {
         </AnimatePresence>
       </div>
 
-      {/* Mascot */}
+      {/* Cartoon */}
       <button
+        type="button"
         onClick={poke}
+        onMouseEnter={() => setLooking(true)}
+        onMouseLeave={() => setLooking(false)}
         aria-label="Say hello to your study buddy"
-        className="shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-full"
+        className="shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-2xl overflow-hidden"
+        style={{ width: 168, height: 168 }}
       >
-        <motion.div
-          whileTap={{ scale: 0.92 }}
-          animate={{ y: [0, -3, 0] }}
-          transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }}
-          className="relative"
-        >
-          <svg width="84" height="84" viewBox="0 0 100 100" aria-hidden>
-            {/* Shadow */}
-            <ellipse cx="50" cy="92" rx="22" ry="3" fill="rgb(0 0 0 / 0.12)" />
-            {/* Body */}
-            <circle
-              cx="50"
-              cy="52"
-              r="34"
-              fill="var(--primary)"
-              stroke="var(--primary-hover)"
-              strokeWidth="2"
-            />
-            {/* Belly */}
-            <ellipse cx="50" cy="62" rx="20" ry="16" fill="var(--primary-soft)" />
-            {/* Ears */}
-            <path
-              d="M22 28 L30 14 L36 30 Z"
-              fill="var(--primary)"
-              stroke="var(--primary-hover)"
-              strokeWidth="2"
-              strokeLinejoin="round"
-            />
-            <path
-              d="M78 28 L70 14 L64 30 Z"
-              fill="var(--primary)"
-              stroke="var(--primary-hover)"
-              strokeWidth="2"
-              strokeLinejoin="round"
-            />
-            {/* Eyes */}
-            <g>
-              {/* Left eye white */}
-              <circle cx="40" cy="48" r="7" fill="white" />
-              <circle cx="60" cy="48" r="7" fill="white" />
-              {/* Pupils */}
-              <circle cx={40 + pupil.x} cy={48 + pupil.y} r="3" fill="#0f172a" />
-              <circle cx={60 + pupil.x} cy={48 + pupil.y} r="3" fill="#0f172a" />
-              {/* Sparkle */}
-              <circle cx={41 + pupil.x} cy={47 + pupil.y} r="0.9" fill="white" />
-              <circle cx={61 + pupil.x} cy={47 + pupil.y} r="0.9" fill="white" />
-              {/* Eyelids (blink) */}
-              <motion.rect
-                x="33"
-                y="41"
-                width="14"
-                height="14"
-                fill="var(--primary)"
-                animate={{ scaleY: blink ? 1 : 0 }}
-                style={{ transformOrigin: "40px 48px" }}
-                transition={{ duration: 0.08 }}
-              />
-              <motion.rect
-                x="53"
-                y="41"
-                width="14"
-                height="14"
-                fill="var(--primary)"
-                animate={{ scaleY: blink ? 1 : 0 }}
-                style={{ transformOrigin: "60px 48px" }}
-                transition={{ duration: 0.08 }}
-              />
-            </g>
-            {/* Cheeks */}
-            <circle cx="32" cy="58" r="3" fill="#fb7185" opacity="0.55" />
-            <circle cx="68" cy="58" r="3" fill="#fb7185" opacity="0.55" />
-            {/* Smile */}
-            <path
-              d="M44 60 Q50 66 56 60"
-              stroke="#0f172a"
-              strokeWidth="2"
-              strokeLinecap="round"
-              fill="none"
-            />
-            {/* Waving paw */}
-            <motion.g
-              style={{ transformOrigin: "82px 60px" }}
-              animate={
-                waving
-                  ? { rotate: [0, -25, 18, -18, 0] }
-                  : { rotate: [0, -6, 0] }
-              }
-              transition={{
-                duration: waving ? 0.9 : 3.4,
-                repeat: waving ? 0 : Infinity,
-                ease: "easeInOut",
-              }}
-            >
-              <circle
-                cx="82"
-                cy="58"
-                r="8"
-                fill="var(--primary)"
-                stroke="var(--primary-hover)"
-                strokeWidth="2"
-              />
-            </motion.g>
-          </svg>
-        </motion.div>
+        <div className={`cartoon-stage ${looking ? "is-looking" : ""} ${blink ? "is-blinking" : ""}`}>
+          <div className="cartoon">
+            <div className="hair-back hb ha" />
+            <div className="ear b" />
+            <div className="ear b" />
+            <div className="earring r b" />
+            <div className="earring r b" />
+            <div className="neck" />
+            <div className="face b">
+              <div className="eyebrow" />
+              <div className="eyebrow" style={{ left: "auto", right: "20%", transform: "rotate(10deg)" }} />
+              <div className="eye b">
+                <div className="pupil r hb" />
+              </div>
+              <div className="eye b">
+                <div className="pupil r hb" />
+              </div>
+              <div className="cheek" />
+              <div className="cheek" />
+              <div className="nose" />
+              <div className="mouth" />
+            </div>
+            <div className="bangs-1" />
+            <div className="bangs-2" />
+            <div className="body">
+              <div className="table" />
+              <div className="computer ha" />
+              <div className="coffee" />
+            </div>
+          </div>
+        </div>
       </button>
+
+      <style>{cartoonCss}</style>
     </div>
   );
 }
+
+/* -------------------------------------------------------------------------- */
+/* Scoped cartoon CSS. All `vmin` units rewritten as `em`; the .cartoon       */
+/* container sets `font-size: calc(var(--size) / 80)`, so 80em == --size.     */
+/* -------------------------------------------------------------------------- */
+const cartoonCss = `
+.cartoon-stage {
+  --size: 168px;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #fff7e6;
+  font-size: calc(var(--size) / 80);
+}
+.cartoon-stage.is-looking .pupil { animation: eyemove 0.9s ease-in-out alternate infinite; }
+.cartoon-stage.is-blinking .eye { height: 0.4em !important; }
+
+.cartoon { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+.cartoon div { position: absolute; box-sizing: border-box; }
+.b { border: 0.75em solid black; }
+.r { border-radius: 100%; }
+.hb::before, .ha::after { content: ""; display: block; position: absolute; }
+
+.cartoon {
+  --skin: #fca;
+  --line: #963;
+  --shadow: rgba(80,0,0,0.075);
+  --hair: #630;
+  --shirt: #887389;
+  width: 80em;
+  height: 80em;
+}
+
+.hair-back {
+  width: 60%; height: 50%;
+  background: var(--hair);
+  border-radius: 40% 40% 0% 0%;
+  transform: translate(-50%, 0);
+  left: 50%; top: 5%;
+  clip-path: polygon(-50% 0%, 150% 0%, 150% 100%, 100% 100%, 98% 90%, 99.5% 100%, 98% 100%, 97.25% 96%, 97.5% 99.75%, 75% 99%, 74.5% 98%, 74% 99%, 50% 98%, 10% 99.5%, 9.75% 96%, 9.5% 99.5%, -50% 100%);
+  box-shadow: inset 0 0 0 100in rgba(0,0,0,0.2);
+}
+.hair-back::before {
+  width: 15%; height: 100%; border-radius: 50%;
+  box-shadow: 0 0 0 100in rgba(0,0,0,0.2), 5em 0 0 5em var(--hair);
+  left: -15%; top: 5%;
+  clip-path: polygon(50% 50%, 150% 50%, 150% 100%, 50% 100%);
+}
+.hair-back::after {
+  width: 15%; height: 100%; border-radius: 50%;
+  box-shadow: 0 0 0 100in rgba(0,0,0,0.2), -5em 0 0 5em var(--hair);
+  right: -15%; top: 0%;
+  clip-path: polygon(-50% 50%, 50% 50%, 50% 100%, -50% 100%);
+}
+
+.face {
+  width: 50%; height: 40%;
+  background: var(--skin);
+  border-radius: 60% 60% 100% 100% / 100% 100% 60% 60%;
+  transform: translate(-50%, 0);
+  left: 50%; top: 10%;
+}
+
+.nose {
+  width: 10%; height: 12%;
+  border-color: var(--line);
+  border-left: 0.25em solid transparent;
+  top: 60%; left: 50%;
+  transform: translate(-50%, 0) rotate(-35deg);
+}
+
+.mouth {
+  width: 20%; height: 20%;
+  border-color: transparent;
+  border-bottom: 0.75em solid var(--line);
+  border-right: 0.25em solid transparent;
+  transform: translate(-50%, 0) rotate(30deg);
+  top: 63%; left: 45%;
+}
+
+.eye {
+  width: 20%; height: 30%;
+  background: white;
+  border-radius: 100% 60% 10% 20% / 100% 60% 100% 40%;
+  top: 30%; left: 22%;
+  overflow: hidden;
+  box-shadow: 0 -0.75em var(--shadow);
+  transition: height 0.08s ease;
+}
+@keyframes eyemove {
+  from { transform: translate(15%) }
+  to   { transform: translate(-15%) }
+}
+.pupil {
+  width: 5em; height: 5em;
+  background: #333;
+  bottom: -0.5em; right: 1em;
+}
+.eye + .eye {
+  left: auto; right: 22%;
+  border-radius: 60% 100% 20% 10% / 60% 100% 40% 100%;
+}
+.eye + .eye .pupil { left: 1em; right: auto; }
+
+.cheek {
+  width: 30%; height: 10%;
+  background: rgba(255,0,0,0.1);
+  filter: blur(5px);
+  top: 60%; left: 15%;
+}
+.cheek + .cheek { left: auto; right: 15%; }
+
+.ear {
+  width: 12%; height: 13%;
+  background: var(--skin);
+  top: 25%; left: 18%;
+  box-shadow: inset -19.75em 0 0 -15.5em var(--shadow);
+}
+.ear::after {
+  width: 15%; height: 17%;
+  border-radius: 50%;
+  border: 0.5em solid var(--line);
+  border-right: 0.25em solid transparent;
+  top: 50%; left: 50%;
+  transform: translate(-40%, 0) rotate(-10deg);
+}
+.ear + .ear {
+  left: auto; right: 18%;
+  box-shadow: inset 19.75em 0 0 -15.5em var(--shadow);
+}
+.ear + .ear::after {
+  left: auto; right: 50%;
+  border: 0.5em solid var(--line);
+  border-left: 0.25em solid transparent;
+  transform: translate(40%, 0) rotate(10deg);
+}
+
+.neck {
+  width: 12%; height: 20%;
+  background: var(--skin);
+  top: 45%; left: 50%;
+  transform: translate(-50%, 0);
+  border-radius: 20% 20% 0 0;
+  box-shadow: inset 0 8.75em 0 -4em var(--shadow);
+}
+
+.pupil::before {
+  width: 1em; height: 1em;
+  background: white;
+  border-radius: 50%;
+  top: 0.5em; left: 0.5em;
+}
+
+.bangs-1 {
+  width: 24%; height: 18%;
+  border-radius: 80% 0 80% 0;
+  background: var(--hair);
+  top: 5%; left: 15%;
+}
+.bangs-1::after {
+  width: 130%; height: 120%;
+  right: 5%;
+  border-radius: 50%;
+  top: -20%;
+  box-shadow: 2.5em -0.3em var(--hair);
+  clip-path: polygon(0% 50%, 150% 50%, 150% 150%, 0% 150%);
+}
+.bangs-2 {
+  width: 45%; height: 30%;
+  border-radius: 0 100% 0 90%;
+  background: var(--hair);
+  top: 5%; left: 35%;
+  transform: rotate(-20deg);
+  transform-origin: top left;
+  clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 90% 90%, 98% 100%, 0% 100%);
+}
+
+.eyebrow {
+  width: 20%; height: 4%;
+  box-shadow: 0 -0.75em 0 0.5em rgba(0,0,0,0.2), 0 -0.75em 0 0.5em var(--hair);
+  top: 23%; left: 20%;
+  transform: rotate(-10deg);
+}
+
+.body {
+  width: 60%; height: 90%;
+  background: var(--skin);
+  left: 50%;
+  transform: translate(-50%, 0);
+  top: 55%;
+  clip-path: polygon(0% 0%, 100% 0%, 100% 50%, 0% 50%);
+}
+.body::after {
+  width: 100.25%; height: 100.25%;
+  top: -0.125%; left: -0.125%;
+  background: var(--shirt);
+  border-radius: 50%;
+  clip-path: polygon(0% 0%, 35% 0%, 50% 10%, 65% 0%, 100% 0%, 100% 100%, 0% 100%);
+}
+
+.table {
+  bottom: -5%; left: -12%;
+  width: 124%; height: 5%;
+  background: #966f33;
+}
+.computer {
+  width: 65%; height: 38%;
+  background: linear-gradient(#ccc, #bbb);
+  bottom: 0; left: 50%;
+  transform: translate(-50%, 0);
+  clip-path: polygon(0% 0%, 100% 0%, 99% 100%, 1% 100%);
+  border-radius: 5%;
+  box-shadow: inset 0 0.25em #fff8;
+}
+.computer::after {
+  width: 6em; height: 5.5em;
+  border-radius: 50%;
+  background: #fff6;
+  top: 55%; left: 50%;
+  transform: translate(-50%, -50%);
+}
+.coffee {
+  width: 17%; height: 25%;
+  background: linear-gradient(#eee, #ddd);
+  bottom: 0; right: -10%;
+  box-shadow: inset 0 2em;
+  clip-path: polygon(0% 10%, 5% 0%, 95% 0%, 100% 10%, 95% 10%, 90% 100%, 10% 100%, 5% 10%, 0% 10%);
+}
+
+.earring {
+  border-color: gold;
+  width: 3em; height: 4em;
+  top: 37%; left: 23%;
+  border-top: 0;
+}
+.earring + .earring { left: auto; right: 23%; }
+`;
