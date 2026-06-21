@@ -1,7 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
   IconDashboard, IconUserCircle, IconFileCheck, IconUpload, IconClipboardList,
-  IconSpeakerphone, IconBell, IconShieldCheck,
+  IconSpeakerphone, IconBell, IconShieldCheck, IconSettings,
 } from "@tabler/icons-react";
 import { cn } from "@/lib/utils";
 import type { ComponentType } from "react";
@@ -14,6 +14,7 @@ const items: { to: string; label: string; icon: ComponentType<{ size?: number; c
   { to: "/student/submissions", label: "Submission Status", icon: IconClipboardList },
   { to: "/student/announcements", label: "Announcements", icon: IconSpeakerphone },
   { to: "/student/notifications", label: "Notifications", icon: IconBell },
+  { to: "/student/settings", label: "Settings", icon: IconSettings },
 ];
 
 export function StudentSidebar({ onNavigate }: { onNavigate?: () => void }) {

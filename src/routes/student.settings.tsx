@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { IconLock, IconHistory, IconCheck, IconDeviceLaptop } from "@tabler/icons-react";
+import { IconDeviceLaptop, IconCheck } from "@tabler/icons-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { ChartCard } from "@/components/ui/chart-card";
 import { FormField, TextInput } from "@/components/ui/form-field";
@@ -89,7 +89,7 @@ function StudentSettings() {
           </form>
         </ChartCard>
 
-        <ChartCard title="Login Activity" icon={<IconHistory size={14} />}>
+        <ChartCard title="Login Activity">
           {events.isLoading ? (
             <p className="text-xs text-text-muted">Loading…</p>
           ) : !events.data || events.data.length === 0 ? (
