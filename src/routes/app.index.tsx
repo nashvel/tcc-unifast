@@ -70,7 +70,7 @@ function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 mt-4">
         <ChartCard title="Batch Progress" description="Validation completion by batch" className="lg:col-span-2">
           <div className="space-y-3">
-            {mockBatches.slice(0, 3).map((b) => {
+            {batches.slice(0, 3).map((b) => {
               const pct = Math.round((b.validated / b.totalGrantees) * 100);
               return (
                 <div key={b.id}>
@@ -91,7 +91,7 @@ function Dashboard() {
         </ChartCard>
         <ChartCard title="Recent Announcements">
           <ul className="space-y-3">
-            {mockAnnouncements.slice(0, 3).map((a) => (
+            {announcements.slice(0, 3).map((a) => (
               <li key={a.id} className="flex gap-2">
                 <div className="h-7 w-7 rounded-md bg-primary-soft text-primary grid place-items-center shrink-0">
                   <IconSpeakerphone size={14} />
@@ -112,7 +112,7 @@ function Dashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mt-4">
         <ChartCard title="Recent Activity" description="Latest staff actions across modules">
-          <ActivityTimeline items={mockAuditLogs.slice(0, 5).map((l) => ({
+          <ActivityTimeline items={auditLogs.slice(0, 5).map((l) => ({
             icon: l.action.includes("approve") ? IconCircleCheck : l.action.includes("reject") ? IconCircleX :
               l.action.includes("flag") ? IconShieldCheck : l.action.includes("import") ? IconUpload :
               l.action.includes("publish") ? IconSpeakerphone : IconEdit,
