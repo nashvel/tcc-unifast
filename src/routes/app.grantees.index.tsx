@@ -9,6 +9,7 @@ import { StatusBadge, statusVariantFor, formatStatus } from "@/components/ui/sta
 import { mockGrantees } from "@/data/mockGrantees";
 import { mockBatches } from "@/data/mockBatches";
 import { IconDownload, IconChevronLeft, IconChevronRight } from "@tabler/icons-react";
+import { downloadCSV } from "@/lib/csv";
 
 export const Route = createFileRoute("/app/grantees/")({
   component: GranteeList,
@@ -43,7 +44,7 @@ function GranteeList() {
       <PageHeader
         title="Grantees"
         description="Search, filter, and manage TES grantee records."
-        actions={<Btn variant="outline" icon={IconDownload}>Export</Btn>}
+        actions={<Btn variant="outline" icon={IconDownload} onClick={() => downloadCSV("grantees.csv", filtered)}>Export CSV</Btn>}
       />
 
       <div className="rounded-lg border bg-surface p-3 mb-4 grid grid-cols-1 md:grid-cols-6 gap-2">

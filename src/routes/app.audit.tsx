@@ -7,6 +7,7 @@ import { DataTable, THead, Tr, Th, Td } from "@/components/ui/data-table";
 import { DetailDrawer } from "@/components/ui/modal";
 import { mockAuditLogs, type AuditLog } from "@/data/mockAuditLogs";
 import { IconDownload } from "@tabler/icons-react";
+import { downloadCSV } from "@/lib/csv";
 
 export const Route = createFileRoute("/app/audit")({
   component: Audit,
@@ -28,7 +29,7 @@ function Audit() {
   return (
     <div>
       <PageHeader title="Audit Trail" description="System-wide audit log of all staff and user actions."
-        actions={<Btn variant="outline" icon={IconDownload}>Export</Btn>} />
+        actions={<Btn variant="outline" icon={IconDownload} onClick={() => downloadCSV("audit-trail.csv", filtered.map(({ before, after, ...r }) => ({ ...r, before: JSON.stringify(before ?? {}), after: JSON.stringify(after ?? {}) })))}>Export CSV</Btn>} />
       <div className="rounded-lg border bg-surface p-3 mb-4 grid grid-cols-2 md:grid-cols-5 gap-2">
         <Selectish value={user} onChange={(e) => setUser(e.target.value)}>
           <option value="all">All users</option>
