@@ -1,13 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { PageHeader } from "@/components/ui/page-header";
-import { StatCard } from "@/components/ui/stat-card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { ChartCard } from "@/components/ui/chart-card";
-import { StatGridSkeleton, ListSkeleton, CardSkeleton } from "@/components/ui/skeletons";
+import { StatGridSkeleton, CardSkeleton } from "@/components/ui/skeletons";
 import { requiredDocs } from "@/data/mockDocuments";
 import { useDocuments, useAnnouncements } from "@/hooks/queries";
 import { useAuthStore } from "@/stores/authStore";
-import { IconUserCheck, IconFileCheck, IconCircleCheck, IconClipboardList, IconSpeakerphone, IconArrowRight } from "@tabler/icons-react";
+import { IconSpeakerphone, IconArrowRight, IconArrowUpRight } from "@tabler/icons-react";
+import { cn } from "@/lib/utils";
+
 
 export const Route = createFileRoute("/student/")({
   component: StudentHome,
