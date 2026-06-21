@@ -398,7 +398,6 @@ function StudentSettings() {
         {/* Login Activity */}
         <ChartCard
           title="Login Activity"
-          className="lg:col-span-2"
           actions={
             <Btn variant="ghost" onClick={exportCSV} disabled={filtered.length === 0}>
               <IconDownload size={13} /> Export CSV
