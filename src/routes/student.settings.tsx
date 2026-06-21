@@ -7,8 +7,10 @@ import {
 } from "@tabler/icons-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { ChartCard } from "@/components/ui/chart-card";
-import { FormField, TextInput, Selectish } from "@/components/ui/form-field";
+import { FormField, TextInput } from "@/components/ui/form-field";
+import { Selectish } from "@/components/ui/form-field";
 import { Btn } from "@/components/ui/btn";
+import { AvatarEditor } from "@/components/ui/avatar-editor";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthStore } from "@/stores/authStore";
 
