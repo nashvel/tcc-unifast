@@ -82,3 +82,111 @@ function StudentHome() {
     </div>
   );
 }
+
+function StatsBoard({
+  submitted,
+  total,
+  approved,
+  completion,
+}: {
+  submitted: number;
+  total: number;
+  approved: number;
+  completion: number;
+}) {
+  return (
+    <section
+      aria-label="Application overview"
+      className="mb-4 overflow-hidden rounded-2xl border bg-surface"
+    >
+      {/* Hero row: progress ring + headline */}
+      <Link
+        to="/student/documents"
+        className="group grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-4 p-4 sm:p-5 hover:bg-surface-muted/40 transition"
+      >
+        <ProgressRing value={completion} />
+        <div className="min-w-0">
+          <p className="text-[10px] uppercase tracking-[0.14em] text-text-soft">
+            Application
+          </p>
+          <p className="mt-0.5 text-2xl sm:text-[28px] font-semibold leading-none tabular-nums">
+            {submitted}
+            <span className="text-text-muted font-normal">/{total}</span>
+            <span className="ml-2 text-sm font-normal text-text-muted align-middle">
+              documents
+            </span>
+          </p>
+          <p className="mt-1.5 text-xs text-text-muted">
+            {completion === 100
+              ? "All requirements submitted — sit tight."
+              : `${total - submitted} more to complete your submission.`}
+          </p>
+        </div>
+        <IconArrowUpRight
+          size={18}
+          className="text-text-soft transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-text"
+        />
+      </Link>
+
+      {/* Stat rail */}
+      <dl className="grid grid-cols-3 border-t divide-x bg-surface-muted/30">
+        <Metric label="Status" value="Active" dot="bg-success" />
+        <Metric label="Approved" value={String(approved)} dot="bg-primary" />
+        <Metric label="Eligibility" value="Pending" dot="bg-warning" />
+      </dl>
+    </section>
+  );
+}
+
+function Metric({ label, value, dot }: { label: string; value: string; dot: string }) {
+  return (
+    <div className="px-3 py-3 sm:py-3.5 min-w-0">
+      <dt className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.14em] text-text-soft">
+        <span className={cn("h-1.5 w-1.5 rounded-full", dot)} />
+        <span className="truncate">{label}</span>
+      </dt>
+      <dd className="mt-1 text-base sm:text-lg font-semibold tabular-nums truncate">
+        {value}
+      </dd>
+    </div>
+  );
+}
+
+function ProgressRing({ value }: { value: number }) {
+  const size = 64;
+  const stroke = 6;
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  const offset = c - (value / 100) * c;
+  return (
+    <div className="relative shrink-0" style={{ width: size, height: size }}>
+      <svg width={size} height={size} className="-rotate-90">
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          stroke="currentColor"
+          strokeWidth={stroke}
+          fill="none"
+          className="text-surface-muted"
+        />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          stroke="currentColor"
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          fill="none"
+          strokeDasharray={c}
+          strokeDashoffset={offset}
+          className="text-primary transition-[stroke-dashoffset] duration-700"
+        />
+      </svg>
+      <div className="absolute inset-0 grid place-items-center">
+        <span className="text-[13px] font-semibold tabular-nums">{value}%</span>
+      </div>
+    </div>
+  );
+}
+
