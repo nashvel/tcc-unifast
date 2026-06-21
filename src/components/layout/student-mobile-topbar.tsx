@@ -1,12 +1,11 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
-import { IconBell, IconChevronLeft, IconCheck } from "@tabler/icons-react";
-import { AnimatePresence, motion } from "framer-motion";
+import { IconBell, IconChevronLeft } from "@tabler/icons-react";
 import { useAuthStore } from "@/stores/authStore";
-import { useNotifications, useMarkNotificationRead } from "@/hooks/queries";
+import { useNotifications } from "@/hooks/queries";
 import { UserAvatar } from "@/components/ui/dicebear-avatar";
 import { supabase } from "@/integrations/supabase/client";
-import { cn } from "@/lib/utils";
+
 
 const TITLES: Record<string, string> = {
   "/student": "Home",
