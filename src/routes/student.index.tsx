@@ -6,7 +6,7 @@ import { StatGridSkeleton, CardSkeleton } from "@/components/ui/skeletons";
 import { requiredDocs } from "@/data/mockDocuments";
 import { useDocuments, useAnnouncements } from "@/hooks/queries";
 import { useAuthStore } from "@/stores/authStore";
-import { DashboardMascot } from "@/components/student/mascot";
+
 import { IconSpeakerphone, IconArrowRight, IconArrowUpRight } from "@tabler/icons-react";
 
 import { cn } from "@/lib/utils";
