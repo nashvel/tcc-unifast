@@ -192,3 +192,63 @@ html, body {
   outline: none;
   box-shadow: 0 0 0 3px var(--ring);
 }
+
+/* === Motion system === */
+@keyframes lv-fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes lv-scale-in {
+  from { opacity: 0; transform: scale(0.97); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes lv-slide-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes lv-shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-fade-in   { animation: lv-fade-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.animate-scale-in  { animation: lv-scale-in 0.24s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.animate-slide-up  { animation: lv-slide-up 0.36s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* Stagger children — apply to a parent; each direct child fades up in sequence */
+.stagger-children > * { animation: lv-slide-up 0.42s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.stagger-children > *:nth-child(1) { animation-delay: 0.02s; }
+.stagger-children > *:nth-child(2) { animation-delay: 0.06s; }
+.stagger-children > *:nth-child(3) { animation-delay: 0.10s; }
+.stagger-children > *:nth-child(4) { animation-delay: 0.14s; }
+.stagger-children > *:nth-child(5) { animation-delay: 0.18s; }
+.stagger-children > *:nth-child(6) { animation-delay: 0.22s; }
+.stagger-children > *:nth-child(7) { animation-delay: 0.26s; }
+.stagger-children > *:nth-child(8) { animation-delay: 0.30s; }
+.stagger-children > *:nth-child(n+9) { animation-delay: 0.34s; }
+
+/* Hover lift used on cards and interactive surfaces */
+.hover-lift {
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px -12px color-mix(in oklab, var(--text) 25%, transparent);
+}
+
+/* Smooth defaults — interactive primitives feel snappier */
+a, button, [role="button"], input, textarea, select {
+  transition: color 0.15s ease, background-color 0.15s ease,
+              border-color 0.15s ease, box-shadow 0.15s ease,
+              opacity 0.15s ease, transform 0.15s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
