@@ -461,6 +461,9 @@ function StudentSettings() {
             Showing {filtered.length} of {events.data?.length ?? 0} recent sign-ins. Contact your office if you see activity you don't recognize.
           </p>
         </ChartCard>
+        </>
+        )}
+        </div>
       </div>
     </div>
   );
