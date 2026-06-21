@@ -26,9 +26,8 @@ export function StudentMobileTopbar() {
   const profile = useAuthStore((s) => s.profile);
   const email = useAuthStore((s) => s.email);
   const { data: notifs = [] } = useNotifications();
-  const markRead = useMarkNotificationRead();
-  const [openNotif, setOpenNotif] = useState(false);
   const [openProfile, setOpenProfile] = useState(false);
+
 
   const unread = notifs.filter((n) => !n.read).length;
   const displayName = profile?.full_name || email || "Student";
