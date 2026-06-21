@@ -1,11 +1,11 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { IconArrowRight, IconLock, IconMail, IconUser, IconSparkles } from "@tabler/icons-react";
+import { IconArrowRight, IconLock, IconMail, IconUser } from "@tabler/icons-react";
 import { FormField, TextInput } from "@/components/ui/form-field";
 import { Btn } from "@/components/ui/btn";
 import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
-import { seedDemo, DEMO_USERS, getDemoCredentials } from "@/lib/demo-seed.functions";
+import { DEMO_USERS, getDemoCredentials } from "@/lib/demo-seed.functions";
 
 export const Route = createFileRoute("/_auth/login")({
   component: LoginPage,
