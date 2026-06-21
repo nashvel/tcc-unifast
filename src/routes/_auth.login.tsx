@@ -96,7 +96,8 @@ function LoginPage() {
           {DEMO_USERS.map((u) => (
             <button
               key={u.email}
-              onClick={() => signInWith(u.email, u.password)}
+              type="button"
+              onClick={() => { setEmail(u.email); setPassword(""); setError(null); }}
               disabled={busy}
               className="flex items-center gap-2 rounded-md border bg-surface px-2.5 py-2 text-left hover:bg-surface-muted disabled:opacity-50"
             >
@@ -108,7 +109,7 @@ function LoginPage() {
             </button>
           ))}
         </div>
-        <p className="mt-2 text-[10px] text-text-soft">First time? Click <strong>Seed demo data</strong> to provision the four demo accounts.</p>
+        <p className="mt-2 text-[10px] text-text-soft">Click a role to prefill the email, then enter the demo password to sign in.</p>
       </div>
     </div>
   );

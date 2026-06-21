@@ -113,7 +113,7 @@ export function useUploadDocument() {
         type: args.type,
         filename: args.filename,
         status: "pending",
-        risk_score: Math.floor(Math.random() * 35),
+        // risk_score is enforced server-side via trigger; never client-supplied.
       });
       if (error) throw error;
     },
