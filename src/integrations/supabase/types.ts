@@ -14,6 +14,176 @@ export type Database = {
   }
   public: {
     Tables: {
+      academic_records: {
+        Row: {
+          cumulative_gwa: number | null
+          grantee_id: string
+          grantee_name: string
+          program: string | null
+          recommendation: string
+          retention_passed: boolean
+          semesters: Json
+          student_number: string
+          updated_at: string
+        }
+        Insert: {
+          cumulative_gwa?: number | null
+          grantee_id: string
+          grantee_name: string
+          program?: string | null
+          recommendation?: string
+          retention_passed?: boolean
+          semesters?: Json
+          student_number: string
+          updated_at?: string
+        }
+        Update: {
+          cumulative_gwa?: number | null
+          grantee_id?: string
+          grantee_name?: string
+          program?: string | null
+          recommendation?: string
+          retention_passed?: boolean
+          semesters?: Json
+          student_number?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academic_records_grantee_id_fkey"
+            columns: ["grantee_id"]
+            isOneToOne: true
+            referencedRelation: "grantees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      announcements: {
+        Row: {
+          audience: string
+          audience_label: string | null
+          author: string | null
+          body: string
+          channels: string[]
+          created_at: string
+          id: string
+          opens: number | null
+          published_at: string | null
+          reach: number | null
+          scheduled_for: string | null
+          status: string
+          title: string
+        }
+        Insert: {
+          audience?: string
+          audience_label?: string | null
+          author?: string | null
+          body: string
+          channels?: string[]
+          created_at?: string
+          id: string
+          opens?: number | null
+          published_at?: string | null
+          reach?: number | null
+          scheduled_for?: string | null
+          status?: string
+          title: string
+        }
+        Update: {
+          audience?: string
+          audience_label?: string | null
+          author?: string | null
+          body?: string
+          channels?: string[]
+          created_at?: string
+          id?: string
+          opens?: number | null
+          published_at?: string | null
+          reach?: number | null
+          scheduled_for?: string | null
+          status?: string
+          title?: string
+        }
+        Relationships: []
+      }
+      audit_logs: {
+        Row: {
+          action: string
+          after: Json | null
+          before: Json | null
+          id: string
+          ip: string | null
+          module: string
+          role: string
+          target: string
+          timestamp: string
+          user: string
+        }
+        Insert: {
+          action: string
+          after?: Json | null
+          before?: Json | null
+          id: string
+          ip?: string | null
+          module: string
+          role: string
+          target: string
+          timestamp?: string
+          user: string
+        }
+        Update: {
+          action?: string
+          after?: Json | null
+          before?: Json | null
+          id?: string
+          ip?: string | null
+          module?: string
+          role?: string
+          target?: string
+          timestamp?: string
+          user?: string
+        }
+        Relationships: []
+      }
+      batches: {
+        Row: {
+          academic_year: string
+          active: number
+          created_at: string
+          id: string
+          name: string
+          pending: number
+          semester: string
+          status: string
+          total_grantees: number
+          validated: number
+        }
+        Insert: {
+          academic_year: string
+          active?: number
+          created_at?: string
+          id: string
+          name: string
+          pending?: number
+          semester: string
+          status?: string
+          total_grantees?: number
+          validated?: number
+        }
+        Update: {
+          academic_year?: string
+          active?: number
+          created_at?: string
+          id?: string
+          name?: string
+          pending?: number
+          semester?: string
+          status?: string
+          total_grantees?: number
+          validated?: number
+        }
+        Relationships: []
+      }
       documents: {
         Row: {
           exif: Json | null
@@ -58,6 +228,86 @@ export type Database = {
           uploaded_at?: string
         }
         Relationships: []
+      }
+      grantees: {
+        Row: {
+          account_status: string
+          batch: string | null
+          batch_id: string | null
+          birthdate: string | null
+          contact: string | null
+          created_at: string
+          eligibility: string
+          email: string | null
+          first_name: string
+          gwa: number | null
+          id: string
+          last_name: string
+          middle_name: string | null
+          notes: string | null
+          profile_completion: number
+          program: string | null
+          risk: string
+          student_number: string
+          submission_status: string
+          university: string | null
+          year_level: number | null
+        }
+        Insert: {
+          account_status?: string
+          batch?: string | null
+          batch_id?: string | null
+          birthdate?: string | null
+          contact?: string | null
+          created_at?: string
+          eligibility?: string
+          email?: string | null
+          first_name: string
+          gwa?: number | null
+          id: string
+          last_name: string
+          middle_name?: string | null
+          notes?: string | null
+          profile_completion?: number
+          program?: string | null
+          risk?: string
+          student_number: string
+          submission_status?: string
+          university?: string | null
+          year_level?: number | null
+        }
+        Update: {
+          account_status?: string
+          batch?: string | null
+          batch_id?: string | null
+          birthdate?: string | null
+          contact?: string | null
+          created_at?: string
+          eligibility?: string
+          email?: string | null
+          first_name?: string
+          gwa?: number | null
+          id?: string
+          last_name?: string
+          middle_name?: string | null
+          notes?: string | null
+          profile_completion?: number
+          program?: string | null
+          risk?: string
+          student_number?: string
+          submission_status?: string
+          university?: string | null
+          year_level?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "grantees_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "batches"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       masterlist: {
         Row: {
@@ -176,6 +426,42 @@ export type Database = {
           student_number?: string | null
           university?: string | null
           year_level?: number | null
+        }
+        Relationships: []
+      }
+      staff_directory: {
+        Row: {
+          active: boolean
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          last_login: string | null
+          mfa: boolean
+          role: string
+          username: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          email: string
+          full_name: string
+          id: string
+          last_login?: string | null
+          mfa?: boolean
+          role: string
+          username: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          email?: string
+          full_name?: string
+          id?: string
+          last_login?: string | null
+          mfa?: boolean
+          role?: string
+          username?: string
         }
         Relationships: []
       }
