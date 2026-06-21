@@ -7,12 +7,12 @@ import { requiredDocs } from "@/data/mockDocuments";
 import {
   IconUpload,
   IconFileText,
-  IconCheck,
-  IconClock,
-  IconAlertTriangle,
   IconChevronRight,
-  IconCircleDashed,
+  IconId,
+  IconBook2,
+  IconCameraSelfie,
 } from "@tabler/icons-react";
+
 import { cn } from "@/lib/utils";
 
 type Status = "approved" | "rejected" | "suspicious" | "resubmission" | "pending" | "missing";
