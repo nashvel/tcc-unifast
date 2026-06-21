@@ -25,13 +25,19 @@ function classify(status?: string): Status {
   return "missing";
 }
 
-const ICONS: Record<Status, { Icon: typeof IconCheck; cls: string }> = {
-  approved: { Icon: IconCheck, cls: "text-success bg-success-soft" },
-  rejected: { Icon: IconAlertTriangle, cls: "text-danger bg-danger-soft" },
-  suspicious: { Icon: IconAlertTriangle, cls: "text-danger bg-danger-soft" },
-  resubmission: { Icon: IconAlertTriangle, cls: "text-warning bg-warning-soft" },
-  pending: { Icon: IconClock, cls: "text-info bg-info-soft" },
-  missing: { Icon: IconFileText, cls: "text-text-muted bg-surface-muted" },
+const DOC_ICONS: Record<string, typeof IconFileText> = {
+  "Student ID": IconId,
+  "Course History": IconBook2,
+  "Selfie with ID": IconCameraSelfie,
+};
+
+const STATUS_CLS: Record<Status, string> = {
+  approved: "text-success bg-success-soft",
+  rejected: "text-danger bg-danger-soft",
+  suspicious: "text-danger bg-danger-soft",
+  resubmission: "text-warning bg-warning-soft",
+  pending: "text-info bg-info-soft",
+  missing: "text-primary bg-primary-soft",
 };
 
 type Item = { req: string; doc?: DocumentRow };
