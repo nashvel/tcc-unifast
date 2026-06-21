@@ -74,42 +74,22 @@ export function StudentMobileTopbar() {
             </span>
           )}
         </button>
-        {openNotif && (
-          <>
-            <div className="fixed inset-0 z-40 bg-black/20" onClick={() => setOpenNotif(false)} />
-            <div
-              role="dialog"
-              aria-label="Notifications"
-              className="fixed left-2 right-2 top-[calc(env(safe-area-inset-top)+3.5rem)] z-50 bg-surface border rounded-xl shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150"
-            >
-              <div className="flex items-center justify-between px-3 h-11 border-b">
-                <p className="text-sm font-semibold">Notifications</p>
-                <button onClick={() => markRead.mutate("all")} className="text-xs text-primary hover:underline">
-                  Mark all read
-                </button>
-              </div>
-              <ul className="max-h-[65vh] overflow-y-auto overscroll-contain">
-                {notifs.length === 0 && (
-                  <li className="px-3 py-10 text-center text-xs text-text-muted">No notifications</li>
-                )}
-                {notifs.map((n) => (
-                  <li
-                    key={n.id}
-                    className={cn(
-                      "px-3 py-2.5 border-b last:border-0",
-                      !n.read && "bg-primary-soft/30",
-                    )}
-                  >
-                    <p className="font-medium text-sm">{n.title}</p>
-                    <p className="text-xs text-text-muted mt-0.5">{n.body}</p>
-                    <p className="text-[11px] text-text-soft mt-1">{new Date(n.created_at).toLocaleString()}</p>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </>
-        )}
+        <AnimatePresence>
+          {openNotif && (
+            <NotificationSheet
+              notifs={notifs}
+              onClose={() => setOpenNotif(false)}
+              onMarkAll={() => markRead.mutate("all")}
+              onItem={(id) => {
+                markRead.mutate(id);
+                setOpenNotif(false);
+                navigate({ to: "/student/notifications" });
+              }}
+            />
+          )}
+        </AnimatePresence>
       </div>
+
 
       <div className="relative">
         <button
