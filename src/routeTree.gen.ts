@@ -22,6 +22,7 @@ import { Route as StudentNotificationsRouteImport } from './routes/student.notif
 import { Route as StudentDocumentsRouteImport } from './routes/student.documents'
 import { Route as StudentAnnouncementsRouteImport } from './routes/student.announcements'
 import { Route as AppSettingsRouteImport } from './routes/app.settings'
+import { Route as AppSecurityRouteImport } from './routes/app.security'
 import { Route as AppMasterlistRouteImport } from './routes/app.masterlist'
 import { Route as AppAuditRouteImport } from './routes/app.audit'
 import { Route as AuthLoginRouteImport } from './routes/_auth.login'
@@ -111,6 +112,11 @@ const StudentAnnouncementsRoute = StudentAnnouncementsRouteImport.update({
 const AppSettingsRoute = AppSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSecurityRoute = AppSecurityRouteImport.update({
+  id: '/security',
+  path: '/security',
   getParentRoute: () => AppRoute,
 } as any)
 const AppMasterlistRoute = AppMasterlistRouteImport.update({
@@ -255,6 +261,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof AuthLoginRoute
   '/app/audit': typeof AppAuditRoute
   '/app/masterlist': typeof AppMasterlistRoute
+  '/app/security': typeof AppSecurityRoute
   '/app/settings': typeof AppSettingsRoute
   '/student/announcements': typeof StudentAnnouncementsRoute
   '/student/documents': typeof StudentDocumentsRoute
@@ -293,6 +300,7 @@ export interface FileRoutesByTo {
   '/login': typeof AuthLoginRoute
   '/app/audit': typeof AppAuditRoute
   '/app/masterlist': typeof AppMasterlistRoute
+  '/app/security': typeof AppSecurityRoute
   '/app/settings': typeof AppSettingsRoute
   '/student/announcements': typeof StudentAnnouncementsRoute
   '/student/documents': typeof StudentDocumentsRoute
@@ -335,6 +343,7 @@ export interface FileRoutesById {
   '/_auth/login': typeof AuthLoginRoute
   '/app/audit': typeof AppAuditRoute
   '/app/masterlist': typeof AppMasterlistRoute
+  '/app/security': typeof AppSecurityRoute
   '/app/settings': typeof AppSettingsRoute
   '/student/announcements': typeof StudentAnnouncementsRoute
   '/student/documents': typeof StudentDocumentsRoute
@@ -377,6 +386,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/app/audit'
     | '/app/masterlist'
+    | '/app/security'
     | '/app/settings'
     | '/student/announcements'
     | '/student/documents'
@@ -415,6 +425,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/app/audit'
     | '/app/masterlist'
+    | '/app/security'
     | '/app/settings'
     | '/student/announcements'
     | '/student/documents'
@@ -456,6 +467,7 @@ export interface FileRouteTypes {
     | '/_auth/login'
     | '/app/audit'
     | '/app/masterlist'
+    | '/app/security'
     | '/app/settings'
     | '/student/announcements'
     | '/student/documents'
@@ -584,6 +596,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/app/settings'
       preLoaderRoute: typeof AppSettingsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/security': {
+      id: '/app/security'
+      path: '/security'
+      fullPath: '/app/security'
+      preLoaderRoute: typeof AppSecurityRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/masterlist': {
@@ -792,6 +811,7 @@ const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 interface AppRouteChildren {
   AppAuditRoute: typeof AppAuditRoute
   AppMasterlistRoute: typeof AppMasterlistRoute
+  AppSecurityRoute: typeof AppSecurityRoute
   AppSettingsRoute: typeof AppSettingsRoute
   AppIndexRoute: typeof AppIndexRoute
   AppAcademicIdRoute: typeof AppAcademicIdRoute
@@ -818,6 +838,7 @@ interface AppRouteChildren {
 const AppRouteChildren: AppRouteChildren = {
   AppAuditRoute: AppAuditRoute,
   AppMasterlistRoute: AppMasterlistRoute,
+  AppSecurityRoute: AppSecurityRoute,
   AppSettingsRoute: AppSettingsRoute,
   AppIndexRoute: AppIndexRoute,
   AppAcademicIdRoute: AppAcademicIdRoute,
