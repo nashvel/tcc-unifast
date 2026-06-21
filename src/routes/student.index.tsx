@@ -24,6 +24,8 @@ function StudentHome() {
   const approved = myDocs.filter((d) => d.status === "approved").length;
   const completion = Math.min(100, Math.round((submitted / requiredDocs.length) * 100));
   const firstName = (profile?.full_name ?? "").split(" ")[0] || "Grantee";
+  const onboardingSkipped =
+    typeof window !== "undefined" && sessionStorage.getItem("unifast.onboarding.skipped") === "1";
 
   return (
     <div>
@@ -54,7 +56,13 @@ function StudentHome() {
                 <li key={req} className="flex items-center justify-between py-2 text-sm">
                   <span>{req}</span>
                   <div className="flex items-center gap-2">
-                    {d ? <StatusBadge variant={d.status === "approved" ? "success" : "warning"}>{d.status}</StatusBadge> : <StatusBadge variant="neutral">Not Submitted</StatusBadge>}
+                    {d ? (
+                      <StatusBadge variant={d.status === "approved" ? "success" : "warning"}>{d.status}</StatusBadge>
+                    ) : onboardingSkipped ? (
+                      <StatusBadge variant="warning">Skipped</StatusBadge>
+                    ) : (
+                      <StatusBadge variant="neutral">Not Submitted</StatusBadge>
+                    )}
                     <Link to="/student/upload" className="text-xs text-primary hover:underline">Upload</Link>
                   </div>
                 </li>
