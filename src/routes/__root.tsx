@@ -8,6 +8,7 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
+import { useSessionListener } from "@/hooks/use-session";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -119,9 +120,6 @@ function RootComponent() {
 }
 
 function SessionBridge() {
-  // Hook into Supabase auth state once at the app root.
-  // Imported lazily to keep server bundle small.
-  const { useSessionListener } = require("@/hooks/use-session") as typeof import("@/hooks/use-session");
   useSessionListener();
   return null;
 }
