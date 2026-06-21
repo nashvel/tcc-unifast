@@ -6,7 +6,9 @@ import { StatGridSkeleton, CardSkeleton } from "@/components/ui/skeletons";
 import { requiredDocs } from "@/data/mockDocuments";
 import { useDocuments, useAnnouncements } from "@/hooks/queries";
 import { useAuthStore } from "@/stores/authStore";
+import { DashboardMascot } from "@/components/student/mascot";
 import { IconSpeakerphone, IconArrowRight, IconArrowUpRight } from "@tabler/icons-react";
+
 import { cn } from "@/lib/utils";
 
 
@@ -26,6 +28,12 @@ function StudentHome() {
   return (
     <div>
       <PageHeader title={`Welcome, ${firstName}`} description="Here's your TES application overview." />
+
+      <div className="mb-4">
+        <DashboardMascot completion={completion} studentName={profile?.full_name ?? undefined} />
+      </div>
+
+
       {docsLoading ? (
         <StatGridSkeleton />
       ) : (
