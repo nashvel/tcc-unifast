@@ -14,16 +14,205 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      documents: {
+        Row: {
+          exif: Json | null
+          filename: string
+          grantee_name: string
+          id: string
+          ocr: Json | null
+          owner_id: string | null
+          remarks: string | null
+          risk_score: number
+          status: string
+          student_number: string
+          type: string
+          uploaded_at: string
+        }
+        Insert: {
+          exif?: Json | null
+          filename: string
+          grantee_name: string
+          id?: string
+          ocr?: Json | null
+          owner_id?: string | null
+          remarks?: string | null
+          risk_score?: number
+          status?: string
+          student_number: string
+          type: string
+          uploaded_at?: string
+        }
+        Update: {
+          exif?: Json | null
+          filename?: string
+          grantee_name?: string
+          id?: string
+          ocr?: Json | null
+          owner_id?: string | null
+          remarks?: string | null
+          risk_score?: number
+          status?: string
+          student_number?: string
+          type?: string
+          uploaded_at?: string
+        }
+        Relationships: []
+      }
+      masterlist: {
+        Row: {
+          account_status: string
+          batch: string | null
+          birthdate: string | null
+          contact: string | null
+          email: string | null
+          first_name: string
+          id: string
+          imported_at: string
+          last_name: string
+          middle_name: string | null
+          program: string | null
+          student_number: string
+          university: string | null
+          year_level: number | null
+        }
+        Insert: {
+          account_status?: string
+          batch?: string | null
+          birthdate?: string | null
+          contact?: string | null
+          email?: string | null
+          first_name: string
+          id?: string
+          imported_at?: string
+          last_name: string
+          middle_name?: string | null
+          program?: string | null
+          student_number: string
+          university?: string | null
+          year_level?: number | null
+        }
+        Update: {
+          account_status?: string
+          batch?: string | null
+          birthdate?: string | null
+          contact?: string | null
+          email?: string | null
+          first_name?: string
+          id?: string
+          imported_at?: string
+          last_name?: string
+          middle_name?: string | null
+          program?: string | null
+          student_number?: string
+          university?: string | null
+          year_level?: number | null
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          id: string
+          read: boolean
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          read?: boolean
+          title: string
+          type?: string
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          read?: boolean
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          birthdate: string | null
+          contact: string | null
+          created_at: string
+          email: string | null
+          full_name: string
+          id: string
+          program: string | null
+          student_number: string | null
+          university: string | null
+          year_level: number | null
+        }
+        Insert: {
+          birthdate?: string | null
+          contact?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string
+          id: string
+          program?: string | null
+          student_number?: string | null
+          university?: string | null
+          year_level?: number | null
+        }
+        Update: {
+          birthdate?: string | null
+          contact?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string
+          id?: string
+          program?: string | null
+          student_number?: string | null
+          university?: string | null
+          year_level?: number | null
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_staff: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "staff" | "head" | "student"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +339,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "staff", "head", "student"],
+    },
   },
 } as const
