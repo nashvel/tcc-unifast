@@ -7,8 +7,10 @@ import {
 } from "@tabler/icons-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { ChartCard } from "@/components/ui/chart-card";
-import { FormField, TextInput, Selectish } from "@/components/ui/form-field";
+import { FormField, TextInput } from "@/components/ui/form-field";
+import { Selectish } from "@/components/ui/form-field";
 import { Btn } from "@/components/ui/btn";
+import { AvatarEditor } from "@/components/ui/avatar-editor";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthStore } from "@/stores/authStore";
 
@@ -80,6 +82,35 @@ function StudentSettings() {
   const [err, setErr] = useState<string | null>(null);
   const [fieldErrs, setFieldErrs] = useState<{ current?: string; next?: string; confirm?: string }>({});
   const [ok, setOk] = useState<string | null>(null);
+
+  // edit profile form
+  const setProfileStore = useAuthStore((s) => s.setProfile);
+  const [fullName, setFullName] = useState(profile?.full_name ?? "");
+  const [profileBusy, setProfileBusy] = useState(false);
+  const [profileMsg, setProfileMsg] = useState<{ tone: "ok" | "err"; text: string } | null>(null);
+
+  async function saveProfile(e: React.FormEvent) {
+    e.preventDefault();
+    if (!userId) return;
+    const name = fullName.trim();
+    if (!name) {
+      setProfileMsg({ tone: "err", text: "Full name is required." });
+      return;
+    }
+    setProfileBusy(true);
+    setProfileMsg(null);
+    const { error } = await supabase
+      .from("profiles")
+      .update({ full_name: name })
+      .eq("id", userId);
+    setProfileBusy(false);
+    if (error) {
+      setProfileMsg({ tone: "err", text: error.message });
+      return;
+    }
+    if (profile) setProfileStore({ ...profile, full_name: name });
+    setProfileMsg({ tone: "ok", text: "Profile updated." });
+  }
 
   // filters
   const [from, setFrom] = useState("");
@@ -200,6 +231,35 @@ function StudentSettings() {
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        {/* Edit Profile */}
+        <ChartCard title="Edit Profile" className="lg:col-span-2">
+          <div className="grid grid-cols-1 md:grid-cols-[auto_minmax(0,1fr)] gap-4 items-start">
+            <AvatarEditor />
+            <form onSubmit={saveProfile} className="space-y-3 min-w-0" noValidate>
+              <FormField label="Full name" required>
+                <TextInput
+                  value={fullName}
+                  onChange={(e) => { setFullName(e.target.value); setProfileMsg(null); }}
+                  placeholder="Your full name"
+                  autoComplete="name"
+                />
+              </FormField>
+              <FormField label="Email" helper="Contact support to change your email.">
+                <TextInput value={email ?? ""} disabled readOnly />
+              </FormField>
+              {profileMsg && (
+                <p className={`text-xs inline-flex items-center gap-1 ${profileMsg.tone === "ok" ? "text-success" : "text-danger"}`}>
+                  {profileMsg.tone === "ok" ? <IconCheck size={12} /> : <IconAlertCircle size={12} />}
+                  {profileMsg.text}
+                </p>
+              )}
+              <Btn variant="primary" type="submit" disabled={profileBusy || fullName.trim() === (profile?.full_name ?? "")}>
+                {profileBusy ? "Saving…" : "Save profile"}
+              </Btn>
+            </form>
+          </div>
+        </ChartCard>
+
         {/* Change Password */}
         <ChartCard title="Change Password">
           <form onSubmit={submit} className="space-y-3" noValidate>
