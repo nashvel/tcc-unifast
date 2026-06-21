@@ -7,12 +7,12 @@ import { requiredDocs } from "@/data/mockDocuments";
 import {
   IconUpload,
   IconFileText,
-  IconCheck,
-  IconClock,
-  IconAlertTriangle,
   IconChevronRight,
-  IconCircleDashed,
+  IconId,
+  IconBook2,
+  IconCameraSelfie,
 } from "@tabler/icons-react";
+
 import { cn } from "@/lib/utils";
 
 type Status = "approved" | "rejected" | "suspicious" | "resubmission" | "pending" | "missing";
@@ -25,13 +25,19 @@ function classify(status?: string): Status {
   return "missing";
 }
 
-const ICONS: Record<Status, { Icon: typeof IconCheck; cls: string }> = {
-  approved: { Icon: IconCheck, cls: "text-success bg-success-soft" },
-  rejected: { Icon: IconAlertTriangle, cls: "text-danger bg-danger-soft" },
-  suspicious: { Icon: IconAlertTriangle, cls: "text-danger bg-danger-soft" },
-  resubmission: { Icon: IconAlertTriangle, cls: "text-warning bg-warning-soft" },
-  pending: { Icon: IconClock, cls: "text-info bg-info-soft" },
-  missing: { Icon: IconFileText, cls: "text-text-muted bg-surface-muted" },
+const DOC_ICONS: Record<string, typeof IconFileText> = {
+  "Student ID": IconId,
+  "Course History": IconBook2,
+  "Selfie with ID": IconCameraSelfie,
+};
+
+const STATUS_CLS: Record<Status, string> = {
+  approved: "text-success bg-success-soft",
+  rejected: "text-danger bg-danger-soft",
+  suspicious: "text-danger bg-danger-soft",
+  resubmission: "text-warning bg-warning-soft",
+  pending: "text-info bg-info-soft",
+  missing: "text-primary bg-primary-soft",
 };
 
 type Item = { req: string; doc?: DocumentRow };
@@ -150,14 +156,15 @@ function Stat({ label, value, tone }: { label: string; value: number; tone: stri
 
 function DocRow({ req, doc: d }: Item) {
   const status = classify(d?.status);
-  const { Icon, cls } = ICONS[status];
+  const Icon = DOC_ICONS[req] ?? IconFileText;
+  const cls = STATUS_CLS[status];
   return (
     <Link
       to="/student/upload"
       className="group grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-xl border bg-surface p-3 sm:p-3.5 hover:border-primary/40 hover:shadow-sm active:scale-[0.995] transition"
     >
       <div className={cn("h-10 w-10 shrink-0 rounded-xl grid place-items-center", cls)}>
-        <Icon size={18} />
+        <Icon size={20} stroke={1.75} />
       </div>
       <div className="min-w-0">
         <p className="text-sm font-medium truncate">{req}</p>
@@ -182,5 +189,3 @@ function DocRow({ req, doc: d }: Item) {
   );
 }
 
-// Keep import referenced for tree-shaking robustness across statuses.
-void IconCircleDashed;
