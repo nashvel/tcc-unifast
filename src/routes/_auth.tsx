@@ -1,5 +1,6 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { IconShieldCheck } from "@tabler/icons-react";
+import { PageTransition } from "@/components/page-transition";
 
 export const Route = createFileRoute("/_auth")({
   component: AuthLayout,
@@ -36,7 +37,7 @@ function AuthLayout() {
       </div>
       <div className="flex-1 flex items-center justify-center p-6">
         <div className="w-full max-w-sm">
-          <Outlet />
+          <PageTransition><Outlet /></PageTransition>
         </div>
       </div>
     </div>
