@@ -113,20 +113,23 @@ export function DashboardMascot({ completion, studentName }: Props) {
       </div>
 
       <button
+        ref={mascotRef}
         type="button"
         onClick={poke}
         aria-label="Say hello to your study buddy"
-        className="shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-2xl overflow-hidden"
+        className="shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-2xl overflow-hidden bg-surface"
         style={{ width: 168, height: 168 }}
       >
-        <creattie-embed
-          src="https://ik.imagekit.io/creattie/main/saved_colors/144952/EMNZ23FWagNTKia8.json"
-          delay="1"
-          speed="100"
-          frame_rate="24"
-          trigger="loop"
-          style={{ width: "100%", height: "100%", display: "block" }}
-        />
+        {inView ? (
+          <creattie-embed
+            src="https://ik.imagekit.io/creattie/main/saved_colors/144952/EMNZ23FWagNTKia8.json"
+            delay="1"
+            speed="100"
+            frame_rate="24"
+            trigger="loop"
+            style={{ width: "100%", height: "100%", display: "block" }}
+          />
+        ) : null}
       </button>
     </div>
   );
