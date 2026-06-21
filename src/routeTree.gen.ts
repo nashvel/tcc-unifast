@@ -39,6 +39,7 @@ import { Route as AppBatchesIndexRouteImport } from './routes/app.batches.index'
 import { Route as AppAnnouncementsIndexRouteImport } from './routes/app.announcements.index'
 import { Route as AppAcademicIndexRouteImport } from './routes/app.academic.index'
 import { Route as AppUsersPermissionsRouteImport } from './routes/app.users.permissions'
+import { Route as AppSecurityMemoryRouteImport } from './routes/app.security.memory'
 import { Route as AppReportsPreviewRouteImport } from './routes/app.reports.preview'
 import { Route as AppReportsGenerateRouteImport } from './routes/app.reports.generate'
 import { Route as AppGranteesIdRouteImport } from './routes/app.grantees.$id'
@@ -199,6 +200,11 @@ const AppUsersPermissionsRoute = AppUsersPermissionsRouteImport.update({
   path: '/users/permissions',
   getParentRoute: () => AppRoute,
 } as any)
+const AppSecurityMemoryRoute = AppSecurityMemoryRouteImport.update({
+  id: '/memory',
+  path: '/memory',
+  getParentRoute: () => AppSecurityRoute,
+} as any)
 const AppReportsPreviewRoute = AppReportsPreviewRouteImport.update({
   id: '/reports/preview',
   path: '/reports/preview',
@@ -261,7 +267,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof AuthLoginRoute
   '/app/audit': typeof AppAuditRoute
   '/app/masterlist': typeof AppMasterlistRoute
-  '/app/security': typeof AppSecurityRoute
+  '/app/security': typeof AppSecurityRouteWithChildren
   '/app/settings': typeof AppSettingsRoute
   '/student/announcements': typeof StudentAnnouncementsRoute
   '/student/documents': typeof StudentDocumentsRoute
@@ -280,6 +286,7 @@ export interface FileRoutesByFullPath {
   '/app/grantees/$id': typeof AppGranteesIdRoute
   '/app/reports/generate': typeof AppReportsGenerateRoute
   '/app/reports/preview': typeof AppReportsPreviewRoute
+  '/app/security/memory': typeof AppSecurityMemoryRoute
   '/app/users/permissions': typeof AppUsersPermissionsRoute
   '/app/academic/': typeof AppAcademicIndexRoute
   '/app/announcements/': typeof AppAnnouncementsIndexRoute
@@ -300,7 +307,7 @@ export interface FileRoutesByTo {
   '/login': typeof AuthLoginRoute
   '/app/audit': typeof AppAuditRoute
   '/app/masterlist': typeof AppMasterlistRoute
-  '/app/security': typeof AppSecurityRoute
+  '/app/security': typeof AppSecurityRouteWithChildren
   '/app/settings': typeof AppSettingsRoute
   '/student/announcements': typeof StudentAnnouncementsRoute
   '/student/documents': typeof StudentDocumentsRoute
@@ -319,6 +326,7 @@ export interface FileRoutesByTo {
   '/app/grantees/$id': typeof AppGranteesIdRoute
   '/app/reports/generate': typeof AppReportsGenerateRoute
   '/app/reports/preview': typeof AppReportsPreviewRoute
+  '/app/security/memory': typeof AppSecurityMemoryRoute
   '/app/users/permissions': typeof AppUsersPermissionsRoute
   '/app/academic': typeof AppAcademicIndexRoute
   '/app/announcements': typeof AppAnnouncementsIndexRoute
@@ -343,7 +351,7 @@ export interface FileRoutesById {
   '/_auth/login': typeof AuthLoginRoute
   '/app/audit': typeof AppAuditRoute
   '/app/masterlist': typeof AppMasterlistRoute
-  '/app/security': typeof AppSecurityRoute
+  '/app/security': typeof AppSecurityRouteWithChildren
   '/app/settings': typeof AppSettingsRoute
   '/student/announcements': typeof StudentAnnouncementsRoute
   '/student/documents': typeof StudentDocumentsRoute
@@ -362,6 +370,7 @@ export interface FileRoutesById {
   '/app/grantees/$id': typeof AppGranteesIdRoute
   '/app/reports/generate': typeof AppReportsGenerateRoute
   '/app/reports/preview': typeof AppReportsPreviewRoute
+  '/app/security/memory': typeof AppSecurityMemoryRoute
   '/app/users/permissions': typeof AppUsersPermissionsRoute
   '/app/academic/': typeof AppAcademicIndexRoute
   '/app/announcements/': typeof AppAnnouncementsIndexRoute
@@ -405,6 +414,7 @@ export interface FileRouteTypes {
     | '/app/grantees/$id'
     | '/app/reports/generate'
     | '/app/reports/preview'
+    | '/app/security/memory'
     | '/app/users/permissions'
     | '/app/academic/'
     | '/app/announcements/'
@@ -444,6 +454,7 @@ export interface FileRouteTypes {
     | '/app/grantees/$id'
     | '/app/reports/generate'
     | '/app/reports/preview'
+    | '/app/security/memory'
     | '/app/users/permissions'
     | '/app/academic'
     | '/app/announcements'
@@ -486,6 +497,7 @@ export interface FileRouteTypes {
     | '/app/grantees/$id'
     | '/app/reports/generate'
     | '/app/reports/preview'
+    | '/app/security/memory'
     | '/app/users/permissions'
     | '/app/academic/'
     | '/app/announcements/'
@@ -717,6 +729,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppUsersPermissionsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/security/memory': {
+      id: '/app/security/memory'
+      path: '/memory'
+      fullPath: '/app/security/memory'
+      preLoaderRoute: typeof AppSecurityMemoryRouteImport
+      parentRoute: typeof AppSecurityRoute
+    }
     '/app/reports/preview': {
       id: '/app/reports/preview'
       path: '/reports/preview'
@@ -808,10 +827,22 @@ const AuthRouteChildren: AuthRouteChildren = {
 
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
+interface AppSecurityRouteChildren {
+  AppSecurityMemoryRoute: typeof AppSecurityMemoryRoute
+}
+
+const AppSecurityRouteChildren: AppSecurityRouteChildren = {
+  AppSecurityMemoryRoute: AppSecurityMemoryRoute,
+}
+
+const AppSecurityRouteWithChildren = AppSecurityRoute._addFileChildren(
+  AppSecurityRouteChildren,
+)
+
 interface AppRouteChildren {
   AppAuditRoute: typeof AppAuditRoute
   AppMasterlistRoute: typeof AppMasterlistRoute
-  AppSecurityRoute: typeof AppSecurityRoute
+  AppSecurityRoute: typeof AppSecurityRouteWithChildren
   AppSettingsRoute: typeof AppSettingsRoute
   AppIndexRoute: typeof AppIndexRoute
   AppAcademicIdRoute: typeof AppAcademicIdRoute
@@ -838,7 +869,7 @@ interface AppRouteChildren {
 const AppRouteChildren: AppRouteChildren = {
   AppAuditRoute: AppAuditRoute,
   AppMasterlistRoute: AppMasterlistRoute,
-  AppSecurityRoute: AppSecurityRoute,
+  AppSecurityRoute: AppSecurityRouteWithChildren,
   AppSettingsRoute: AppSettingsRoute,
   AppIndexRoute: AppIndexRoute,
   AppAcademicIdRoute: AppAcademicIdRoute,
