@@ -76,7 +76,7 @@ export function StudentMobileTopbar() {
 
       <div className="relative">
         <button
-          onClick={() => { setOpenProfile((v) => !v); setOpenNotif(false); }}
+          onClick={() => { setOpenProfile((v) => !v); }}
           className="p-0.5 rounded-full hover:bg-surface-muted"
           aria-label="Profile"
         >
