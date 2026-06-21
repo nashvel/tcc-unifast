@@ -392,6 +392,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          avatar_url: string | null
           birthdate: string | null
           contact: string | null
           created_at: string
@@ -404,6 +405,7 @@ export type Database = {
           year_level: number | null
         }
         Insert: {
+          avatar_url?: string | null
           birthdate?: string | null
           contact?: string | null
           created_at?: string
@@ -416,6 +418,7 @@ export type Database = {
           year_level?: number | null
         }
         Update: {
+          avatar_url?: string | null
           birthdate?: string | null
           contact?: string | null
           created_at?: string

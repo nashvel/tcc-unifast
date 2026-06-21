@@ -2,11 +2,19 @@ import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader } from "@/components/ui/page-header";
 import { FormField, TextInput } from "@/components/ui/form-field";
 import { Btn } from "@/components/ui/btn";
+import { AvatarEditor } from "@/components/ui/avatar-editor";
 
 export const Route = createFileRoute("/student/profile")({
-  component: () => (
+  component: StudentProfile,
+});
+
+function StudentProfile() {
+  return (
     <div>
       <PageHeader title="My Profile" description="Personal and academic information on file." />
+      <div className="mb-4">
+        <AvatarEditor />
+      </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="rounded-lg border bg-surface p-4 space-y-3">
           <p className="text-sm font-semibold">Personal</p>
@@ -28,5 +36,5 @@ export const Route = createFileRoute("/student/profile")({
         <Btn variant="primary">Save changes</Btn>
       </div>
     </div>
-  ),
-});
+  );
+}

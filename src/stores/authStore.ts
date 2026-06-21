@@ -12,6 +12,7 @@ export interface AuthProfile {
   year_level: number | null;
   contact: string | null;
   birthdate: string | null;
+  avatar_url: string | null;
 }
 
 interface AuthState {

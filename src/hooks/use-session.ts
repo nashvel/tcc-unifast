@@ -10,7 +10,7 @@ async function hydrate(userId: string, email: string | null) {
     supabase.from("profiles").select("*").eq("id", userId).maybeSingle(),
     supabase.from("user_roles").select("role").eq("user_id", userId).maybeSingle(),
   ]);
-  store.setProfile(profile ?? null);
+  store.setProfile((profile as never) ?? null);
   store.setRole(((roleRow?.role as AppRole | undefined) ?? "student"));
   store.setReady(true);
 }
