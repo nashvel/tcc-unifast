@@ -1,41 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import Lottie from "lottie-react";
+import mascotAsset from "@/assets/mascot.json.asset.json";
 
 interface Props {
   /** % of required documents submitted (0–100). */
   completion: number;
   studentName?: string;
-}
-
-declare module "react" {
-  namespace JSX {
-    interface IntrinsicElements {
-      "creattie-embed": React.DetailedHTMLProps<
-        React.HTMLAttributes<HTMLElement> & {
-          src?: string;
-          delay?: string | number;
-          speed?: string | number;
-          frame_rate?: string | number;
-          trigger?: string;
-        },
-        HTMLElement
-      >;
-    }
-  }
-}
-
-const CREATTIE_SCRIPT_ID = "creattie-embed-script";
-const CREATTIE_SCRIPT_SRC =
-  "https://creattie.com/js/embed.js?id=f702d08fa3177bffcb38";
-
-function loadCreattieScript() {
-  if (typeof document === "undefined") return;
-  if (document.getElementById(CREATTIE_SCRIPT_ID)) return;
-  const s = document.createElement("script");
-  s.id = CREATTIE_SCRIPT_ID;
-  s.src = CREATTIE_SCRIPT_SRC;
-  s.defer = true;
-  document.body.appendChild(s);
 }
 
 /** Mounts children only once their wrapper scrolls into view. */
@@ -63,14 +34,29 @@ function useInView<T extends HTMLElement>(rootMargin = "200px") {
   return { ref, inView };
 }
 
+/** Lazily fetches the Lottie JSON once `enabled` flips true. */
+function useLottieData(enabled: boolean) {
+  const [data, setData] = useState<unknown | null>(null);
+  useEffect(() => {
+    if (!enabled || data) return;
+    let cancelled = false;
+    fetch(mascotAsset.url)
+      .then((r) => r.json())
+      .then((json) => {
+        if (!cancelled) setData(json);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [enabled, data]);
+  return data;
+}
+
 export function DashboardMascot({ completion, studentName }: Props) {
   const { ref: mascotRef, inView } = useInView<HTMLButtonElement>("200px");
+  const animationData = useLottieData(inView);
   const [bubbleIdx, setBubbleIdx] = useState(0);
-
-  useEffect(() => {
-    if (inView) loadCreattieScript();
-  }, [inView]);
-
 
   const firstName = (studentName || "").split(" ")[0];
   const greet = firstName ? `Hi, ${firstName}!` : "Hi there!";
@@ -92,8 +78,9 @@ export function DashboardMascot({ completion, studentName }: Props) {
   }
 
   return (
-    <div className="relative flex items-end gap-3 select-none">
-      <div className="relative flex-1 min-w-0 pb-2">
+    <div className="relative flex items-center gap-3 select-none">
+      {/* Speech bubble — arrow on the right edge, pointing at the mascot */}
+      <div className="relative flex-1 min-w-0">
         <AnimatePresence mode="wait">
           <motion.div
             key={bubbleIdx}
@@ -101,12 +88,12 @@ export function DashboardMascot({ completion, studentName }: Props) {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -4, scale: 0.98 }}
             transition={{ duration: 0.22, ease: "easeOut" }}
-            className="relative rounded-2xl rounded-br-sm bg-surface border px-3.5 py-2.5 shadow-sm"
+            className="relative rounded-2xl bg-surface border px-3.5 py-2.5 shadow-sm"
           >
             <p className="text-sm leading-snug">{lines[bubbleIdx]}</p>
             <span
               aria-hidden
-              className="absolute -bottom-1.5 right-4 h-3 w-3 rotate-45 bg-surface border-b border-r"
+              className="absolute top-1/2 -right-1.5 h-3 w-3 -translate-y-1/2 rotate-45 bg-surface border-t border-r"
             />
           </motion.div>
         </AnimatePresence>
@@ -117,17 +104,15 @@ export function DashboardMascot({ completion, studentName }: Props) {
         type="button"
         onClick={poke}
         aria-label="Say hello to your study buddy"
-        className="shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-2xl overflow-hidden bg-surface"
+        className="shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-2xl overflow-hidden"
         style={{ width: 168, height: 168 }}
       >
-        {inView ? (
-          <creattie-embed
-            src="https://ik.imagekit.io/creattie/main/saved_colors/144952/EMNZ23FWagNTKia8.json"
-            delay="1"
-            speed="100"
-            frame_rate="24"
-            trigger="loop"
-            style={{ width: "100%", height: "100%", display: "block" }}
+        {animationData ? (
+          <Lottie
+            animationData={animationData}
+            loop
+            autoplay
+            style={{ width: "100%", height: "100%" }}
           />
         ) : null}
       </button>
