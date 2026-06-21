@@ -1,7 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import Lottie from "lottie-react";
 import mascotAsset from "@/assets/mascot.json.asset.json";
+
+const Lottie = lazy(() => import("lottie-react"));
+
 
 interface Props {
   /** % of required documents submitted (0–100). */
