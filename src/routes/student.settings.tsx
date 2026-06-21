@@ -374,6 +374,7 @@ function StudentSettings() {
             </Btn>
           </form>
         </ChartCard>
+        </>
         )}
 
         {section === "sessions" && (
