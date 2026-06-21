@@ -6,9 +6,11 @@ import { useAuthStore } from "@/stores/authStore";
 import { CommandPalette } from "@/components/ui/command-palette";
 
 export const Route = createFileRoute("/student")({
+  ssr: false,
   beforeLoad: () => {
-    const user = useAuthStore.getState().user;
-    if (!user || user.role !== "student") {
+    const s = useAuthStore.getState();
+    if (!s.ready) return;
+    if (!s.userId || s.role !== "student") {
       throw redirect({ to: "/login" });
     }
   },

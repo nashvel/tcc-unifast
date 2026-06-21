@@ -1,41 +1,58 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { IconArrowRight, IconLock, IconMail, IconUser } from "@tabler/icons-react";
+import { IconArrowRight, IconLock, IconMail, IconUser, IconSparkles } from "@tabler/icons-react";
 import { FormField, TextInput } from "@/components/ui/form-field";
 import { Btn } from "@/components/ui/btn";
-import { useAuthStore, type AppRole } from "@/stores/authStore";
+import { supabase } from "@/integrations/supabase/client";
+import { useServerFn } from "@tanstack/react-start";
+import { seedDemo, DEMO_USERS } from "@/lib/demo-seed.functions";
 
 export const Route = createFileRoute("/_auth/login")({
   component: LoginPage,
 });
 
-const demoUsers: { role: AppRole; name: string; email: string; label: string }[] = [
-  { role: "admin", name: "System Administrator", email: "admin@unifast.gov.ph", label: "Admin" },
-  { role: "head", name: "Ricardo Santos", email: "r.santos@unifast.gov.ph", label: "Office Head" },
-  { role: "staff", name: "Jessica Cruz", email: "j.cruz@unifast.gov.ph", label: "UniFAST Staff" },
-  { role: "student", name: "Maria Clara Dela Cruz", email: "mc.delacruz@plm.edu.ph", label: "Student Grantee" },
-];
-
 function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [seeding, setSeeding] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const login = useAuthStore((s) => s.login);
+  const [info, setInfo] = useState<string | null>(null);
   const navigate = useNavigate();
+  const seedFn = useServerFn(seedDemo);
+
+  async function signInWith(emailValue: string, passwordValue: string) {
+    setError(null);
+    setBusy(true);
+    const { data, error } = await supabase.auth.signInWithPassword({ email: emailValue, password: passwordValue });
+    setBusy(false);
+    if (error || !data.user) {
+      setError(error?.message ?? "Sign in failed.");
+      return;
+    }
+    // Look up role to decide which area to land on
+    const { data: roleRow } = await supabase.from("user_roles").select("role").eq("user_id", data.user.id).maybeSingle();
+    const role = (roleRow?.role as string | undefined) ?? "student";
+    navigate({ to: role === "student" ? "/student" : "/app" });
+  }
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
-    const u = demoUsers.find((d) => d.email === email);
-    if (!u || password.length < 4) {
-      setError("Invalid email or password. Try a demo login below.");
-      return;
-    }
-    signIn(u);
+    signInWith(email, password);
   }
 
-  function signIn(u: typeof demoUsers[number]) {
-    login({ id: u.email, name: u.name, email: u.email, role: u.role, studentNumber: u.role === "student" ? "2024-10000" : undefined });
-    navigate({ to: u.role === "student" ? "/student" : "/app" });
+  async function runSeed() {
+    setSeeding(true);
+    setError(null);
+    setInfo(null);
+    try {
+      await seedFn();
+      setInfo("Demo accounts ready. Click any role below to sign in.");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to seed demo accounts.");
+    } finally {
+      setSeeding(false);
+    }
   }
 
   return (
@@ -57,7 +74,10 @@ function LoginPage() {
           </div>
         </FormField>
         {error && <p className="text-xs text-danger">{error}</p>}
-        <Btn variant="primary" type="submit" className="w-full">Sign in <IconArrowRight size={14} /></Btn>
+        {info && <p className="text-xs text-success">{info}</p>}
+        <Btn variant="primary" type="submit" className="w-full" disabled={busy}>
+          {busy ? "Signing in…" : <>Sign in <IconArrowRight size={14} /></>}
+        </Btn>
       </form>
 
       <div className="flex items-center justify-between mt-4 text-xs">
@@ -66,22 +86,29 @@ function LoginPage() {
       </div>
 
       <div className="mt-7 border-t pt-4">
-        <p className="text-[11px] uppercase tracking-wider font-semibold text-text-soft mb-2">Demo logins</p>
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-[11px] uppercase tracking-wider font-semibold text-text-soft">Demo logins</p>
+          <button onClick={runSeed} disabled={seeding} className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline disabled:opacity-50">
+            <IconSparkles size={11} /> {seeding ? "Seeding…" : "Seed demo data"}
+          </button>
+        </div>
         <div className="grid grid-cols-2 gap-2">
-          {demoUsers.map((u) => (
+          {DEMO_USERS.map((u) => (
             <button
               key={u.email}
-              onClick={() => signIn(u)}
-              className="flex items-center gap-2 rounded-md border bg-surface px-2.5 py-2 text-left hover:bg-surface-muted"
+              onClick={() => signInWith(u.email, u.password)}
+              disabled={busy}
+              className="flex items-center gap-2 rounded-md border bg-surface px-2.5 py-2 text-left hover:bg-surface-muted disabled:opacity-50"
             >
               <IconUser size={14} className="text-text-muted" />
               <div className="leading-tight">
-                <p className="text-[12px] font-medium">{u.label}</p>
-                <p className="text-[10px] text-text-soft truncate max-w-[120px]">{u.email}</p>
+                <p className="text-[12px] font-medium capitalize">{u.role === "head" ? "Office Head" : u.role === "staff" ? "UniFAST Staff" : u.role === "admin" ? "Admin" : "Student"}</p>
+                <p className="text-[10px] text-text-soft truncate max-w-[140px]">{u.email}</p>
               </div>
             </button>
           ))}
         </div>
+        <p className="mt-2 text-[10px] text-text-soft">First time? Click <strong>Seed demo data</strong> to provision the four demo accounts.</p>
       </div>
     </div>
   );

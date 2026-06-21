@@ -36,7 +36,7 @@ export function CommandPalette() {
   const [q, setQ] = useState("");
   const [idx, setIdx] = useState(0);
   const navigate = useNavigate();
-  const role = useAuthStore((s) => s.user?.role);
+  const role = useAuthStore((s) => s.role);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
