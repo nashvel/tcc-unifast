@@ -218,11 +218,20 @@ function StudentSettings() {
 
   const currentUA = typeof navigator !== "undefined" ? navigator.userAgent : "";
 
+  type Section = "general" | "security" | "sessions";
+  const [section, setSection] = useState<Section>("general");
+
+  const nav: { key: Section; label: string; icon: typeof IconUser; hint: string }[] = [
+    { key: "general", label: "General", icon: IconUser, hint: "Profile & avatar" },
+    { key: "security", label: "Security", icon: IconKey, hint: "Password" },
+    { key: "sessions", label: "Sessions", icon: IconHistory, hint: "Current device & history" },
+  ];
+
   return (
     <div>
       <PageHeader
         title="Settings"
-        description="Manage your password, review sign-in activity, and end your session."
+        description="Manage your profile, security, and sign-in activity."
         actions={
           <Btn variant="ghost" onClick={handleSignOut}>
             <IconLogout size={14} /> Sign out
@@ -230,7 +239,40 @@ function StudentSettings() {
         }
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 lg:grid-cols-[220px_minmax(0,1fr)] gap-4">
+        {/* Side navigation */}
+        <nav aria-label="Settings sections" className="rounded-lg border bg-surface p-2 h-fit lg:sticky lg:top-4">
+          <ul className="space-y-0.5">
+            {nav.map((n) => {
+              const Icon = n.icon;
+              const active = section === n.key;
+              return (
+                <li key={n.key}>
+                  <button
+                    type="button"
+                    onClick={() => setSection(n.key)}
+                    aria-current={active ? "page" : undefined}
+                    className={`w-full flex items-start gap-2 rounded-md px-2.5 py-2 text-left transition-colors ${
+                      active ? "bg-sidebar-active text-sidebar-active-text" : "text-text hover:bg-surface-muted"
+                    }`}
+                  >
+                    <Icon size={16} className={active ? "text-sidebar-active-text mt-0.5" : "text-text-muted mt-0.5"} />
+                    <span className="min-w-0">
+                      <span className="block text-[13px] font-medium leading-tight">{n.label}</span>
+                      <span className={`block text-[11px] ${active ? "text-sidebar-active-text/80" : "text-text-muted"}`}>
+                        {n.hint}
+                      </span>
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
+
+        {/* Section content */}
+        <div className="min-w-0 space-y-3">
+        {section === "general" && (
         {/* Edit Profile */}
         <ChartCard title="Edit Profile" className="lg:col-span-2">
           <div className="grid grid-cols-1 md:grid-cols-[auto_minmax(0,1fr)] gap-4 items-start">
