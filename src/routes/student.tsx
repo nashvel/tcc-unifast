@@ -1,6 +1,7 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { useState } from "react";
 import { StudentSidebar } from "@/components/layout/student-sidebar";
+import { StudentBottomNav } from "@/components/layout/student-bottom-nav";
 import { AppTopbar } from "@/components/layout/app-topbar";
 import { useAuthStore } from "@/stores/authStore";
 import { CommandPalette } from "@/components/ui/command-palette";
@@ -34,10 +35,11 @@ function StudentLayout() {
       )}
       <div className="flex-1 min-w-0 flex flex-col">
         <AppTopbar onToggleSidebar={() => setOpen((v) => !v)} />
-        <main className="flex-1 p-4 sm:p-6 max-w-[1200px] w-full mx-auto">
+        <main className="flex-1 p-4 sm:p-6 pb-24 lg:pb-6 max-w-[1200px] w-full mx-auto">
           <Outlet />
         </main>
       </div>
+      <StudentBottomNav />
       <CommandPalette />
     </div>
   );
