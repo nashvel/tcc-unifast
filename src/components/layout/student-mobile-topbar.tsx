@@ -59,34 +59,19 @@ export function StudentMobileTopbar() {
 
       <h1 className="flex-1 text-[15px] font-semibold truncate">{title}</h1>
 
-      <div className="relative">
-        <button
-          onClick={() => { setOpenNotif((v) => !v); setOpenProfile(false); }}
-          className="relative p-2 rounded-full hover:bg-surface-muted active:bg-surface-2"
-          aria-label="Notifications"
-        >
-          <IconBell size={20} />
-          {unread > 0 && (
-            <span className="absolute top-1 right-1 h-4 min-w-4 rounded-full bg-danger text-white text-[10px] font-medium px-1 grid place-items-center">
-              {unread}
-            </span>
-          )}
-        </button>
-        <AnimatePresence>
-          {openNotif && (
-            <NotificationSheet
-              notifs={notifs}
-              onClose={() => setOpenNotif(false)}
-              onMarkAll={() => markRead.mutate("all")}
-              onItem={(id) => {
-                markRead.mutate(id);
-                setOpenNotif(false);
-                navigate({ to: "/student/notifications" });
-              }}
-            />
-          )}
-        </AnimatePresence>
-      </div>
+      <button
+        onClick={() => { setOpenProfile(false); navigate({ to: "/student/notifications" }); }}
+        className="relative p-2 rounded-full hover:bg-surface-muted active:bg-surface-2"
+        aria-label="Notifications"
+      >
+        <IconBell size={20} />
+        {unread > 0 && (
+          <span className="absolute top-1 right-1 h-4 min-w-4 rounded-full bg-danger text-white text-[10px] font-medium px-1 grid place-items-center">
+            {unread}
+          </span>
+        )}
+      </button>
+
 
 
       <div className="relative">
