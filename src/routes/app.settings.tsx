@@ -2,12 +2,20 @@ import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader } from "@/components/ui/page-header";
 import { Btn } from "@/components/ui/btn";
 import { FormField, TextInput, Selectish } from "@/components/ui/form-field";
+import { AvatarEditor } from "@/components/ui/avatar-editor";
 
 export const Route = createFileRoute("/app/settings")({
-  component: () => (
+  component: SettingsPage,
+});
+
+function SettingsPage() {
+  return (
     <div>
       <PageHeader title="Settings" description="System and organization preferences." />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="lg:col-span-2">
+          <AvatarEditor />
+        </div>
         <div className="rounded-lg border bg-surface p-4 space-y-3">
           <p className="text-sm font-semibold">Organization</p>
           <FormField label="Office name"><TextInput defaultValue="UniFAST Office" /></FormField>
@@ -32,5 +40,5 @@ export const Route = createFileRoute("/app/settings")({
         <Btn variant="primary">Save changes</Btn>
       </div>
     </div>
-  ),
-});
+  );
+}
