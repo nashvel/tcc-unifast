@@ -3,23 +3,30 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Btn } from "@/components/ui/btn";
 import { DataTable, THead, Tr, Th, Td } from "@/components/ui/data-table";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { mockUsers } from "@/data/mockUsers";
+import { useStaffUsers } from "@/hooks/queries";
 import { IconPlus, IconKey, IconDownload } from "@tabler/icons-react";
 import { downloadCSV } from "@/lib/csv";
 
 export const Route = createFileRoute("/app/users/")({
-  component: () => (
+  component: UsersPage,
+});
+
+function UsersPage() {
+  const { data: users = [], isLoading } = useStaffUsers();
+  return (
     <div>
       <PageHeader title="Users & Access" description="Manage staff accounts, roles, and permissions."
         actions={<>
-          <Btn variant="outline" icon={IconDownload} onClick={() => downloadCSV("users.csv", mockUsers)}>Export</Btn>
+          <Btn variant="outline" icon={IconDownload} onClick={() => downloadCSV("users.csv", users)}>Export</Btn>
           <Link to="/app/users/permissions"><Btn variant="outline">Permission matrix</Btn></Link>
           <Btn variant="primary" icon={IconPlus}>New user</Btn>
         </>} />
       <DataTable>
         <THead><Tr><Th>Username</Th><Th>Full Name</Th><Th>Email</Th><Th>Role</Th><Th>MFA</Th><Th>Status</Th><Th>Last login</Th><Th></Th></Tr></THead>
         <tbody>
-          {mockUsers.map((u) => (
+          {isLoading && <Tr><Td colSpan={8} className="text-center text-text-muted py-6">Loading…</Td></Tr>}
+          {!isLoading && users.length === 0 && <Tr><Td colSpan={8} className="text-center text-text-muted py-6">No staff users.</Td></Tr>}
+          {users.map((u) => (
             <Tr key={u.id}>
               <Td className="font-mono text-xs">{u.username}</Td>
               <Td className="font-medium">{u.fullName}</Td>
@@ -37,5 +44,5 @@ export const Route = createFileRoute("/app/users/")({
         </tbody>
       </DataTable>
     </div>
-  ),
-});
+  );
+}

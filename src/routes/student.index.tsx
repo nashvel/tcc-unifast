@@ -3,9 +3,8 @@ import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { ChartCard } from "@/components/ui/chart-card";
-import { mockAnnouncements } from "@/data/mockAnnouncements";
 import { requiredDocs } from "@/data/mockDocuments";
-import { useDocuments } from "@/hooks/queries";
+import { useDocuments, useAnnouncements } from "@/hooks/queries";
 import { useAuthStore } from "@/stores/authStore";
 import { IconUserCheck, IconFileCheck, IconCircleCheck, IconClipboardList, IconSpeakerphone, IconArrowRight } from "@tabler/icons-react";
 
@@ -16,6 +15,7 @@ export const Route = createFileRoute("/student/")({
 function StudentHome() {
   const profile = useAuthStore((s) => s.profile);
   const { data: myDocs = [] } = useDocuments({ ownerOnly: true });
+  const { data: announcements = [] } = useAnnouncements();
   const submitted = myDocs.length;
   const approved = myDocs.filter((d) => d.status === "approved").length;
   const completion = Math.min(100, Math.round((submitted / requiredDocs.length) * 100));
@@ -58,7 +58,7 @@ function StudentHome() {
 
         <ChartCard title="Latest Announcements">
           <ul className="space-y-3">
-            {mockAnnouncements.filter((a) => a.status === "published").slice(0, 3).map((a) => (
+            {announcements.filter((a) => a.status === "published").slice(0, 3).map((a) => (
               <li key={a.id} className="flex gap-2">
                 <div className="h-7 w-7 rounded-md bg-primary-soft text-primary grid place-items-center shrink-0"><IconSpeakerphone size={14} /></div>
                 <div className="min-w-0">

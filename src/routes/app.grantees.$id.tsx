@@ -2,9 +2,8 @@ import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { PageHeader } from "@/components/ui/page-header";
 import { Btn } from "@/components/ui/btn";
 import { StatusBadge, statusVariantFor, formatStatus } from "@/components/ui/status-badge";
-import { mockGrantees } from "@/data/mockGrantees";
-import { mockDocuments, requiredDocs } from "@/data/mockDocuments";
-import { mockAuditLogs } from "@/data/mockAuditLogs";
+import { requiredDocs } from "@/data/mockDocuments";
+import { useGrantee, useAuditLogs } from "@/hooks/queries";
 import { IconArrowLeft, IconEdit, IconShieldCheck } from "@tabler/icons-react";
 
 export const Route = createFileRoute("/app/grantees/$id")({
@@ -13,9 +12,11 @@ export const Route = createFileRoute("/app/grantees/$id")({
 
 function GranteeProfile() {
   const { id } = useParams({ from: "/app/grantees/$id" });
-  const g = mockGrantees.find((x) => x.id === id);
+  const { data: g, isLoading } = useGrantee(id);
+  const { data: logs = [] } = useAuditLogs();
+  if (isLoading) return <div className="text-sm text-text-muted">Loading…</div>;
   if (!g) return <div className="text-sm text-text-muted">Grantee not found.</div>;
-  const docs = mockDocuments.filter((d) => d.granteeId === id);
+  const docs: { type: string; status: string }[] = [];
 
   return (
     <div>
@@ -73,7 +74,7 @@ function GranteeProfile() {
           </Section>
           <Section title="Validation History">
             <ul className="space-y-2 text-xs">
-              {mockAuditLogs.slice(0, 4).map((l) => (
+              {logs.slice(0, 4).map((l) => (
                 <li key={l.id} className="flex items-start gap-2 border-b last:border-0 pb-2">
                   <div className="h-6 w-6 rounded bg-primary-soft text-primary grid place-items-center mt-0.5"><IconShieldCheck size={12} /></div>
                   <div className="flex-1">

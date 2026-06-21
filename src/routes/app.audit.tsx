@@ -5,7 +5,7 @@ import { Btn } from "@/components/ui/btn";
 import { Selectish, TextInput } from "@/components/ui/form-field";
 import { DataTable, THead, Tr, Th, Td } from "@/components/ui/data-table";
 import { DetailDrawer } from "@/components/ui/modal";
-import { mockAuditLogs, type AuditLog } from "@/data/mockAuditLogs";
+import { useAuditLogs, type AuditLogRow } from "@/hooks/queries";
 import { IconDownload } from "@tabler/icons-react";
 import { downloadCSV } from "@/lib/csv";
 
@@ -14,12 +14,13 @@ export const Route = createFileRoute("/app/audit")({
 });
 
 function Audit() {
+  const { data: logs = [], isLoading } = useAuditLogs();
   const [user, setUser] = useState("all");
   const [module, setModule] = useState("all");
   const [action, setAction] = useState("");
-  const [active, setActive] = useState<AuditLog | null>(null);
+  const [active, setActive] = useState<AuditLogRow | null>(null);
 
-  const filtered = mockAuditLogs.filter((l) => {
+  const filtered = logs.filter((l) => {
     if (user !== "all" && l.user !== user) return false;
     if (module !== "all" && l.module !== module) return false;
     if (action && !l.action.includes(action.toLowerCase())) return false;
@@ -33,11 +34,11 @@ function Audit() {
       <div className="rounded-lg border bg-surface p-3 mb-4 grid grid-cols-2 md:grid-cols-5 gap-2">
         <Selectish value={user} onChange={(e) => setUser(e.target.value)}>
           <option value="all">All users</option>
-          {[...new Set(mockAuditLogs.map((l) => l.user))].map((u) => <option key={u}>{u}</option>)}
+          {[...new Set(logs.map((l) => l.user))].map((u) => <option key={u}>{u}</option>)}
         </Selectish>
         <Selectish value={module} onChange={(e) => setModule(e.target.value)}>
           <option value="all">All modules</option>
-          {[...new Set(mockAuditLogs.map((l) => l.module))].map((m) => <option key={m}>{m}</option>)}
+          {[...new Set(logs.map((l) => l.module))].map((m) => <option key={m}>{m}</option>)}
         </Selectish>
         <TextInput placeholder="Action contains…" value={action} onChange={(e) => setAction(e.target.value)} />
         <TextInput type="date" />
@@ -46,6 +47,8 @@ function Audit() {
       <DataTable>
         <THead><Tr><Th>Timestamp</Th><Th>User</Th><Th>Role</Th><Th>Action</Th><Th>Module</Th><Th>Target</Th><Th>IP</Th><Th></Th></Tr></THead>
         <tbody>
+          {isLoading && <Tr><Td colSpan={8} className="text-center text-text-muted py-6">Loading…</Td></Tr>}
+          {!isLoading && filtered.length === 0 && <Tr><Td colSpan={8} className="text-center text-text-muted py-6">No audit logs.</Td></Tr>}
           {filtered.map((l) => (
             <Tr key={l.id}>
               <Td className="text-text-muted whitespace-nowrap">{l.timestamp}</Td>

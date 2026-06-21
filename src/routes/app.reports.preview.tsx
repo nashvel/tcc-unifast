@@ -3,11 +3,16 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Btn } from "@/components/ui/btn";
 import { DataTable, THead, Tr, Th, Td } from "@/components/ui/data-table";
 import { StatusBadge, statusVariantFor, formatStatus } from "@/components/ui/status-badge";
-import { mockGrantees } from "@/data/mockGrantees";
+import { useGrantees } from "@/hooks/queries";
 import { IconArrowLeft, IconFileTypePdf, IconFileSpreadsheet } from "@tabler/icons-react";
 
 export const Route = createFileRoute("/app/reports/preview")({
-  component: () => (
+  component: ReportPreview,
+});
+
+function ReportPreview() {
+  const { data: grantees = [] } = useGrantees();
+  return (
     <div>
       <Link to="/app/reports/generate" className="inline-flex items-center gap-1 text-xs text-text-muted hover:text-text mb-3">
         <IconArrowLeft size={13} /> Back
@@ -23,7 +28,7 @@ export const Route = createFileRoute("/app/reports/preview")({
         <DataTable>
           <THead><Tr><Th>Student #</Th><Th>Name</Th><Th>University</Th><Th>Submission</Th><Th>Eligibility</Th></Tr></THead>
           <tbody>
-            {mockGrantees.slice(0, 12).map((g) => (
+            {grantees.slice(0, 12).map((g) => (
               <Tr key={g.id}>
                 <Td className="font-mono text-xs">{g.studentNumber}</Td>
                 <Td className="font-medium">{g.firstName} {g.lastName}</Td>
@@ -36,5 +41,5 @@ export const Route = createFileRoute("/app/reports/preview")({
         </DataTable>
       </div>
     </div>
-  ),
-});
+  );
+}

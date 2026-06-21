@@ -2,7 +2,7 @@ import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { PageHeader } from "@/components/ui/page-header";
 import { Btn } from "@/components/ui/btn";
 import { FormField, TextInput, TextArea } from "@/components/ui/form-field";
-import { mockAnnouncements } from "@/data/mockAnnouncements";
+import { useAnnouncement } from "@/hooks/queries";
 import { IconArrowLeft } from "@tabler/icons-react";
 
 export const Route = createFileRoute("/app/announcements/$id/edit")({
@@ -11,7 +11,8 @@ export const Route = createFileRoute("/app/announcements/$id/edit")({
 
 function EditPage() {
   const { id } = useParams({ from: "/app/announcements/$id/edit" });
-  const a = mockAnnouncements.find((x) => x.id === id);
+  const { data: a, isLoading } = useAnnouncement(id);
+  if (isLoading) return <div className="text-sm text-text-muted">Loading…</div>;
   if (!a) return <div className="text-sm text-text-muted">Not found.</div>;
   return (
     <div>

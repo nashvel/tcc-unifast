@@ -164,3 +164,184 @@ export function useMarkNotificationRead() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["notifications"] }),
   });
 }
+
+/* ---------------- Batches ---------------- */
+export interface BatchRow {
+  id: string; name: string; academicYear: string; semester: string;
+  status: "open"|"closed"|"archived"; totalGrantees: number; active: number;
+  pending: number; validated: number; createdAt: string;
+}
+export function useBatches() {
+  return useQuery({
+    queryKey: ["batches"],
+    queryFn: async (): Promise<BatchRow[]> => {
+      const { data, error } = await supabase.from("batches").select("*").order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []).map((b: any) => ({
+        id: b.id, name: b.name, academicYear: b.academic_year, semester: b.semester,
+        status: b.status, totalGrantees: b.total_grantees, active: b.active,
+        pending: b.pending, validated: b.validated, createdAt: b.created_at,
+      }));
+    },
+  });
+}
+
+/* ---------------- Grantees ---------------- */
+export interface GranteeRow {
+  id: string; studentNumber: string; firstName: string; lastName: string; middleName?: string;
+  birthdate: string; email: string; contact: string; university: string; program: string;
+  yearLevel: number; batchId: string; batch: string;
+  accountStatus: "active"|"inactive"|"pending_activation"|"locked";
+  submissionStatus: "not_submitted"|"submitted"|"under_review"|"approved"|"rejected"|"resubmission_required";
+  eligibility: "eligible"|"ineligible"|"pending"|"for_evaluation";
+  risk: "low"|"medium"|"high"; gwa: number; profileCompletion: number; notes?: string;
+}
+function mapGrantee(g: any): GranteeRow {
+  return {
+    id: g.id, studentNumber: g.student_number, firstName: g.first_name, lastName: g.last_name,
+    middleName: g.middle_name ?? undefined, birthdate: g.birthdate ?? "", email: g.email ?? "",
+    contact: g.contact ?? "", university: g.university ?? "", program: g.program ?? "",
+    yearLevel: g.year_level ?? 0, batchId: g.batch_id ?? "", batch: g.batch ?? "",
+    accountStatus: g.account_status, submissionStatus: g.submission_status,
+    eligibility: g.eligibility, risk: g.risk, gwa: Number(g.gwa ?? 0),
+    profileCompletion: g.profile_completion, notes: g.notes ?? undefined,
+  };
+}
+export function useGrantees() {
+  return useQuery({
+    queryKey: ["grantees"],
+    queryFn: async (): Promise<GranteeRow[]> => {
+      const { data, error } = await supabase.from("grantees").select("*").order("id");
+      if (error) throw error;
+      return (data ?? []).map(mapGrantee);
+    },
+  });
+}
+export function useGrantee(id: string | undefined) {
+  return useQuery({
+    queryKey: ["grantee", id], enabled: !!id,
+    queryFn: async (): Promise<GranteeRow | null> => {
+      if (!id) return null;
+      const { data, error } = await supabase.from("grantees").select("*").eq("id", id).maybeSingle();
+      if (error) throw error;
+      return data ? mapGrantee(data) : null;
+    },
+  });
+}
+
+/* ---------------- Academic Records ---------------- */
+export interface AcademicSemester {
+  semester: string; gwa: number; unitsTaken: number; unitsPassed: number; failed: string[]; dropped: string[];
+}
+export interface AcademicRow {
+  granteeId: string; studentNumber: string; granteeName: string; program: string;
+  cumulativeGwa: number; retentionPassed: boolean;
+  recommendation: "eligible"|"ineligible"|"for_evaluation"; semesters: AcademicSemester[];
+}
+function mapAcademic(r: any): AcademicRow {
+  return {
+    granteeId: r.grantee_id, studentNumber: r.student_number, granteeName: r.grantee_name,
+    program: r.program ?? "", cumulativeGwa: Number(r.cumulative_gwa ?? 0),
+    retentionPassed: r.retention_passed, recommendation: r.recommendation,
+    semesters: (r.semesters ?? []) as AcademicSemester[],
+  };
+}
+export function useAcademicRecords() {
+  return useQuery({
+    queryKey: ["academic"],
+    queryFn: async (): Promise<AcademicRow[]> => {
+      const { data, error } = await supabase.from("academic_records").select("*");
+      if (error) throw error;
+      return (data ?? []).map(mapAcademic);
+    },
+  });
+}
+export function useAcademicRecord(id: string | undefined) {
+  return useQuery({
+    queryKey: ["academic", id], enabled: !!id,
+    queryFn: async (): Promise<AcademicRow | null> => {
+      if (!id) return null;
+      const { data, error } = await supabase.from("academic_records").select("*").eq("grantee_id", id).maybeSingle();
+      if (error) throw error;
+      return data ? mapAcademic(data) : null;
+    },
+  });
+}
+
+/* ---------------- Announcements ---------------- */
+export interface AnnouncementRow {
+  id: string; title: string; body: string;
+  audience: "all"|"batch"|"pending"|"rejected"|"eligible"; audienceLabel: string;
+  channels: ("in_app"|"email"|"sms")[]; status: "draft"|"scheduled"|"published";
+  publishedAt?: string; scheduledFor?: string; author: string; reach?: number; opens?: number;
+}
+function mapAnnouncement(a: any): AnnouncementRow {
+  return {
+    id: a.id, title: a.title, body: a.body, audience: a.audience,
+    audienceLabel: a.audience_label ?? "", channels: a.channels ?? [], status: a.status,
+    publishedAt: a.published_at ?? undefined, scheduledFor: a.scheduled_for ?? undefined,
+    author: a.author ?? "", reach: a.reach ?? undefined, opens: a.opens ?? undefined,
+  };
+}
+export function useAnnouncements() {
+  return useQuery({
+    queryKey: ["announcements"],
+    queryFn: async (): Promise<AnnouncementRow[]> => {
+      const { data, error } = await supabase.from("announcements").select("*").order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []).map(mapAnnouncement);
+    },
+  });
+}
+export function useAnnouncement(id: string | undefined) {
+  return useQuery({
+    queryKey: ["announcement", id], enabled: !!id,
+    queryFn: async (): Promise<AnnouncementRow | null> => {
+      if (!id) return null;
+      const { data, error } = await supabase.from("announcements").select("*").eq("id", id).maybeSingle();
+      if (error) throw error;
+      return data ? mapAnnouncement(data) : null;
+    },
+  });
+}
+
+/* ---------------- Audit Logs ---------------- */
+export interface AuditLogRow {
+  id: string; user: string; role: string; action: string; module: string;
+  target: string; ip: string; timestamp: string;
+  before?: Record<string, unknown>; after?: Record<string, unknown>;
+}
+export function useAuditLogs() {
+  return useQuery({
+    queryKey: ["audit_logs"],
+    queryFn: async (): Promise<AuditLogRow[]> => {
+      const { data, error } = await supabase.from("audit_logs").select("*").order("timestamp", { ascending: false });
+      if (error) throw error;
+      return (data ?? []).map((l: any) => ({
+        id: l.id, user: l.user, role: l.role, action: l.action, module: l.module,
+        target: l.target, ip: l.ip ?? "", timestamp: new Date(l.timestamp).toLocaleString("sv-SE").replace("T", " ").slice(0, 16),
+        before: l.before ?? undefined, after: l.after ?? undefined,
+      }));
+    },
+  });
+}
+
+/* ---------------- Staff Directory ---------------- */
+export interface StaffUserRow {
+  id: string; username: string; fullName: string; email: string;
+  role: string; active: boolean; mfa: boolean; lastLogin: string;
+}
+export function useStaffUsers() {
+  return useQuery({
+    queryKey: ["staff_directory"],
+    queryFn: async (): Promise<StaffUserRow[]> => {
+      const { data, error } = await supabase.from("staff_directory").select("*").order("username");
+      if (error) throw error;
+      return (data ?? []).map((u: any) => ({
+        id: u.id, username: u.username, fullName: u.full_name, email: u.email,
+        role: u.role, active: u.active, mfa: u.mfa,
+        lastLogin: u.last_login ? new Date(u.last_login).toLocaleString("sv-SE").replace("T", " ").slice(0, 16) : "",
+      }));
+    },
+  });
+}

@@ -3,7 +3,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
 import { DataTable, THead, Tr, Th, Td } from "@/components/ui/data-table";
 import { StatusBadge, statusVariantFor, formatStatus } from "@/components/ui/status-badge";
-import { mockAcademicRecords } from "@/data/mockAcademicRecords";
+import { useAcademicRecord } from "@/hooks/queries";
 import { IconArrowLeft, IconChartBar, IconChecklist, IconAlertOctagon } from "@tabler/icons-react";
 
 export const Route = createFileRoute("/app/academic/$id")({
@@ -12,7 +12,8 @@ export const Route = createFileRoute("/app/academic/$id")({
 
 function Detail() {
   const { id } = useParams({ from: "/app/academic/$id" });
-  const r = mockAcademicRecords.find((x) => x.granteeId === id);
+  const { data: r, isLoading } = useAcademicRecord(id);
+  if (isLoading) return <div className="text-sm text-text-muted">Loading…</div>;
   if (!r) return <div className="text-sm text-text-muted">Record not found.</div>;
   const failed = r.semesters.reduce((a, s) => a + s.failed.length, 0);
   const dropped = r.semesters.reduce((a, s) => a + s.dropped.length, 0);

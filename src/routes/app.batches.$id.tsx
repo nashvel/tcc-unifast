@@ -4,8 +4,7 @@ import { StatCard } from "@/components/ui/stat-card";
 import { Btn } from "@/components/ui/btn";
 import { DataTable, THead, Tr, Th, Td } from "@/components/ui/data-table";
 import { StatusBadge, statusVariantFor, formatStatus } from "@/components/ui/status-badge";
-import { mockBatches } from "@/data/mockBatches";
-import { mockGrantees } from "@/data/mockGrantees";
+import { useBatches, useGrantees } from "@/hooks/queries";
 import { IconArrowLeft, IconUsersGroup, IconUserCheck, IconClipboardList, IconFileCheck } from "@tabler/icons-react";
 
 export const Route = createFileRoute("/app/batches/$id")({
@@ -14,8 +13,10 @@ export const Route = createFileRoute("/app/batches/$id")({
 
 function BatchDetail() {
   const { id } = useParams({ from: "/app/batches/$id" });
-  const batch = mockBatches.find((b) => b.id === id);
-  const grantees = mockGrantees.filter((g) => g.batchId === id);
+  const { data: batches = [] } = useBatches();
+  const { data: allGrantees = [] } = useGrantees();
+  const batch = batches.find((b) => b.id === id);
+  const grantees = allGrantees.filter((g) => g.batchId === id);
 
   if (!batch) return <div className="text-sm text-text-muted">Batch not found.</div>;
 
