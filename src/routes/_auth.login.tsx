@@ -5,7 +5,7 @@ import { FormField, TextInput } from "@/components/ui/form-field";
 import { Btn } from "@/components/ui/btn";
 import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
-import { seedDemo, DEMO_USERS } from "@/lib/demo-seed.functions";
+import { seedDemo, DEMO_USERS, getDemoCredentials } from "@/lib/demo-seed.functions";
 
 export const Route = createFileRoute("/_auth/login")({
   component: LoginPage,
@@ -20,6 +20,21 @@ function LoginPage() {
   const [info, setInfo] = useState<string | null>(null);
   const navigate = useNavigate();
   const seedFn = useServerFn(seedDemo);
+  const getDemoCredsFn = useServerFn(getDemoCredentials);
+
+  async function quickDemoLogin(role: "admin" | "head" | "staff" | "student") {
+    setError(null);
+    setBusy(true);
+    try {
+      const creds = await getDemoCredsFn({ data: { role } });
+      setEmail(creds.email);
+      setPassword(creds.password);
+      await signInWith(creds.email, creds.password);
+    } catch (e) {
+      setBusy(false);
+      setError(e instanceof Error ? e.message : "Demo login failed.");
+    }
+  }
 
   async function signInWith(emailValue: string, passwordValue: string) {
     setError(null);
@@ -97,7 +112,7 @@ function LoginPage() {
             <button
               key={u.email}
               type="button"
-              onClick={() => { setEmail(u.email); setPassword(""); setError(null); }}
+              onClick={() => quickDemoLogin(u.role)}
               disabled={busy}
               className="flex items-center gap-2 rounded-md border bg-surface px-2.5 py-2 text-left hover:bg-surface-muted disabled:opacity-50"
             >
@@ -109,7 +124,7 @@ function LoginPage() {
             </button>
           ))}
         </div>
-        <p className="mt-2 text-[10px] text-text-soft">Click a role to prefill the email, then enter the demo password to sign in.</p>
+        <p className="mt-2 text-[10px] text-text-soft">Click a role to sign in instantly with that demo account.</p>
       </div>
     </div>
   );
