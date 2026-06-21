@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
 interface Props {
@@ -28,20 +28,49 @@ const CREATTIE_SCRIPT_ID = "creattie-embed-script";
 const CREATTIE_SCRIPT_SRC =
   "https://creattie.com/js/embed.js?id=f702d08fa3177bffcb38";
 
-function useCreattieScript() {
+function loadCreattieScript() {
+  if (typeof document === "undefined") return;
+  if (document.getElementById(CREATTIE_SCRIPT_ID)) return;
+  const s = document.createElement("script");
+  s.id = CREATTIE_SCRIPT_ID;
+  s.src = CREATTIE_SCRIPT_SRC;
+  s.defer = true;
+  document.body.appendChild(s);
+}
+
+/** Mounts children only once their wrapper scrolls into view. */
+function useInView<T extends HTMLElement>(rootMargin = "200px") {
+  const ref = useRef<T | null>(null);
+  const [inView, setInView] = useState(false);
   useEffect(() => {
-    if (document.getElementById(CREATTIE_SCRIPT_ID)) return;
-    const s = document.createElement("script");
-    s.id = CREATTIE_SCRIPT_ID;
-    s.src = CREATTIE_SCRIPT_SRC;
-    s.defer = true;
-    document.body.appendChild(s);
-  }, []);
+    if (inView || !ref.current) return;
+    if (typeof IntersectionObserver === "undefined") {
+      setInView(true);
+      return;
+    }
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          setInView(true);
+          io.disconnect();
+        }
+      },
+      { rootMargin },
+    );
+    io.observe(ref.current);
+    return () => io.disconnect();
+  }, [inView, rootMargin]);
+  return { ref, inView };
 }
 
 export function DashboardMascot({ completion, studentName }: Props) {
-  useCreattieScript();
+  const { ref: mascotRef, inView } = useInView<HTMLButtonElement>("200px");
   const [bubbleIdx, setBubbleIdx] = useState(0);
+
+  useEffect(() => {
+    if (inView) loadCreattieScript();
+  }, [inView]);
+
 
   const firstName = (studentName || "").split(" ")[0];
   const greet = firstName ? `Hi, ${firstName}!` : "Hi there!";
@@ -84,20 +113,23 @@ export function DashboardMascot({ completion, studentName }: Props) {
       </div>
 
       <button
+        ref={mascotRef}
         type="button"
         onClick={poke}
         aria-label="Say hello to your study buddy"
-        className="shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-2xl overflow-hidden"
+        className="shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-2xl overflow-hidden bg-surface"
         style={{ width: 168, height: 168 }}
       >
-        <creattie-embed
-          src="https://ik.imagekit.io/creattie/main/saved_colors/144952/EMNZ23FWagNTKia8.json"
-          delay="1"
-          speed="100"
-          frame_rate="24"
-          trigger="loop"
-          style={{ width: "100%", height: "100%", display: "block" }}
-        />
+        {inView ? (
+          <creattie-embed
+            src="https://ik.imagekit.io/creattie/main/saved_colors/144952/EMNZ23FWagNTKia8.json"
+            delay="1"
+            speed="100"
+            frame_rate="24"
+            trigger="loop"
+            style={{ width: "100%", height: "100%", display: "block" }}
+          />
+        ) : null}
       </button>
     </div>
   );
