@@ -20,8 +20,11 @@ function StudentHome() {
   const profile = useAuthStore((s) => s.profile);
   const { data: myDocs = [], isLoading: docsLoading } = useDocuments({ ownerOnly: true });
   const { data: announcements = [], isLoading: annLoading } = useAnnouncements();
-  const submitted = myDocs.length;
-  const approved = myDocs.filter((d) => d.status === "approved").length;
+  const submitted = Math.min(
+    requiredDocs.length,
+    myDocs.filter((d) => requiredDocs.includes(d.type)).length,
+  );
+  const approved = myDocs.filter((d) => requiredDocs.includes(d.type) && d.status === "approved").length;
   const completion = Math.min(100, Math.round((submitted / requiredDocs.length) * 100));
   const firstName = (profile?.full_name ?? "").split(" ")[0] || "Grantee";
   const onboardingSkipped =
