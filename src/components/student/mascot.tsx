@@ -1,7 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import Lottie from "lottie-react";
 import mascotAsset from "@/assets/mascot.json.asset.json";
+
+const Lottie = lazy(() => import("lottie-react"));
+
 
 interface Props {
   /** % of required documents submitted (0–100). */
@@ -108,12 +110,14 @@ export function DashboardMascot({ completion, studentName }: Props) {
         style={{ width: 168, height: 168 }}
       >
         {animationData ? (
-          <Lottie
-            animationData={animationData}
-            loop
-            autoplay
-            style={{ width: "100%", height: "100%" }}
-          />
+          <Suspense fallback={null}>
+            <Lottie
+              animationData={animationData}
+              loop
+              autoplay
+              style={{ width: "100%", height: "100%" }}
+            />
+          </Suspense>
         ) : null}
       </button>
     </div>
