@@ -15,11 +15,8 @@ function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
-  const [seeding, setSeeding] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [info, setInfo] = useState<string | null>(null);
   const navigate = useNavigate();
-  const seedFn = useServerFn(seedDemo);
   const getDemoCredsFn = useServerFn(getDemoCredentials);
 
   async function quickDemoLogin(role: "admin" | "head" | "staff" | "student") {
