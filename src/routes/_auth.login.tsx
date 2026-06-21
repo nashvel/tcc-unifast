@@ -73,7 +73,7 @@ function LoginPage() {
           </div>
         </FormField>
         {error && <p className="text-xs text-danger">{error}</p>}
-        {info && <p className="text-xs text-success">{info}</p>}
+        
         <Btn variant="primary" type="submit" className="w-full" disabled={busy}>
           {busy ? "Signing in…" : <>Sign in <IconArrowRight size={14} /></>}
         </Btn>
