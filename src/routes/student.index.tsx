@@ -62,17 +62,21 @@ function StudentHome() {
         </ChartCard>
 
         <ChartCard title="Latest Announcements">
-          <ul className="space-y-3">
-            {announcements.filter((a) => a.status === "published").slice(0, 3).map((a) => (
-              <li key={a.id} className="flex gap-2">
-                <div className="h-7 w-7 rounded-md bg-primary-soft text-primary grid place-items-center shrink-0"><IconSpeakerphone size={14} /></div>
-                <div className="min-w-0">
-                  <p className="text-sm font-medium leading-tight truncate">{a.title}</p>
-                  <p className="text-xs text-text-muted line-clamp-2">{a.body}</p>
-                </div>
-              </li>
-            ))}
-          </ul>
+          {annLoading ? (
+            <CardSkeleton lines={4} className="border-none p-0 shadow-none" />
+          ) : (
+            <ul className="space-y-3">
+              {announcements.filter((a) => a.status === "published").slice(0, 3).map((a) => (
+                <li key={a.id} className="flex gap-2">
+                  <div className="h-7 w-7 rounded-md bg-primary-soft text-primary grid place-items-center shrink-0"><IconSpeakerphone size={14} /></div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium leading-tight truncate">{a.title}</p>
+                    <p className="text-xs text-text-muted line-clamp-2">{a.body}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
         </ChartCard>
       </div>
     </div>
