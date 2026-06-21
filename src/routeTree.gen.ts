@@ -13,11 +13,17 @@ import { Route as StudentRouteImport } from './routes/student'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AppIndexRouteImport } from './routes/app.index'
+import { Route as AppMasterlistRouteImport } from './routes/app.masterlist'
 import { Route as AuthLoginRouteImport } from './routes/_auth.login'
 import { Route as AuthLockedRouteImport } from './routes/_auth.locked'
 import { Route as AuthForgotPasswordRouteImport } from './routes/_auth.forgot-password'
 import { Route as AuthActivateSuccessRouteImport } from './routes/_auth.activate-success'
 import { Route as AuthActivateRouteImport } from './routes/_auth.activate'
+import { Route as AppGranteesIndexRouteImport } from './routes/app.grantees.index'
+import { Route as AppBatchesIndexRouteImport } from './routes/app.batches.index'
+import { Route as AppGranteesIdRouteImport } from './routes/app.grantees.$id'
+import { Route as AppBatchesIdRouteImport } from './routes/app.batches.$id'
 
 const StudentRoute = StudentRouteImport.update({
   id: '/student',
@@ -37,6 +43,16 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AppIndexRoute = AppIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppMasterlistRoute = AppMasterlistRouteImport.update({
+  id: '/masterlist',
+  path: '/masterlist',
+  getParentRoute: () => AppRoute,
 } as any)
 const AuthLoginRoute = AuthLoginRouteImport.update({
   id: '/login',
@@ -63,38 +79,75 @@ const AuthActivateRoute = AuthActivateRouteImport.update({
   path: '/activate',
   getParentRoute: () => AuthRoute,
 } as any)
+const AppGranteesIndexRoute = AppGranteesIndexRouteImport.update({
+  id: '/grantees/',
+  path: '/grantees/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppBatchesIndexRoute = AppBatchesIndexRouteImport.update({
+  id: '/batches/',
+  path: '/batches/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppGranteesIdRoute = AppGranteesIdRouteImport.update({
+  id: '/grantees/$id',
+  path: '/grantees/$id',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppBatchesIdRoute = AppBatchesIdRouteImport.update({
+  id: '/batches/$id',
+  path: '/batches/$id',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/app': typeof AppRoute
+  '/app': typeof AppRouteWithChildren
   '/student': typeof StudentRoute
   '/activate': typeof AuthActivateRoute
   '/activate-success': typeof AuthActivateSuccessRoute
   '/forgot-password': typeof AuthForgotPasswordRoute
   '/locked': typeof AuthLockedRoute
   '/login': typeof AuthLoginRoute
+  '/app/masterlist': typeof AppMasterlistRoute
+  '/app/': typeof AppIndexRoute
+  '/app/batches/$id': typeof AppBatchesIdRoute
+  '/app/grantees/$id': typeof AppGranteesIdRoute
+  '/app/batches/': typeof AppBatchesIndexRoute
+  '/app/grantees/': typeof AppGranteesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/app': typeof AppRoute
   '/student': typeof StudentRoute
   '/activate': typeof AuthActivateRoute
   '/activate-success': typeof AuthActivateSuccessRoute
   '/forgot-password': typeof AuthForgotPasswordRoute
   '/locked': typeof AuthLockedRoute
   '/login': typeof AuthLoginRoute
+  '/app/masterlist': typeof AppMasterlistRoute
+  '/app': typeof AppIndexRoute
+  '/app/batches/$id': typeof AppBatchesIdRoute
+  '/app/grantees/$id': typeof AppGranteesIdRoute
+  '/app/batches': typeof AppBatchesIndexRoute
+  '/app/grantees': typeof AppGranteesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_auth': typeof AuthRouteWithChildren
-  '/app': typeof AppRoute
+  '/app': typeof AppRouteWithChildren
   '/student': typeof StudentRoute
   '/_auth/activate': typeof AuthActivateRoute
   '/_auth/activate-success': typeof AuthActivateSuccessRoute
   '/_auth/forgot-password': typeof AuthForgotPasswordRoute
   '/_auth/locked': typeof AuthLockedRoute
   '/_auth/login': typeof AuthLoginRoute
+  '/app/masterlist': typeof AppMasterlistRoute
+  '/app/': typeof AppIndexRoute
+  '/app/batches/$id': typeof AppBatchesIdRoute
+  '/app/grantees/$id': typeof AppGranteesIdRoute
+  '/app/batches/': typeof AppBatchesIndexRoute
+  '/app/grantees/': typeof AppGranteesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -107,16 +160,27 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/locked'
     | '/login'
+    | '/app/masterlist'
+    | '/app/'
+    | '/app/batches/$id'
+    | '/app/grantees/$id'
+    | '/app/batches/'
+    | '/app/grantees/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/app'
     | '/student'
     | '/activate'
     | '/activate-success'
     | '/forgot-password'
     | '/locked'
     | '/login'
+    | '/app/masterlist'
+    | '/app'
+    | '/app/batches/$id'
+    | '/app/grantees/$id'
+    | '/app/batches'
+    | '/app/grantees'
   id:
     | '__root__'
     | '/'
@@ -128,12 +192,18 @@ export interface FileRouteTypes {
     | '/_auth/forgot-password'
     | '/_auth/locked'
     | '/_auth/login'
+    | '/app/masterlist'
+    | '/app/'
+    | '/app/batches/$id'
+    | '/app/grantees/$id'
+    | '/app/batches/'
+    | '/app/grantees/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRouteWithChildren
-  AppRoute: typeof AppRoute
+  AppRoute: typeof AppRouteWithChildren
   StudentRoute: typeof StudentRoute
 }
 
@@ -166,6 +236,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/app/': {
+      id: '/app/'
+      path: '/'
+      fullPath: '/app/'
+      preLoaderRoute: typeof AppIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/masterlist': {
+      id: '/app/masterlist'
+      path: '/masterlist'
+      fullPath: '/app/masterlist'
+      preLoaderRoute: typeof AppMasterlistRouteImport
+      parentRoute: typeof AppRoute
     }
     '/_auth/login': {
       id: '/_auth/login'
@@ -202,6 +286,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthActivateRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/app/grantees/': {
+      id: '/app/grantees/'
+      path: '/grantees'
+      fullPath: '/app/grantees/'
+      preLoaderRoute: typeof AppGranteesIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/batches/': {
+      id: '/app/batches/'
+      path: '/batches'
+      fullPath: '/app/batches/'
+      preLoaderRoute: typeof AppBatchesIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/grantees/$id': {
+      id: '/app/grantees/$id'
+      path: '/grantees/$id'
+      fullPath: '/app/grantees/$id'
+      preLoaderRoute: typeof AppGranteesIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/batches/$id': {
+      id: '/app/batches/$id'
+      path: '/batches/$id'
+      fullPath: '/app/batches/$id'
+      preLoaderRoute: typeof AppBatchesIdRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
@@ -223,10 +335,30 @@ const AuthRouteChildren: AuthRouteChildren = {
 
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
+interface AppRouteChildren {
+  AppMasterlistRoute: typeof AppMasterlistRoute
+  AppIndexRoute: typeof AppIndexRoute
+  AppBatchesIdRoute: typeof AppBatchesIdRoute
+  AppGranteesIdRoute: typeof AppGranteesIdRoute
+  AppBatchesIndexRoute: typeof AppBatchesIndexRoute
+  AppGranteesIndexRoute: typeof AppGranteesIndexRoute
+}
+
+const AppRouteChildren: AppRouteChildren = {
+  AppMasterlistRoute: AppMasterlistRoute,
+  AppIndexRoute: AppIndexRoute,
+  AppBatchesIdRoute: AppBatchesIdRoute,
+  AppGranteesIdRoute: AppGranteesIdRoute,
+  AppBatchesIndexRoute: AppBatchesIndexRoute,
+  AppGranteesIndexRoute: AppGranteesIndexRoute,
+}
+
+const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRouteWithChildren,
-  AppRoute: AppRoute,
+  AppRoute: AppRouteWithChildren,
   StudentRoute: StudentRoute,
 }
 export const routeTree = rootRouteImport

@@ -6,7 +6,7 @@ import { StatusBadge, statusVariantFor, formatStatus } from "@/components/ui/sta
 import { mockBatches } from "@/data/mockBatches";
 import { IconPlus } from "@tabler/icons-react";
 
-export const Route = createFileRoute("/app/batches")({
+export const Route = createFileRoute("/app/batches/")({
   component: () => (
     <div>
       <PageHeader
