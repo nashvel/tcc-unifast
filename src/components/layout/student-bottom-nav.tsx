@@ -40,8 +40,9 @@ export function StudentBottomNav() {
                 className={cn(
                   "group flex items-center justify-center gap-2 rounded-full transition-all duration-300 ease-out outline-none focus-visible:ring-2 focus-visible:ring-primary",
                   active
-                    ? "h-11 px-4 bg-primary text-white shadow-md"
-                    : "h-11 w-11 bg-surface text-text-muted border hover:text-text hover:bg-surface-muted active:scale-95",
+                    ? "h-10 px-3.5 bg-primary text-white shadow-md"
+                    : "h-10 w-10 bg-surface text-text-muted border hover:text-text hover:bg-surface-muted active:scale-95",
+
                 )}
               >
                 <Icon
