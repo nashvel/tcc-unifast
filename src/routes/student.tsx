@@ -8,6 +8,7 @@ import { CommandPalette } from "@/components/ui/command-palette";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { OnboardingScan } from "@/components/student/onboarding-scan";
 import { supabase } from "@/integrations/supabase/client";
+import { PageTransition } from "@/components/page-transition";
 
 const SKIP_KEY = "unifast.onboarding.skipped";
 
@@ -63,7 +64,7 @@ function StudentLayout() {
   if (isMobile) {
     return (
       <StudentMobileShell>
-        <Outlet />
+        <PageTransition><Outlet /></PageTransition>
         {overlay}
       </StudentMobileShell>
     );
@@ -77,7 +78,7 @@ function StudentLayout() {
       <div className="flex-1 min-w-0 flex flex-col">
         <AppTopbar onToggleSidebar={() => {}} />
         <main className="flex-1 p-6 max-w-[1200px] w-full mx-auto">
-          <Outlet />
+          <PageTransition><Outlet /></PageTransition>
         </main>
       </div>
       <CommandPalette />
