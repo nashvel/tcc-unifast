@@ -16,13 +16,11 @@ export interface DocumentItem {
 }
 
 export const requiredDocs = [
-  "Certificate of Registration",
-  "Grade Report / TOR",
-  "Valid Government ID",
-  "Birth Certificate (PSA)",
-  "Selfie with ID (Liveness)",
-  "Certificate of Indigency",
+  "Student ID",
+  "Course History",
+  "Selfie with ID",
 ];
+
 
 export const mockDocuments: DocumentItem[] = [
   { id: "d1", granteeId: "g1", granteeName: "Maria Clara Dela Cruz", studentNumber: "2024-10000", type: "Certificate of Registration", filename: "COR_delacruz_sem1.pdf", uploadedAt: "2026-06-18 09:14", status: "pending", riskScore: 18, ocr: { name: "Maria Clara Dela Cruz", studentNo: "2024-10000", units: "21" }, exif: { device: "iPhone 13", takenAt: "2026-06-18 09:10", gps: "14.5995, 120.9842" } },
