@@ -20,6 +20,21 @@ function LoginPage() {
   const [info, setInfo] = useState<string | null>(null);
   const navigate = useNavigate();
   const seedFn = useServerFn(seedDemo);
+  const getDemoCredsFn = useServerFn(getDemoCredentials);
+
+  async function quickDemoLogin(role: "admin" | "head" | "staff" | "student") {
+    setError(null);
+    setBusy(true);
+    try {
+      const creds = await getDemoCredsFn({ data: { role } });
+      setEmail(creds.email);
+      setPassword(creds.password);
+      await signInWith(creds.email, creds.password);
+    } catch (e) {
+      setBusy(false);
+      setError(e instanceof Error ? e.message : "Demo login failed.");
+    }
+  }
 
   async function signInWith(emailValue: string, passwordValue: string) {
     setError(null);
