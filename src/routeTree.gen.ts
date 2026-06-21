@@ -17,6 +17,7 @@ import { Route as StudentIndexRouteImport } from './routes/student.index'
 import { Route as AppIndexRouteImport } from './routes/app.index'
 import { Route as StudentUploadRouteImport } from './routes/student.upload'
 import { Route as StudentSubmissionsRouteImport } from './routes/student.submissions'
+import { Route as StudentSettingsRouteImport } from './routes/student.settings'
 import { Route as StudentProfileRouteImport } from './routes/student.profile'
 import { Route as StudentNotificationsRouteImport } from './routes/student.notifications'
 import { Route as StudentDocumentsRouteImport } from './routes/student.documents'
@@ -88,6 +89,11 @@ const StudentUploadRoute = StudentUploadRouteImport.update({
 const StudentSubmissionsRoute = StudentSubmissionsRouteImport.update({
   id: '/submissions',
   path: '/submissions',
+  getParentRoute: () => StudentRoute,
+} as any)
+const StudentSettingsRoute = StudentSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => StudentRoute,
 } as any)
 const StudentProfileRoute = StudentProfileRouteImport.update({
@@ -273,6 +279,7 @@ export interface FileRoutesByFullPath {
   '/student/documents': typeof StudentDocumentsRoute
   '/student/notifications': typeof StudentNotificationsRoute
   '/student/profile': typeof StudentProfileRoute
+  '/student/settings': typeof StudentSettingsRoute
   '/student/submissions': typeof StudentSubmissionsRoute
   '/student/upload': typeof StudentUploadRoute
   '/app/': typeof AppIndexRoute
@@ -313,6 +320,7 @@ export interface FileRoutesByTo {
   '/student/documents': typeof StudentDocumentsRoute
   '/student/notifications': typeof StudentNotificationsRoute
   '/student/profile': typeof StudentProfileRoute
+  '/student/settings': typeof StudentSettingsRoute
   '/student/submissions': typeof StudentSubmissionsRoute
   '/student/upload': typeof StudentUploadRoute
   '/app': typeof AppIndexRoute
@@ -357,6 +365,7 @@ export interface FileRoutesById {
   '/student/documents': typeof StudentDocumentsRoute
   '/student/notifications': typeof StudentNotificationsRoute
   '/student/profile': typeof StudentProfileRoute
+  '/student/settings': typeof StudentSettingsRoute
   '/student/submissions': typeof StudentSubmissionsRoute
   '/student/upload': typeof StudentUploadRoute
   '/app/': typeof AppIndexRoute
@@ -401,6 +410,7 @@ export interface FileRouteTypes {
     | '/student/documents'
     | '/student/notifications'
     | '/student/profile'
+    | '/student/settings'
     | '/student/submissions'
     | '/student/upload'
     | '/app/'
@@ -441,6 +451,7 @@ export interface FileRouteTypes {
     | '/student/documents'
     | '/student/notifications'
     | '/student/profile'
+    | '/student/settings'
     | '/student/submissions'
     | '/student/upload'
     | '/app'
@@ -484,6 +495,7 @@ export interface FileRouteTypes {
     | '/student/documents'
     | '/student/notifications'
     | '/student/profile'
+    | '/student/settings'
     | '/student/submissions'
     | '/student/upload'
     | '/app/'
@@ -573,6 +585,13 @@ declare module '@tanstack/react-router' {
       path: '/submissions'
       fullPath: '/student/submissions'
       preLoaderRoute: typeof StudentSubmissionsRouteImport
+      parentRoute: typeof StudentRoute
+    }
+    '/student/settings': {
+      id: '/student/settings'
+      path: '/settings'
+      fullPath: '/student/settings'
+      preLoaderRoute: typeof StudentSettingsRouteImport
       parentRoute: typeof StudentRoute
     }
     '/student/profile': {
@@ -900,6 +919,7 @@ interface StudentRouteChildren {
   StudentDocumentsRoute: typeof StudentDocumentsRoute
   StudentNotificationsRoute: typeof StudentNotificationsRoute
   StudentProfileRoute: typeof StudentProfileRoute
+  StudentSettingsRoute: typeof StudentSettingsRoute
   StudentSubmissionsRoute: typeof StudentSubmissionsRoute
   StudentUploadRoute: typeof StudentUploadRoute
   StudentIndexRoute: typeof StudentIndexRoute
@@ -910,6 +930,7 @@ const StudentRouteChildren: StudentRouteChildren = {
   StudentDocumentsRoute: StudentDocumentsRoute,
   StudentNotificationsRoute: StudentNotificationsRoute,
   StudentProfileRoute: StudentProfileRoute,
+  StudentSettingsRoute: StudentSettingsRoute,
   StudentSubmissionsRoute: StudentSubmissionsRoute,
   StudentUploadRoute: StudentUploadRoute,
   StudentIndexRoute: StudentIndexRoute,

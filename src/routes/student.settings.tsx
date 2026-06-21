@@ -70,12 +70,12 @@ function StudentSettings() {
       <PageHeader title="Settings" description="Manage your password and review recent sign-in activity." />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-        <ChartCard title="Change Password" icon={<IconLock size={14} />}>
+        <ChartCard title="Change Password">
           <form onSubmit={submit} className="space-y-3">
             <FormField label="Current password" required>
               <TextInput type="password" value={current} onChange={(e) => setCurrent(e.target.value)} placeholder="••••••••" />
             </FormField>
-            <FormField label="New password" required help="At least 8 characters.">
+            <FormField label="New password" required helper="At least 8 characters.">
               <TextInput type="password" value={next} onChange={(e) => setNext(e.target.value)} placeholder="••••••••" />
             </FormField>
             <FormField label="Confirm new password" required>
