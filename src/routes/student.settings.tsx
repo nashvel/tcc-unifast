@@ -273,8 +273,7 @@ function StudentSettings() {
         {/* Section content */}
         <div className="min-w-0 space-y-3">
         {section === "general" && (
-        {/* Edit Profile */}
-        <ChartCard title="Edit Profile" className="lg:col-span-2">
+        <ChartCard title="Edit Profile">
           <div className="grid grid-cols-1 md:grid-cols-[auto_minmax(0,1fr)] gap-4 items-start">
             <AvatarEditor />
             <form onSubmit={saveProfile} className="space-y-3 min-w-0" noValidate>
