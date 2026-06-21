@@ -29,15 +29,14 @@ function StudentHome() {
       {docsLoading ? (
         <StatGridSkeleton />
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-          <StatCard label="Account status" value="Active" icon={IconUserCheck} tone="success" />
-          <StatCard label="Documents submitted" value={`${submitted} / ${requiredDocs.length}`} icon={IconFileCheck} tone="info" hint={
-            <div className="h-1 mt-1 rounded-full bg-surface-muted overflow-hidden"><div className="h-full bg-primary" style={{ width: `${completion}%` }} /></div>
-          } />
-          <StatCard label="Approved" value={approved} icon={IconCircleCheck} tone="primary" />
-          <StatCard label="Eligibility" value="Pending" icon={IconClipboardList} tone="warning" />
-        </div>
+        <StatsBoard
+          submitted={submitted}
+          total={requiredDocs.length}
+          approved={approved}
+          completion={completion}
+        />
       )}
+
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
         <ChartCard title="Required Documents" className="lg:col-span-2">
