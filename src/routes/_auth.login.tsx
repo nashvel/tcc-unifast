@@ -85,12 +85,7 @@ function LoginPage() {
       </div>
 
       <div className="mt-7 border-t pt-4">
-        <div className="flex items-center justify-between mb-2">
-          <p className="text-[11px] uppercase tracking-wider font-semibold text-text-soft">Demo logins</p>
-          <button onClick={runSeed} disabled={seeding} className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline disabled:opacity-50">
-            <IconSparkles size={11} /> {seeding ? "Seeding…" : "Seed demo data"}
-          </button>
-        </div>
+        <p className="text-[11px] uppercase tracking-wider font-semibold text-text-soft mb-2">Demo logins</p>
         <div className="grid grid-cols-2 gap-2">
           {DEMO_USERS.map((u) => (
             <button
