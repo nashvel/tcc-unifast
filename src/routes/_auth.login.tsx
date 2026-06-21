@@ -53,19 +53,6 @@ function LoginPage() {
     signInWith(email, password);
   }
 
-  async function runSeed() {
-    setSeeding(true);
-    setError(null);
-    setInfo(null);
-    try {
-      await seedFn();
-      setInfo("Demo accounts ready. Click any role below to sign in.");
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to seed demo accounts.");
-    } finally {
-      setSeeding(false);
-    }
-  }
 
   return (
     <div>
