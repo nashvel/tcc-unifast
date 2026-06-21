@@ -7,7 +7,7 @@ interface Props {
   studentName?: string;
 }
 
-declare global {
+declare module "react" {
   namespace JSX {
     interface IntrinsicElements {
       "creattie-embed": React.DetailedHTMLProps<
