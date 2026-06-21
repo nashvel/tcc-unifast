@@ -112,7 +112,7 @@ function LoginPage() {
             <button
               key={u.email}
               type="button"
-              onClick={() => { setEmail(u.email); setPassword(""); setError(null); }}
+              onClick={() => quickDemoLogin(u.role)}
               disabled={busy}
               className="flex items-center gap-2 rounded-md border bg-surface px-2.5 py-2 text-left hover:bg-surface-muted disabled:opacity-50"
             >
