@@ -303,7 +303,15 @@ function StudentSettings() {
         )}
 
         {section === "security" && (
-        <ChartCard title="Change Password">
+        <>
+        <ChartCard
+          title="Change Password"
+          actions={
+            <Btn variant="ghost" onClick={handleSignOut}>
+              <IconLogout size={13} /> Sign out
+            </Btn>
+          }
+        >
           <form onSubmit={submit} className="space-y-3" noValidate>
             <FormField label="Current password" required error={fieldErrs.current}>
               <TextInput
@@ -366,6 +374,7 @@ function StudentSettings() {
             </Btn>
           </form>
         </ChartCard>
+        </>
         )}
 
         {section === "sessions" && (
