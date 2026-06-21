@@ -250,12 +250,12 @@ function SecurityMemoryPage() {
 
       <ConfirmModal
         open={!!confirmDel}
-        onCancel={() => setConfirmDel(null)}
-        onConfirm={() => confirmDel && remove(confirmDel)}
+        onClose={() => setConfirmDel(null)}
+        onConfirm={() => { if (confirmDel) remove(confirmDel); }}
         title="Delete entry?"
-        message="This permanently removes the entry and its full revision history."
+        description="This permanently removes the entry and its full revision history."
         confirmLabel="Delete"
-        tone="danger"
+        danger
       />
     </div>
   );
