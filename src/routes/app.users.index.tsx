@@ -27,7 +27,7 @@ export const Route = createFileRoute("/app/users/")({
               <Td>{u.active ? <StatusBadge variant="success">Active</StatusBadge> : <StatusBadge variant="danger">Disabled</StatusBadge>}</Td>
               <Td className="text-text-muted">{u.lastLogin}</Td>
               <Td className="text-right">
-                <button className="text-xs text-primary hover:underline mr-2 inline-flex items-center gap-1"><IconLockReset size={12} /> Reset</button>
+                <button className="text-xs text-primary hover:underline mr-2 inline-flex items-center gap-1"><IconKey size={12} /> Reset</button>
                 <button className="text-xs text-text-muted hover:text-text">{u.active ? "Deactivate" : "Activate"}</button>
               </Td>
             </Tr>
