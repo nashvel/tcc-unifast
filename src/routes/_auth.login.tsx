@@ -1,11 +1,11 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { IconArrowRight, IconLock, IconMail, IconUser, IconSparkles } from "@tabler/icons-react";
+import { IconArrowRight, IconLock, IconMail, IconUser } from "@tabler/icons-react";
 import { FormField, TextInput } from "@/components/ui/form-field";
 import { Btn } from "@/components/ui/btn";
 import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
-import { seedDemo, DEMO_USERS, getDemoCredentials } from "@/lib/demo-seed.functions";
+import { DEMO_USERS, getDemoCredentials } from "@/lib/demo-seed.functions";
 
 export const Route = createFileRoute("/_auth/login")({
   component: LoginPage,
@@ -15,11 +15,8 @@ function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
-  const [seeding, setSeeding] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [info, setInfo] = useState<string | null>(null);
   const navigate = useNavigate();
-  const seedFn = useServerFn(seedDemo);
   const getDemoCredsFn = useServerFn(getDemoCredentials);
 
   async function quickDemoLogin(role: "admin" | "head" | "staff" | "student") {
@@ -56,19 +53,6 @@ function LoginPage() {
     signInWith(email, password);
   }
 
-  async function runSeed() {
-    setSeeding(true);
-    setError(null);
-    setInfo(null);
-    try {
-      await seedFn();
-      setInfo("Demo accounts ready. Click any role below to sign in.");
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to seed demo accounts.");
-    } finally {
-      setSeeding(false);
-    }
-  }
 
   return (
     <div>
@@ -89,7 +73,7 @@ function LoginPage() {
           </div>
         </FormField>
         {error && <p className="text-xs text-danger">{error}</p>}
-        {info && <p className="text-xs text-success">{info}</p>}
+        
         <Btn variant="primary" type="submit" className="w-full" disabled={busy}>
           {busy ? "Signing in…" : <>Sign in <IconArrowRight size={14} /></>}
         </Btn>
@@ -101,12 +85,7 @@ function LoginPage() {
       </div>
 
       <div className="mt-7 border-t pt-4">
-        <div className="flex items-center justify-between mb-2">
-          <p className="text-[11px] uppercase tracking-wider font-semibold text-text-soft">Demo logins</p>
-          <button onClick={runSeed} disabled={seeding} className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline disabled:opacity-50">
-            <IconSparkles size={11} /> {seeding ? "Seeding…" : "Seed demo data"}
-          </button>
-        </div>
+        <p className="text-[11px] uppercase tracking-wider font-semibold text-text-soft mb-2">Demo logins</p>
         <div className="grid grid-cols-2 gap-2">
           {DEMO_USERS.map((u) => (
             <button
