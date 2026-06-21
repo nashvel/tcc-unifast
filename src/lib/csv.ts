@@ -1,5 +1,5 @@
 /** Trigger a CSV download from rows of objects. UI-only helper for the prototype. */
-export function downloadCSV<T extends Record<string, unknown>>(filename: string, rows: T[]) {
+export function downloadCSV<T extends object>(filename: string, rows: T[]) {
   if (!rows.length) {
     const blob = new Blob([""], { type: "text/csv;charset=utf-8" });
     triggerDownload(filename, blob);
@@ -10,7 +10,7 @@ export function downloadCSV<T extends Record<string, unknown>>(filename: string,
     const s = v === null || v === undefined ? "" : String(v);
     return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
-  const csv = [headers.join(","), ...rows.map((r) => headers.map((h) => escape(r[h])).join(","))].join("\n");
+  const csv = [headers.join(","), ...rows.map((r) => headers.map((h) => escape((r as Record<string, unknown>)[h])).join(","))].join("\n");
   triggerDownload(filename, new Blob([csv], { type: "text/csv;charset=utf-8" }));
 }
 
