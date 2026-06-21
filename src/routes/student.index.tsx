@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { ChartCard } from "@/components/ui/chart-card";
+import { StatGridSkeleton, ListSkeleton, CardSkeleton } from "@/components/ui/skeletons";
 import { requiredDocs } from "@/data/mockDocuments";
 import { useDocuments, useAnnouncements } from "@/hooks/queries";
 import { useAuthStore } from "@/stores/authStore";
@@ -14,8 +15,8 @@ export const Route = createFileRoute("/student/")({
 
 function StudentHome() {
   const profile = useAuthStore((s) => s.profile);
-  const { data: myDocs = [] } = useDocuments({ ownerOnly: true });
-  const { data: announcements = [] } = useAnnouncements();
+  const { data: myDocs = [], isLoading: docsLoading } = useDocuments({ ownerOnly: true });
+  const { data: announcements = [], isLoading: annLoading } = useAnnouncements();
   const submitted = myDocs.length;
   const approved = myDocs.filter((d) => d.status === "approved").length;
   const completion = Math.min(100, Math.round((submitted / requiredDocs.length) * 100));
@@ -24,14 +25,18 @@ function StudentHome() {
   return (
     <div>
       <PageHeader title={`Welcome, ${firstName}`} description="Here's your TES application overview." />
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-        <StatCard label="Account status" value="Active" icon={IconUserCheck} tone="success" />
-        <StatCard label="Documents submitted" value={`${submitted} / ${requiredDocs.length}`} icon={IconFileCheck} tone="info" hint={
-          <div className="h-1 mt-1 rounded-full bg-surface-muted overflow-hidden"><div className="h-full bg-primary" style={{ width: `${completion}%` }} /></div>
-        } />
-        <StatCard label="Approved" value={approved} icon={IconCircleCheck} tone="primary" />
-        <StatCard label="Eligibility" value="Pending" icon={IconClipboardList} tone="warning" />
-      </div>
+      {docsLoading ? (
+        <StatGridSkeleton />
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+          <StatCard label="Account status" value="Active" icon={IconUserCheck} tone="success" />
+          <StatCard label="Documents submitted" value={`${submitted} / ${requiredDocs.length}`} icon={IconFileCheck} tone="info" hint={
+            <div className="h-1 mt-1 rounded-full bg-surface-muted overflow-hidden"><div className="h-full bg-primary" style={{ width: `${completion}%` }} /></div>
+          } />
+          <StatCard label="Approved" value={approved} icon={IconCircleCheck} tone="primary" />
+          <StatCard label="Eligibility" value="Pending" icon={IconClipboardList} tone="warning" />
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
         <ChartCard title="Required Documents" className="lg:col-span-2">
