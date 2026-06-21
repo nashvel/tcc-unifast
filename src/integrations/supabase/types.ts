@@ -399,6 +399,7 @@ export type Database = {
           email: string | null
           full_name: string
           id: string
+          onboarding_completed_at: string | null
           program: string | null
           student_number: string | null
           university: string | null
@@ -412,6 +413,7 @@ export type Database = {
           email?: string | null
           full_name?: string
           id: string
+          onboarding_completed_at?: string | null
           program?: string | null
           student_number?: string | null
           university?: string | null
@@ -425,6 +427,7 @@ export type Database = {
           email?: string | null
           full_name?: string
           id?: string
+          onboarding_completed_at?: string | null
           program?: string | null
           student_number?: string | null
           university?: string | null
