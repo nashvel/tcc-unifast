@@ -4,7 +4,7 @@ import { Btn } from "@/components/ui/btn";
 import { DataTable, THead, Tr, Th, Td } from "@/components/ui/data-table";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { mockUsers } from "@/data/mockUsers";
-import { IconPlus, IconLockReset } from "@tabler/icons-react";
+import { IconPlus, IconKey } from "@tabler/icons-react";
 
 export const Route = createFileRoute("/app/users/")({
   component: () => (

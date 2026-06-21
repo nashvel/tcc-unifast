@@ -14,22 +14,33 @@ import { Route as AppRouteImport } from './routes/app'
 import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppIndexRouteImport } from './routes/app.index'
+import { Route as AppSettingsRouteImport } from './routes/app.settings'
 import { Route as AppMasterlistRouteImport } from './routes/app.masterlist'
+import { Route as AppAuditRouteImport } from './routes/app.audit'
 import { Route as AuthLoginRouteImport } from './routes/_auth.login'
 import { Route as AuthLockedRouteImport } from './routes/_auth.locked'
 import { Route as AuthForgotPasswordRouteImport } from './routes/_auth.forgot-password'
 import { Route as AuthActivateSuccessRouteImport } from './routes/_auth.activate-success'
 import { Route as AuthActivateRouteImport } from './routes/_auth.activate'
+import { Route as AppUsersIndexRouteImport } from './routes/app.users.index'
+import { Route as AppReportsIndexRouteImport } from './routes/app.reports.index'
 import { Route as AppGranteesIndexRouteImport } from './routes/app.grantees.index'
 import { Route as AppEligibilityIndexRouteImport } from './routes/app.eligibility.index'
 import { Route as AppDocumentsIndexRouteImport } from './routes/app.documents.index'
 import { Route as AppBatchesIndexRouteImport } from './routes/app.batches.index'
+import { Route as AppAnnouncementsIndexRouteImport } from './routes/app.announcements.index'
 import { Route as AppAcademicIndexRouteImport } from './routes/app.academic.index'
+import { Route as AppUsersPermissionsRouteImport } from './routes/app.users.permissions'
+import { Route as AppReportsPreviewRouteImport } from './routes/app.reports.preview'
+import { Route as AppReportsGenerateRouteImport } from './routes/app.reports.generate'
 import { Route as AppGranteesIdRouteImport } from './routes/app.grantees.$id'
 import { Route as AppEligibilityIdRouteImport } from './routes/app.eligibility.$id'
 import { Route as AppDocumentsIdRouteImport } from './routes/app.documents.$id'
 import { Route as AppBatchesIdRouteImport } from './routes/app.batches.$id'
+import { Route as AppAnnouncementsNewRouteImport } from './routes/app.announcements.new'
+import { Route as AppAnnouncementsLogsRouteImport } from './routes/app.announcements.logs'
 import { Route as AppAcademicIdRouteImport } from './routes/app.academic.$id'
+import { Route as AppAnnouncementsIdEditRouteImport } from './routes/app.announcements.$id.edit'
 
 const StudentRoute = StudentRouteImport.update({
   id: '/student',
@@ -55,9 +66,19 @@ const AppIndexRoute = AppIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppRoute,
 } as any)
+const AppSettingsRoute = AppSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppMasterlistRoute = AppMasterlistRouteImport.update({
   id: '/masterlist',
   path: '/masterlist',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAuditRoute = AppAuditRouteImport.update({
+  id: '/audit',
+  path: '/audit',
   getParentRoute: () => AppRoute,
 } as any)
 const AuthLoginRoute = AuthLoginRouteImport.update({
@@ -85,6 +106,16 @@ const AuthActivateRoute = AuthActivateRouteImport.update({
   path: '/activate',
   getParentRoute: () => AuthRoute,
 } as any)
+const AppUsersIndexRoute = AppUsersIndexRouteImport.update({
+  id: '/users/',
+  path: '/users/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppReportsIndexRoute = AppReportsIndexRouteImport.update({
+  id: '/reports/',
+  path: '/reports/',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppGranteesIndexRoute = AppGranteesIndexRouteImport.update({
   id: '/grantees/',
   path: '/grantees/',
@@ -105,9 +136,29 @@ const AppBatchesIndexRoute = AppBatchesIndexRouteImport.update({
   path: '/batches/',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAnnouncementsIndexRoute = AppAnnouncementsIndexRouteImport.update({
+  id: '/announcements/',
+  path: '/announcements/',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppAcademicIndexRoute = AppAcademicIndexRouteImport.update({
   id: '/academic/',
   path: '/academic/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppUsersPermissionsRoute = AppUsersPermissionsRouteImport.update({
+  id: '/users/permissions',
+  path: '/users/permissions',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppReportsPreviewRoute = AppReportsPreviewRouteImport.update({
+  id: '/reports/preview',
+  path: '/reports/preview',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppReportsGenerateRoute = AppReportsGenerateRouteImport.update({
+  id: '/reports/generate',
+  path: '/reports/generate',
   getParentRoute: () => AppRoute,
 } as any)
 const AppGranteesIdRoute = AppGranteesIdRouteImport.update({
@@ -130,9 +181,24 @@ const AppBatchesIdRoute = AppBatchesIdRouteImport.update({
   path: '/batches/$id',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAnnouncementsNewRoute = AppAnnouncementsNewRouteImport.update({
+  id: '/announcements/new',
+  path: '/announcements/new',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAnnouncementsLogsRoute = AppAnnouncementsLogsRouteImport.update({
+  id: '/announcements/logs',
+  path: '/announcements/logs',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppAcademicIdRoute = AppAcademicIdRouteImport.update({
   id: '/academic/$id',
   path: '/academic/$id',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAnnouncementsIdEditRoute = AppAnnouncementsIdEditRouteImport.update({
+  id: '/announcements/$id/edit',
+  path: '/announcements/$id/edit',
   getParentRoute: () => AppRoute,
 } as any)
 
@@ -145,18 +211,29 @@ export interface FileRoutesByFullPath {
   '/forgot-password': typeof AuthForgotPasswordRoute
   '/locked': typeof AuthLockedRoute
   '/login': typeof AuthLoginRoute
+  '/app/audit': typeof AppAuditRoute
   '/app/masterlist': typeof AppMasterlistRoute
+  '/app/settings': typeof AppSettingsRoute
   '/app/': typeof AppIndexRoute
   '/app/academic/$id': typeof AppAcademicIdRoute
+  '/app/announcements/logs': typeof AppAnnouncementsLogsRoute
+  '/app/announcements/new': typeof AppAnnouncementsNewRoute
   '/app/batches/$id': typeof AppBatchesIdRoute
   '/app/documents/$id': typeof AppDocumentsIdRoute
   '/app/eligibility/$id': typeof AppEligibilityIdRoute
   '/app/grantees/$id': typeof AppGranteesIdRoute
+  '/app/reports/generate': typeof AppReportsGenerateRoute
+  '/app/reports/preview': typeof AppReportsPreviewRoute
+  '/app/users/permissions': typeof AppUsersPermissionsRoute
   '/app/academic/': typeof AppAcademicIndexRoute
+  '/app/announcements/': typeof AppAnnouncementsIndexRoute
   '/app/batches/': typeof AppBatchesIndexRoute
   '/app/documents/': typeof AppDocumentsIndexRoute
   '/app/eligibility/': typeof AppEligibilityIndexRoute
   '/app/grantees/': typeof AppGranteesIndexRoute
+  '/app/reports/': typeof AppReportsIndexRoute
+  '/app/users/': typeof AppUsersIndexRoute
+  '/app/announcements/$id/edit': typeof AppAnnouncementsIdEditRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -166,18 +243,29 @@ export interface FileRoutesByTo {
   '/forgot-password': typeof AuthForgotPasswordRoute
   '/locked': typeof AuthLockedRoute
   '/login': typeof AuthLoginRoute
+  '/app/audit': typeof AppAuditRoute
   '/app/masterlist': typeof AppMasterlistRoute
+  '/app/settings': typeof AppSettingsRoute
   '/app': typeof AppIndexRoute
   '/app/academic/$id': typeof AppAcademicIdRoute
+  '/app/announcements/logs': typeof AppAnnouncementsLogsRoute
+  '/app/announcements/new': typeof AppAnnouncementsNewRoute
   '/app/batches/$id': typeof AppBatchesIdRoute
   '/app/documents/$id': typeof AppDocumentsIdRoute
   '/app/eligibility/$id': typeof AppEligibilityIdRoute
   '/app/grantees/$id': typeof AppGranteesIdRoute
+  '/app/reports/generate': typeof AppReportsGenerateRoute
+  '/app/reports/preview': typeof AppReportsPreviewRoute
+  '/app/users/permissions': typeof AppUsersPermissionsRoute
   '/app/academic': typeof AppAcademicIndexRoute
+  '/app/announcements': typeof AppAnnouncementsIndexRoute
   '/app/batches': typeof AppBatchesIndexRoute
   '/app/documents': typeof AppDocumentsIndexRoute
   '/app/eligibility': typeof AppEligibilityIndexRoute
   '/app/grantees': typeof AppGranteesIndexRoute
+  '/app/reports': typeof AppReportsIndexRoute
+  '/app/users': typeof AppUsersIndexRoute
+  '/app/announcements/$id/edit': typeof AppAnnouncementsIdEditRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -190,18 +278,29 @@ export interface FileRoutesById {
   '/_auth/forgot-password': typeof AuthForgotPasswordRoute
   '/_auth/locked': typeof AuthLockedRoute
   '/_auth/login': typeof AuthLoginRoute
+  '/app/audit': typeof AppAuditRoute
   '/app/masterlist': typeof AppMasterlistRoute
+  '/app/settings': typeof AppSettingsRoute
   '/app/': typeof AppIndexRoute
   '/app/academic/$id': typeof AppAcademicIdRoute
+  '/app/announcements/logs': typeof AppAnnouncementsLogsRoute
+  '/app/announcements/new': typeof AppAnnouncementsNewRoute
   '/app/batches/$id': typeof AppBatchesIdRoute
   '/app/documents/$id': typeof AppDocumentsIdRoute
   '/app/eligibility/$id': typeof AppEligibilityIdRoute
   '/app/grantees/$id': typeof AppGranteesIdRoute
+  '/app/reports/generate': typeof AppReportsGenerateRoute
+  '/app/reports/preview': typeof AppReportsPreviewRoute
+  '/app/users/permissions': typeof AppUsersPermissionsRoute
   '/app/academic/': typeof AppAcademicIndexRoute
+  '/app/announcements/': typeof AppAnnouncementsIndexRoute
   '/app/batches/': typeof AppBatchesIndexRoute
   '/app/documents/': typeof AppDocumentsIndexRoute
   '/app/eligibility/': typeof AppEligibilityIndexRoute
   '/app/grantees/': typeof AppGranteesIndexRoute
+  '/app/reports/': typeof AppReportsIndexRoute
+  '/app/users/': typeof AppUsersIndexRoute
+  '/app/announcements/$id/edit': typeof AppAnnouncementsIdEditRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -214,18 +313,29 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/locked'
     | '/login'
+    | '/app/audit'
     | '/app/masterlist'
+    | '/app/settings'
     | '/app/'
     | '/app/academic/$id'
+    | '/app/announcements/logs'
+    | '/app/announcements/new'
     | '/app/batches/$id'
     | '/app/documents/$id'
     | '/app/eligibility/$id'
     | '/app/grantees/$id'
+    | '/app/reports/generate'
+    | '/app/reports/preview'
+    | '/app/users/permissions'
     | '/app/academic/'
+    | '/app/announcements/'
     | '/app/batches/'
     | '/app/documents/'
     | '/app/eligibility/'
     | '/app/grantees/'
+    | '/app/reports/'
+    | '/app/users/'
+    | '/app/announcements/$id/edit'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -235,18 +345,29 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/locked'
     | '/login'
+    | '/app/audit'
     | '/app/masterlist'
+    | '/app/settings'
     | '/app'
     | '/app/academic/$id'
+    | '/app/announcements/logs'
+    | '/app/announcements/new'
     | '/app/batches/$id'
     | '/app/documents/$id'
     | '/app/eligibility/$id'
     | '/app/grantees/$id'
+    | '/app/reports/generate'
+    | '/app/reports/preview'
+    | '/app/users/permissions'
     | '/app/academic'
+    | '/app/announcements'
     | '/app/batches'
     | '/app/documents'
     | '/app/eligibility'
     | '/app/grantees'
+    | '/app/reports'
+    | '/app/users'
+    | '/app/announcements/$id/edit'
   id:
     | '__root__'
     | '/'
@@ -258,18 +379,29 @@ export interface FileRouteTypes {
     | '/_auth/forgot-password'
     | '/_auth/locked'
     | '/_auth/login'
+    | '/app/audit'
     | '/app/masterlist'
+    | '/app/settings'
     | '/app/'
     | '/app/academic/$id'
+    | '/app/announcements/logs'
+    | '/app/announcements/new'
     | '/app/batches/$id'
     | '/app/documents/$id'
     | '/app/eligibility/$id'
     | '/app/grantees/$id'
+    | '/app/reports/generate'
+    | '/app/reports/preview'
+    | '/app/users/permissions'
     | '/app/academic/'
+    | '/app/announcements/'
     | '/app/batches/'
     | '/app/documents/'
     | '/app/eligibility/'
     | '/app/grantees/'
+    | '/app/reports/'
+    | '/app/users/'
+    | '/app/announcements/$id/edit'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -316,11 +448,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/settings': {
+      id: '/app/settings'
+      path: '/settings'
+      fullPath: '/app/settings'
+      preLoaderRoute: typeof AppSettingsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/masterlist': {
       id: '/app/masterlist'
       path: '/masterlist'
       fullPath: '/app/masterlist'
       preLoaderRoute: typeof AppMasterlistRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/audit': {
+      id: '/app/audit'
+      path: '/audit'
+      fullPath: '/app/audit'
+      preLoaderRoute: typeof AppAuditRouteImport
       parentRoute: typeof AppRoute
     }
     '/_auth/login': {
@@ -358,6 +504,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthActivateRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/app/users/': {
+      id: '/app/users/'
+      path: '/users'
+      fullPath: '/app/users/'
+      preLoaderRoute: typeof AppUsersIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/reports/': {
+      id: '/app/reports/'
+      path: '/reports'
+      fullPath: '/app/reports/'
+      preLoaderRoute: typeof AppReportsIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/grantees/': {
       id: '/app/grantees/'
       path: '/grantees'
@@ -386,11 +546,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppBatchesIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/announcements/': {
+      id: '/app/announcements/'
+      path: '/announcements'
+      fullPath: '/app/announcements/'
+      preLoaderRoute: typeof AppAnnouncementsIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/academic/': {
       id: '/app/academic/'
       path: '/academic'
       fullPath: '/app/academic/'
       preLoaderRoute: typeof AppAcademicIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/users/permissions': {
+      id: '/app/users/permissions'
+      path: '/users/permissions'
+      fullPath: '/app/users/permissions'
+      preLoaderRoute: typeof AppUsersPermissionsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/reports/preview': {
+      id: '/app/reports/preview'
+      path: '/reports/preview'
+      fullPath: '/app/reports/preview'
+      preLoaderRoute: typeof AppReportsPreviewRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/reports/generate': {
+      id: '/app/reports/generate'
+      path: '/reports/generate'
+      fullPath: '/app/reports/generate'
+      preLoaderRoute: typeof AppReportsGenerateRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/grantees/$id': {
@@ -421,11 +609,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppBatchesIdRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/announcements/new': {
+      id: '/app/announcements/new'
+      path: '/announcements/new'
+      fullPath: '/app/announcements/new'
+      preLoaderRoute: typeof AppAnnouncementsNewRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/announcements/logs': {
+      id: '/app/announcements/logs'
+      path: '/announcements/logs'
+      fullPath: '/app/announcements/logs'
+      preLoaderRoute: typeof AppAnnouncementsLogsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/academic/$id': {
       id: '/app/academic/$id'
       path: '/academic/$id'
       fullPath: '/app/academic/$id'
       preLoaderRoute: typeof AppAcademicIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/announcements/$id/edit': {
+      id: '/app/announcements/$id/edit'
+      path: '/announcements/$id/edit'
+      fullPath: '/app/announcements/$id/edit'
+      preLoaderRoute: typeof AppAnnouncementsIdEditRouteImport
       parentRoute: typeof AppRoute
     }
   }
@@ -450,33 +659,55 @@ const AuthRouteChildren: AuthRouteChildren = {
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
 interface AppRouteChildren {
+  AppAuditRoute: typeof AppAuditRoute
   AppMasterlistRoute: typeof AppMasterlistRoute
+  AppSettingsRoute: typeof AppSettingsRoute
   AppIndexRoute: typeof AppIndexRoute
   AppAcademicIdRoute: typeof AppAcademicIdRoute
+  AppAnnouncementsLogsRoute: typeof AppAnnouncementsLogsRoute
+  AppAnnouncementsNewRoute: typeof AppAnnouncementsNewRoute
   AppBatchesIdRoute: typeof AppBatchesIdRoute
   AppDocumentsIdRoute: typeof AppDocumentsIdRoute
   AppEligibilityIdRoute: typeof AppEligibilityIdRoute
   AppGranteesIdRoute: typeof AppGranteesIdRoute
+  AppReportsGenerateRoute: typeof AppReportsGenerateRoute
+  AppReportsPreviewRoute: typeof AppReportsPreviewRoute
+  AppUsersPermissionsRoute: typeof AppUsersPermissionsRoute
   AppAcademicIndexRoute: typeof AppAcademicIndexRoute
+  AppAnnouncementsIndexRoute: typeof AppAnnouncementsIndexRoute
   AppBatchesIndexRoute: typeof AppBatchesIndexRoute
   AppDocumentsIndexRoute: typeof AppDocumentsIndexRoute
   AppEligibilityIndexRoute: typeof AppEligibilityIndexRoute
   AppGranteesIndexRoute: typeof AppGranteesIndexRoute
+  AppReportsIndexRoute: typeof AppReportsIndexRoute
+  AppUsersIndexRoute: typeof AppUsersIndexRoute
+  AppAnnouncementsIdEditRoute: typeof AppAnnouncementsIdEditRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppAuditRoute: AppAuditRoute,
   AppMasterlistRoute: AppMasterlistRoute,
+  AppSettingsRoute: AppSettingsRoute,
   AppIndexRoute: AppIndexRoute,
   AppAcademicIdRoute: AppAcademicIdRoute,
+  AppAnnouncementsLogsRoute: AppAnnouncementsLogsRoute,
+  AppAnnouncementsNewRoute: AppAnnouncementsNewRoute,
   AppBatchesIdRoute: AppBatchesIdRoute,
   AppDocumentsIdRoute: AppDocumentsIdRoute,
   AppEligibilityIdRoute: AppEligibilityIdRoute,
   AppGranteesIdRoute: AppGranteesIdRoute,
+  AppReportsGenerateRoute: AppReportsGenerateRoute,
+  AppReportsPreviewRoute: AppReportsPreviewRoute,
+  AppUsersPermissionsRoute: AppUsersPermissionsRoute,
   AppAcademicIndexRoute: AppAcademicIndexRoute,
+  AppAnnouncementsIndexRoute: AppAnnouncementsIndexRoute,
   AppBatchesIndexRoute: AppBatchesIndexRoute,
   AppDocumentsIndexRoute: AppDocumentsIndexRoute,
   AppEligibilityIndexRoute: AppEligibilityIndexRoute,
   AppGranteesIndexRoute: AppGranteesIndexRoute,
+  AppReportsIndexRoute: AppReportsIndexRoute,
+  AppUsersIndexRoute: AppUsersIndexRoute,
+  AppAnnouncementsIdEditRoute: AppAnnouncementsIdEditRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
