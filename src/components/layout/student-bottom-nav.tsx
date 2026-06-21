@@ -25,14 +25,14 @@ export function StudentBottomNav() {
       className="lg:hidden fixed inset-x-0 bottom-0 z-30 px-3 pt-2 pointer-events-none"
       style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 0.5rem)" }}
     >
-      <ul className="pointer-events-auto mx-auto flex max-w-md items-center justify-between gap-1.5 rounded-full border bg-surface/95 backdrop-blur supports-[backdrop-filter]:bg-surface/80 px-2 py-2 shadow-[0_10px_30px_-12px_rgba(0,0,0,0.25)]">
+      <ul className="pointer-events-auto mx-auto flex w-fit max-w-[22rem] items-center justify-center gap-1.5 rounded-full border bg-surface/95 backdrop-blur supports-[backdrop-filter]:bg-surface/80 px-2 py-2 shadow-[0_10px_30px_-12px_rgba(0,0,0,0.25)]">
         {items.map((it) => {
           const active = it.exact
             ? pathname === it.to
             : pathname.startsWith(it.to);
           const Icon = it.icon;
           return (
-            <li key={it.to} className={cn(active ? "flex-1" : "flex-none")}>
+            <li key={it.to}>
               <Link
                 to={it.to}
                 aria-label={it.label}
@@ -40,8 +40,9 @@ export function StudentBottomNav() {
                 className={cn(
                   "group flex items-center justify-center gap-2 rounded-full transition-all duration-300 ease-out outline-none focus-visible:ring-2 focus-visible:ring-primary",
                   active
-                    ? "h-11 px-4 bg-primary text-white shadow-md"
-                    : "h-11 w-11 bg-surface text-text-muted border hover:text-text hover:bg-surface-muted active:scale-95",
+                    ? "h-10 px-3.5 bg-primary text-white shadow-md"
+                    : "h-10 w-10 bg-surface text-text-muted border hover:text-text hover:bg-surface-muted active:scale-95",
+
                 )}
               >
                 <Icon
