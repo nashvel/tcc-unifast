@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   IconDeviceLaptop, IconCheck, IconDownload, IconLogout, IconFilter,
-  IconAlertCircle, IconShieldCheck,
+  IconAlertCircle, IconShieldCheck, IconUser, IconKey, IconHistory,
 } from "@tabler/icons-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { ChartCard } from "@/components/ui/chart-card";
