@@ -3,10 +3,12 @@ import { PageHeader } from "@/components/ui/page-header";
 import { DataTable, THead, Tr, Th, Td } from "@/components/ui/data-table";
 import { StatusBadge, statusVariantFor, formatStatus } from "@/components/ui/status-badge";
 import { useDocuments } from "@/hooks/queries";
+import { requiredDocs } from "@/data/mockDocuments";
 
 export const Route = createFileRoute("/student/submissions")({
   component: () => {
-    const { data: my = [], isLoading } = useDocuments({ ownerOnly: true });
+    const { data: all = [], isLoading } = useDocuments({ ownerOnly: true });
+    const my = all.filter((d) => requiredDocs.includes(d.type));
     return (
       <div>
         <PageHeader title="Submission Status" description="Status and history of your uploaded documents." />
