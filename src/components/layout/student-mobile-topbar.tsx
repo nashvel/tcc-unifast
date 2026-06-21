@@ -126,3 +126,122 @@ export function StudentMobileTopbar() {
     </header>
   );
 }
+
+type Notif = {
+  id: string;
+  title: string;
+  body: string | null;
+  read: boolean;
+  created_at: string;
+};
+
+function NotificationSheet({
+  notifs,
+  onClose,
+  onMarkAll,
+  onItem,
+}: {
+  notifs: Notif[];
+  onClose: () => void;
+  onMarkAll: () => void;
+  onItem: (id: string) => void;
+}) {
+  // Lock body scroll while open
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, []);
+
+  const unread = notifs.filter((n) => !n.read).length;
+
+  return (
+    <>
+      <motion.div
+        className="fixed inset-0 z-40 bg-black/40"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.2 }}
+        onClick={onClose}
+      />
+      <motion.div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Notifications"
+        className="fixed inset-x-0 bottom-0 z-50 bg-surface rounded-t-2xl shadow-2xl flex flex-col max-h-[85vh] overflow-hidden"
+        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+        initial={{ y: "100%" }}
+        animate={{ y: 0 }}
+        exit={{ y: "100%" }}
+        transition={{ type: "spring", damping: 32, stiffness: 320 }}
+        drag="y"
+        dragConstraints={{ top: 0, bottom: 0 }}
+        dragElastic={{ top: 0, bottom: 0.5 }}
+        onDragEnd={(_, info) => {
+          if (info.offset.y > 120 || info.velocity.y > 500) onClose();
+        }}
+      >
+        {/* Grabber */}
+        <div className="pt-2 pb-1 grid place-items-center cursor-grab active:cursor-grabbing touch-none">
+          <span className="h-1.5 w-10 rounded-full bg-surface-2" />
+        </div>
+        <div className="flex items-center justify-between px-4 pb-3 border-b">
+          <div>
+            <p className="text-base font-semibold leading-tight">Notifications</p>
+            <p className="text-[11px] text-text-muted mt-0.5">
+              {unread > 0 ? `${unread} unread` : "All caught up"}
+            </p>
+          </div>
+          {unread > 0 && (
+            <button
+              onClick={onMarkAll}
+              className="inline-flex items-center gap-1 text-xs font-medium text-primary px-2 py-1 rounded-md hover:bg-primary-soft active:bg-primary-soft/70"
+            >
+              <IconCheck size={14} /> Mark all
+            </button>
+          )}
+        </div>
+        <ul className="flex-1 overflow-y-auto overscroll-contain">
+          {notifs.length === 0 && (
+            <li className="px-4 py-16 text-center text-sm text-text-muted">
+              You're all caught up 🎉
+            </li>
+          )}
+          {notifs.map((n) => (
+            <li key={n.id}>
+              <button
+                onClick={() => onItem(n.id)}
+                className={cn(
+                  "w-full text-left px-4 py-3 border-b last:border-0 flex gap-3 items-start active:bg-surface-muted transition-colors",
+                  !n.read && "bg-primary-soft/30",
+                )}
+              >
+                <span
+                  className={cn(
+                    "mt-1.5 h-2 w-2 rounded-full shrink-0",
+                    n.read ? "bg-transparent" : "bg-primary",
+                  )}
+                />
+                <span className="flex-1 min-w-0">
+                  <span className="block font-medium text-sm truncate">{n.title}</span>
+                  {n.body && (
+                    <span className="block text-xs text-text-muted mt-0.5 line-clamp-2">
+                      {n.body}
+                    </span>
+                  )}
+                  <span className="block text-[11px] text-text-soft mt-1">
+                    {new Date(n.created_at).toLocaleString()}
+                  </span>
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      </motion.div>
+    </>
+  );
+}
+
