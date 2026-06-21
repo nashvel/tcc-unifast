@@ -83,6 +83,31 @@ function StudentSettings() {
   const [fieldErrs, setFieldErrs] = useState<{ current?: string; next?: string; confirm?: string }>({});
   const [ok, setOk] = useState<string | null>(null);
 
+  // edit profile form
+  const setProfileStore = useAuthStore((s) => s.setProfile);
+  const [fullName, setFullName] = useState(profile?.full_name ?? "");
+  const [contact, setContact] = useState((profile as { contact_number?: string } | null)?.contact_number ?? "");
+  const [profileBusy, setProfileBusy] = useState(false);
+  const [profileMsg, setProfileMsg] = useState<{ tone: "ok" | "err"; text: string } | null>(null);
+
+  async function saveProfile(e: React.FormEvent) {
+    e.preventDefault();
+    if (!userId) return;
+    setProfileBusy(true);
+    setProfileMsg(null);
+    const { error } = await supabase
+      .from("profiles")
+      .update({ full_name: fullName.trim() || null })
+      .eq("id", userId);
+    setProfileBusy(false);
+    if (error) {
+      setProfileMsg({ tone: "err", text: error.message });
+      return;
+    }
+    setProfileStore(profile ? { ...profile, full_name: fullName.trim() || null } : profile);
+    setProfileMsg({ tone: "ok", text: "Profile updated." });
+  }
+
   // filters
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
