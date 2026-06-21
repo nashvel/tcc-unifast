@@ -432,6 +432,98 @@ export type Database = {
         }
         Relationships: []
       }
+      security_memory_entries: {
+        Row: {
+          body: string
+          category: Database["public"]["Enums"]["security_memory_category"]
+          created_at: string
+          created_by: string | null
+          id: string
+          related_finding_id: string | null
+          status: Database["public"]["Enums"]["security_memory_status"]
+          title: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          body: string
+          category?: Database["public"]["Enums"]["security_memory_category"]
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          related_finding_id?: string | null
+          status?: Database["public"]["Enums"]["security_memory_status"]
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          body?: string
+          category?: Database["public"]["Enums"]["security_memory_category"]
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          related_finding_id?: string | null
+          status?: Database["public"]["Enums"]["security_memory_status"]
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: []
+      }
+      security_memory_revisions: {
+        Row: {
+          body: string
+          category: Database["public"]["Enums"]["security_memory_category"]
+          change_summary: string | null
+          changed_by: string | null
+          created_at: string
+          entry_id: string
+          id: string
+          related_finding_id: string | null
+          status: Database["public"]["Enums"]["security_memory_status"]
+          title: string
+          version: number
+        }
+        Insert: {
+          body: string
+          category: Database["public"]["Enums"]["security_memory_category"]
+          change_summary?: string | null
+          changed_by?: string | null
+          created_at?: string
+          entry_id: string
+          id?: string
+          related_finding_id?: string | null
+          status: Database["public"]["Enums"]["security_memory_status"]
+          title: string
+          version: number
+        }
+        Update: {
+          body?: string
+          category?: Database["public"]["Enums"]["security_memory_category"]
+          change_summary?: string | null
+          changed_by?: string | null
+          created_at?: string
+          entry_id?: string
+          id?: string
+          related_finding_id?: string | null
+          status?: Database["public"]["Enums"]["security_memory_status"]
+          title?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "security_memory_revisions_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "security_memory_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       staff_directory: {
         Row: {
           active: boolean
@@ -502,6 +594,12 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "staff" | "head" | "student"
+      security_memory_category:
+        | "invariant"
+        | "scanner_guidance"
+        | "accepted_risk"
+        | "note"
+      security_memory_status: "active" | "archived"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -630,6 +728,13 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "staff", "head", "student"],
+      security_memory_category: [
+        "invariant",
+        "scanner_guidance",
+        "accepted_risk",
+        "note",
+      ],
+      security_memory_status: ["active", "archived"],
     },
   },
 } as const
