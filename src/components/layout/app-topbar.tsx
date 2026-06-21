@@ -6,6 +6,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { DiceBearAvatar } from "@/components/ui/dicebear-avatar";
 
 export function AppTopbar({ onToggleSidebar }: { onToggleSidebar: () => void }) {
   const profile = useAuthStore((s) => s.profile);
@@ -20,7 +21,7 @@ export function AppTopbar({ onToggleSidebar }: { onToggleSidebar: () => void }) 
   const unread = notifs.filter((n) => !n.read).length;
 
   const displayName = profile?.full_name || email || "User";
-  const initials = displayName.split(" ").map((p: string) => p[0]).slice(0, 2).join("");
+  const avatarSeed = email || displayName;
 
   async function signOut() {
     await supabase.auth.signOut();
@@ -77,7 +78,7 @@ export function AppTopbar({ onToggleSidebar }: { onToggleSidebar: () => void }) 
 
       <div className="relative">
         <button onClick={() => { setOpenProfile((v) => !v); setOpenNotif(false); }} className="flex items-center gap-2 pl-1 pr-2 py-1 rounded-md hover:bg-surface-muted">
-          <div className="h-7 w-7 rounded-full bg-primary-soft text-primary grid place-items-center text-xs font-semibold">{initials || "U"}</div>
+          <DiceBearAvatar seed={avatarSeed} size={28} alt={displayName} />
           <div className="hidden sm:block text-left leading-tight">
             <p className="text-[12px] font-medium">{displayName}</p>
             <p className="text-[10px] text-text-muted capitalize">{role}</p>
