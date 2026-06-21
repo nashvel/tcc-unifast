@@ -34,7 +34,7 @@ const ICONS: Record<Status, { Icon: typeof IconCheck; cls: string }> = {
   missing: { Icon: IconFileText, cls: "text-text-muted bg-surface-muted" },
 };
 
-type Item = { req: string; doc?: ReturnType<typeof useDocuments>["data"] extends Array<infer T> ? T : never };
+type Item = { req: string; doc?: DocumentRow };
 
 const GROUPS: { key: Status[]; title: string; tone: string; hint: string }[] = [
   { key: ["rejected", "suspicious", "resubmission"], title: "Action needed", tone: "text-danger", hint: "Re-upload to keep your application moving." },
