@@ -58,7 +58,7 @@ function StudentHome() {
 
         <ChartCard title="Latest Announcements">
           <ul className="space-y-3">
-            {mockAnnouncements.filter((a) => a.status === "published").slice(0, 3).map((a) => (
+            {announcements.filter((a) => a.status === "published").slice(0, 3).map((a) => (
               <li key={a.id} className="flex gap-2">
                 <div className="h-7 w-7 rounded-md bg-primary-soft text-primary grid place-items-center shrink-0"><IconSpeakerphone size={14} /></div>
                 <div className="min-w-0">
