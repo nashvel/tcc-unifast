@@ -8,17 +8,17 @@ import {
   IconUsersGroup, IconUserCheck, IconUserOff, IconClipboardList, IconFileCheck,
   IconCircleCheck, IconCircleX, IconShieldCheck, IconUpload, IconEdit, IconSpeakerphone, IconHistory,
 } from "@tabler/icons-react";
-import { mockGrantees } from "@/data/mockGrantees";
-import { mockBatches } from "@/data/mockBatches";
-import { mockAnnouncements } from "@/data/mockAnnouncements";
-import { mockAuditLogs } from "@/data/mockAuditLogs";
+import { useGrantees, useBatches, useAnnouncements, useAuditLogs } from "@/hooks/queries";
 
 export const Route = createFileRoute("/app/")({
   component: Dashboard,
 });
 
 function Dashboard() {
-  const g = mockGrantees;
+  const { data: g = [] } = useGrantees();
+  const { data: batches = [] } = useBatches();
+  const { data: announcements = [] } = useAnnouncements();
+  const { data: auditLogs = [] } = useAuditLogs();
   const stats = {
     total: g.length,
     active: g.filter((x) => x.accountStatus === "active").length,
