@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
-import { IconBell, IconChevronLeft } from "@tabler/icons-react";
+import { IconBell, IconChevronLeft, IconCheck } from "@tabler/icons-react";
+import { AnimatePresence, motion } from "framer-motion";
 import { useAuthStore } from "@/stores/authStore";
 import { useNotifications, useMarkNotificationRead } from "@/hooks/queries";
 import { UserAvatar } from "@/components/ui/dicebear-avatar";
