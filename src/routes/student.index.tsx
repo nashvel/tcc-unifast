@@ -24,6 +24,8 @@ function StudentHome() {
   const approved = myDocs.filter((d) => d.status === "approved").length;
   const completion = Math.min(100, Math.round((submitted / requiredDocs.length) * 100));
   const firstName = (profile?.full_name ?? "").split(" ")[0] || "Grantee";
+  const onboardingSkipped =
+    typeof window !== "undefined" && sessionStorage.getItem("unifast.onboarding.skipped") === "1";
 
   return (
     <div>
