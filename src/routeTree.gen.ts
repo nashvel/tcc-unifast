@@ -9,38 +9,157 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as StudentRouteImport } from './routes/student'
+import { Route as AppRouteImport } from './routes/app'
+import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthLoginRouteImport } from './routes/_auth.login'
+import { Route as AuthLockedRouteImport } from './routes/_auth.locked'
+import { Route as AuthForgotPasswordRouteImport } from './routes/_auth.forgot-password'
+import { Route as AuthActivateSuccessRouteImport } from './routes/_auth.activate-success'
+import { Route as AuthActivateRouteImport } from './routes/_auth.activate'
 
+const StudentRoute = StudentRouteImport.update({
+  id: '/student',
+  path: '/student',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppRoute = AppRouteImport.update({
+  id: '/app',
+  path: '/app',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/_auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthLoginRoute = AuthLoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthLockedRoute = AuthLockedRouteImport.update({
+  id: '/locked',
+  path: '/locked',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthForgotPasswordRoute = AuthForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthActivateSuccessRoute = AuthActivateSuccessRouteImport.update({
+  id: '/activate-success',
+  path: '/activate-success',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthActivateRoute = AuthActivateRouteImport.update({
+  id: '/activate',
+  path: '/activate',
+  getParentRoute: () => AuthRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/app': typeof AppRoute
+  '/student': typeof StudentRoute
+  '/activate': typeof AuthActivateRoute
+  '/activate-success': typeof AuthActivateSuccessRoute
+  '/forgot-password': typeof AuthForgotPasswordRoute
+  '/locked': typeof AuthLockedRoute
+  '/login': typeof AuthLoginRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/app': typeof AppRoute
+  '/student': typeof StudentRoute
+  '/activate': typeof AuthActivateRoute
+  '/activate-success': typeof AuthActivateSuccessRoute
+  '/forgot-password': typeof AuthForgotPasswordRoute
+  '/locked': typeof AuthLockedRoute
+  '/login': typeof AuthLoginRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_auth': typeof AuthRouteWithChildren
+  '/app': typeof AppRoute
+  '/student': typeof StudentRoute
+  '/_auth/activate': typeof AuthActivateRoute
+  '/_auth/activate-success': typeof AuthActivateSuccessRoute
+  '/_auth/forgot-password': typeof AuthForgotPasswordRoute
+  '/_auth/locked': typeof AuthLockedRoute
+  '/_auth/login': typeof AuthLoginRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/app'
+    | '/student'
+    | '/activate'
+    | '/activate-success'
+    | '/forgot-password'
+    | '/locked'
+    | '/login'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/app'
+    | '/student'
+    | '/activate'
+    | '/activate-success'
+    | '/forgot-password'
+    | '/locked'
+    | '/login'
+  id:
+    | '__root__'
+    | '/'
+    | '/_auth'
+    | '/app'
+    | '/student'
+    | '/_auth/activate'
+    | '/_auth/activate-success'
+    | '/_auth/forgot-password'
+    | '/_auth/locked'
+    | '/_auth/login'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthRoute: typeof AuthRouteWithChildren
+  AppRoute: typeof AppRoute
+  StudentRoute: typeof StudentRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/student': {
+      id: '/student'
+      path: '/student'
+      fullPath: '/student'
+      preLoaderRoute: typeof StudentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/app': {
+      id: '/app'
+      path: '/app'
+      fullPath: '/app'
+      preLoaderRoute: typeof AppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_auth': {
+      id: '/_auth'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,11 +167,67 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_auth/login': {
+      id: '/_auth/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof AuthLoginRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/locked': {
+      id: '/_auth/locked'
+      path: '/locked'
+      fullPath: '/locked'
+      preLoaderRoute: typeof AuthLockedRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/forgot-password': {
+      id: '/_auth/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof AuthForgotPasswordRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/activate-success': {
+      id: '/_auth/activate-success'
+      path: '/activate-success'
+      fullPath: '/activate-success'
+      preLoaderRoute: typeof AuthActivateSuccessRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/activate': {
+      id: '/_auth/activate'
+      path: '/activate'
+      fullPath: '/activate'
+      preLoaderRoute: typeof AuthActivateRouteImport
+      parentRoute: typeof AuthRoute
+    }
   }
 }
 
+interface AuthRouteChildren {
+  AuthActivateRoute: typeof AuthActivateRoute
+  AuthActivateSuccessRoute: typeof AuthActivateSuccessRoute
+  AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute
+  AuthLockedRoute: typeof AuthLockedRoute
+  AuthLoginRoute: typeof AuthLoginRoute
+}
+
+const AuthRouteChildren: AuthRouteChildren = {
+  AuthActivateRoute: AuthActivateRoute,
+  AuthActivateSuccessRoute: AuthActivateSuccessRoute,
+  AuthForgotPasswordRoute: AuthForgotPasswordRoute,
+  AuthLockedRoute: AuthLockedRoute,
+  AuthLoginRoute: AuthLoginRoute,
+}
+
+const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthRoute: AuthRouteWithChildren,
+  AppRoute: AppRoute,
+  StudentRoute: StudentRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
