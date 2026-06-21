@@ -9,38 +9,513 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as StudentRouteImport } from './routes/student'
+import { Route as AppRouteImport } from './routes/app'
+import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as StudentIndexRouteImport } from './routes/student.index'
+import { Route as AppIndexRouteImport } from './routes/app.index'
+import { Route as StudentUploadRouteImport } from './routes/student.upload'
+import { Route as StudentSubmissionsRouteImport } from './routes/student.submissions'
+import { Route as StudentProfileRouteImport } from './routes/student.profile'
+import { Route as StudentNotificationsRouteImport } from './routes/student.notifications'
+import { Route as StudentDocumentsRouteImport } from './routes/student.documents'
+import { Route as StudentAnnouncementsRouteImport } from './routes/student.announcements'
+import { Route as AppSettingsRouteImport } from './routes/app.settings'
+import { Route as AppMasterlistRouteImport } from './routes/app.masterlist'
+import { Route as AppAuditRouteImport } from './routes/app.audit'
+import { Route as AuthLoginRouteImport } from './routes/_auth.login'
+import { Route as AuthLockedRouteImport } from './routes/_auth.locked'
+import { Route as AuthForgotPasswordRouteImport } from './routes/_auth.forgot-password'
+import { Route as AuthActivateSuccessRouteImport } from './routes/_auth.activate-success'
+import { Route as AuthActivateRouteImport } from './routes/_auth.activate'
+import { Route as AppUsersIndexRouteImport } from './routes/app.users.index'
+import { Route as AppReportsIndexRouteImport } from './routes/app.reports.index'
+import { Route as AppGranteesIndexRouteImport } from './routes/app.grantees.index'
+import { Route as AppEligibilityIndexRouteImport } from './routes/app.eligibility.index'
+import { Route as AppDocumentsIndexRouteImport } from './routes/app.documents.index'
+import { Route as AppBatchesIndexRouteImport } from './routes/app.batches.index'
+import { Route as AppAnnouncementsIndexRouteImport } from './routes/app.announcements.index'
+import { Route as AppAcademicIndexRouteImport } from './routes/app.academic.index'
+import { Route as AppUsersPermissionsRouteImport } from './routes/app.users.permissions'
+import { Route as AppReportsPreviewRouteImport } from './routes/app.reports.preview'
+import { Route as AppReportsGenerateRouteImport } from './routes/app.reports.generate'
+import { Route as AppGranteesIdRouteImport } from './routes/app.grantees.$id'
+import { Route as AppEligibilityIdRouteImport } from './routes/app.eligibility.$id'
+import { Route as AppDocumentsIdRouteImport } from './routes/app.documents.$id'
+import { Route as AppBatchesIdRouteImport } from './routes/app.batches.$id'
+import { Route as AppAnnouncementsNewRouteImport } from './routes/app.announcements.new'
+import { Route as AppAnnouncementsLogsRouteImport } from './routes/app.announcements.logs'
+import { Route as AppAcademicIdRouteImport } from './routes/app.academic.$id'
+import { Route as AppAnnouncementsIdEditRouteImport } from './routes/app.announcements.$id.edit'
 
+const StudentRoute = StudentRouteImport.update({
+  id: '/student',
+  path: '/student',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppRoute = AppRouteImport.update({
+  id: '/app',
+  path: '/app',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/_auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const StudentIndexRoute = StudentIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => StudentRoute,
+} as any)
+const AppIndexRoute = AppIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppRoute,
+} as any)
+const StudentUploadRoute = StudentUploadRouteImport.update({
+  id: '/upload',
+  path: '/upload',
+  getParentRoute: () => StudentRoute,
+} as any)
+const StudentSubmissionsRoute = StudentSubmissionsRouteImport.update({
+  id: '/submissions',
+  path: '/submissions',
+  getParentRoute: () => StudentRoute,
+} as any)
+const StudentProfileRoute = StudentProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => StudentRoute,
+} as any)
+const StudentNotificationsRoute = StudentNotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
+  getParentRoute: () => StudentRoute,
+} as any)
+const StudentDocumentsRoute = StudentDocumentsRouteImport.update({
+  id: '/documents',
+  path: '/documents',
+  getParentRoute: () => StudentRoute,
+} as any)
+const StudentAnnouncementsRoute = StudentAnnouncementsRouteImport.update({
+  id: '/announcements',
+  path: '/announcements',
+  getParentRoute: () => StudentRoute,
+} as any)
+const AppSettingsRoute = AppSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppMasterlistRoute = AppMasterlistRouteImport.update({
+  id: '/masterlist',
+  path: '/masterlist',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAuditRoute = AppAuditRouteImport.update({
+  id: '/audit',
+  path: '/audit',
+  getParentRoute: () => AppRoute,
+} as any)
+const AuthLoginRoute = AuthLoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthLockedRoute = AuthLockedRouteImport.update({
+  id: '/locked',
+  path: '/locked',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthForgotPasswordRoute = AuthForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthActivateSuccessRoute = AuthActivateSuccessRouteImport.update({
+  id: '/activate-success',
+  path: '/activate-success',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthActivateRoute = AuthActivateRouteImport.update({
+  id: '/activate',
+  path: '/activate',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AppUsersIndexRoute = AppUsersIndexRouteImport.update({
+  id: '/users/',
+  path: '/users/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppReportsIndexRoute = AppReportsIndexRouteImport.update({
+  id: '/reports/',
+  path: '/reports/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppGranteesIndexRoute = AppGranteesIndexRouteImport.update({
+  id: '/grantees/',
+  path: '/grantees/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppEligibilityIndexRoute = AppEligibilityIndexRouteImport.update({
+  id: '/eligibility/',
+  path: '/eligibility/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppDocumentsIndexRoute = AppDocumentsIndexRouteImport.update({
+  id: '/documents/',
+  path: '/documents/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppBatchesIndexRoute = AppBatchesIndexRouteImport.update({
+  id: '/batches/',
+  path: '/batches/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAnnouncementsIndexRoute = AppAnnouncementsIndexRouteImport.update({
+  id: '/announcements/',
+  path: '/announcements/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAcademicIndexRoute = AppAcademicIndexRouteImport.update({
+  id: '/academic/',
+  path: '/academic/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppUsersPermissionsRoute = AppUsersPermissionsRouteImport.update({
+  id: '/users/permissions',
+  path: '/users/permissions',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppReportsPreviewRoute = AppReportsPreviewRouteImport.update({
+  id: '/reports/preview',
+  path: '/reports/preview',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppReportsGenerateRoute = AppReportsGenerateRouteImport.update({
+  id: '/reports/generate',
+  path: '/reports/generate',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppGranteesIdRoute = AppGranteesIdRouteImport.update({
+  id: '/grantees/$id',
+  path: '/grantees/$id',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppEligibilityIdRoute = AppEligibilityIdRouteImport.update({
+  id: '/eligibility/$id',
+  path: '/eligibility/$id',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppDocumentsIdRoute = AppDocumentsIdRouteImport.update({
+  id: '/documents/$id',
+  path: '/documents/$id',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppBatchesIdRoute = AppBatchesIdRouteImport.update({
+  id: '/batches/$id',
+  path: '/batches/$id',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAnnouncementsNewRoute = AppAnnouncementsNewRouteImport.update({
+  id: '/announcements/new',
+  path: '/announcements/new',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAnnouncementsLogsRoute = AppAnnouncementsLogsRouteImport.update({
+  id: '/announcements/logs',
+  path: '/announcements/logs',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAcademicIdRoute = AppAcademicIdRouteImport.update({
+  id: '/academic/$id',
+  path: '/academic/$id',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAnnouncementsIdEditRoute = AppAnnouncementsIdEditRouteImport.update({
+  id: '/announcements/$id/edit',
+  path: '/announcements/$id/edit',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/app': typeof AppRouteWithChildren
+  '/student': typeof StudentRouteWithChildren
+  '/activate': typeof AuthActivateRoute
+  '/activate-success': typeof AuthActivateSuccessRoute
+  '/forgot-password': typeof AuthForgotPasswordRoute
+  '/locked': typeof AuthLockedRoute
+  '/login': typeof AuthLoginRoute
+  '/app/audit': typeof AppAuditRoute
+  '/app/masterlist': typeof AppMasterlistRoute
+  '/app/settings': typeof AppSettingsRoute
+  '/student/announcements': typeof StudentAnnouncementsRoute
+  '/student/documents': typeof StudentDocumentsRoute
+  '/student/notifications': typeof StudentNotificationsRoute
+  '/student/profile': typeof StudentProfileRoute
+  '/student/submissions': typeof StudentSubmissionsRoute
+  '/student/upload': typeof StudentUploadRoute
+  '/app/': typeof AppIndexRoute
+  '/student/': typeof StudentIndexRoute
+  '/app/academic/$id': typeof AppAcademicIdRoute
+  '/app/announcements/logs': typeof AppAnnouncementsLogsRoute
+  '/app/announcements/new': typeof AppAnnouncementsNewRoute
+  '/app/batches/$id': typeof AppBatchesIdRoute
+  '/app/documents/$id': typeof AppDocumentsIdRoute
+  '/app/eligibility/$id': typeof AppEligibilityIdRoute
+  '/app/grantees/$id': typeof AppGranteesIdRoute
+  '/app/reports/generate': typeof AppReportsGenerateRoute
+  '/app/reports/preview': typeof AppReportsPreviewRoute
+  '/app/users/permissions': typeof AppUsersPermissionsRoute
+  '/app/academic/': typeof AppAcademicIndexRoute
+  '/app/announcements/': typeof AppAnnouncementsIndexRoute
+  '/app/batches/': typeof AppBatchesIndexRoute
+  '/app/documents/': typeof AppDocumentsIndexRoute
+  '/app/eligibility/': typeof AppEligibilityIndexRoute
+  '/app/grantees/': typeof AppGranteesIndexRoute
+  '/app/reports/': typeof AppReportsIndexRoute
+  '/app/users/': typeof AppUsersIndexRoute
+  '/app/announcements/$id/edit': typeof AppAnnouncementsIdEditRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/activate': typeof AuthActivateRoute
+  '/activate-success': typeof AuthActivateSuccessRoute
+  '/forgot-password': typeof AuthForgotPasswordRoute
+  '/locked': typeof AuthLockedRoute
+  '/login': typeof AuthLoginRoute
+  '/app/audit': typeof AppAuditRoute
+  '/app/masterlist': typeof AppMasterlistRoute
+  '/app/settings': typeof AppSettingsRoute
+  '/student/announcements': typeof StudentAnnouncementsRoute
+  '/student/documents': typeof StudentDocumentsRoute
+  '/student/notifications': typeof StudentNotificationsRoute
+  '/student/profile': typeof StudentProfileRoute
+  '/student/submissions': typeof StudentSubmissionsRoute
+  '/student/upload': typeof StudentUploadRoute
+  '/app': typeof AppIndexRoute
+  '/student': typeof StudentIndexRoute
+  '/app/academic/$id': typeof AppAcademicIdRoute
+  '/app/announcements/logs': typeof AppAnnouncementsLogsRoute
+  '/app/announcements/new': typeof AppAnnouncementsNewRoute
+  '/app/batches/$id': typeof AppBatchesIdRoute
+  '/app/documents/$id': typeof AppDocumentsIdRoute
+  '/app/eligibility/$id': typeof AppEligibilityIdRoute
+  '/app/grantees/$id': typeof AppGranteesIdRoute
+  '/app/reports/generate': typeof AppReportsGenerateRoute
+  '/app/reports/preview': typeof AppReportsPreviewRoute
+  '/app/users/permissions': typeof AppUsersPermissionsRoute
+  '/app/academic': typeof AppAcademicIndexRoute
+  '/app/announcements': typeof AppAnnouncementsIndexRoute
+  '/app/batches': typeof AppBatchesIndexRoute
+  '/app/documents': typeof AppDocumentsIndexRoute
+  '/app/eligibility': typeof AppEligibilityIndexRoute
+  '/app/grantees': typeof AppGranteesIndexRoute
+  '/app/reports': typeof AppReportsIndexRoute
+  '/app/users': typeof AppUsersIndexRoute
+  '/app/announcements/$id/edit': typeof AppAnnouncementsIdEditRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_auth': typeof AuthRouteWithChildren
+  '/app': typeof AppRouteWithChildren
+  '/student': typeof StudentRouteWithChildren
+  '/_auth/activate': typeof AuthActivateRoute
+  '/_auth/activate-success': typeof AuthActivateSuccessRoute
+  '/_auth/forgot-password': typeof AuthForgotPasswordRoute
+  '/_auth/locked': typeof AuthLockedRoute
+  '/_auth/login': typeof AuthLoginRoute
+  '/app/audit': typeof AppAuditRoute
+  '/app/masterlist': typeof AppMasterlistRoute
+  '/app/settings': typeof AppSettingsRoute
+  '/student/announcements': typeof StudentAnnouncementsRoute
+  '/student/documents': typeof StudentDocumentsRoute
+  '/student/notifications': typeof StudentNotificationsRoute
+  '/student/profile': typeof StudentProfileRoute
+  '/student/submissions': typeof StudentSubmissionsRoute
+  '/student/upload': typeof StudentUploadRoute
+  '/app/': typeof AppIndexRoute
+  '/student/': typeof StudentIndexRoute
+  '/app/academic/$id': typeof AppAcademicIdRoute
+  '/app/announcements/logs': typeof AppAnnouncementsLogsRoute
+  '/app/announcements/new': typeof AppAnnouncementsNewRoute
+  '/app/batches/$id': typeof AppBatchesIdRoute
+  '/app/documents/$id': typeof AppDocumentsIdRoute
+  '/app/eligibility/$id': typeof AppEligibilityIdRoute
+  '/app/grantees/$id': typeof AppGranteesIdRoute
+  '/app/reports/generate': typeof AppReportsGenerateRoute
+  '/app/reports/preview': typeof AppReportsPreviewRoute
+  '/app/users/permissions': typeof AppUsersPermissionsRoute
+  '/app/academic/': typeof AppAcademicIndexRoute
+  '/app/announcements/': typeof AppAnnouncementsIndexRoute
+  '/app/batches/': typeof AppBatchesIndexRoute
+  '/app/documents/': typeof AppDocumentsIndexRoute
+  '/app/eligibility/': typeof AppEligibilityIndexRoute
+  '/app/grantees/': typeof AppGranteesIndexRoute
+  '/app/reports/': typeof AppReportsIndexRoute
+  '/app/users/': typeof AppUsersIndexRoute
+  '/app/announcements/$id/edit': typeof AppAnnouncementsIdEditRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/app'
+    | '/student'
+    | '/activate'
+    | '/activate-success'
+    | '/forgot-password'
+    | '/locked'
+    | '/login'
+    | '/app/audit'
+    | '/app/masterlist'
+    | '/app/settings'
+    | '/student/announcements'
+    | '/student/documents'
+    | '/student/notifications'
+    | '/student/profile'
+    | '/student/submissions'
+    | '/student/upload'
+    | '/app/'
+    | '/student/'
+    | '/app/academic/$id'
+    | '/app/announcements/logs'
+    | '/app/announcements/new'
+    | '/app/batches/$id'
+    | '/app/documents/$id'
+    | '/app/eligibility/$id'
+    | '/app/grantees/$id'
+    | '/app/reports/generate'
+    | '/app/reports/preview'
+    | '/app/users/permissions'
+    | '/app/academic/'
+    | '/app/announcements/'
+    | '/app/batches/'
+    | '/app/documents/'
+    | '/app/eligibility/'
+    | '/app/grantees/'
+    | '/app/reports/'
+    | '/app/users/'
+    | '/app/announcements/$id/edit'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/activate'
+    | '/activate-success'
+    | '/forgot-password'
+    | '/locked'
+    | '/login'
+    | '/app/audit'
+    | '/app/masterlist'
+    | '/app/settings'
+    | '/student/announcements'
+    | '/student/documents'
+    | '/student/notifications'
+    | '/student/profile'
+    | '/student/submissions'
+    | '/student/upload'
+    | '/app'
+    | '/student'
+    | '/app/academic/$id'
+    | '/app/announcements/logs'
+    | '/app/announcements/new'
+    | '/app/batches/$id'
+    | '/app/documents/$id'
+    | '/app/eligibility/$id'
+    | '/app/grantees/$id'
+    | '/app/reports/generate'
+    | '/app/reports/preview'
+    | '/app/users/permissions'
+    | '/app/academic'
+    | '/app/announcements'
+    | '/app/batches'
+    | '/app/documents'
+    | '/app/eligibility'
+    | '/app/grantees'
+    | '/app/reports'
+    | '/app/users'
+    | '/app/announcements/$id/edit'
+  id:
+    | '__root__'
+    | '/'
+    | '/_auth'
+    | '/app'
+    | '/student'
+    | '/_auth/activate'
+    | '/_auth/activate-success'
+    | '/_auth/forgot-password'
+    | '/_auth/locked'
+    | '/_auth/login'
+    | '/app/audit'
+    | '/app/masterlist'
+    | '/app/settings'
+    | '/student/announcements'
+    | '/student/documents'
+    | '/student/notifications'
+    | '/student/profile'
+    | '/student/submissions'
+    | '/student/upload'
+    | '/app/'
+    | '/student/'
+    | '/app/academic/$id'
+    | '/app/announcements/logs'
+    | '/app/announcements/new'
+    | '/app/batches/$id'
+    | '/app/documents/$id'
+    | '/app/eligibility/$id'
+    | '/app/grantees/$id'
+    | '/app/reports/generate'
+    | '/app/reports/preview'
+    | '/app/users/permissions'
+    | '/app/academic/'
+    | '/app/announcements/'
+    | '/app/batches/'
+    | '/app/documents/'
+    | '/app/eligibility/'
+    | '/app/grantees/'
+    | '/app/reports/'
+    | '/app/users/'
+    | '/app/announcements/$id/edit'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthRoute: typeof AuthRouteWithChildren
+  AppRoute: typeof AppRouteWithChildren
+  StudentRoute: typeof StudentRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/student': {
+      id: '/student'
+      path: '/student'
+      fullPath: '/student'
+      preLoaderRoute: typeof StudentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/app': {
+      id: '/app'
+      path: '/app'
+      fullPath: '/app'
+      preLoaderRoute: typeof AppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_auth': {
+      id: '/_auth'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,22 +523,355 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/student/': {
+      id: '/student/'
+      path: '/'
+      fullPath: '/student/'
+      preLoaderRoute: typeof StudentIndexRouteImport
+      parentRoute: typeof StudentRoute
+    }
+    '/app/': {
+      id: '/app/'
+      path: '/'
+      fullPath: '/app/'
+      preLoaderRoute: typeof AppIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/student/upload': {
+      id: '/student/upload'
+      path: '/upload'
+      fullPath: '/student/upload'
+      preLoaderRoute: typeof StudentUploadRouteImport
+      parentRoute: typeof StudentRoute
+    }
+    '/student/submissions': {
+      id: '/student/submissions'
+      path: '/submissions'
+      fullPath: '/student/submissions'
+      preLoaderRoute: typeof StudentSubmissionsRouteImport
+      parentRoute: typeof StudentRoute
+    }
+    '/student/profile': {
+      id: '/student/profile'
+      path: '/profile'
+      fullPath: '/student/profile'
+      preLoaderRoute: typeof StudentProfileRouteImport
+      parentRoute: typeof StudentRoute
+    }
+    '/student/notifications': {
+      id: '/student/notifications'
+      path: '/notifications'
+      fullPath: '/student/notifications'
+      preLoaderRoute: typeof StudentNotificationsRouteImport
+      parentRoute: typeof StudentRoute
+    }
+    '/student/documents': {
+      id: '/student/documents'
+      path: '/documents'
+      fullPath: '/student/documents'
+      preLoaderRoute: typeof StudentDocumentsRouteImport
+      parentRoute: typeof StudentRoute
+    }
+    '/student/announcements': {
+      id: '/student/announcements'
+      path: '/announcements'
+      fullPath: '/student/announcements'
+      preLoaderRoute: typeof StudentAnnouncementsRouteImport
+      parentRoute: typeof StudentRoute
+    }
+    '/app/settings': {
+      id: '/app/settings'
+      path: '/settings'
+      fullPath: '/app/settings'
+      preLoaderRoute: typeof AppSettingsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/masterlist': {
+      id: '/app/masterlist'
+      path: '/masterlist'
+      fullPath: '/app/masterlist'
+      preLoaderRoute: typeof AppMasterlistRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/audit': {
+      id: '/app/audit'
+      path: '/audit'
+      fullPath: '/app/audit'
+      preLoaderRoute: typeof AppAuditRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_auth/login': {
+      id: '/_auth/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof AuthLoginRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/locked': {
+      id: '/_auth/locked'
+      path: '/locked'
+      fullPath: '/locked'
+      preLoaderRoute: typeof AuthLockedRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/forgot-password': {
+      id: '/_auth/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof AuthForgotPasswordRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/activate-success': {
+      id: '/_auth/activate-success'
+      path: '/activate-success'
+      fullPath: '/activate-success'
+      preLoaderRoute: typeof AuthActivateSuccessRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/activate': {
+      id: '/_auth/activate'
+      path: '/activate'
+      fullPath: '/activate'
+      preLoaderRoute: typeof AuthActivateRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/app/users/': {
+      id: '/app/users/'
+      path: '/users'
+      fullPath: '/app/users/'
+      preLoaderRoute: typeof AppUsersIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/reports/': {
+      id: '/app/reports/'
+      path: '/reports'
+      fullPath: '/app/reports/'
+      preLoaderRoute: typeof AppReportsIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/grantees/': {
+      id: '/app/grantees/'
+      path: '/grantees'
+      fullPath: '/app/grantees/'
+      preLoaderRoute: typeof AppGranteesIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/eligibility/': {
+      id: '/app/eligibility/'
+      path: '/eligibility'
+      fullPath: '/app/eligibility/'
+      preLoaderRoute: typeof AppEligibilityIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/documents/': {
+      id: '/app/documents/'
+      path: '/documents'
+      fullPath: '/app/documents/'
+      preLoaderRoute: typeof AppDocumentsIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/batches/': {
+      id: '/app/batches/'
+      path: '/batches'
+      fullPath: '/app/batches/'
+      preLoaderRoute: typeof AppBatchesIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/announcements/': {
+      id: '/app/announcements/'
+      path: '/announcements'
+      fullPath: '/app/announcements/'
+      preLoaderRoute: typeof AppAnnouncementsIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/academic/': {
+      id: '/app/academic/'
+      path: '/academic'
+      fullPath: '/app/academic/'
+      preLoaderRoute: typeof AppAcademicIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/users/permissions': {
+      id: '/app/users/permissions'
+      path: '/users/permissions'
+      fullPath: '/app/users/permissions'
+      preLoaderRoute: typeof AppUsersPermissionsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/reports/preview': {
+      id: '/app/reports/preview'
+      path: '/reports/preview'
+      fullPath: '/app/reports/preview'
+      preLoaderRoute: typeof AppReportsPreviewRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/reports/generate': {
+      id: '/app/reports/generate'
+      path: '/reports/generate'
+      fullPath: '/app/reports/generate'
+      preLoaderRoute: typeof AppReportsGenerateRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/grantees/$id': {
+      id: '/app/grantees/$id'
+      path: '/grantees/$id'
+      fullPath: '/app/grantees/$id'
+      preLoaderRoute: typeof AppGranteesIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/eligibility/$id': {
+      id: '/app/eligibility/$id'
+      path: '/eligibility/$id'
+      fullPath: '/app/eligibility/$id'
+      preLoaderRoute: typeof AppEligibilityIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/documents/$id': {
+      id: '/app/documents/$id'
+      path: '/documents/$id'
+      fullPath: '/app/documents/$id'
+      preLoaderRoute: typeof AppDocumentsIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/batches/$id': {
+      id: '/app/batches/$id'
+      path: '/batches/$id'
+      fullPath: '/app/batches/$id'
+      preLoaderRoute: typeof AppBatchesIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/announcements/new': {
+      id: '/app/announcements/new'
+      path: '/announcements/new'
+      fullPath: '/app/announcements/new'
+      preLoaderRoute: typeof AppAnnouncementsNewRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/announcements/logs': {
+      id: '/app/announcements/logs'
+      path: '/announcements/logs'
+      fullPath: '/app/announcements/logs'
+      preLoaderRoute: typeof AppAnnouncementsLogsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/academic/$id': {
+      id: '/app/academic/$id'
+      path: '/academic/$id'
+      fullPath: '/app/academic/$id'
+      preLoaderRoute: typeof AppAcademicIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/announcements/$id/edit': {
+      id: '/app/announcements/$id/edit'
+      path: '/announcements/$id/edit'
+      fullPath: '/app/announcements/$id/edit'
+      preLoaderRoute: typeof AppAnnouncementsIdEditRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
+interface AuthRouteChildren {
+  AuthActivateRoute: typeof AuthActivateRoute
+  AuthActivateSuccessRoute: typeof AuthActivateSuccessRoute
+  AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute
+  AuthLockedRoute: typeof AuthLockedRoute
+  AuthLoginRoute: typeof AuthLoginRoute
+}
+
+const AuthRouteChildren: AuthRouteChildren = {
+  AuthActivateRoute: AuthActivateRoute,
+  AuthActivateSuccessRoute: AuthActivateSuccessRoute,
+  AuthForgotPasswordRoute: AuthForgotPasswordRoute,
+  AuthLockedRoute: AuthLockedRoute,
+  AuthLoginRoute: AuthLoginRoute,
+}
+
+const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
+
+interface AppRouteChildren {
+  AppAuditRoute: typeof AppAuditRoute
+  AppMasterlistRoute: typeof AppMasterlistRoute
+  AppSettingsRoute: typeof AppSettingsRoute
+  AppIndexRoute: typeof AppIndexRoute
+  AppAcademicIdRoute: typeof AppAcademicIdRoute
+  AppAnnouncementsLogsRoute: typeof AppAnnouncementsLogsRoute
+  AppAnnouncementsNewRoute: typeof AppAnnouncementsNewRoute
+  AppBatchesIdRoute: typeof AppBatchesIdRoute
+  AppDocumentsIdRoute: typeof AppDocumentsIdRoute
+  AppEligibilityIdRoute: typeof AppEligibilityIdRoute
+  AppGranteesIdRoute: typeof AppGranteesIdRoute
+  AppReportsGenerateRoute: typeof AppReportsGenerateRoute
+  AppReportsPreviewRoute: typeof AppReportsPreviewRoute
+  AppUsersPermissionsRoute: typeof AppUsersPermissionsRoute
+  AppAcademicIndexRoute: typeof AppAcademicIndexRoute
+  AppAnnouncementsIndexRoute: typeof AppAnnouncementsIndexRoute
+  AppBatchesIndexRoute: typeof AppBatchesIndexRoute
+  AppDocumentsIndexRoute: typeof AppDocumentsIndexRoute
+  AppEligibilityIndexRoute: typeof AppEligibilityIndexRoute
+  AppGranteesIndexRoute: typeof AppGranteesIndexRoute
+  AppReportsIndexRoute: typeof AppReportsIndexRoute
+  AppUsersIndexRoute: typeof AppUsersIndexRoute
+  AppAnnouncementsIdEditRoute: typeof AppAnnouncementsIdEditRoute
+}
+
+const AppRouteChildren: AppRouteChildren = {
+  AppAuditRoute: AppAuditRoute,
+  AppMasterlistRoute: AppMasterlistRoute,
+  AppSettingsRoute: AppSettingsRoute,
+  AppIndexRoute: AppIndexRoute,
+  AppAcademicIdRoute: AppAcademicIdRoute,
+  AppAnnouncementsLogsRoute: AppAnnouncementsLogsRoute,
+  AppAnnouncementsNewRoute: AppAnnouncementsNewRoute,
+  AppBatchesIdRoute: AppBatchesIdRoute,
+  AppDocumentsIdRoute: AppDocumentsIdRoute,
+  AppEligibilityIdRoute: AppEligibilityIdRoute,
+  AppGranteesIdRoute: AppGranteesIdRoute,
+  AppReportsGenerateRoute: AppReportsGenerateRoute,
+  AppReportsPreviewRoute: AppReportsPreviewRoute,
+  AppUsersPermissionsRoute: AppUsersPermissionsRoute,
+  AppAcademicIndexRoute: AppAcademicIndexRoute,
+  AppAnnouncementsIndexRoute: AppAnnouncementsIndexRoute,
+  AppBatchesIndexRoute: AppBatchesIndexRoute,
+  AppDocumentsIndexRoute: AppDocumentsIndexRoute,
+  AppEligibilityIndexRoute: AppEligibilityIndexRoute,
+  AppGranteesIndexRoute: AppGranteesIndexRoute,
+  AppReportsIndexRoute: AppReportsIndexRoute,
+  AppUsersIndexRoute: AppUsersIndexRoute,
+  AppAnnouncementsIdEditRoute: AppAnnouncementsIdEditRoute,
+}
+
+const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
+
+interface StudentRouteChildren {
+  StudentAnnouncementsRoute: typeof StudentAnnouncementsRoute
+  StudentDocumentsRoute: typeof StudentDocumentsRoute
+  StudentNotificationsRoute: typeof StudentNotificationsRoute
+  StudentProfileRoute: typeof StudentProfileRoute
+  StudentSubmissionsRoute: typeof StudentSubmissionsRoute
+  StudentUploadRoute: typeof StudentUploadRoute
+  StudentIndexRoute: typeof StudentIndexRoute
+}
+
+const StudentRouteChildren: StudentRouteChildren = {
+  StudentAnnouncementsRoute: StudentAnnouncementsRoute,
+  StudentDocumentsRoute: StudentDocumentsRoute,
+  StudentNotificationsRoute: StudentNotificationsRoute,
+  StudentProfileRoute: StudentProfileRoute,
+  StudentSubmissionsRoute: StudentSubmissionsRoute,
+  StudentUploadRoute: StudentUploadRoute,
+  StudentIndexRoute: StudentIndexRoute,
+}
+
+const StudentRouteWithChildren =
+  StudentRoute._addFileChildren(StudentRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthRoute: AuthRouteWithChildren,
+  AppRoute: AppRouteWithChildren,
+  StudentRoute: StudentRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

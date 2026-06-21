@@ -1,0 +1,63 @@
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useState } from "react";
+import { PageHeader } from "@/components/ui/page-header";
+import { Btn } from "@/components/ui/btn";
+import { Selectish } from "@/components/ui/form-field";
+import { DataTable, THead, Tr, Th, Td } from "@/components/ui/data-table";
+import { StatusBadge, statusVariantFor, formatStatus } from "@/components/ui/status-badge";
+import { useDocumentStore } from "@/stores/documentStore";
+
+export const Route = createFileRoute("/app/documents/")({
+  component: DocQueue,
+});
+
+function DocQueue() {
+  const docs = useDocumentStore((s) => s.docs);
+  const [status, setStatus] = useState("all");
+  const [risk, setRisk] = useState("all");
+
+  const filtered = docs.filter((d) => {
+    if (status !== "all" && d.status !== status) return false;
+    if (risk === "high" && d.riskScore < 70) return false;
+    if (risk === "medium" && (d.riskScore < 40 || d.riskScore >= 70)) return false;
+    if (risk === "low" && d.riskScore >= 40) return false;
+    return true;
+  });
+
+  return (
+    <div>
+      <PageHeader title="Document Validation Queue" description="Review submitted documents and take action." />
+      <div className="rounded-lg border bg-surface p-3 mb-4 grid grid-cols-2 md:grid-cols-4 gap-2">
+        <Selectish value={status} onChange={(e) => setStatus(e.target.value)}>
+          <option value="all">All statuses</option>
+          <option>pending</option><option>approved</option><option>rejected</option><option>resubmission</option><option>suspicious</option>
+        </Selectish>
+        <Selectish value={risk} onChange={(e) => setRisk(e.target.value)}>
+          <option value="all">All risk levels</option>
+          <option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option>
+        </Selectish>
+      </div>
+      <DataTable>
+        <THead>
+          <Tr><Th>Grantee</Th><Th>Document Type</Th><Th>File</Th><Th>Uploaded</Th><Th>Risk</Th><Th>Status</Th><Th></Th></Tr>
+        </THead>
+        <tbody>
+          {filtered.map((d) => {
+            const tone = d.riskScore >= 70 ? "danger" : d.riskScore >= 40 ? "warning" : "success";
+            return (
+              <Tr key={d.id}>
+                <Td><Link to="/app/grantees/$id" params={{ id: d.granteeId }} className="font-medium hover:text-primary">{d.granteeName}</Link><div className="text-[11px] text-text-soft font-mono">{d.studentNumber}</div></Td>
+                <Td>{d.type}</Td>
+                <Td className="font-mono text-xs text-text-muted">{d.filename}</Td>
+                <Td className="text-text-muted">{d.uploadedAt}</Td>
+                <Td><StatusBadge variant={tone}>{d.riskScore}</StatusBadge></Td>
+                <Td><StatusBadge variant={statusVariantFor(d.status)}>{formatStatus(d.status)}</StatusBadge></Td>
+                <Td><Link to="/app/documents/$id" params={{ id: d.id }}><Btn size="sm">Review</Btn></Link></Td>
+              </Tr>
+            );
+          })}
+        </tbody>
+      </DataTable>
+    </div>
+  );
+}
