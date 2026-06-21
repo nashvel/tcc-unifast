@@ -39,6 +39,7 @@ const sections: { label?: string; items: NavItem[] }[] = [
     items: [
       { to: "/app/audit", label: "Audit Trail", icon: IconHistory },
       { to: "/app/security", label: "Security Findings", icon: IconShieldCheck },
+      { to: "/app/security/memory", label: "Security Memory", icon: IconShieldCheck },
       { to: "/app/users", label: "Users & Roles", icon: IconUserCog },
       { to: "/app/settings", label: "Settings", icon: IconSettings },
     ],
