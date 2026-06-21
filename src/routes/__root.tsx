@@ -111,8 +111,17 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <SessionBridge />
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
     </QueryClientProvider>
   );
+}
+
+function SessionBridge() {
+  // Hook into Supabase auth state once at the app root.
+  // Imported lazily to keep server bundle small.
+  const { useSessionListener } = require("@/hooks/use-session") as typeof import("@/hooks/use-session");
+  useSessionListener();
+  return null;
 }
