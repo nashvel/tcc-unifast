@@ -4,13 +4,15 @@ import { Btn } from "@/components/ui/btn";
 import { DataTable, THead, Tr, Th, Td } from "@/components/ui/data-table";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { mockUsers } from "@/data/mockUsers";
-import { IconPlus, IconKey } from "@tabler/icons-react";
+import { IconPlus, IconKey, IconDownload } from "@tabler/icons-react";
+import { downloadCSV } from "@/lib/csv";
 
 export const Route = createFileRoute("/app/users/")({
   component: () => (
     <div>
       <PageHeader title="Users & Access" description="Manage staff accounts, roles, and permissions."
         actions={<>
+          <Btn variant="outline" icon={IconDownload} onClick={() => downloadCSV("users.csv", mockUsers)}>Export</Btn>
           <Link to="/app/users/permissions"><Btn variant="outline">Permission matrix</Btn></Link>
           <Btn variant="primary" icon={IconPlus}>New user</Btn>
         </>} />

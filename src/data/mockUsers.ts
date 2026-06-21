@@ -17,6 +17,9 @@ export const mockUsers: SystemUser[] = [
   { id: "u3", username: "j.cruz", fullName: "Jessica Cruz", email: "j.cruz@unifast.gov.ph", role: "UniFAST Staff", active: true, mfa: false, lastLogin: "2026-06-20 09:02" },
   { id: "u4", username: "p.tan", fullName: "Patricia Tan", email: "p.tan@unifast.gov.ph", role: "UniFAST Staff", active: true, mfa: false, lastLogin: "2026-06-19 17:40" },
   { id: "u5", username: "k.aquino", fullName: "Kris Aquino", email: "k.aquino@unifast.gov.ph", role: "UniFAST Staff", active: false, mfa: false, lastLogin: "2026-05-14 11:21" },
+  { id: "u6", username: "l.reyes", fullName: "Liza Reyes", email: "l.reyes@unifast.gov.ph", role: "UniFAST Staff", active: true, mfa: true, lastLogin: "2026-06-20 06:30" },
+  { id: "u7", username: "m.bautista", fullName: "Mario Bautista", email: "m.bautista@unifast.gov.ph", role: "Office Head", active: true, mfa: true, lastLogin: "2026-06-19 21:05" },
+  { id: "u8", username: "c.domingo", fullName: "Carla Domingo", email: "c.domingo@unifast.gov.ph", role: "UniFAST Staff", active: true, mfa: false, lastLogin: "2026-06-18 15:42" },
 ];
 
 export const permissionModules = [
