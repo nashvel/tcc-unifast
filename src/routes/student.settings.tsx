@@ -300,8 +300,9 @@ function StudentSettings() {
             </form>
           </div>
         </ChartCard>
+        )}
 
-        {/* Change Password */}
+        {section === "security" && (
         <ChartCard title="Change Password">
           <form onSubmit={submit} className="space-y-3" noValidate>
             <FormField label="Current password" required error={fieldErrs.current}>
