@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatusBadge, statusVariantFor, formatStatus } from "@/components/ui/status-badge";
 import { ListSkeleton } from "@/components/ui/skeletons";
-import { useDocuments } from "@/hooks/queries";
+import { useDocuments, type DocumentRow } from "@/hooks/queries";
 import { requiredDocs } from "@/data/mockDocuments";
 import {
   IconUpload,
