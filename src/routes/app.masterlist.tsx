@@ -5,7 +5,7 @@ import { Btn } from "@/components/ui/btn";
 import { FileUpload } from "@/components/ui/file-upload";
 import { DataTable, THead, Tr, Th, Td } from "@/components/ui/data-table";
 import { StatusBadge, statusVariantFor, formatStatus } from "@/components/ui/status-badge";
-import { useMasterlistStore } from "@/stores/masterlistStore";
+import { useMasterlist } from "@/hooks/queries";
 import { IconAlertTriangle, IconUpload, IconCheck, IconArrowRight } from "@tabler/icons-react";
 
 export const Route = createFileRoute("/app/masterlist")({
@@ -13,16 +13,16 @@ export const Route = createFileRoute("/app/masterlist")({
 });
 
 function MasterlistPage() {
-  const rows = useMasterlistStore((s) => s.rows);
+  const { data: rows = [], isLoading } = useMasterlist();
   const [previewed, setPreviewed] = useState(false);
 
   const counts = {
     total: rows.length,
-    active: rows.filter((r) => r.accountStatus === "active").length,
-    duplicate: rows.filter((r) => r.accountStatus === "duplicate").length,
-    invalid: rows.filter((r) => r.accountStatus === "invalid").length,
-    pending: rows.filter((r) => r.accountStatus === "pending_activation").length,
-    inactive: rows.filter((r) => r.accountStatus === "inactive").length,
+    active: rows.filter((r) => r.account_status === "active").length,
+    duplicate: rows.filter((r) => r.account_status === "duplicate").length,
+    invalid: rows.filter((r) => r.account_status === "invalid").length,
+    pending: rows.filter((r) => r.account_status === "pending_activation").length,
+    inactive: rows.filter((r) => r.account_status === "inactive").length,
   };
 
   return (
@@ -84,15 +84,21 @@ function MasterlistPage() {
               </Tr>
             </THead>
             <tbody>
+              {isLoading && (
+                <Tr><Td colSpan={7} className="text-center text-text-muted py-6">Loading…</Td></Tr>
+              )}
+              {!isLoading && rows.length === 0 && (
+                <Tr><Td colSpan={7} className="text-center text-text-muted py-6">No rows yet. Seed demo data from the login page.</Td></Tr>
+              )}
               {rows.map((r) => (
                 <Tr key={r.id}>
-                  <Td className="font-mono text-xs">{r.studentNumber || <span className="text-danger italic">missing</span>}</Td>
-                  <Td>{r.firstName} {r.lastName}</Td>
+                  <Td className="font-mono text-xs">{r.student_number || <span className="text-danger italic">missing</span>}</Td>
+                  <Td>{r.first_name} {r.last_name}</Td>
                   <Td className="text-text-muted">{r.university}</Td>
                   <Td className="text-text-muted">{r.program}</Td>
-                  <Td>{r.yearLevel}</Td>
+                  <Td>{r.year_level}</Td>
                   <Td>
-                    <StatusBadge variant={statusVariantFor(r.accountStatus)}>{formatStatus(r.accountStatus)}</StatusBadge>
+                    <StatusBadge variant={statusVariantFor(r.account_status)}>{formatStatus(r.account_status)}</StatusBadge>
                   </Td>
                   <Td className="text-right"><Link to="/app/grantees" className="text-xs text-primary hover:underline">View</Link></Td>
                 </Tr>

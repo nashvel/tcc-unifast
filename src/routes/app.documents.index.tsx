@@ -5,22 +5,22 @@ import { Btn } from "@/components/ui/btn";
 import { Selectish } from "@/components/ui/form-field";
 import { DataTable, THead, Tr, Th, Td } from "@/components/ui/data-table";
 import { StatusBadge, statusVariantFor, formatStatus } from "@/components/ui/status-badge";
-import { useDocumentStore } from "@/stores/documentStore";
+import { useDocuments } from "@/hooks/queries";
 
 export const Route = createFileRoute("/app/documents/")({
   component: DocQueue,
 });
 
 function DocQueue() {
-  const docs = useDocumentStore((s) => s.docs);
+  const { data: docs = [], isLoading } = useDocuments();
   const [status, setStatus] = useState("all");
   const [risk, setRisk] = useState("all");
 
   const filtered = docs.filter((d) => {
     if (status !== "all" && d.status !== status) return false;
-    if (risk === "high" && d.riskScore < 70) return false;
-    if (risk === "medium" && (d.riskScore < 40 || d.riskScore >= 70)) return false;
-    if (risk === "low" && d.riskScore >= 40) return false;
+    if (risk === "high" && d.risk_score < 70) return false;
+    if (risk === "medium" && (d.risk_score < 40 || d.risk_score >= 70)) return false;
+    if (risk === "low" && d.risk_score >= 40) return false;
     return true;
   });
 
@@ -42,15 +42,17 @@ function DocQueue() {
           <Tr><Th>Grantee</Th><Th>Document Type</Th><Th>File</Th><Th>Uploaded</Th><Th>Risk</Th><Th>Status</Th><Th></Th></Tr>
         </THead>
         <tbody>
+          {isLoading && <Tr><Td colSpan={7} className="text-center text-text-muted py-6">Loading…</Td></Tr>}
+          {!isLoading && filtered.length === 0 && <Tr><Td colSpan={7} className="text-center text-text-muted py-6">No documents in this view.</Td></Tr>}
           {filtered.map((d) => {
-            const tone = d.riskScore >= 70 ? "danger" : d.riskScore >= 40 ? "warning" : "success";
+            const tone = d.risk_score >= 70 ? "danger" : d.risk_score >= 40 ? "warning" : "success";
             return (
               <Tr key={d.id}>
-                <Td><Link to="/app/grantees/$id" params={{ id: d.granteeId }} className="font-medium hover:text-primary">{d.granteeName}</Link><div className="text-[11px] text-text-soft font-mono">{d.studentNumber}</div></Td>
+                <Td><span className="font-medium">{d.grantee_name}</span><div className="text-[11px] text-text-soft font-mono">{d.student_number}</div></Td>
                 <Td>{d.type}</Td>
                 <Td className="font-mono text-xs text-text-muted">{d.filename}</Td>
-                <Td className="text-text-muted">{d.uploadedAt}</Td>
-                <Td><StatusBadge variant={tone}>{d.riskScore}</StatusBadge></Td>
+                <Td className="text-text-muted">{new Date(d.uploaded_at).toLocaleString()}</Td>
+                <Td><StatusBadge variant={tone}>{d.risk_score}</StatusBadge></Td>
                 <Td><StatusBadge variant={statusVariantFor(d.status)}>{formatStatus(d.status)}</StatusBadge></Td>
                 <Td><Link to="/app/documents/$id" params={{ id: d.id }}><Btn size="sm">Review</Btn></Link></Td>
               </Tr>
