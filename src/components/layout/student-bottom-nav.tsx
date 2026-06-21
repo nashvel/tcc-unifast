@@ -25,7 +25,7 @@ export function StudentBottomNav() {
       className="lg:hidden fixed inset-x-0 bottom-0 z-30 px-3 pt-2 pointer-events-none"
       style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 0.5rem)" }}
     >
-      <ul className="pointer-events-auto mx-auto flex max-w-md items-center justify-between gap-1.5 rounded-full border bg-surface/95 backdrop-blur supports-[backdrop-filter]:bg-surface/80 px-2 py-2 shadow-[0_10px_30px_-12px_rgba(0,0,0,0.25)]">
+      <ul className="pointer-events-auto mx-auto flex w-fit max-w-[22rem] items-center justify-center gap-1.5 rounded-full border bg-surface/95 backdrop-blur supports-[backdrop-filter]:bg-surface/80 px-2 py-2 shadow-[0_10px_30px_-12px_rgba(0,0,0,0.25)]">
         {items.map((it) => {
           const active = it.exact
             ? pathname === it.to
