@@ -11,6 +11,27 @@ export const DEMO_USERS = [
   { role: "student" as const, email: "mc.delacruz@plm.edu.ph", fullName: "Maria Clara Dela Cruz" },
 ];
 
+const DEMO_PASSWORDS_BY_ROLE: Record<string, string> = {
+  admin: "DemoAdmin123!",
+  head: "DemoHead123!",
+  staff: "DemoStaff123!",
+  student: "DemoStudent123!",
+};
+
+/**
+ * Returns the demo password for a given role. Server-only — the password
+ * never sits in the client bundle; it is fetched on demand when the user
+ * clicks a quick-login button on the demo login page.
+ */
+export const getDemoCredentials = createServerFn({ method: "POST" })
+  .inputValidator((input: { role: "admin" | "head" | "staff" | "student" }) => input)
+  .handler(async ({ data }) => {
+    const user = DEMO_USERS.find((u) => u.role === data.role);
+    const password = DEMO_PASSWORDS_BY_ROLE[data.role];
+    if (!user || !password) throw new Error("Unknown demo role");
+    return { email: user.email, password };
+  });
+
 /**
  * Server-only passwords for the demo accounts. Kept inside the handler so they
  * never reach the client bundle. The seeder is also gated by a secret token
