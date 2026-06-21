@@ -3,6 +3,7 @@ import { useState } from "react";
 import { StudentSidebar } from "@/components/layout/student-sidebar";
 import { AppTopbar } from "@/components/layout/app-topbar";
 import { useAuthStore } from "@/stores/authStore";
+import { CommandPalette } from "@/components/ui/command-palette";
 
 export const Route = createFileRoute("/student")({
   beforeLoad: () => {
@@ -35,6 +36,7 @@ function StudentLayout() {
           <Outlet />
         </main>
       </div>
+      <CommandPalette />
     </div>
   );
 }

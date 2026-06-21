@@ -3,6 +3,7 @@ import { useState } from "react";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { AppTopbar } from "@/components/layout/app-topbar";
 import { useAuthStore } from "@/stores/authStore";
+import { CommandPalette } from "@/components/ui/command-palette";
 
 export const Route = createFileRoute("/app")({
   beforeLoad: () => {
@@ -35,6 +36,7 @@ function AppLayout() {
           <Outlet />
         </main>
       </div>
+      <CommandPalette />
     </div>
   );
 }

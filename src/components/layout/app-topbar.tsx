@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { IconBell, IconSearch, IconMenu2, IconUserCircle, IconLogout, IconChevronDown } from "@tabler/icons-react";
+import { IconBell, IconSearch, IconMenu2, IconUserCircle, IconLogout, IconChevronDown, IconCommand } from "@tabler/icons-react";
 import { useAuthStore } from "@/stores/authStore";
 import { useNotificationStore } from "@/stores/notificationStore";
 import { useNavigate } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 export function AppTopbar({ onToggleSidebar }: { onToggleSidebar: () => void }) {
   const user = useAuthStore((s) => s.user);
@@ -23,14 +24,18 @@ export function AppTopbar({ onToggleSidebar }: { onToggleSidebar: () => void }) 
       <button onClick={onToggleSidebar} className="lg:hidden p-1.5 rounded-md hover:bg-surface-muted">
         <IconMenu2 size={18} />
       </button>
-      <div className="relative flex-1 max-w-md">
-        <IconSearch size={15} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-soft" />
-        <input
-          placeholder="Search grantees, documents, batches…"
-          className="h-9 w-full rounded-md border bg-input pl-8 pr-3 text-sm focus-ring"
-        />
-      </div>
+      <button
+        onClick={() => window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }))}
+        className="flex items-center gap-2 h-9 px-2.5 rounded-md border bg-input text-left flex-1 max-w-md text-text-muted hover:bg-surface-muted"
+      >
+        <IconSearch size={15} />
+        <span className="text-sm flex-1 truncate">Search or jump to…</span>
+        <kbd className="hidden sm:inline-flex items-center gap-0.5 text-[10px] px-1 py-0.5 rounded border bg-surface text-text-soft">
+          <IconCommand size={10} /> K
+        </kbd>
+      </button>
       <div className="flex-1" />
+      <ThemeToggle />
 
       <div className="relative">
         <button onClick={() => { setOpenNotif((v) => !v); setOpenProfile(false); }} className="relative p-2 rounded-md hover:bg-surface-muted">
