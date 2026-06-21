@@ -56,7 +56,13 @@ function StudentHome() {
                 <li key={req} className="flex items-center justify-between py-2 text-sm">
                   <span>{req}</span>
                   <div className="flex items-center gap-2">
-                    {d ? <StatusBadge variant={d.status === "approved" ? "success" : "warning"}>{d.status}</StatusBadge> : <StatusBadge variant="neutral">Not Submitted</StatusBadge>}
+                    {d ? (
+                      <StatusBadge variant={d.status === "approved" ? "success" : "warning"}>{d.status}</StatusBadge>
+                    ) : onboardingSkipped ? (
+                      <StatusBadge variant="warning">Skipped</StatusBadge>
+                    ) : (
+                      <StatusBadge variant="neutral">Not Submitted</StatusBadge>
+                    )}
                     <Link to="/student/upload" className="text-xs text-primary hover:underline">Upload</Link>
                   </div>
                 </li>
