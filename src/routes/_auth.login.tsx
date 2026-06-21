@@ -42,6 +42,11 @@ function LoginPage() {
       setError(error?.message ?? "Sign in failed.");
       return;
     }
+    // Record login event (best-effort, ignore errors)
+    supabase.from("login_events").insert({
+      user_id: data.user.id,
+      user_agent: typeof navigator !== "undefined" ? navigator.userAgent : null,
+    }).then(() => {});
     // Look up role to decide which area to land on
     const { data: roleRow } = await supabase.from("user_roles").select("role").eq("user_id", data.user.id).maybeSingle();
     const role = (roleRow?.role as string | undefined) ?? "student";

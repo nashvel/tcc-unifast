@@ -22,6 +22,7 @@ const TITLES: Record<string, string> = {
   "/student/submissions": "My Submissions",
   "/student/announcements": "Announcements",
   "/student/notifications": "Notifications",
+  "/student/settings": "Settings",
 };
 
 function tabIndex(pathname: string) {
