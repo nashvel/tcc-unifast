@@ -4,7 +4,7 @@ import { AppSidebar } from "@/components/layout/app-sidebar";
 import { AppTopbar } from "@/components/layout/app-topbar";
 import { useAuthStore } from "@/stores/authStore";
 
-export const Route = createFileRoute("/_app")({
+export const Route = createFileRoute("/app")({
   beforeLoad: () => {
     const user = useAuthStore.getState().user;
     if (!user || user.role === "student") {
