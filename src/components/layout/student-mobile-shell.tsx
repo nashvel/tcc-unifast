@@ -83,7 +83,7 @@ export function StudentMobileShell({ children }: { children: ReactNode }) {
       <StudentMobileTopbar />
       <main
         id="student-main"
-        className="flex-1 px-4 pt-3 relative overflow-x-hidden"
+        className="flex-1 px-4 pt-3 pb-[calc(env(safe-area-inset-bottom)+5.5rem)] relative overflow-x-hidden"
         style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 5.5rem)" }}
       >
         <AnimatePresence mode="wait" initial={false} custom={direction}>
