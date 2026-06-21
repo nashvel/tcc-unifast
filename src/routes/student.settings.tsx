@@ -366,8 +366,10 @@ function StudentSettings() {
             </Btn>
           </form>
         </ChartCard>
+        )}
 
-        {/* Current session + sign out */}
+        {section === "sessions" && (
+        <>
         <ChartCard
           title="Current Session"
           actions={
