@@ -1,10 +1,10 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { IconId, IconUser, IconCheck, IconClock } from "@tabler/icons-react";
+import { IconId, IconUser, IconCheck, IconClock, IconPencil } from "@tabler/icons-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { FormField, TextInput } from "@/components/ui/form-field";
 import { Btn } from "@/components/ui/btn";
-import { AvatarEditor } from "@/components/ui/avatar-editor";
+import { UserAvatar } from "@/components/ui/dicebear-avatar";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthStore } from "@/stores/authStore";
 
@@ -13,32 +13,47 @@ export const Route = createFileRoute("/student/profile")({
 });
 
 function StudentProfile() {
+  const profile = useAuthStore((s) => s.profile);
+  const email = useAuthStore((s) => s.email);
+  const displayName = profile?.full_name || "Maria Clara Dela Cruz";
+
   return (
     <div>
-      <PageHeader title="My Profile" description="Personal and academic information on file." />
-      <div className="mb-4">
-        <AvatarEditor />
+      <PageHeader
+        title="My Profile"
+        description="Personal and academic information on file. View only — manage edits from Settings."
+        actions={
+          <Link to="/student/settings">
+            <Btn variant="outline"><IconPencil size={14} /> Edit in Settings</Btn>
+          </Link>
+        }
+      />
+
+      <div className="mb-4 rounded-lg border bg-surface p-4 flex items-center gap-3">
+        <UserAvatar name={displayName} email={email ?? undefined} avatarUrl={profile?.avatar_url ?? null} size={56} />
+        <div className="min-w-0">
+          <p className="text-sm font-semibold truncate">{displayName}</p>
+          <p className="text-xs text-text-muted truncate">{email}</p>
+        </div>
       </div>
+
       <OnboardingStatus />
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="rounded-lg border bg-surface p-4 space-y-3">
           <p className="text-sm font-semibold">Personal</p>
-          <FormField label="Full name"><TextInput defaultValue="Maria Clara Dela Cruz" /></FormField>
-          <FormField label="Birthdate"><TextInput type="date" defaultValue="2003-05-14" /></FormField>
-          <FormField label="Email"><TextInput defaultValue="mc.delacruz@plm.edu.ph" /></FormField>
-          <FormField label="Contact"><TextInput defaultValue="+639171234567" /></FormField>
+          <FormField label="Full name"><TextInput value={displayName} disabled readOnly /></FormField>
+          <FormField label="Birthdate"><TextInput type="date" value="2003-05-14" disabled readOnly /></FormField>
+          <FormField label="Email"><TextInput value={email ?? "mc.delacruz@plm.edu.ph"} disabled readOnly /></FormField>
+          <FormField label="Contact"><TextInput value="+639171234567" disabled readOnly /></FormField>
         </div>
         <div className="rounded-lg border bg-surface p-4 space-y-3">
           <p className="text-sm font-semibold">Academic</p>
-          <FormField label="University"><TextInput defaultValue="Pamantasan ng Lungsod ng Maynila" /></FormField>
-          <FormField label="Program"><TextInput defaultValue="BS Computer Science" /></FormField>
-          <FormField label="Year level"><TextInput defaultValue="2" /></FormField>
-          <FormField label="Student #"><TextInput defaultValue="2024-00123" disabled /></FormField>
+          <FormField label="University"><TextInput value="Pamantasan ng Lungsod ng Maynila" disabled readOnly /></FormField>
+          <FormField label="Program"><TextInput value="BS Computer Science" disabled readOnly /></FormField>
+          <FormField label="Year level"><TextInput value="2" disabled readOnly /></FormField>
+          <FormField label="Student #"><TextInput value="2024-00123" disabled readOnly /></FormField>
         </div>
-      </div>
-      <div className="mt-4 flex justify-end gap-2">
-        <Btn variant="outline">Cancel</Btn>
-        <Btn variant="primary">Save changes</Btn>
       </div>
     </div>
   );
