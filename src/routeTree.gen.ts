@@ -13,7 +13,14 @@ import { Route as StudentRouteImport } from './routes/student'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as StudentIndexRouteImport } from './routes/student.index'
 import { Route as AppIndexRouteImport } from './routes/app.index'
+import { Route as StudentUploadRouteImport } from './routes/student.upload'
+import { Route as StudentSubmissionsRouteImport } from './routes/student.submissions'
+import { Route as StudentProfileRouteImport } from './routes/student.profile'
+import { Route as StudentNotificationsRouteImport } from './routes/student.notifications'
+import { Route as StudentDocumentsRouteImport } from './routes/student.documents'
+import { Route as StudentAnnouncementsRouteImport } from './routes/student.announcements'
 import { Route as AppSettingsRouteImport } from './routes/app.settings'
 import { Route as AppMasterlistRouteImport } from './routes/app.masterlist'
 import { Route as AppAuditRouteImport } from './routes/app.audit'
@@ -61,10 +68,45 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const StudentIndexRoute = StudentIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => StudentRoute,
+} as any)
 const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AppRoute,
+} as any)
+const StudentUploadRoute = StudentUploadRouteImport.update({
+  id: '/upload',
+  path: '/upload',
+  getParentRoute: () => StudentRoute,
+} as any)
+const StudentSubmissionsRoute = StudentSubmissionsRouteImport.update({
+  id: '/submissions',
+  path: '/submissions',
+  getParentRoute: () => StudentRoute,
+} as any)
+const StudentProfileRoute = StudentProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => StudentRoute,
+} as any)
+const StudentNotificationsRoute = StudentNotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
+  getParentRoute: () => StudentRoute,
+} as any)
+const StudentDocumentsRoute = StudentDocumentsRouteImport.update({
+  id: '/documents',
+  path: '/documents',
+  getParentRoute: () => StudentRoute,
+} as any)
+const StudentAnnouncementsRoute = StudentAnnouncementsRouteImport.update({
+  id: '/announcements',
+  path: '/announcements',
+  getParentRoute: () => StudentRoute,
 } as any)
 const AppSettingsRoute = AppSettingsRouteImport.update({
   id: '/settings',
@@ -205,7 +247,7 @@ const AppAnnouncementsIdEditRoute = AppAnnouncementsIdEditRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
-  '/student': typeof StudentRoute
+  '/student': typeof StudentRouteWithChildren
   '/activate': typeof AuthActivateRoute
   '/activate-success': typeof AuthActivateSuccessRoute
   '/forgot-password': typeof AuthForgotPasswordRoute
@@ -214,7 +256,14 @@ export interface FileRoutesByFullPath {
   '/app/audit': typeof AppAuditRoute
   '/app/masterlist': typeof AppMasterlistRoute
   '/app/settings': typeof AppSettingsRoute
+  '/student/announcements': typeof StudentAnnouncementsRoute
+  '/student/documents': typeof StudentDocumentsRoute
+  '/student/notifications': typeof StudentNotificationsRoute
+  '/student/profile': typeof StudentProfileRoute
+  '/student/submissions': typeof StudentSubmissionsRoute
+  '/student/upload': typeof StudentUploadRoute
   '/app/': typeof AppIndexRoute
+  '/student/': typeof StudentIndexRoute
   '/app/academic/$id': typeof AppAcademicIdRoute
   '/app/announcements/logs': typeof AppAnnouncementsLogsRoute
   '/app/announcements/new': typeof AppAnnouncementsNewRoute
@@ -237,7 +286,6 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/student': typeof StudentRoute
   '/activate': typeof AuthActivateRoute
   '/activate-success': typeof AuthActivateSuccessRoute
   '/forgot-password': typeof AuthForgotPasswordRoute
@@ -246,7 +294,14 @@ export interface FileRoutesByTo {
   '/app/audit': typeof AppAuditRoute
   '/app/masterlist': typeof AppMasterlistRoute
   '/app/settings': typeof AppSettingsRoute
+  '/student/announcements': typeof StudentAnnouncementsRoute
+  '/student/documents': typeof StudentDocumentsRoute
+  '/student/notifications': typeof StudentNotificationsRoute
+  '/student/profile': typeof StudentProfileRoute
+  '/student/submissions': typeof StudentSubmissionsRoute
+  '/student/upload': typeof StudentUploadRoute
   '/app': typeof AppIndexRoute
+  '/student': typeof StudentIndexRoute
   '/app/academic/$id': typeof AppAcademicIdRoute
   '/app/announcements/logs': typeof AppAnnouncementsLogsRoute
   '/app/announcements/new': typeof AppAnnouncementsNewRoute
@@ -272,7 +327,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_auth': typeof AuthRouteWithChildren
   '/app': typeof AppRouteWithChildren
-  '/student': typeof StudentRoute
+  '/student': typeof StudentRouteWithChildren
   '/_auth/activate': typeof AuthActivateRoute
   '/_auth/activate-success': typeof AuthActivateSuccessRoute
   '/_auth/forgot-password': typeof AuthForgotPasswordRoute
@@ -281,7 +336,14 @@ export interface FileRoutesById {
   '/app/audit': typeof AppAuditRoute
   '/app/masterlist': typeof AppMasterlistRoute
   '/app/settings': typeof AppSettingsRoute
+  '/student/announcements': typeof StudentAnnouncementsRoute
+  '/student/documents': typeof StudentDocumentsRoute
+  '/student/notifications': typeof StudentNotificationsRoute
+  '/student/profile': typeof StudentProfileRoute
+  '/student/submissions': typeof StudentSubmissionsRoute
+  '/student/upload': typeof StudentUploadRoute
   '/app/': typeof AppIndexRoute
+  '/student/': typeof StudentIndexRoute
   '/app/academic/$id': typeof AppAcademicIdRoute
   '/app/announcements/logs': typeof AppAnnouncementsLogsRoute
   '/app/announcements/new': typeof AppAnnouncementsNewRoute
@@ -316,7 +378,14 @@ export interface FileRouteTypes {
     | '/app/audit'
     | '/app/masterlist'
     | '/app/settings'
+    | '/student/announcements'
+    | '/student/documents'
+    | '/student/notifications'
+    | '/student/profile'
+    | '/student/submissions'
+    | '/student/upload'
     | '/app/'
+    | '/student/'
     | '/app/academic/$id'
     | '/app/announcements/logs'
     | '/app/announcements/new'
@@ -339,7 +408,6 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/student'
     | '/activate'
     | '/activate-success'
     | '/forgot-password'
@@ -348,7 +416,14 @@ export interface FileRouteTypes {
     | '/app/audit'
     | '/app/masterlist'
     | '/app/settings'
+    | '/student/announcements'
+    | '/student/documents'
+    | '/student/notifications'
+    | '/student/profile'
+    | '/student/submissions'
+    | '/student/upload'
     | '/app'
+    | '/student'
     | '/app/academic/$id'
     | '/app/announcements/logs'
     | '/app/announcements/new'
@@ -382,7 +457,14 @@ export interface FileRouteTypes {
     | '/app/audit'
     | '/app/masterlist'
     | '/app/settings'
+    | '/student/announcements'
+    | '/student/documents'
+    | '/student/notifications'
+    | '/student/profile'
+    | '/student/submissions'
+    | '/student/upload'
     | '/app/'
+    | '/student/'
     | '/app/academic/$id'
     | '/app/announcements/logs'
     | '/app/announcements/new'
@@ -408,7 +490,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRouteWithChildren
   AppRoute: typeof AppRouteWithChildren
-  StudentRoute: typeof StudentRoute
+  StudentRoute: typeof StudentRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -441,12 +523,61 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/student/': {
+      id: '/student/'
+      path: '/'
+      fullPath: '/student/'
+      preLoaderRoute: typeof StudentIndexRouteImport
+      parentRoute: typeof StudentRoute
+    }
     '/app/': {
       id: '/app/'
       path: '/'
       fullPath: '/app/'
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRoute
+    }
+    '/student/upload': {
+      id: '/student/upload'
+      path: '/upload'
+      fullPath: '/student/upload'
+      preLoaderRoute: typeof StudentUploadRouteImport
+      parentRoute: typeof StudentRoute
+    }
+    '/student/submissions': {
+      id: '/student/submissions'
+      path: '/submissions'
+      fullPath: '/student/submissions'
+      preLoaderRoute: typeof StudentSubmissionsRouteImport
+      parentRoute: typeof StudentRoute
+    }
+    '/student/profile': {
+      id: '/student/profile'
+      path: '/profile'
+      fullPath: '/student/profile'
+      preLoaderRoute: typeof StudentProfileRouteImport
+      parentRoute: typeof StudentRoute
+    }
+    '/student/notifications': {
+      id: '/student/notifications'
+      path: '/notifications'
+      fullPath: '/student/notifications'
+      preLoaderRoute: typeof StudentNotificationsRouteImport
+      parentRoute: typeof StudentRoute
+    }
+    '/student/documents': {
+      id: '/student/documents'
+      path: '/documents'
+      fullPath: '/student/documents'
+      preLoaderRoute: typeof StudentDocumentsRouteImport
+      parentRoute: typeof StudentRoute
+    }
+    '/student/announcements': {
+      id: '/student/announcements'
+      path: '/announcements'
+      fullPath: '/student/announcements'
+      preLoaderRoute: typeof StudentAnnouncementsRouteImport
+      parentRoute: typeof StudentRoute
     }
     '/app/settings': {
       id: '/app/settings'
@@ -712,11 +843,34 @@ const AppRouteChildren: AppRouteChildren = {
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
+interface StudentRouteChildren {
+  StudentAnnouncementsRoute: typeof StudentAnnouncementsRoute
+  StudentDocumentsRoute: typeof StudentDocumentsRoute
+  StudentNotificationsRoute: typeof StudentNotificationsRoute
+  StudentProfileRoute: typeof StudentProfileRoute
+  StudentSubmissionsRoute: typeof StudentSubmissionsRoute
+  StudentUploadRoute: typeof StudentUploadRoute
+  StudentIndexRoute: typeof StudentIndexRoute
+}
+
+const StudentRouteChildren: StudentRouteChildren = {
+  StudentAnnouncementsRoute: StudentAnnouncementsRoute,
+  StudentDocumentsRoute: StudentDocumentsRoute,
+  StudentNotificationsRoute: StudentNotificationsRoute,
+  StudentProfileRoute: StudentProfileRoute,
+  StudentSubmissionsRoute: StudentSubmissionsRoute,
+  StudentUploadRoute: StudentUploadRoute,
+  StudentIndexRoute: StudentIndexRoute,
+}
+
+const StudentRouteWithChildren =
+  StudentRoute._addFileChildren(StudentRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRouteWithChildren,
   AppRoute: AppRouteWithChildren,
-  StudentRoute: StudentRoute,
+  StudentRoute: StudentRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
