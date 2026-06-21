@@ -21,7 +21,7 @@ function DocDetail() {
   if (!doc) return <div className="text-sm text-text-muted">Document not found.</div>;
   const tone = doc.riskScore >= 70 ? "danger" : doc.riskScore >= 40 ? "warning" : "success";
 
-  function act(status: typeof doc.status) {
+  function act(status: "approved" | "rejected" | "resubmission" | "suspicious") {
     update(doc!.id, status, remarks);
     navigate({ to: "/app/documents" });
   }
@@ -33,9 +33,10 @@ function DocDetail() {
       </Link>
       <PageHeader
         title={doc.type}
-        description={<>From <Link to="/app/grantees/$id" params={{ id: doc.granteeId }} className="text-primary hover:underline">{doc.granteeName}</Link> ({doc.studentNumber})</>}
+        description={`From ${doc.granteeName} (${doc.studentNumber})`}
         actions={<StatusBadge variant={statusVariantFor(doc.status)}>{formatStatus(doc.status)}</StatusBadge>}
       />
+
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2 space-y-4">

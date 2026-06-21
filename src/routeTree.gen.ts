@@ -21,9 +21,15 @@ import { Route as AuthForgotPasswordRouteImport } from './routes/_auth.forgot-pa
 import { Route as AuthActivateSuccessRouteImport } from './routes/_auth.activate-success'
 import { Route as AuthActivateRouteImport } from './routes/_auth.activate'
 import { Route as AppGranteesIndexRouteImport } from './routes/app.grantees.index'
+import { Route as AppEligibilityIndexRouteImport } from './routes/app.eligibility.index'
+import { Route as AppDocumentsIndexRouteImport } from './routes/app.documents.index'
 import { Route as AppBatchesIndexRouteImport } from './routes/app.batches.index'
+import { Route as AppAcademicIndexRouteImport } from './routes/app.academic.index'
 import { Route as AppGranteesIdRouteImport } from './routes/app.grantees.$id'
+import { Route as AppEligibilityIdRouteImport } from './routes/app.eligibility.$id'
+import { Route as AppDocumentsIdRouteImport } from './routes/app.documents.$id'
 import { Route as AppBatchesIdRouteImport } from './routes/app.batches.$id'
+import { Route as AppAcademicIdRouteImport } from './routes/app.academic.$id'
 
 const StudentRoute = StudentRouteImport.update({
   id: '/student',
@@ -84,9 +90,24 @@ const AppGranteesIndexRoute = AppGranteesIndexRouteImport.update({
   path: '/grantees/',
   getParentRoute: () => AppRoute,
 } as any)
+const AppEligibilityIndexRoute = AppEligibilityIndexRouteImport.update({
+  id: '/eligibility/',
+  path: '/eligibility/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppDocumentsIndexRoute = AppDocumentsIndexRouteImport.update({
+  id: '/documents/',
+  path: '/documents/',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppBatchesIndexRoute = AppBatchesIndexRouteImport.update({
   id: '/batches/',
   path: '/batches/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAcademicIndexRoute = AppAcademicIndexRouteImport.update({
+  id: '/academic/',
+  path: '/academic/',
   getParentRoute: () => AppRoute,
 } as any)
 const AppGranteesIdRoute = AppGranteesIdRouteImport.update({
@@ -94,9 +115,24 @@ const AppGranteesIdRoute = AppGranteesIdRouteImport.update({
   path: '/grantees/$id',
   getParentRoute: () => AppRoute,
 } as any)
+const AppEligibilityIdRoute = AppEligibilityIdRouteImport.update({
+  id: '/eligibility/$id',
+  path: '/eligibility/$id',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppDocumentsIdRoute = AppDocumentsIdRouteImport.update({
+  id: '/documents/$id',
+  path: '/documents/$id',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppBatchesIdRoute = AppBatchesIdRouteImport.update({
   id: '/batches/$id',
   path: '/batches/$id',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAcademicIdRoute = AppAcademicIdRouteImport.update({
+  id: '/academic/$id',
+  path: '/academic/$id',
   getParentRoute: () => AppRoute,
 } as any)
 
@@ -111,9 +147,15 @@ export interface FileRoutesByFullPath {
   '/login': typeof AuthLoginRoute
   '/app/masterlist': typeof AppMasterlistRoute
   '/app/': typeof AppIndexRoute
+  '/app/academic/$id': typeof AppAcademicIdRoute
   '/app/batches/$id': typeof AppBatchesIdRoute
+  '/app/documents/$id': typeof AppDocumentsIdRoute
+  '/app/eligibility/$id': typeof AppEligibilityIdRoute
   '/app/grantees/$id': typeof AppGranteesIdRoute
+  '/app/academic/': typeof AppAcademicIndexRoute
   '/app/batches/': typeof AppBatchesIndexRoute
+  '/app/documents/': typeof AppDocumentsIndexRoute
+  '/app/eligibility/': typeof AppEligibilityIndexRoute
   '/app/grantees/': typeof AppGranteesIndexRoute
 }
 export interface FileRoutesByTo {
@@ -126,9 +168,15 @@ export interface FileRoutesByTo {
   '/login': typeof AuthLoginRoute
   '/app/masterlist': typeof AppMasterlistRoute
   '/app': typeof AppIndexRoute
+  '/app/academic/$id': typeof AppAcademicIdRoute
   '/app/batches/$id': typeof AppBatchesIdRoute
+  '/app/documents/$id': typeof AppDocumentsIdRoute
+  '/app/eligibility/$id': typeof AppEligibilityIdRoute
   '/app/grantees/$id': typeof AppGranteesIdRoute
+  '/app/academic': typeof AppAcademicIndexRoute
   '/app/batches': typeof AppBatchesIndexRoute
+  '/app/documents': typeof AppDocumentsIndexRoute
+  '/app/eligibility': typeof AppEligibilityIndexRoute
   '/app/grantees': typeof AppGranteesIndexRoute
 }
 export interface FileRoutesById {
@@ -144,9 +192,15 @@ export interface FileRoutesById {
   '/_auth/login': typeof AuthLoginRoute
   '/app/masterlist': typeof AppMasterlistRoute
   '/app/': typeof AppIndexRoute
+  '/app/academic/$id': typeof AppAcademicIdRoute
   '/app/batches/$id': typeof AppBatchesIdRoute
+  '/app/documents/$id': typeof AppDocumentsIdRoute
+  '/app/eligibility/$id': typeof AppEligibilityIdRoute
   '/app/grantees/$id': typeof AppGranteesIdRoute
+  '/app/academic/': typeof AppAcademicIndexRoute
   '/app/batches/': typeof AppBatchesIndexRoute
+  '/app/documents/': typeof AppDocumentsIndexRoute
+  '/app/eligibility/': typeof AppEligibilityIndexRoute
   '/app/grantees/': typeof AppGranteesIndexRoute
 }
 export interface FileRouteTypes {
@@ -162,9 +216,15 @@ export interface FileRouteTypes {
     | '/login'
     | '/app/masterlist'
     | '/app/'
+    | '/app/academic/$id'
     | '/app/batches/$id'
+    | '/app/documents/$id'
+    | '/app/eligibility/$id'
     | '/app/grantees/$id'
+    | '/app/academic/'
     | '/app/batches/'
+    | '/app/documents/'
+    | '/app/eligibility/'
     | '/app/grantees/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -177,9 +237,15 @@ export interface FileRouteTypes {
     | '/login'
     | '/app/masterlist'
     | '/app'
+    | '/app/academic/$id'
     | '/app/batches/$id'
+    | '/app/documents/$id'
+    | '/app/eligibility/$id'
     | '/app/grantees/$id'
+    | '/app/academic'
     | '/app/batches'
+    | '/app/documents'
+    | '/app/eligibility'
     | '/app/grantees'
   id:
     | '__root__'
@@ -194,9 +260,15 @@ export interface FileRouteTypes {
     | '/_auth/login'
     | '/app/masterlist'
     | '/app/'
+    | '/app/academic/$id'
     | '/app/batches/$id'
+    | '/app/documents/$id'
+    | '/app/eligibility/$id'
     | '/app/grantees/$id'
+    | '/app/academic/'
     | '/app/batches/'
+    | '/app/documents/'
+    | '/app/eligibility/'
     | '/app/grantees/'
   fileRoutesById: FileRoutesById
 }
@@ -293,11 +365,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppGranteesIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/eligibility/': {
+      id: '/app/eligibility/'
+      path: '/eligibility'
+      fullPath: '/app/eligibility/'
+      preLoaderRoute: typeof AppEligibilityIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/documents/': {
+      id: '/app/documents/'
+      path: '/documents'
+      fullPath: '/app/documents/'
+      preLoaderRoute: typeof AppDocumentsIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/batches/': {
       id: '/app/batches/'
       path: '/batches'
       fullPath: '/app/batches/'
       preLoaderRoute: typeof AppBatchesIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/academic/': {
+      id: '/app/academic/'
+      path: '/academic'
+      fullPath: '/app/academic/'
+      preLoaderRoute: typeof AppAcademicIndexRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/grantees/$id': {
@@ -307,11 +400,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppGranteesIdRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/eligibility/$id': {
+      id: '/app/eligibility/$id'
+      path: '/eligibility/$id'
+      fullPath: '/app/eligibility/$id'
+      preLoaderRoute: typeof AppEligibilityIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/documents/$id': {
+      id: '/app/documents/$id'
+      path: '/documents/$id'
+      fullPath: '/app/documents/$id'
+      preLoaderRoute: typeof AppDocumentsIdRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/batches/$id': {
       id: '/app/batches/$id'
       path: '/batches/$id'
       fullPath: '/app/batches/$id'
       preLoaderRoute: typeof AppBatchesIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/academic/$id': {
+      id: '/app/academic/$id'
+      path: '/academic/$id'
+      fullPath: '/app/academic/$id'
+      preLoaderRoute: typeof AppAcademicIdRouteImport
       parentRoute: typeof AppRoute
     }
   }
@@ -338,18 +452,30 @@ const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 interface AppRouteChildren {
   AppMasterlistRoute: typeof AppMasterlistRoute
   AppIndexRoute: typeof AppIndexRoute
+  AppAcademicIdRoute: typeof AppAcademicIdRoute
   AppBatchesIdRoute: typeof AppBatchesIdRoute
+  AppDocumentsIdRoute: typeof AppDocumentsIdRoute
+  AppEligibilityIdRoute: typeof AppEligibilityIdRoute
   AppGranteesIdRoute: typeof AppGranteesIdRoute
+  AppAcademicIndexRoute: typeof AppAcademicIndexRoute
   AppBatchesIndexRoute: typeof AppBatchesIndexRoute
+  AppDocumentsIndexRoute: typeof AppDocumentsIndexRoute
+  AppEligibilityIndexRoute: typeof AppEligibilityIndexRoute
   AppGranteesIndexRoute: typeof AppGranteesIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
   AppMasterlistRoute: AppMasterlistRoute,
   AppIndexRoute: AppIndexRoute,
+  AppAcademicIdRoute: AppAcademicIdRoute,
   AppBatchesIdRoute: AppBatchesIdRoute,
+  AppDocumentsIdRoute: AppDocumentsIdRoute,
+  AppEligibilityIdRoute: AppEligibilityIdRoute,
   AppGranteesIdRoute: AppGranteesIdRoute,
+  AppAcademicIndexRoute: AppAcademicIndexRoute,
   AppBatchesIndexRoute: AppBatchesIndexRoute,
+  AppDocumentsIndexRoute: AppDocumentsIndexRoute,
+  AppEligibilityIndexRoute: AppEligibilityIndexRoute,
   AppGranteesIndexRoute: AppGranteesIndexRoute,
 }
 
