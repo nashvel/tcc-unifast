@@ -621,6 +621,7 @@ export type Database = {
         Returns: boolean
       }
       is_staff: { Args: { _user_id: string }; Returns: boolean }
+      record_login_event: { Args: { _user_agent: string }; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "staff" | "head" | "student"

@@ -42,10 +42,9 @@ function LoginPage() {
       setError(error?.message ?? "Sign in failed.");
       return;
     }
-    // Record login event (best-effort, ignore errors)
-    supabase.from("login_events").insert({
-      user_id: data.user.id,
-      user_agent: typeof navigator !== "undefined" ? navigator.userAgent : null,
+    // Record login event via SECURITY DEFINER RPC (best-effort, ignore errors)
+    supabase.rpc("record_login_event", {
+      _user_agent: typeof navigator !== "undefined" ? navigator.userAgent : "",
     }).then(() => {});
     // Look up role to decide which area to land on
     const { data: roleRow } = await supabase.from("user_roles").select("role").eq("user_id", data.user.id).maybeSingle();
