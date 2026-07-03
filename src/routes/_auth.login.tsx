@@ -44,7 +44,7 @@ function LoginPage() {
     }
     // Record login event via SECURITY DEFINER RPC (best-effort, ignore errors)
     supabase.rpc("record_login_event", {
-      _user_agent: typeof navigator !== "undefined" ? navigator.userAgent : null,
+      _user_agent: typeof navigator !== "undefined" ? navigator.userAgent : "",
     }).then(() => {});
     // Look up role to decide which area to land on
     const { data: roleRow } = await supabase.from("user_roles").select("role").eq("user_id", data.user.id).maybeSingle();
