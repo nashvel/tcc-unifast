@@ -28,8 +28,17 @@ function UsersPage() {
       <DataTable>
         <THead><Tr><Th>Username</Th><Th>Full Name</Th><Th>Email</Th><Th>Role</Th><Th>MFA</Th><Th>Status</Th><Th>Last login</Th><Th></Th></Tr></THead>
         <tbody>
-          {isLoading && <Tr><Td colSpan={8} className="text-center text-text-muted py-6">Loading…</Td></Tr>}
-          {!isLoading && users.length === 0 && <Tr><Td colSpan={8} className="text-center text-text-muted py-6">No staff users.</Td></Tr>}
+          <TableStates
+            colSpan={8}
+            isLoading={isLoading}
+            isFetching={isFetching}
+            isError={isError}
+            error={error}
+            isEmpty={!isLoading && !isError && users.length === 0}
+            onRetry={() => refetch()}
+            emptyTitle="No staff users"
+            emptyHint="Create your first staff account to get started."
+          />
           {pg.pageItems.map((u) => (
             <Tr key={u.id}>
               <Td className="font-mono text-xs">{u.username}</Td>
