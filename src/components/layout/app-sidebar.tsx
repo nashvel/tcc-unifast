@@ -53,10 +53,10 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <aside className="h-full w-60 shrink-0 border-r bg-sidebar-bg flex flex-col">
       <div className="h-14 flex items-center gap-2 px-4 border-b">
-        <img src={systemLogo} alt="Tagoloan Community College" className="h-9 w-9 object-contain" />
+        <img src={branding.systemLogoUrl} alt={branding.institution} className="h-9 w-9 object-contain" />
         <div className="leading-tight">
-          <p className="text-sm font-semibold text-sidebar-text">UniFAST TES</p>
-          <p className="text-2xs text-sidebar-text-muted">Grantee Management</p>
+          <p className="text-sm font-semibold text-sidebar-text">{branding.systemName}</p>
+          <p className="text-2xs text-sidebar-text-muted">{branding.systemTagline}</p>
         </div>
       </div>
       <nav className="flex-1 overflow-y-auto py-3">
