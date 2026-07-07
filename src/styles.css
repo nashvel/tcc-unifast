@@ -41,6 +41,9 @@ html {
   --sidebar-bg: #4a141d;            /* deep maroon */
   --sidebar-active: #611620;
   --sidebar-active-text: #f5e6c4;
+  --sidebar-text: #f5ece0;          /* warm ivory on maroon */
+  --sidebar-text-muted: #cdb8a6;
+  --sidebar-hover: #611620;
 
   --accent-gold: #b8894a;           /* muted gold — primary CTA */
   --accent-gold-hover: #9c7238;
