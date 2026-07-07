@@ -85,6 +85,24 @@ const FORBIDDEN = [
     re: /\btext-(md|4xs|3xs)\b/,
     msg: "Unknown text size. Use text-2xs / text-micro / text-xs / text-sm / text-base / text-lg / text-xl / text-2xl / text-3xl.",
   },
+  {
+    id: "uppercase-on-body",
+    // Eyebrows / table headers are the only allowed uppercase — always text-2xs or text-micro.
+    re: /\buppercase\b[^"'`]*\btext-(sm|base|lg|xl|2xl|3xl)\b|\btext-(sm|base|lg|xl|2xl|3xl)\b[^"'`]*\buppercase\b/,
+    msg: "uppercase is reserved for eyebrows / table headers (text-2xs or text-micro only). See design-tokens.md § Typography.",
+  },
+  {
+    id: "mono-too-large",
+    // font-mono is for IDs / codes / kbd — never above text-xs.
+    re: /\bfont-mono\b[^"'`]*\btext-(sm|base|lg|xl|2xl|3xl)\b|\btext-(sm|base|lg|xl|2xl|3xl)\b[^"'`]*\bfont-mono\b/,
+    msg: "font-mono is limited to IDs / codes / kbd (max text-xs). Use font-sans for prose.",
+  },
+  {
+    id: "heading-tag-off-scale",
+    // <h1>/<h2>/<h3> must land on a documented heading size on the same line.
+    re: /<h[1-3]\b(?![^>]*\btext-(base|lg|xl|2xl|3xl|sm)\b)[^>]*className=/,
+    msg: "Heading tag without a documented size. h1 → text-2xl, h2 → text-base, h3 → text-sm (see design-tokens.md).",
+  },
 ];
 
 const violations = [];
