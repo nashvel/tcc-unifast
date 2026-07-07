@@ -15,7 +15,7 @@ export const Route = createFileRoute("/app/users/permissions")({
         <PageHeader title="Permission Matrix" description="Module-level permissions per role." />
         {permissionModules.map((m) => (
           <div key={m.module} className="mb-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-text-muted mb-1.5">{m.module}</p>
+            <p className="text-2xs uppercase tracking-wide text-text-muted font-medium mb-1.5">{m.module}</p>
             <DataTable>
               <THead><Tr><Th>Permission</Th>{roles.map((r) => <Th key={r}>{r}</Th>)}</Tr></THead>
               <tbody>
