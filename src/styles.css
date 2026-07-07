@@ -236,11 +236,10 @@ html, body {
 
 /* Hover lift used on cards and interactive surfaces */
 .hover-lift {
-  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+  transition: border-color 0.18s ease, background-color 0.18s ease;
 }
 .hover-lift:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px -12px color-mix(in oklab, var(--text) 25%, transparent);
+  border-color: var(--border-strong);
 }
 
 /* Smooth defaults — interactive primitives feel snappier */
