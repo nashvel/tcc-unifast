@@ -106,7 +106,7 @@ function GranteeList() {
           ))}
         </tbody>
       </DataTable>
-      <TablePagination {...pg} onPageChange={pg.setPage} onPageSizeChange={pg.setPageSize} className="rounded-b-lg border border-t-0 -mt-px" />
+      <TablePagination {...pg} onPageChange={pg.setPage} onPageSizeChange={pg.setPageSize} isLoading={isLoading} disabled={isError} className="rounded-b-lg border border-t-0 -mt-px" />
     </div>
   );
 }
