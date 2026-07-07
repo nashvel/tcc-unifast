@@ -1,10 +1,11 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
   IconDashboard, IconUserCircle, IconFileCheck, IconUpload, IconClipboardList,
-  IconSpeakerphone, IconBell, IconShieldCheck, IconSettings,
+  IconSpeakerphone, IconBell, IconSettings,
 } from "@tabler/icons-react";
 import { cn } from "@/lib/utils";
 import type { ComponentType } from "react";
+import systemLogo from "@/assets/system-logo.png";
 
 const items: { to: string; label: string; icon: ComponentType<{ size?: number; className?: string }> }[] = [
   { to: "/student", label: "Dashboard", icon: IconDashboard },
