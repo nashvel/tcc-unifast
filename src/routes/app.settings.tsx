@@ -174,12 +174,19 @@ function SettingsPage() {
 
   const currentUA = typeof navigator !== "undefined" ? navigator.userAgent : "";
 
-  type Section = "general" | "organization" | "security" | "sessions";
+  type Section = "general" | "organization" | "appearance" | "security" | "sessions";
   const [section, setSection] = useState<Section>("general");
+
+  const dark = useThemeStore((s) => s.dark);
+  const fontKey = useThemeStore((s) => s.font);
+  const setDark = useThemeStore((s) => s.set);
+  const setFont = useThemeStore((s) => s.setFont);
+  const activeFont = FONT_OPTIONS.find((f) => f.key === fontKey) ?? FONT_OPTIONS[0];
 
   const nav: { key: Section; label: string; icon: typeof IconUser; hint: string }[] = [
     { key: "general", label: "General", icon: IconUser, hint: "Profile & avatar" },
     { key: "organization", label: "Organization", icon: IconBuilding, hint: "Office & validation rules" },
+    { key: "appearance", label: "Appearance", icon: IconPalette, hint: "Theme & font" },
     { key: "security", label: "Security", icon: IconKey, hint: "Password" },
     { key: "sessions", label: "Sessions", icon: IconHistory, hint: "Current device & history" },
   ];
