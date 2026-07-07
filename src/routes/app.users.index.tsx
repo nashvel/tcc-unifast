@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { PageHeader } from "@/components/ui/page-header";
 import { Btn } from "@/components/ui/btn";
 import { DataTable, THead, Tr, Th, Td } from "@/components/ui/data-table";
+import { TableStates } from "@/components/ui/table-states";
 import { TablePagination } from "@/components/ui/table-pagination";
 import { usePagination } from "@/hooks/use-pagination";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -14,7 +15,7 @@ export const Route = createFileRoute("/app/users/")({
 });
 
 function UsersPage() {
-  const { data: users = [], isLoading } = useStaffUsers();
+  const { data: users = [], isLoading, isFetching, isError, error, refetch } = useStaffUsers();
   const pg = usePagination(users, 15);
   return (
     <div>
@@ -27,8 +28,17 @@ function UsersPage() {
       <DataTable>
         <THead><Tr><Th>Username</Th><Th>Full Name</Th><Th>Email</Th><Th>Role</Th><Th>MFA</Th><Th>Status</Th><Th>Last login</Th><Th></Th></Tr></THead>
         <tbody>
-          {isLoading && <Tr><Td colSpan={8} className="text-center text-text-muted py-6">Loading…</Td></Tr>}
-          {!isLoading && users.length === 0 && <Tr><Td colSpan={8} className="text-center text-text-muted py-6">No staff users.</Td></Tr>}
+          <TableStates
+            colSpan={8}
+            isLoading={isLoading}
+            isFetching={isFetching}
+            isError={isError}
+            error={error}
+            isEmpty={!isLoading && !isError && users.length === 0}
+            onRetry={() => refetch()}
+            emptyTitle="No staff users"
+            emptyHint="Create your first staff account to get started."
+          />
           {pg.pageItems.map((u) => (
             <Tr key={u.id}>
               <Td className="font-mono text-xs">{u.username}</Td>

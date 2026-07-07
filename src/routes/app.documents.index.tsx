@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Btn } from "@/components/ui/btn";
 import { Selectish } from "@/components/ui/form-field";
 import { DataTable, THead, Tr, Th, Td } from "@/components/ui/data-table";
+import { TableStates } from "@/components/ui/table-states";
 import { TablePagination } from "@/components/ui/table-pagination";
 import { usePagination } from "@/hooks/use-pagination";
 import { StatusBadge, statusVariantFor, formatStatus } from "@/components/ui/status-badge";
@@ -14,7 +15,7 @@ export const Route = createFileRoute("/app/documents/")({
 });
 
 function DocQueue() {
-  const { data: docs = [], isLoading } = useDocuments();
+  const { data: docs = [], isLoading, isFetching, isError, error, refetch } = useDocuments();
   const [status, setStatus] = useState("all");
   const [risk, setRisk] = useState("all");
 
@@ -46,8 +47,17 @@ function DocQueue() {
           <Tr><Th>Grantee</Th><Th>Document Type</Th><Th>File</Th><Th>Uploaded</Th><Th>Risk</Th><Th>Status</Th><Th></Th></Tr>
         </THead>
         <tbody>
-          {isLoading && <Tr><Td colSpan={7} className="text-center text-text-muted py-6">Loading…</Td></Tr>}
-          {!isLoading && filtered.length === 0 && <Tr><Td colSpan={7} className="text-center text-text-muted py-6">No documents in this view.</Td></Tr>}
+          <TableStates
+            colSpan={7}
+            isLoading={isLoading}
+            isFetching={isFetching}
+            isError={isError}
+            error={error}
+            isEmpty={!isLoading && !isError && filtered.length === 0}
+            onRetry={() => refetch()}
+            emptyTitle="No documents in this view"
+            emptyHint="Try clearing filters or check back once new documents are submitted."
+          />
           {pg.pageItems.map((d) => {
             const tone = d.risk_score >= 70 ? "danger" : d.risk_score >= 40 ? "warning" : "success";
             return (

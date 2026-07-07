@@ -5,6 +5,7 @@ import { Btn } from "@/components/ui/btn";
 import { SearchInput } from "@/components/ui/search-input";
 import { Selectish } from "@/components/ui/form-field";
 import { DataTable, THead, Tr, Th, Td } from "@/components/ui/data-table";
+import { TableStates } from "@/components/ui/table-states";
 import { TablePagination } from "@/components/ui/table-pagination";
 import { usePagination } from "@/hooks/use-pagination";
 import { StatusBadge, statusVariantFor, formatStatus } from "@/components/ui/status-badge";
@@ -19,7 +20,7 @@ export const Route = createFileRoute("/app/grantees/")({
 
 
 function GranteeList() {
-  const { data: grantees = [], isLoading } = useGrantees();
+  const { data: grantees = [], isLoading, isFetching, isError, error, refetch } = useGrantees();
   const { data: batches = [] } = useBatches();
   const [q, setQ] = useState("");
   const [batch, setBatch] = useState("all");
@@ -80,8 +81,17 @@ function GranteeList() {
           <Tr><Th>Student #</Th><Th>Name</Th><Th>Program</Th><Th>Batch</Th><Th>Account</Th><Th>Submission</Th><Th>Eligibility</Th><Th>Risk</Th></Tr>
         </THead>
         <tbody>
-          {isLoading && <Tr><Td colSpan={8} className="text-center text-text-muted py-6">Loading…</Td></Tr>}
-          {!isLoading && pg.pageItems.length === 0 && <Tr><Td colSpan={8} className="text-center text-text-muted py-6">No grantees found.</Td></Tr>}
+          <TableStates
+            colSpan={8}
+            isLoading={isLoading}
+            isFetching={isFetching}
+            isError={isError}
+            error={error}
+            isEmpty={!isLoading && !isError && pg.pageItems.length === 0}
+            onRetry={() => refetch()}
+            emptyTitle="No grantees found"
+            emptyHint="Adjust filters or import a masterlist to populate records."
+          />
           {pg.pageItems.map((g) => (
             <Tr key={g.id}>
               <Td className="font-mono text-xs">{g.studentNumber}</Td>
