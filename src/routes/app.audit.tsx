@@ -17,7 +17,7 @@ export const Route = createFileRoute("/app/audit")({
 });
 
 function Audit() {
-  const { data: logs = [], isLoading } = useAuditLogs();
+  const { data: logs = [], isLoading, isFetching, isError, error, refetch } = useAuditLogs();
   const [user, setUser] = useState("all");
   const [module, setModule] = useState("all");
   const [action, setAction] = useState("");
