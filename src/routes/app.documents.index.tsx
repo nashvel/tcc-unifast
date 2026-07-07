@@ -14,7 +14,7 @@ export const Route = createFileRoute("/app/documents/")({
 });
 
 function DocQueue() {
-  const { data: docs = [], isLoading } = useDocuments();
+  const { data: docs = [], isLoading, isFetching, isError, error, refetch } = useDocuments();
   const [status, setStatus] = useState("all");
   const [risk, setRisk] = useState("all");
 
