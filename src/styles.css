@@ -66,36 +66,36 @@ html {
 }
 
 .dark {
-  --primary: #cbd3e1;
-  --primary-hover: #e6ebf3;
-  --primary-soft: #232a3a;
+  --primary: #6fb5c4;
+  --primary-hover: #8dc8d4;
+  --primary-soft: #16333a;
 
-  --success: #7ea88a;
-  --success-soft: #1e2a22;
-  --warning: #c9a95c;
-  --warning-soft: #2a2416;
-  --danger: #d97a7a;
-  --danger-soft: #2a1a1a;
+  --success: #6fae86;
+  --success-soft: #17281f;
+  --warning: #c9955a;
+  --warning-soft: #2a2116;
+  --danger: #d67a7a;
+  --danger-soft: #2a1717;
   --info: #7ea4bf;
-  --info-soft: #1a232c;
+  --info-soft: #16232c;
 
-  --bg: #14161b;
-  --surface: #191c22;
-  --surface-muted: #22262e;
+  --bg: #0e1418;
+  --surface: #141b21;
+  --surface-muted: #1c242b;
 
-  --border: #262a33;
-  --border-strong: #3a3f4a;
+  --border: #232c34;
+  --border-strong: #3a4652;
 
-  --text: #e8e6df;
-  --text-muted: #9a978d;
-  --text-soft: #6b6862;
+  --text: #e6ecf0;
+  --text-muted: #93a1ad;
+  --text-soft: #6a7784;
 
-  --sidebar-bg: #101216;
-  --sidebar-active: #22262e;
+  --sidebar-bg: #0b1114;
+  --sidebar-active: #1c242b;
   --sidebar-active-text: var(--primary);
 
-  --input-bg: #14161b;
-  --ring: rgba(203, 211, 225, 0.25);
+  --input-bg: #0e1418;
+  --ring: rgba(111, 181, 196, 0.28);
 
   --background: var(--bg);
   --foreground: var(--text);
@@ -103,7 +103,7 @@ html {
   --card-foreground: var(--text);
   --popover: var(--surface);
   --popover-foreground: var(--text);
-  --primary-foreground: #14161b;
+  --primary-foreground: #0e1418;
   --secondary: var(--surface-muted);
   --secondary-foreground: var(--text);
   --muted: var(--surface-muted);
