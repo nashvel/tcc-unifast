@@ -63,7 +63,7 @@ export function ThemeToggle() {
           onAnimationEnd={() => setRipple(null)}
         >
           <span
-            className="absolute rounded-full will-change-transform animate-[themeDrop_720ms_cubic-bezier(0.22,1,0.36,1)_forwards]"
+            className="absolute rounded-full will-change-transform animate-[themeDrop_640ms_cubic-bezier(0.65,0,0.35,1)_forwards]"
             style={{
               left: ripple.x,
               top: ripple.y,
