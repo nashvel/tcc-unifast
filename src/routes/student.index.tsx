@@ -54,26 +54,26 @@ function StudentHome() {
   ];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-8">
       {/* Header row */}
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-3xl font-semibold tracking-tight text-primary">
-            Hi, {firstName}! <span aria-hidden>👋</span>{" "}
-            <span className="text-text font-normal">Let's reach your goals together.</span>
+      <header className="flex flex-wrap items-end justify-between gap-4 pb-5 border-b">
+        <div className="min-w-0">
+          <p className="text-2xs uppercase tracking-[0.14em] text-text-soft">Student Dashboard</p>
+          <h1 className="mt-1 text-2xl sm:text-3xl font-semibold tracking-tight text-text">
+            Good to see you, <span className="text-primary">{firstName}</span>.
           </h1>
-          <p className="mt-1 text-sm text-text-muted">Here's your scholarship journey overview.</p>
+          <p className="mt-1.5 text-sm text-text-muted">Here's your scholarship journey overview.</p>
         </div>
-        <div className="flex items-center gap-4">
-          <p className="text-sm text-text-muted hidden sm:block">Today is {today}</p>
+        <div className="flex items-center gap-2">
+          <p className="text-xs text-text-muted hidden md:block pr-2 border-r">{today}</p>
           <button aria-label="Notifications" className="p-2 rounded-md hover:bg-surface-muted text-text-muted">
             <IconBell size={18} />
           </button>
           <button aria-label="Messages" className="relative p-2 rounded-md hover:bg-surface-muted text-text-muted">
             <IconMail size={18} />
-            <span className="absolute -top-0.5 -right-0.5 h-4 min-w-4 px-1 rounded-full bg-primary text-primary-foreground text-2xs font-semibold grid place-items-center">2</span>
+            <span className="absolute top-1 right-1 h-4 min-w-4 px-1 rounded-full bg-primary text-primary-foreground text-2xs font-semibold grid place-items-center">2</span>
           </button>
-          <div className="flex items-center gap-2 pl-3 border-l">
+          <div className="flex items-center gap-2 pl-3 ml-1 border-l">
             <div className="h-9 w-9 rounded-full bg-primary-soft text-primary grid place-items-center font-semibold">
               {firstName.slice(0, 1)}
             </div>
@@ -84,18 +84,24 @@ function StudentHome() {
             <IconChevronDown size={14} className="text-text-soft" />
           </div>
         </div>
-      </div>
+      </header>
 
       {/* Journey + Quick Actions */}
-      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,2.4fr)_minmax(0,1fr)] gap-4">
-        <section className="rounded-xl border bg-surface p-5 sm:p-6">
+      <section aria-labelledby="focus-heading" className="space-y-3">
+        <div className="flex items-baseline justify-between">
+          <h2 id="focus-heading" className="text-2xs uppercase tracking-[0.14em] text-text-soft font-semibold">Today's Focus</h2>
+          <span className="text-xs text-text-muted">Updated just now</span>
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,2.4fr)_minmax(0,1fr)] gap-4">
+        <section className="rounded-xl border bg-surface p-6 sm:p-7 shadow-xs">
           <div className="flex items-baseline justify-between">
-            <h2 className="text-lg font-semibold tracking-tight">Your Journey Progress</h2>
+            <h3 className="text-lg font-semibold tracking-tight">Your Journey Progress</h3>
+            <span className="text-xs text-text-muted">Stage 2 of 5</span>
           </div>
-          <p className="mt-1 text-xs text-text-muted">Keep going! You're on the right track.</p>
+          <p className="mt-1 text-xs text-text-muted">Keep going — you're on the right track.</p>
 
-          <div className="mt-4 flex items-center gap-3">
-            <div className="flex-1 h-2.5 rounded-full bg-primary-soft overflow-hidden">
+          <div className="mt-5 flex items-center gap-3">
+            <div className="flex-1 h-2 rounded-full bg-primary-soft overflow-hidden">
               <div className="h-full bg-primary transition-all" style={{ width: `${journeyPct}%` }} />
             </div>
             <span className="text-lg font-semibold text-gold tabular-nums">{journeyPct}%</span>
