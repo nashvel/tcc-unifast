@@ -11,9 +11,9 @@ html {
 
 :root {
   /* Heritage Maroon — deep maroon + warm ivory + muted gold. Apple-quality enterprise. */
-  --primary: #b8894a;               /* muted gold — the CTA color */
-  --primary-hover: #9c7238;
-  --primary-soft: #f5ecd8;
+  --primary: #7a1e2b;               /* heritage maroon — brand */
+  --primary-hover: #611620;
+  --primary-soft: #f3e6e8;
 
   --success: #3f6b4a;
   --success-soft: #ecf1ea;
@@ -70,9 +70,9 @@ html {
 }
 
 .dark {
-  --primary: #d1a15c;               /* muted gold — CTA */
-  --primary-hover: #e0b56f;
-  --primary-soft: #2a2113;
+  --primary: #c97a86;               /* maroon, lifted for dark bg */
+  --primary-hover: #d68f99;
+  --primary-soft: #3a1620;
 
   --success: #7aa384;
   --success-soft: #1a241c;
@@ -144,6 +144,10 @@ html {
   --color-danger-soft: var(--danger-soft);
   --color-info: var(--info);
   --color-info-soft: var(--info-soft);
+
+  --color-gold: var(--accent-gold);
+  --color-gold-hover: var(--accent-gold-hover);
+  --color-gold-soft: var(--accent-gold-soft);
 
   --color-sidebar-bg: var(--sidebar-bg);
   --color-sidebar-active: var(--sidebar-active);
