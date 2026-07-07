@@ -67,12 +67,12 @@ export function ThemeToggle() {
             style={{
               left: ripple.x,
               top: ripple.y,
-              width: 0,
-              height: 0,
+              width: ripple.r * 2.2,
+              height: ripple.r * 2.2,
+              marginLeft: -(ripple.r * 1.1),
+              marginTop: -(ripple.r * 1.1),
               background: ripple.color,
               boxShadow: `0 0 60px 10px ${ripple.color}`,
-              // CSS custom prop consumed by the keyframes below.
-              ["--r" as string]: `${ripple.r * 2.2}px`,
             }}
           />
         </div>
@@ -80,9 +80,9 @@ export function ThemeToggle() {
 
       <style>{`
         @keyframes themeDrop {
-          0%   { transform: translate(-50%, -50%) scale(0);   opacity: 0.95; border-radius: 50%; }
-          55%  { transform: translate(-50%, -50%) scale(0.55); opacity: 1;    border-radius: 45% 55% 60% 40% / 55% 45% 55% 45%; }
-          100% { transform: translate(-50%, -50%) scale(1);    opacity: 0;    border-radius: 40% 60% 55% 45% / 50% 50% 50% 50%; width: var(--r); height: var(--r); }
+          0%   { transform: scale(0);    opacity: 0.95; border-radius: 50%; }
+          55%  { transform: scale(0.55); opacity: 1;    border-radius: 45% 55% 60% 40% / 55% 45% 55% 45%; }
+          100% { transform: scale(1);    opacity: 0;    border-radius: 40% 60% 55% 45% / 50% 50% 50% 50%; }
         }
         @keyframes themeSpin {
           0%   { transform: rotate(-90deg) scale(0.6); opacity: 0; }
