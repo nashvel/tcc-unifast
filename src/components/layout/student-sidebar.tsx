@@ -6,6 +6,7 @@ import {
 import { cn } from "@/lib/utils";
 import type { ComponentType } from "react";
 import { branding } from "@/config/branding";
+import { BrandLogo } from "@/components/brand/brand-logo";
 
 const items: { to: string; label: string; icon: ComponentType<{ size?: number; className?: string }> }[] = [
   { to: "/student", label: "Dashboard", icon: IconDashboard },
