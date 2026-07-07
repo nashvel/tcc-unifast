@@ -48,8 +48,6 @@ function DocQueue() {
         <tbody>
           {isLoading && <Tr><Td colSpan={7} className="text-center text-text-muted py-6">Loading…</Td></Tr>}
           {!isLoading && filtered.length === 0 && <Tr><Td colSpan={7} className="text-center text-text-muted py-6">No documents in this view.</Td></Tr>}
-          {isLoading && <Tr><Td colSpan={7} className="text-center text-text-muted py-6">Loading…</Td></Tr>}
-          {!isLoading && filtered.length === 0 && <Tr><Td colSpan={7} className="text-center text-text-muted py-6">No documents in this view.</Td></Tr>}
           {pg.pageItems.map((d) => {
             const tone = d.risk_score >= 70 ? "danger" : d.risk_score >= 40 ? "warning" : "success";
             return (
