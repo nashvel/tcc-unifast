@@ -6,6 +6,7 @@ import {
 } from "@tabler/icons-react";
 import { cn } from "@/lib/utils";
 import type { ComponentType } from "react";
+import systemLogo from "@/assets/system-logo.png";
 
 interface NavItem { to: string; label: string; icon: ComponentType<{ size?: number; className?: string }>; }
 
@@ -52,9 +53,7 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <aside className="h-full w-60 shrink-0 border-r bg-sidebar-bg flex flex-col">
       <div className="h-14 flex items-center gap-2 px-4 border-b">
-        <div className="h-7 w-7 rounded-md bg-primary grid place-items-center text-white">
-          <IconShieldCheck size={16} />
-        </div>
+        <img src={systemLogo} alt="Tagoloan Community College" className="h-9 w-9 object-contain" />
         <div className="leading-tight">
           <p className="text-sm font-semibold text-sidebar-text">UniFAST TES</p>
           <p className="text-2xs text-sidebar-text-muted">Grantee Management</p>
