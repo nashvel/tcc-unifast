@@ -236,12 +236,12 @@ function StudentHome() {
           <div className="mt-5 grid grid-cols-2 gap-4">
             <div>
               <p className="text-xs text-text-muted">General Weighted Average</p>
-              <p className="mt-1 text-4xl font-semibold tabular-nums">1.35</p>
+              <p className="mt-1 text-3xl font-semibold tabular-nums">1.35</p>
               <span className="mt-2 inline-block text-2xs font-semibold px-2 py-1 rounded-full bg-success-soft text-success">Very Good</span>
             </div>
             <div>
               <p className="text-xs text-text-muted">Units Earned</p>
-              <p className="mt-1 text-4xl font-semibold tabular-nums">24 <span className="text-text-muted">/ 24</span></p>
+              <p className="mt-1 text-3xl font-semibold tabular-nums">24 <span className="text-text-muted">/ 24</span></p>
               <span className="mt-2 inline-block text-2xs font-semibold px-2 py-1 rounded-full bg-primary-soft text-primary">Full Load</span>
             </div>
           </div>
