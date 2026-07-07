@@ -13,13 +13,13 @@ export const Route = createFileRoute("/student/")({
   component: StudentHome,
 });
 
-const JOURNEY = [
+const JOURNEY: { key: string; label: string; done: boolean; current?: boolean }[] = [
   { key: "explore", label: "Explore", done: true },
   { key: "requirements", label: "Requirements", done: true, current: true },
   { key: "review", label: "Review", done: false },
   { key: "interview", label: "Interview", done: false },
   { key: "decision", label: "Decision", done: false },
-] as const;
+];
 
 function StudentHome() {
   const profile = useAuthStore((s) => s.profile);
