@@ -6,6 +6,7 @@ import {
 import { cn } from "@/lib/utils";
 import type { ComponentType } from "react";
 import { branding } from "@/config/branding";
+import { BrandLogo } from "@/components/brand/brand-logo";
 
 const items: { to: string; label: string; icon: ComponentType<{ size?: number; className?: string }> }[] = [
   { to: "/student", label: "Dashboard", icon: IconDashboard },
@@ -23,7 +24,7 @@ export function StudentSidebar({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <aside className="h-full w-60 shrink-0 border-r bg-sidebar-bg flex flex-col">
       <div className="h-14 flex items-center gap-2 px-4 border-b">
-        <img src={branding.systemLogoUrl} alt={branding.institution} className="h-9 w-9 object-contain" />
+        <BrandLogo size="md" />
         <div className="leading-tight">
           <p className="text-sm font-semibold text-sidebar-text">{branding.studentPortalName}</p>
           <p className="text-2xs text-sidebar-text-muted">{branding.systemName}</p>

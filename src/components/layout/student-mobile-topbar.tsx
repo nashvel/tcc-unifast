@@ -5,6 +5,7 @@ import { useAuthStore } from "@/stores/authStore";
 import { useNotifications } from "@/hooks/queries";
 import { UserAvatar } from "@/components/ui/dicebear-avatar";
 import { signOut as mockSignOut } from "@/lib/mock-auth";
+import { BrandLogo } from "@/components/brand/brand-logo";
 
 const TITLES: Record<string, string> = {
   "/student": "Home",
@@ -52,7 +53,7 @@ export function StudentMobileTopbar() {
           <IconChevronLeft size={20} />
         </button>
       ) : (
-        <div className="w-2" />
+        <BrandLogo size="sm" />
       )}
 
       <h1 className="flex-1 text-base font-semibold truncate">{title}</h1>
