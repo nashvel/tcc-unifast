@@ -19,6 +19,7 @@ const ALLOWLIST = new Set([
   "routes/app.security.tsx",       // security severity palette is intentional
   "routes/app.security.memory.tsx",// security severity palette is intentional
   "lib/error-page.ts",             // standalone HTML fallback — no runtime tokens
+  "components/ui/sidebar.tsx",     // shadcn primitive — uses 0-blur shadow as a border
   "routes/app.reports.preview.tsx",// printable PDF markup — self-contained styles
 ]);
 
