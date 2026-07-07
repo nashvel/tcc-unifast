@@ -29,7 +29,7 @@ function UsersPage() {
         <tbody>
           {isLoading && <Tr><Td colSpan={8} className="text-center text-text-muted py-6">Loading…</Td></Tr>}
           {!isLoading && users.length === 0 && <Tr><Td colSpan={8} className="text-center text-text-muted py-6">No staff users.</Td></Tr>}
-          {users.map((u) => (
+          {pg.pageItems.map((u) => (
             <Tr key={u.id}>
               <Td className="font-mono text-xs">{u.username}</Td>
               <Td className="font-medium">{u.fullName}</Td>
@@ -46,6 +46,7 @@ function UsersPage() {
           ))}
         </tbody>
       </DataTable>
+      <TablePagination {...pg} onPageChange={pg.setPage} onPageSizeChange={pg.setPageSize} className="rounded-b-lg border border-t-0 -mt-px" />
     </div>
   );
 }
