@@ -80,9 +80,9 @@ export function ThemeToggle() {
 
       <style>{`
         @keyframes themeDrop {
-          0%   { transform: scale(0);    opacity: 0.95; border-radius: 50%; }
-          55%  { transform: scale(0.55); opacity: 1;    border-radius: 45% 55% 60% 40% / 55% 45% 55% 45%; }
-          100% { transform: scale(1);    opacity: 0;    border-radius: 40% 60% 55% 45% / 50% 50% 50% 50%; }
+          0%   { transform: scale(0);   opacity: 1; border-radius: 50%; }
+          40%  { transform: scale(0.5); opacity: 1; border-radius: 46% 54% 58% 42% / 54% 46% 54% 46%; }
+          100% { transform: scale(1);   opacity: 0; border-radius: 42% 58% 54% 46% / 50% 50% 50% 50%; }
         }
         @keyframes themeSpin {
           0%   { transform: rotate(-90deg) scale(0.6); opacity: 0; }
