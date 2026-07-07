@@ -1,48 +1,32 @@
 import { useEffect } from "react";
-import { useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuthStore, type AppRole } from "@/stores/authStore";
+import { useAuthStore } from "@/stores/authStore";
+import { loadSession } from "@/lib/mock-auth";
 
-async function hydrate(userId: string, email: string | null) {
-  const store = useAuthStore.getState();
-  store.setSession({ userId, email });
-  const [{ data: profile }, { data: roleRow }] = await Promise.all([
-    supabase.from("profiles").select("*").eq("id", userId).maybeSingle(),
-    supabase.from("user_roles").select("role").eq("user_id", userId).maybeSingle(),
-  ]);
-  store.setProfile((profile as never) ?? null);
-  store.setRole(((roleRow?.role as AppRole | undefined) ?? "student"));
-  store.setReady(true);
-}
-
-/** Mount once near the app root. Hydrates auth store from Supabase and keeps it in sync. */
+/** Mount once near the app root. Hydrates auth store from the local mock session. */
 export function useSessionListener() {
-  const qc = useQueryClient();
   useEffect(() => {
-    let mounted = true;
+    const s = loadSession();
+    const store = useAuthStore.getState();
+    if (s) {
+      store.setSession({ userId: s.userId, email: s.email });
+      store.setProfile(s.profile);
+      store.setRole(s.role);
+    }
+    store.setReady(true);
 
-    supabase.auth.getSession().then(({ data }) => {
-      if (!mounted) return;
-      const user = data.session?.user;
-      if (user) hydrate(user.id, user.email ?? null);
-      else useAuthStore.getState().setReady(true);
-    });
-
-    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
-      const user = session?.user;
-      if (user) {
-        hydrate(user.id, user.email ?? null);
-        if (event !== "SIGNED_OUT") qc.invalidateQueries();
+    function onStorage(e: StorageEvent) {
+      if (e.key !== "unifast.mock.session") return;
+      const next = loadSession();
+      const st = useAuthStore.getState();
+      if (next) {
+        st.setSession({ userId: next.userId, email: next.email });
+        st.setProfile(next.profile);
+        st.setRole(next.role);
       } else {
-        useAuthStore.getState().reset();
-        useAuthStore.getState().setReady(true);
+        st.reset();
       }
-    });
-
-    return () => {
-      mounted = false;
-      sub.subscription.unsubscribe();
-    };
-  }, [qc]);
+    }
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
 }

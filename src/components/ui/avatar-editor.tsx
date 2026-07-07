@@ -1,17 +1,17 @@
 import { useRef, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuthStore } from "@/stores/authStore";
 import { UserAvatar } from "@/components/ui/dicebear-avatar";
 import { Btn } from "@/components/ui/btn";
 import { IconUpload, IconTrash } from "@tabler/icons-react";
 import { toast } from "sonner";
+import { setAvatarUrlLocal } from "@/lib/mock-auth";
 
 const MAX_BYTES = 4 * 1024 * 1024;
 
-/** Settings card: upload, replace, or remove the signed-in user's avatar. */
+/** Mock avatar editor: stores a data URL in localStorage. */
 export function AvatarEditor() {
-  const userId = useAuthStore((s) => s.userId);
   const email = useAuthStore((s) => s.email);
+  const role = useAuthStore((s) => s.role);
   const profile = useAuthStore((s) => s.profile);
   const setProfile = useAuthStore((s) => s.setProfile);
 
@@ -21,59 +21,34 @@ export function AvatarEditor() {
   const displayName = profile?.full_name || email || "User";
   const seed = email || displayName;
 
-  async function persistAvatarUrl(path: string | null) {
-    if (!userId) return;
-    const { error } = await supabase.from("profiles").update({ avatar_url: path }).eq("id", userId);
-    if (error) throw error;
-    setProfile(profile ? { ...profile, avatar_url: path } : profile);
-  }
-
   async function handleFile(file: File) {
-    if (!userId) return toast.error("Not signed in");
+    if (!role) return toast.error("Not signed in");
     if (!file.type.startsWith("image/")) return toast.error("Pick an image file");
     if (file.size > MAX_BYTES) return toast.error("Image must be under 4 MB");
     setBusy(true);
     try {
-      const ext = file.name.split(".").pop()?.toLowerCase() || "png";
-      const path = `${userId}/avatar-${Date.now()}.${ext}`;
-      const { error: upErr } = await supabase.storage.from("avatars").upload(path, file, {
-        upsert: true,
-        contentType: file.type,
+      const dataUrl: string = await new Promise((resolve, reject) => {
+        const r = new FileReader();
+        r.onload = () => resolve(r.result as string);
+        r.onerror = () => reject(new Error("Read failed"));
+        r.readAsDataURL(file);
       });
-      if (upErr) throw upErr;
-
-      // Best-effort cleanup of the previous file.
-      const prev = profile?.avatar_url;
-      if (prev && !/^https?:\/\//.test(prev) && prev !== path) {
-        await supabase.storage.from("avatars").remove([prev]);
-      }
-      await persistAvatarUrl(path);
+      setAvatarUrlLocal(role, dataUrl);
+      if (profile) setProfile({ ...profile, avatar_url: dataUrl });
       toast.success("Avatar updated");
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "Upload failed";
-      toast.error(msg);
+      toast.error(e instanceof Error ? e.message : "Upload failed");
     } finally {
       setBusy(false);
       if (fileRef.current) fileRef.current.value = "";
     }
   }
 
-  async function removeAvatar() {
-    if (!profile?.avatar_url) return;
-    setBusy(true);
-    try {
-      const prev = profile.avatar_url;
-      if (prev && !/^https?:\/\//.test(prev)) {
-        await supabase.storage.from("avatars").remove([prev]);
-      }
-      await persistAvatarUrl(null);
-      toast.success("Avatar reset to default");
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : "Could not remove";
-      toast.error(msg);
-    } finally {
-      setBusy(false);
-    }
+  function removeAvatar() {
+    if (!role) return;
+    setAvatarUrlLocal(role, null);
+    if (profile) setProfile({ ...profile, avatar_url: null });
+    toast.success("Avatar reset to default");
   }
 
   return (
@@ -83,15 +58,10 @@ export function AvatarEditor() {
         <UserAvatar seed={seed} path={profile?.avatar_url} size={72} className="ring-2 ring-border" />
         <div className="flex-1 min-w-0">
           <p className="text-xs text-text-muted mb-2">
-            PNG or JPG, square works best. Up to 4 MB. Leave empty to use the default DiceBear avatar.
+            PNG or JPG, square works best. Up to 4 MB. Stored locally in demo mode.
           </p>
           <div className="flex flex-wrap gap-2">
-            <Btn
-              variant="primary"
-              icon={IconUpload}
-              onClick={() => fileRef.current?.click()}
-              disabled={busy}
-            >
+            <Btn variant="primary" icon={IconUpload} onClick={() => fileRef.current?.click()} disabled={busy}>
               {profile?.avatar_url ? "Replace" : "Upload"}
             </Btn>
             {profile?.avatar_url && (

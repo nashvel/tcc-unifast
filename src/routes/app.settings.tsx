@@ -10,19 +10,12 @@ import { ChartCard } from "@/components/ui/chart-card";
 import { FormField, TextInput, Selectish } from "@/components/ui/form-field";
 import { Btn } from "@/components/ui/btn";
 import { AvatarEditor } from "@/components/ui/avatar-editor";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuthStore } from "@/stores/authStore";
+import { changePasswordMock, loadLoginEvents, signOut as mockSignOut, updateProfileLocal } from "@/lib/mock-auth";
 
 export const Route = createFileRoute("/app/settings")({
   component: SettingsPage,
 });
-
-type LoginEvent = {
-  id: string;
-  signed_in_at: string;
-  ip_address: string | null;
-  user_agent: string | null;
-};
 
 const DEVICE_KINDS = ["All", "iOS", "Android", "Mac", "Windows", "Linux", "Other"] as const;
 type DeviceKind = (typeof DEVICE_KINDS)[number];
@@ -92,10 +85,10 @@ function SettingsPage() {
     if (!name) { setProfileMsg({ tone: "err", text: "Full name is required." }); return; }
     setProfileBusy(true);
     setProfileMsg(null);
-    const { error } = await supabase.from("profiles").update({ full_name: name }).eq("id", userId);
-    setProfileBusy(false);
-    if (error) { setProfileMsg({ tone: "err", text: error.message }); return; }
+    await new Promise((r) => setTimeout(r, 250));
+    updateProfileLocal({ full_name: name });
     if (profile) setProfileStore({ ...profile, full_name: name });
+    setProfileBusy(false);
     setProfileMsg({ tone: "ok", text: "Profile updated." });
   }
 
@@ -106,15 +99,7 @@ function SettingsPage() {
   const events = useQuery({
     queryKey: ["login_events", userId],
     enabled: !!userId,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("login_events")
-        .select("id, signed_in_at, ip_address, user_agent")
-        .order("signed_in_at", { ascending: false })
-        .limit(200);
-      if (error) throw error;
-      return (data ?? []) as LoginEvent[];
-    },
+    queryFn: async () => loadLoginEvents(),
   });
 
   const filtered = useMemo(() => {
@@ -151,30 +136,17 @@ function SettingsPage() {
     setErr(null); setOk(null);
     if (!validate()) return;
     setBusy(true);
-    const { data: u } = await supabase.auth.getUser();
-    const userEmail = u.user?.email;
-    if (!userEmail) { setBusy(false); setErr("No active session. Please sign in again."); return; }
-    const { error: reauthErr } = await supabase.auth.signInWithPassword({ email: userEmail, password: current });
-    if (reauthErr) { setBusy(false); setFieldErrs({ current: "Current password is incorrect." }); return; }
-    const { error } = await supabase.auth.updateUser({ password: next });
+    const res = await changePasswordMock(current, next);
     setBusy(false);
-    if (error) {
-      const msg = /should be different|same_password/i.test(error.message)
-        ? "New password must be different from the current password."
-        : /weak|pwned|leaked/i.test(error.message)
-        ? "This password has appeared in data breaches. Choose a different one."
-        : error.message;
-      setErr(msg);
-      return;
-    }
-    setOk("Password updated successfully.");
+    if (res.error) { setErr(res.error); return; }
+    setOk("Password updated successfully (demo).");
     setCurrent(""); setNext(""); setConfirm(""); setFieldErrs({});
   }
 
   async function handleSignOut() {
     await qc.cancelQueries();
     qc.clear();
-    await supabase.auth.signOut();
+    mockSignOut();
     useAuthStore.getState().reset();
     navigate({ to: "/login", replace: true });
   }

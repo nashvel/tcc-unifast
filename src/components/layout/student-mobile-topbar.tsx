@@ -4,8 +4,7 @@ import { IconBell, IconChevronLeft } from "@tabler/icons-react";
 import { useAuthStore } from "@/stores/authStore";
 import { useNotifications } from "@/hooks/queries";
 import { UserAvatar } from "@/components/ui/dicebear-avatar";
-import { supabase } from "@/integrations/supabase/client";
-
+import { signOut as mockSignOut } from "@/lib/mock-auth";
 
 const TITLES: Record<string, string> = {
   "/student": "Home",
@@ -20,7 +19,6 @@ const TITLES: Record<string, string> = {
 
 const ROOT = "/student";
 
-/** Mobile-app style topbar for the student portal: contextual title, back chevron on subpages, bell + avatar. */
 export function StudentMobileTopbar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
@@ -29,14 +27,13 @@ export function StudentMobileTopbar() {
   const { data: notifs = [] } = useNotifications();
   const [openProfile, setOpenProfile] = useState(false);
 
-
   const unread = notifs.filter((n) => !n.read).length;
   const displayName = profile?.full_name || email || "Student";
   const title = TITLES[pathname] ?? "Student Portal";
   const isRoot = pathname === ROOT;
 
-  async function signOut() {
-    await supabase.auth.signOut();
+  function signOut() {
+    mockSignOut();
     useAuthStore.getState().reset();
     navigate({ to: "/login" });
   }
@@ -73,8 +70,6 @@ export function StudentMobileTopbar() {
         )}
       </button>
 
-
-
       <div className="relative">
         <button
           onClick={() => { setOpenProfile((v) => !v); }}
@@ -110,4 +105,3 @@ export function StudentMobileTopbar() {
     </header>
   );
 }
-

@@ -11,19 +11,12 @@ import { FormField, TextInput } from "@/components/ui/form-field";
 import { Selectish } from "@/components/ui/form-field";
 import { Btn } from "@/components/ui/btn";
 import { AvatarEditor } from "@/components/ui/avatar-editor";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuthStore } from "@/stores/authStore";
+import { changePasswordMock, loadLoginEvents, signOut as mockSignOut, updateProfileLocal } from "@/lib/mock-auth";
 
 export const Route = createFileRoute("/student/settings")({
   component: StudentSettings,
 });
-
-type LoginEvent = {
-  id: string;
-  signed_in_at: string;
-  ip_address: string | null;
-  user_agent: string | null;
-};
 
 const DEVICE_KINDS = ["All", "iOS", "Android", "Mac", "Windows", "Linux", "Other"] as const;
 type DeviceKind = (typeof DEVICE_KINDS)[number];
@@ -48,7 +41,6 @@ function deviceKind(ua: string | null): DeviceKind {
   return "Other";
 }
 
-/* ---------- Password strength ---------- */
 function evaluatePassword(pw: string): { score: number; issues: string[] } {
   const issues: string[] = [];
   if (pw.length < 10) issues.push("at least 10 characters");
@@ -74,7 +66,6 @@ function StudentSettings() {
   const qc = useQueryClient();
   const navigate = useNavigate();
 
-  // password form
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -83,7 +74,6 @@ function StudentSettings() {
   const [fieldErrs, setFieldErrs] = useState<{ current?: string; next?: string; confirm?: string }>({});
   const [ok, setOk] = useState<string | null>(null);
 
-  // edit profile form
   const setProfileStore = useAuthStore((s) => s.setProfile);
   const [fullName, setFullName] = useState(profile?.full_name ?? "");
   const [profileBusy, setProfileBusy] = useState(false);
@@ -93,26 +83,16 @@ function StudentSettings() {
     e.preventDefault();
     if (!userId) return;
     const name = fullName.trim();
-    if (!name) {
-      setProfileMsg({ tone: "err", text: "Full name is required." });
-      return;
-    }
+    if (!name) { setProfileMsg({ tone: "err", text: "Full name is required." }); return; }
     setProfileBusy(true);
     setProfileMsg(null);
-    const { error } = await supabase
-      .from("profiles")
-      .update({ full_name: name })
-      .eq("id", userId);
-    setProfileBusy(false);
-    if (error) {
-      setProfileMsg({ tone: "err", text: error.message });
-      return;
-    }
+    await new Promise((r) => setTimeout(r, 250));
+    updateProfileLocal({ full_name: name });
     if (profile) setProfileStore({ ...profile, full_name: name });
+    setProfileBusy(false);
     setProfileMsg({ tone: "ok", text: "Profile updated." });
   }
 
-  // filters
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [device, setDevice] = useState<DeviceKind>("All");
@@ -120,15 +100,7 @@ function StudentSettings() {
   const events = useQuery({
     queryKey: ["login_events", userId],
     enabled: !!userId,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("login_events")
-        .select("id, signed_in_at, ip_address, user_agent")
-        .order("signed_in_at", { ascending: false })
-        .limit(200);
-      if (error) throw error;
-      return (data ?? []) as LoginEvent[];
-    },
+    queryFn: async () => loadLoginEvents(),
   });
 
   const filtered = useMemo(() => {
@@ -165,35 +137,17 @@ function StudentSettings() {
     setErr(null); setOk(null);
     if (!validate()) return;
     setBusy(true);
-    const { data: u } = await supabase.auth.getUser();
-    const userEmail = u.user?.email;
-    if (!userEmail) { setBusy(false); setErr("No active session. Please sign in again."); return; }
-    const { error: reauthErr } = await supabase.auth.signInWithPassword({ email: userEmail, password: current });
-    if (reauthErr) {
-      setBusy(false);
-      setFieldErrs({ current: "Current password is incorrect." });
-      return;
-    }
-    const { error } = await supabase.auth.updateUser({ password: next });
+    const res = await changePasswordMock(current, next);
     setBusy(false);
-    if (error) {
-      // Surface specific Supabase auth errors clearly
-      const msg = /should be different|same_password/i.test(error.message)
-        ? "New password must be different from the current password."
-        : /weak|pwned|leaked/i.test(error.message)
-        ? "This password has appeared in data breaches. Choose a different one."
-        : error.message;
-      setErr(msg);
-      return;
-    }
-    setOk("Password updated successfully.");
+    if (res.error) { setErr(res.error); return; }
+    setOk("Password updated successfully (demo).");
     setCurrent(""); setNext(""); setConfirm(""); setFieldErrs({});
   }
 
   async function handleSignOut() {
     await qc.cancelQueries();
     qc.clear();
-    await supabase.auth.signOut();
+    mockSignOut();
     useAuthStore.getState().reset();
     navigate({ to: "/login", replace: true });
   }
@@ -240,7 +194,6 @@ function StudentSettings() {
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-[220px_minmax(0,1fr)] gap-4">
-        {/* Side navigation */}
         <nav aria-label="Settings sections" className="rounded-lg border bg-surface p-2 h-fit lg:sticky lg:top-4">
           <ul className="space-y-0.5">
             {nav.map((n) => {
@@ -270,7 +223,6 @@ function StudentSettings() {
           </ul>
         </nav>
 
-        {/* Section content */}
         <div className="min-w-0 space-y-3">
         {section === "general" && (
         <ChartCard title="Edit Profile">
@@ -404,7 +356,6 @@ function StudentSettings() {
           </p>
         </ChartCard>
 
-        {/* Login Activity */}
         <ChartCard
           title="Login Activity"
           actions={
@@ -413,7 +364,6 @@ function StudentSettings() {
             </Btn>
           }
         >
-          {/* Filters */}
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 mb-3">
             <FormField label="From">
               <TextInput type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
@@ -467,7 +417,7 @@ function StudentSettings() {
             </ul>
           )}
           <p className="mt-3 text-[10px] text-text-soft">
-            Showing {filtered.length} of {events.data?.length ?? 0} recent sign-ins. Contact your office if you see activity you don't recognize.
+            Showing {filtered.length} of {events.data?.length ?? 0} recent sign-ins.
           </p>
         </ChartCard>
         </>

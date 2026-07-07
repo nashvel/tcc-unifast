@@ -5,8 +5,9 @@ import { PageHeader } from "@/components/ui/page-header";
 import { FormField, TextInput } from "@/components/ui/form-field";
 import { Btn } from "@/components/ui/btn";
 import { UserAvatar } from "@/components/ui/dicebear-avatar";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuthStore } from "@/stores/authStore";
+
+const DONE_KEY = "unifast.mock.onboarding_completed_at";
 
 export const Route = createFileRoute("/student/profile")({
   component: StudentProfile,
@@ -43,16 +44,16 @@ function StudentProfile() {
         <div className="rounded-lg border bg-surface p-4 space-y-3">
           <p className="text-sm font-semibold">Personal</p>
           <FormField label="Full name"><TextInput value={displayName} disabled readOnly /></FormField>
-          <FormField label="Birthdate"><TextInput type="date" value="2003-05-14" disabled readOnly /></FormField>
+          <FormField label="Birthdate"><TextInput type="date" value={profile?.birthdate ?? "2003-05-14"} disabled readOnly /></FormField>
           <FormField label="Email"><TextInput value={email ?? "mc.delacruz@plm.edu.ph"} disabled readOnly /></FormField>
-          <FormField label="Contact"><TextInput value="+639171234567" disabled readOnly /></FormField>
+          <FormField label="Contact"><TextInput value={profile?.contact ?? "+639171234567"} disabled readOnly /></FormField>
         </div>
         <div className="rounded-lg border bg-surface p-4 space-y-3">
           <p className="text-sm font-semibold">Academic</p>
-          <FormField label="University"><TextInput value="Pamantasan ng Lungsod ng Maynila" disabled readOnly /></FormField>
-          <FormField label="Program"><TextInput value="BS Computer Science" disabled readOnly /></FormField>
-          <FormField label="Year level"><TextInput value="2" disabled readOnly /></FormField>
-          <FormField label="Student #"><TextInput value="2024-00123" disabled readOnly /></FormField>
+          <FormField label="University"><TextInput value={profile?.university ?? "Pamantasan ng Lungsod ng Maynila"} disabled readOnly /></FormField>
+          <FormField label="Program"><TextInput value={profile?.program ?? "BS Computer Science"} disabled readOnly /></FormField>
+          <FormField label="Year level"><TextInput value={String(profile?.year_level ?? "2")} disabled readOnly /></FormField>
+          <FormField label="Student #"><TextInput value={profile?.student_number ?? "2024-00123"} disabled readOnly /></FormField>
         </div>
       </div>
     </div>
@@ -60,25 +61,11 @@ function StudentProfile() {
 }
 
 function OnboardingStatus() {
-  const userId = useAuthStore((s) => s.userId);
   const [completedAt, setCompletedAt] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!userId) return;
-    let active = true;
-    (async () => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("onboarding_completed_at")
-        .eq("id", userId)
-        .maybeSingle();
-      if (!active) return;
-      setCompletedAt((data?.onboarding_completed_at as string | null) ?? null);
-      setLoading(false);
-    })();
-    return () => { active = false; };
-  }, [userId]);
+    setCompletedAt(typeof window !== "undefined" ? localStorage.getItem(DONE_KEY) : null);
+  }, []);
 
   const done = !!completedAt;
   const completedLabel = completedAt
@@ -91,7 +78,7 @@ function OnboardingStatus() {
         <div>
           <p className="text-sm font-semibold">Onboarding verification</p>
           <p className="text-xs text-text-muted">
-            {loading ? "Loading…" : done ? `Completed on ${completedLabel}` : "Complete your scans on next sign-in."}
+            {done ? `Completed on ${completedLabel}` : "Complete your scans on next sign-in."}
           </p>
         </div>
       </div>
