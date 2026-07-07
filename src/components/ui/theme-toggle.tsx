@@ -44,21 +44,30 @@ export function ThemeToggle() {
     <>
       <button
         ref={btnRef}
-        onClick={handleClick}
-        disabled={!!ripple}
+        type="button"
+        role="switch"
+        aria-checked={dark}
+        aria-label={dark ? "Dark mode on, activate to switch to light mode" : "Light mode on, activate to switch to dark mode"}
+        aria-live="polite"
         aria-busy={!!ripple}
+        disabled={!!ripple}
         title={dark ? "Switch to light mode" : "Switch to dark mode"}
-        className="relative p-2 rounded-md hover:bg-surface-muted text-text-muted overflow-hidden disabled:cursor-wait disabled:opacity-70"
+        onClick={handleClick}
+        className="relative p-2 rounded-md text-text-muted overflow-hidden hover:bg-surface-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface disabled:cursor-wait disabled:opacity-70"
       >
         <span
+          aria-hidden="true"
           key={dark ? "sun" : "moon"}
-          className={`inline-flex ${ripple ? "animate-[themePulse_640ms_ease-in-out_infinite]" : "animate-[themeSpin_420ms_ease-out]"}`}
+          className={`inline-flex motion-reduce:animate-none ${ripple ? "animate-[themePulse_640ms_ease-in-out_infinite]" : "animate-[themeSpin_420ms_ease-out]"}`}
         >
           {dark ? <IconSun size={18} /> : <IconMoon size={18} />}
         </span>
         {ripple && (
-          <span className="pointer-events-none absolute inset-0 rounded-md ring-1 ring-primary/40 animate-[themePulse_640ms_ease-in-out_infinite]" />
+          <span aria-hidden="true" className="pointer-events-none absolute inset-0 rounded-md ring-1 ring-primary/40 motion-reduce:animate-none animate-[themePulse_640ms_ease-in-out_infinite]" />
         )}
+        <span className="sr-only">
+          {ripple ? "Switching theme…" : dark ? "Dark mode active" : "Light mode active"}
+        </span>
       </button>
 
       {ripple && (
