@@ -5,6 +5,7 @@ import { useAuthStore } from "@/stores/authStore";
 import { useNotifications } from "@/hooks/queries";
 import { UserAvatar } from "@/components/ui/dicebear-avatar";
 import { signOut as mockSignOut } from "@/lib/mock-auth";
+import { BrandLogo } from "@/components/brand/brand-logo";
 
 const TITLES: Record<string, string> = {
   "/student": "Home",
