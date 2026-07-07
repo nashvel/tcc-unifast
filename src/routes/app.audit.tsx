@@ -28,6 +28,8 @@ function Audit() {
     if (action && !l.action.includes(action.toLowerCase())) return false;
     return true;
   });
+  const pg = usePagination(filtered, 25);
+
 
   return (
     <div>
