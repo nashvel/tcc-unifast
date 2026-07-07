@@ -61,7 +61,7 @@ function StudentLayout() {
 
   return (
     <div className="min-h-screen flex bg-bg">
-      <div className="sticky top-0 h-screen">
+      <div className="sticky top-0 self-start h-screen z-30">
         <StudentSidebar />
       </div>
       <div className="flex-1 min-w-0 flex flex-col">
