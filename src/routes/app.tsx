@@ -21,8 +21,8 @@ export const Route = createFileRoute("/app")({
 function AppLayout() {
   const [open, setOpen] = useState(false);
   return (
-    <div className="min-h-screen flex bg-bg">
-      <div className="hidden lg:block sticky top-0 h-screen">
+    <div className="min-h-screen bg-bg">
+      <div className="hidden lg:block fixed inset-y-0 left-0 w-60 z-30">
         <AppSidebar />
       </div>
       {open && (
@@ -33,7 +33,7 @@ function AppLayout() {
           </div>
         </div>
       )}
-      <div className="flex-1 min-w-0 flex flex-col">
+      <div className="min-h-screen flex flex-col lg:pl-60">
         <AppTopbar onToggleSidebar={() => setOpen((v) => !v)} />
         <main className="flex-1 p-4 sm:p-6 max-w-[1400px] w-full mx-auto">
           <PageTransition><Outlet /></PageTransition>
