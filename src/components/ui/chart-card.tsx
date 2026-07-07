@@ -116,15 +116,37 @@ export function MiniLine({ points, labels }: { points: number[]; labels?: string
       ))}
 
       {/* area + line */}
-      <path d={area} fill={`url(#${gradId})`} />
-      <path d={line} stroke="var(--primary)" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+      <motion.path
+        d={area}
+        fill={`url(#${gradId})`}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.6, delay: 0.6 }}
+      />
+      <motion.path
+        d={line}
+        stroke="var(--primary)"
+        strokeWidth="2"
+        fill="none"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        initial={{ pathLength: 0 }}
+        animate={{ pathLength: 1 }}
+        transition={{ duration: 1.2, ease: "easeInOut" }}
+      />
 
       {/* dots */}
       {xy.map((pt, i) => (
-        <g key={i}>
+        <motion.g
+          key={i}
+          initial={{ opacity: 0, scale: 0 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.3, delay: 0.8 + i * 0.05 }}
+          style={{ transformOrigin: `${pt.x}px ${pt.y}px` }}
+        >
           <circle cx={pt.x} cy={pt.y} r="3" fill="var(--surface, #fff)" stroke="var(--primary)" strokeWidth="1.5" />
           <title>{labels?.[i] ? `${labels[i]}: ${pt.v}` : `${pt.v}`}</title>
-        </g>
+        </motion.g>
       ))}
 
       {/* x labels */}
