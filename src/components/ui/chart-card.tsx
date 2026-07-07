@@ -48,9 +48,12 @@ export function MiniBars({ data }: { data: { label: string; value: number; tone?
             <span className="tabular-nums font-medium">{d.value.toLocaleString()}</span>
           </div>
           <div className="h-1.5 rounded-full bg-surface-muted overflow-hidden">
-            <div
+            <motion.div
               className={cn("h-full rounded-full", toneClass[d.tone ?? "primary"])}
-              style={{ width: `${(d.value / max) * 100}%` }}
+              initial={{ width: 0 }}
+              whileInView={{ width: `${(d.value / max) * 100}%` }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
             />
           </div>
         </div>
