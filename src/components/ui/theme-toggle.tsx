@@ -9,6 +9,7 @@ export function ThemeToggle() {
   const [ripple, setRipple] = useState<{
     x: number; y: number; r: number; color: string; id: number;
   } | null>(null);
+  const [announcement, setAnnouncement] = useState("");
 
   useEffect(() => {
     if (typeof document === "undefined") return;
