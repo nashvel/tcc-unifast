@@ -30,7 +30,7 @@ export function StudentSidebar({ onNavigate }: { onNavigate?: () => void }) {
           <p className="text-2xs text-sidebar-text-muted">UniFAST TES</p>
         </div>
       </div>
-      <nav className="flex-1 overflow-y-auto py-3 px-2">
+      <nav className="flex-1 min-h-0 overflow-y-auto py-3 px-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
         <ul className="space-y-0.5">
           {items.map((it) => {
             const active = it.to === "/student" ? pathname === "/student" : pathname.startsWith(it.to);
