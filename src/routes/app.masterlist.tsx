@@ -95,7 +95,7 @@ function MasterlistPage() {
               {!isLoading && rows.length === 0 && (
                 <Tr><Td colSpan={7} className="text-center text-text-muted py-6">No rows yet. Seed demo data from the login page.</Td></Tr>
               )}
-              {rows.map((r) => (
+              {pg.pageItems.map((r) => (
                 <Tr key={r.id}>
                   <Td className="font-mono text-xs">{r.student_number || <span className="text-danger italic">missing</span>}</Td>
                   <Td>{r.first_name} {r.last_name}</Td>
@@ -110,6 +110,7 @@ function MasterlistPage() {
               ))}
             </tbody>
           </DataTable>
+          <TablePagination {...pg} onPageChange={pg.setPage} onPageSizeChange={pg.setPageSize} className="rounded-b-lg border border-t-0 -mt-px" />
 
           <div className="flex justify-end gap-2">
             <Btn variant="outline" onClick={() => setPreviewed(false)}>Cancel</Btn>
