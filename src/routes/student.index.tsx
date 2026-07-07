@@ -147,9 +147,9 @@ function StudentHome() {
       <section aria-labelledby="track-heading" className="space-y-3">
         <h2 id="track-heading" className="text-2xs uppercase tracking-[0.14em] text-text-soft font-semibold">Track & Manage</h2>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <section className="rounded-xl border bg-surface p-5">
+        <section className="rounded-xl border bg-surface p-6 shadow-xs">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold tracking-tight">My Applications</h2>
+            <h3 className="text-lg font-semibold tracking-tight">My Applications</h3>
             <Link to="/student/submissions" className="text-xs text-primary hover:underline">View all</Link>
           </div>
           <ul className="mt-4 space-y-3">
@@ -172,9 +172,9 @@ function StudentHome() {
           </ul>
         </section>
 
-        <section className="rounded-xl border bg-surface p-5">
+        <section className="rounded-xl border bg-surface p-6 shadow-xs">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold tracking-tight">Required Documents</h2>
+            <h3 className="text-lg font-semibold tracking-tight">Required Documents</h3>
             <Link to="/student/documents" className="text-xs text-primary hover:underline">View all</Link>
           </div>
           <div className="mt-3 h-2 rounded-full bg-primary-soft overflow-hidden">
@@ -206,9 +206,9 @@ function StudentHome() {
           </div>
         </section>
 
-        <section className="rounded-xl border bg-surface p-5">
+        <section className="rounded-xl border bg-surface p-6 shadow-xs">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold tracking-tight">Upcoming</h2>
+            <h3 className="text-lg font-semibold tracking-tight">Upcoming</h3>
             <Link to="/student/notifications" className="text-xs text-primary hover:underline">View calendar</Link>
           </div>
           <ul className="mt-4 space-y-4">
