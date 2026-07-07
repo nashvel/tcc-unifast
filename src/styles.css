@@ -145,6 +145,10 @@ html {
   --color-info: var(--info);
   --color-info-soft: var(--info-soft);
 
+  --color-gold: var(--accent-gold);
+  --color-gold-hover: var(--accent-gold-hover);
+  --color-gold-soft: var(--accent-gold-soft);
+
   --color-sidebar-bg: var(--sidebar-bg);
   --color-sidebar-active: var(--sidebar-active);
   --color-sidebar-active-text: var(--sidebar-active-text);
