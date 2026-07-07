@@ -44,13 +44,29 @@ export function Tr({ className, children, ...props }: HTMLAttributes<HTMLTableRo
   );
 }
 
-export function Td({ className, children, ...props }: TdHTMLAttributes<HTMLTableCellElement>) {
+type TdProps = TdHTMLAttributes<HTMLTableCellElement> & {
+  truncate?: boolean | number; // true = default max-w, number = px
+  title?: string;
+};
+
+export function Td({ className, children, truncate, title, ...props }: TdProps) {
+  const shouldTruncate = truncate !== undefined && truncate !== false;
+  const maxW =
+    typeof truncate === "number" ? `${truncate}px` : shouldTruncate ? "16ch" : undefined;
+  const autoTitle =
+    title ?? (shouldTruncate && typeof children === "string" ? children : undefined);
+
   return (
     <td
       className={cn(
-        "px-2 xl:px-3 py-2 align-middle break-words [overflow-wrap:anywhere]",
+        "px-2 xl:px-3 py-2 align-middle",
+        shouldTruncate
+          ? "whitespace-nowrap overflow-hidden text-ellipsis"
+          : "break-words [overflow-wrap:anywhere]",
         className,
       )}
+      style={shouldTruncate ? { maxWidth: maxW } : undefined}
+      title={autoTitle}
       {...props}
     >
       {children}
