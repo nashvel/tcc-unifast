@@ -52,8 +52,17 @@ function Audit() {
       <DataTable>
         <THead><Tr><Th>Timestamp</Th><Th>User</Th><Th>Role</Th><Th>Action</Th><Th>Module</Th><Th>Target</Th><Th>IP</Th><Th></Th></Tr></THead>
         <tbody>
-          {isLoading && <Tr><Td colSpan={8} className="text-center text-text-muted py-6">Loading…</Td></Tr>}
-          {!isLoading && filtered.length === 0 && <Tr><Td colSpan={8} className="text-center text-text-muted py-6">No audit logs.</Td></Tr>}
+          <TableStates
+            colSpan={8}
+            isLoading={isLoading}
+            isFetching={isFetching}
+            isError={isError}
+            error={error}
+            isEmpty={!isLoading && !isError && filtered.length === 0}
+            onRetry={() => refetch()}
+            emptyTitle="No audit logs"
+            emptyHint="No matching entries yet — try broadening filters."
+          />
           {pg.pageItems.map((l) => (
             <Tr key={l.id}>
               <Td className="text-text-muted whitespace-nowrap">{l.timestamp}</Td>
