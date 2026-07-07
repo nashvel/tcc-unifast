@@ -65,7 +65,7 @@ export function TablePagination({
       aria-busy={isLoading || undefined}
       onKeyDown={onKeyDown}
       className={cn(
-        "flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-3 py-1.5 border-t bg-surface text-[11px] text-text-muted",
+        "flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-3 py-1.5 border-t bg-surface text-micro text-text-muted",
         (disabled || isLoading) && "opacity-80",
         className,
       )}
@@ -92,7 +92,7 @@ export function TablePagination({
             <select
               aria-label="Rows per page"
               disabled={sizeLocked}
-              className="h-6 rounded border bg-surface px-1 pr-4 text-[11px] font-medium text-text hover:bg-surface-muted disabled:cursor-not-allowed disabled:hover:bg-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:ring-offset-surface"
+              className="h-6 rounded border bg-surface px-1 pr-4 text-micro font-medium text-text hover:bg-surface-muted disabled:cursor-not-allowed disabled:hover:bg-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:ring-offset-surface"
               value={pageSize}
               onChange={(e) => onPageSizeChange(Number(e.target.value))}
             >

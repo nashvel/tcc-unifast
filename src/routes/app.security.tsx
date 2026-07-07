@@ -219,17 +219,17 @@ function SecurityFindings() {
             return (
               <Tr key={f.id}>
                 <Td>
-                  <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] ${cls}`}>
+                  <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-micro ${cls}`}>
                     <Icon size={12} /> {label}
                   </span>
                 </Td>
                 <Td className="font-medium max-w-[380px]">
                   <div className="truncate">{f.name}</div>
-                  <div className="text-[11px] text-text-muted truncate">{f.description}</div>
+                  <div className="text-micro text-text-muted truncate">{f.description}</div>
                 </Td>
                 <Td className="text-text-muted">{f.scannerLabel}</Td>
                 <Td>
-                  <span className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] ${STATE_META[f.state].cls}`}>
+                  <span className={`inline-flex rounded-full border px-2 py-0.5 text-micro ${STATE_META[f.state].cls}`}>
                     {STATE_META[f.state].label}
                   </span>
                 </Td>
@@ -247,7 +247,7 @@ function SecurityFindings() {
         </tbody>
       </DataTable>
 
-      <p className="mt-4 text-[11px] text-text-muted">
+      <p className="mt-4 text-micro text-text-muted">
         Connector scan results (Wiz) are workspace-scoped and run automatically across every project in
         this workspace. The latest connector scan returned no findings for this project.
       </p>
@@ -305,7 +305,7 @@ function StatCard({
         <Icon size={18} />
       </div>
       <div>
-        <p className="text-[11px] uppercase tracking-wide text-text-muted">{label}</p>
+        <p className="text-micro uppercase tracking-wide text-text-muted">{label}</p>
         <p className="text-lg font-semibold leading-none">{value}</p>
       </div>
     </div>

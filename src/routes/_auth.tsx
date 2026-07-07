@@ -33,7 +33,7 @@ function AuthLayout() {
             <li>• Full audit trail and role-based access</li>
           </ul>
         </div>
-        <p className="text-[11px] text-text-soft">© 2026 Commission on Higher Education — UniFAST</p>
+        <p className="text-micro text-text-soft">© 2026 Commission on Higher Education — UniFAST</p>
       </div>
       <div className="flex-1 flex items-center justify-center p-6">
         <div className="w-full max-w-sm">

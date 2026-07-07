@@ -55,7 +55,7 @@ export function StudentMobileTopbar() {
         <div className="w-2" />
       )}
 
-      <h1 className="flex-1 text-[15px] font-semibold truncate">{title}</h1>
+      <h1 className="flex-1 text-base font-semibold truncate">{title}</h1>
 
       <button
         onClick={() => { setOpenProfile(false); navigate({ to: "/student/notifications" }); }}
@@ -64,7 +64,7 @@ export function StudentMobileTopbar() {
       >
         <IconBell size={20} />
         {unread > 0 && (
-          <span className="absolute top-1 right-1 h-4 min-w-4 rounded-full bg-danger text-white text-[10px] font-medium px-1 grid place-items-center">
+          <span className="absolute top-1 right-1 h-4 min-w-4 rounded-full bg-danger text-white text-2xs font-medium px-1 grid place-items-center">
             {unread}
           </span>
         )}

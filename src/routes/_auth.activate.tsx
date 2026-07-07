@@ -61,7 +61,7 @@ function ActivatePage() {
         <div className="h-8 w-8 rounded-md bg-primary-soft text-primary grid place-items-center">
           <IconShieldCheck size={16} />
         </div>
-        <p className="text-[11px] uppercase tracking-wider font-semibold text-text-soft">Account Activation</p>
+        <p className="text-micro uppercase tracking-wider font-semibold text-text-soft">Account Activation</p>
       </div>
       <h1 className="text-xl font-semibold tracking-tight">
         {step === "verify" ? "Activate your existing account" : "Set your password"}

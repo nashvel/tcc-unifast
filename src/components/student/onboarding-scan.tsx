@@ -113,7 +113,7 @@ export function OnboardingScan({ onClose, onSkip, onComplete }: Props) {
             <span className="h-8 w-8 rounded-lg bg-primary-soft text-primary grid place-items-center"><Icon size={16} /></span>
             <div>
               <p className="text-sm font-semibold">{meta.title}</p>
-              <p className="text-[11px] text-text-muted">Step {step === "id" ? 1 : 2} of 2 · Identity verification</p>
+              <p className="text-micro text-text-muted">Step {step === "id" ? 1 : 2} of 2 · Identity verification</p>
             </div>
           </div>
           <button onClick={onClose} aria-label="Close" className="p-1.5 rounded-md hover:bg-surface-muted"><IconX size={16} /></button>
@@ -130,7 +130,7 @@ export function OnboardingScan({ onClose, onSkip, onComplete }: Props) {
                 <div>
                   <IconCamera size={28} className="mx-auto mb-2 opacity-70" />
                   <p className="text-sm">{streamErr}</p>
-                  <p className="text-[11px] text-white/70 mt-1">Allow camera access or skip for now.</p>
+                  <p className="text-micro text-white/70 mt-1">Allow camera access or skip for now.</p>
                 </div>
               </div>
             ) : (
@@ -158,7 +158,7 @@ export function OnboardingScan({ onClose, onSkip, onComplete }: Props) {
           </div>
         </div>
 
-        <footer className="px-5 py-3 border-t bg-surface-muted/40 text-[11px] text-text-muted">
+        <footer className="px-5 py-3 border-t bg-surface-muted/40 text-micro text-text-muted">
           Skipping closes the prompt for now — it will reappear the next time you sign in.
         </footer>
       </div>

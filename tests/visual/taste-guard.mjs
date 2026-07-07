@@ -18,6 +18,9 @@ const ALLOWLIST = new Set([
   "components/ui/data-table.tsx",  // scroll-fade masks use gradients intentionally
   "routes/app.security.tsx",       // security severity palette is intentional
   "routes/app.security.memory.tsx",// security severity palette is intentional
+  "lib/error-page.ts",             // standalone HTML fallback — no runtime tokens
+  "components/ui/sidebar.tsx",     // shadcn primitive — uses 0-blur shadow as a border
+  "routes/app.reports.preview.tsx",// printable PDF markup — self-contained styles
 ]);
 
 const FORBIDDEN = [
@@ -48,6 +51,21 @@ const FORBIDDEN = [
     id: "colored-shadow",
     re: /shadow-(red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-\d{2,3}/,
     msg: "Colored shadows read as neon glow. Remove.",
+  },
+  {
+    id: "arbitrary-text-size",
+    re: /\btext-\[\d+(px|rem|em)\]/,
+    msg: "Arbitrary text size. Use text-2xs / text-micro / text-xs / text-sm / text-base / text-lg / text-xl / text-2xl / text-3xl.",
+  },
+  {
+    id: "arbitrary-radius",
+    re: /\brounded-\[\d/,
+    msg: "Arbitrary radius. Use rounded-sm / rounded-md / rounded-lg / rounded-xl / rounded-full.",
+  },
+  {
+    id: "arbitrary-shadow",
+    re: /\bshadow-\[/,
+    msg: "Arbitrary shadow. Use shadow-xs / shadow-sm / shadow-md / shadow-pop.",
   },
 ];
 

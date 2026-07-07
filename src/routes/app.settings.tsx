@@ -211,8 +211,8 @@ function SettingsPage() {
                   >
                     <Icon size={16} className={active ? "text-sidebar-active-text mt-0.5" : "text-text-muted mt-0.5"} />
                     <span className="min-w-0">
-                      <span className="block text-[13px] font-medium leading-tight">{n.label}</span>
-                      <span className={`block text-[11px] ${active ? "text-sidebar-active-text/80" : "text-text-muted"}`}>
+                      <span className="block text-sm font-medium leading-tight">{n.label}</span>
+                      <span className={`block text-micro ${active ? "text-sidebar-active-text/80" : "text-text-muted"}`}>
                         {n.hint}
                       </span>
                     </span>
@@ -314,7 +314,7 @@ function SettingsPage() {
                 </FormField>
                 {next && (
                   <div className="space-y-1">
-                    <div className="flex items-center justify-between text-[11px]">
+                    <div className="flex items-center justify-between text-micro">
                       <span className="text-text-muted">Strength</span>
                       <span className="font-medium">{strengthLabel}</span>
                     </div>
@@ -322,7 +322,7 @@ function SettingsPage() {
                       <div className={`h-full ${strengthTone} transition-all`} style={{ width: `${(pwEval.score / 5) * 100}%` }} />
                     </div>
                     {pwEval.issues.length > 0 && (
-                      <p className="text-[11px] text-text-soft">Add: {pwEval.issues.join(", ")}.</p>
+                      <p className="text-micro text-text-soft">Add: {pwEval.issues.join(", ")}.</p>
                     )}
                   </div>
                 )}
@@ -368,13 +368,13 @@ function SettingsPage() {
                   </div>
                   <div className="min-w-0 text-sm">
                     <p className="font-medium truncate">{profile?.full_name || email || "Signed-in user"}</p>
-                    <p className="text-[11px] text-text-muted truncate">{email}</p>
-                    <p className="text-[11px] text-text-muted mt-1">
+                    <p className="text-micro text-text-muted truncate">{email}</p>
+                    <p className="text-micro text-text-muted mt-1">
                       This device: <span className="font-medium text-text">{deviceLabel(currentUA)}</span>
                     </p>
                   </div>
                 </div>
-                <p className="mt-3 text-[10px] text-text-soft">
+                <p className="mt-3 text-2xs text-text-soft">
                   Signing out clears your session on this device only. To end other sessions, change your password.
                 </p>
               </ChartCard>
@@ -425,12 +425,12 @@ function SettingsPage() {
                           <div className="flex items-center gap-2">
                             <p className="font-medium truncate">{deviceLabel(ev.user_agent)}</p>
                             {idx === 0 && !from && !to && device === "All" && (
-                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-success-soft text-success font-medium">
+                              <span className="text-2xs px-1.5 py-0.5 rounded bg-success-soft text-success font-medium">
                                 Most recent
                               </span>
                             )}
                           </div>
-                          <p className="text-[11px] text-text-muted">
+                          <p className="text-micro text-text-muted">
                             {new Date(ev.signed_in_at).toLocaleString()}
                             {ev.ip_address ? ` · ${ev.ip_address}` : ""}
                           </p>
@@ -439,7 +439,7 @@ function SettingsPage() {
                     ))}
                   </ul>
                 )}
-                <p className="mt-3 text-[10px] text-text-soft">
+                <p className="mt-3 text-2xs text-text-soft">
                   Showing {filtered.length} of {events.data?.length ?? 0} recent sign-ins.
                 </p>
               </ChartCard>

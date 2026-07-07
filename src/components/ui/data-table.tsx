@@ -24,7 +24,7 @@ export function DataTable({ className, children, ...props }: TableHTMLAttributes
     <div className="rounded-lg border bg-surface overflow-x-auto max-w-full [scrollbar-width:thin]">
       <table
         className={cn(
-          "w-full min-w-[480px] text-[13px] xl:text-sm table-auto",
+          "w-full min-w-[480px] text-sm xl:text-sm table-auto",
           className,
         )}
         {...props}
@@ -37,7 +37,7 @@ export function DataTable({ className, children, ...props }: TableHTMLAttributes
 
 export function THead({ children }: { children: ReactNode }) {
   return (
-    <thead className="bg-surface-muted/60 text-text-muted text-[10px] xl:text-[11px] uppercase tracking-wide sticky top-0 z-10">
+    <thead className="bg-surface-muted/60 text-text-muted text-2xs xl:text-micro uppercase tracking-wide sticky top-0 z-10">
       {children}
     </thead>
   );

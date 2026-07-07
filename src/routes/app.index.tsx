@@ -104,7 +104,7 @@ function Dashboard() {
                   <p className="text-xs text-text-muted line-clamp-2">{a.body}</p>
                   <div className="flex items-center gap-2 mt-1">
                     <StatusBadge variant={statusVariantFor(a.status)}>{formatStatus(a.status)}</StatusBadge>
-                    <span className="text-[11px] text-text-soft">{a.publishedAt ?? a.scheduledFor ?? ""}</span>
+                    <span className="text-micro text-text-soft">{a.publishedAt ?? a.scheduledFor ?? ""}</span>
                   </div>
                 </div>
               </li>
@@ -131,29 +131,29 @@ function Dashboard() {
             <div className="rounded-md border p-3">
               <p className="text-xs text-text-muted">Avg validation time</p>
               <p className="text-lg font-semibold">2.4 hrs</p>
-              <p className="text-[11px] text-success mt-0.5">↓ 12% vs last week</p>
+              <p className="text-micro text-success mt-0.5">↓ 12% vs last week</p>
             </div>
             <div className="rounded-md border p-3">
               <p className="text-xs text-text-muted">Auto-approval rate</p>
               <p className="text-lg font-semibold">68%</p>
-              <p className="text-[11px] text-success mt-0.5">↑ 5% vs last week</p>
+              <p className="text-micro text-success mt-0.5">↑ 5% vs last week</p>
             </div>
             <div className="rounded-md border p-3">
               <p className="text-xs text-text-muted">Resubmission rate</p>
               <p className="text-lg font-semibold">9.2%</p>
-              <p className="text-[11px] text-warning mt-0.5">↑ 1.1% vs last week</p>
+              <p className="text-micro text-warning mt-0.5">↑ 1.1% vs last week</p>
             </div>
             <div className="rounded-md border p-3">
               <p className="text-xs text-text-muted">Activation rate</p>
               <p className="text-lg font-semibold">{Math.round((stats.active / stats.total) * 100)}%</p>
-              <p className="text-[11px] text-text-muted mt-0.5">{stats.active} of {stats.total}</p>
+              <p className="text-micro text-text-muted mt-0.5">{stats.active} of {stats.total}</p>
             </div>
           </div>
         </ChartCard>
       </div>
 
       <div className="mt-3">
-        <p className="text-[11px] text-text-soft text-center">
+        <p className="text-micro text-text-soft text-center">
           History: <IconHistory size={11} className="inline" /> Last system sync at 09:42 — UniFAST Office
         </p>
       </div>

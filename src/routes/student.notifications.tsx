@@ -27,11 +27,11 @@ export const Route = createFileRoute("/student/notifications")({
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
                     <p className="text-sm font-medium">{n.title}</p>
-                    <span className="text-[11px] text-text-soft">{new Date(n.created_at).toLocaleString()}</span>
+                    <span className="text-micro text-text-soft">{new Date(n.created_at).toLocaleString()}</span>
                   </div>
                   <p className="text-xs text-text-muted">{n.body}</p>
                 </div>
-                {!n.read && <button onClick={() => mark.mutate(n.id)} className="text-[11px] text-primary hover:underline self-start">Mark read</button>}
+                {!n.read && <button onClick={() => mark.mutate(n.id)} className="text-micro text-primary hover:underline self-start">Mark read</button>}
               </li>
             ))}
           </ul>

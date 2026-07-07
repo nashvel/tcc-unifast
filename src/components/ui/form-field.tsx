@@ -18,8 +18,8 @@ export function FormField({ label, helper, error, required, children, className 
         {required && <span className="text-danger">*</span>}
       </span>
       <div className="mt-1">{children}</div>
-      {helper && !error && <p className="text-[11px] text-text-soft mt-1">{helper}</p>}
-      {error && <p className="text-[11px] text-danger mt-1">{error}</p>}
+      {helper && !error && <p className="text-micro text-text-soft mt-1">{helper}</p>}
+      {error && <p className="text-micro text-danger mt-1">{error}</p>}
     </label>
   );
 }

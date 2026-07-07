@@ -20,7 +20,7 @@ export function StatusBadge({ variant = "neutral", children, className }: Props)
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[11px] font-medium whitespace-nowrap",
+        "inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-micro font-medium whitespace-nowrap",
         styles[variant],
         className,
       )}

@@ -32,7 +32,7 @@ export function ActivityTimeline({ items, className }: { items: Item[]; classNam
               <p className="text-sm leading-tight">{it.title}</p>
               {it.meta && <p className="text-xs text-text-muted mt-0.5">{it.meta}</p>}
             </div>
-            {it.time && <span className="text-[11px] text-text-soft whitespace-nowrap">{it.time}</span>}
+            {it.time && <span className="text-micro text-text-soft whitespace-nowrap">{it.time}</span>}
           </li>
         );
       })}

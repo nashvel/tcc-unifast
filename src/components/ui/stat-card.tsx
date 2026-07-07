@@ -30,7 +30,7 @@ export function StatCard({ label, value, icon: Icon, tone = "neutral", hint, cla
       <div className="min-w-0 flex-1">
         <p className="text-xs font-medium text-text-muted truncate">{label}</p>
         <p className="text-xl font-semibold tabular-nums mt-0.5">{value}</p>
-        {hint && <div className="text-[11px] text-text-soft mt-0.5">{hint}</div>}
+        {hint && <div className="text-micro text-text-soft mt-0.5">{hint}</div>}
       </div>
     </div>
   );

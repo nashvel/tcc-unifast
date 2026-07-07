@@ -62,7 +62,7 @@ function DocQueue() {
             const tone = d.risk_score >= 70 ? "danger" : d.risk_score >= 40 ? "warning" : "success";
             return (
               <Tr key={d.id}>
-                <Td><span className="font-medium">{d.grantee_name}</span><div className="text-[11px] text-text-soft font-mono">{d.student_number}</div></Td>
+                <Td><span className="font-medium">{d.grantee_name}</span><div className="text-micro text-text-soft font-mono">{d.student_number}</div></Td>
                 <Td>{d.type}</Td>
                 <Td className="font-mono text-xs text-text-muted">{d.filename}</Td>
                 <Td className="text-text-muted">{new Date(d.uploaded_at).toLocaleString()}</Td>
