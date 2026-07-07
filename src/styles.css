@@ -11,9 +11,9 @@ html {
 
 :root {
   /* Heritage Maroon — deep maroon + warm ivory + muted gold. Apple-quality enterprise. */
-  --primary: #b8894a;               /* muted gold — the CTA color */
-  --primary-hover: #9c7238;
-  --primary-soft: #f5ecd8;
+  --primary: #7a1e2b;               /* heritage maroon — brand */
+  --primary-hover: #611620;
+  --primary-soft: #f3e6e8;
 
   --success: #3f6b4a;
   --success-soft: #ecf1ea;
