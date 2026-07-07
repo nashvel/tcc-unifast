@@ -160,12 +160,32 @@ html {
   --color-input: var(--input);
   --color-ring: var(--primary);
 
+  /* Radii — one scale, restrained curvature. */
   --radius-sm: calc(var(--radius) - 2px);
   --radius-md: var(--radius);
   --radius-lg: calc(var(--radius) + 2px);
   --radius-xl: calc(var(--radius) + 4px);
 
+  /* Shadows — flat by default, one soft pop for menus. Never neon/glow. */
+  --shadow-xs: 0 1px 0 0 color-mix(in oklab, var(--text) 6%, transparent);
+  --shadow-sm: 0 1px 2px -1px color-mix(in oklab, var(--text) 10%, transparent);
+  --shadow-md: 0 4px 10px -6px color-mix(in oklab, var(--text) 14%, transparent);
+  --shadow-pop: 0 12px 28px -14px color-mix(in oklab, var(--text) 22%, transparent);
+
+  /* Typography — editorial scale, tight tracking. */
   --font-sans: "Absans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.8125rem;
+  --text-base: 0.875rem;
+  --text-lg: 1rem;
+  --text-xl: 1.125rem;
+  --text-2xl: 1.375rem;
+  --text-3xl: 1.75rem;
+
+  --tracking-tight: -0.01em;
+  --tracking-tighter: -0.02em;
 }
 
 @font-face {

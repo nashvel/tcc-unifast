@@ -18,8 +18,8 @@ export function ChartCard({ title, description, actions, className, bodyClassNam
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-40px" }}
       transition={{ duration: 0.4, ease: "easeOut" }}
-      whileHover={{ y: -2, boxShadow: "0 8px 24px -12px rgba(0,0,0,0.15)" }}
-      className={cn("rounded-lg border bg-surface", className)}
+      whileHover={{ borderColor: "var(--border-strong)" }}
+      className={cn("rounded-md border bg-surface", className)}
     >
       <div className="flex items-start justify-between px-4 pt-3 pb-2 border-b">
         <div>
