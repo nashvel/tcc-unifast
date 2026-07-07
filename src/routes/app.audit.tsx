@@ -53,7 +53,7 @@ function Audit() {
         <tbody>
           {isLoading && <Tr><Td colSpan={8} className="text-center text-text-muted py-6">Loading…</Td></Tr>}
           {!isLoading && filtered.length === 0 && <Tr><Td colSpan={8} className="text-center text-text-muted py-6">No audit logs.</Td></Tr>}
-          {filtered.map((l) => (
+          {pg.pageItems.map((l) => (
             <Tr key={l.id}>
               <Td className="text-text-muted whitespace-nowrap">{l.timestamp}</Td>
               <Td className="font-medium">{l.user}</Td>
@@ -67,6 +67,7 @@ function Audit() {
           ))}
         </tbody>
       </DataTable>
+      <TablePagination {...pg} onPageChange={pg.setPage} onPageSizeChange={pg.setPageSize} className="rounded-b-lg border border-t-0 -mt-px" />
 
       <DetailDrawer open={!!active} onClose={() => setActive(null)} title="Audit Log Detail">
         {active && (
