@@ -22,6 +22,7 @@ import { Route as StudentProfileRouteImport } from './routes/student.profile'
 import { Route as StudentNotificationsRouteImport } from './routes/student.notifications'
 import { Route as StudentDocumentsRouteImport } from './routes/student.documents'
 import { Route as StudentAnnouncementsRouteImport } from './routes/student.announcements'
+import { Route as AppStyleGuideRouteImport } from './routes/app.style-guide'
 import { Route as AppSettingsRouteImport } from './routes/app.settings'
 import { Route as AppSecurityRouteImport } from './routes/app.security'
 import { Route as AppMasterlistRouteImport } from './routes/app.masterlist'
@@ -115,6 +116,11 @@ const StudentAnnouncementsRoute = StudentAnnouncementsRouteImport.update({
   id: '/announcements',
   path: '/announcements',
   getParentRoute: () => StudentRoute,
+} as any)
+const AppStyleGuideRoute = AppStyleGuideRouteImport.update({
+  id: '/style-guide',
+  path: '/style-guide',
+  getParentRoute: () => AppRoute,
 } as any)
 const AppSettingsRoute = AppSettingsRouteImport.update({
   id: '/settings',
@@ -275,6 +281,7 @@ export interface FileRoutesByFullPath {
   '/app/masterlist': typeof AppMasterlistRoute
   '/app/security': typeof AppSecurityRouteWithChildren
   '/app/settings': typeof AppSettingsRoute
+  '/app/style-guide': typeof AppStyleGuideRoute
   '/student/announcements': typeof StudentAnnouncementsRoute
   '/student/documents': typeof StudentDocumentsRoute
   '/student/notifications': typeof StudentNotificationsRoute
@@ -316,6 +323,7 @@ export interface FileRoutesByTo {
   '/app/masterlist': typeof AppMasterlistRoute
   '/app/security': typeof AppSecurityRouteWithChildren
   '/app/settings': typeof AppSettingsRoute
+  '/app/style-guide': typeof AppStyleGuideRoute
   '/student/announcements': typeof StudentAnnouncementsRoute
   '/student/documents': typeof StudentDocumentsRoute
   '/student/notifications': typeof StudentNotificationsRoute
@@ -361,6 +369,7 @@ export interface FileRoutesById {
   '/app/masterlist': typeof AppMasterlistRoute
   '/app/security': typeof AppSecurityRouteWithChildren
   '/app/settings': typeof AppSettingsRoute
+  '/app/style-guide': typeof AppStyleGuideRoute
   '/student/announcements': typeof StudentAnnouncementsRoute
   '/student/documents': typeof StudentDocumentsRoute
   '/student/notifications': typeof StudentNotificationsRoute
@@ -406,6 +415,7 @@ export interface FileRouteTypes {
     | '/app/masterlist'
     | '/app/security'
     | '/app/settings'
+    | '/app/style-guide'
     | '/student/announcements'
     | '/student/documents'
     | '/student/notifications'
@@ -447,6 +457,7 @@ export interface FileRouteTypes {
     | '/app/masterlist'
     | '/app/security'
     | '/app/settings'
+    | '/app/style-guide'
     | '/student/announcements'
     | '/student/documents'
     | '/student/notifications'
@@ -491,6 +502,7 @@ export interface FileRouteTypes {
     | '/app/masterlist'
     | '/app/security'
     | '/app/settings'
+    | '/app/style-guide'
     | '/student/announcements'
     | '/student/documents'
     | '/student/notifications'
@@ -621,6 +633,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/student/announcements'
       preLoaderRoute: typeof StudentAnnouncementsRouteImport
       parentRoute: typeof StudentRoute
+    }
+    '/app/style-guide': {
+      id: '/app/style-guide'
+      path: '/style-guide'
+      fullPath: '/app/style-guide'
+      preLoaderRoute: typeof AppStyleGuideRouteImport
+      parentRoute: typeof AppRoute
     }
     '/app/settings': {
       id: '/app/settings'
@@ -863,6 +882,7 @@ interface AppRouteChildren {
   AppMasterlistRoute: typeof AppMasterlistRoute
   AppSecurityRoute: typeof AppSecurityRouteWithChildren
   AppSettingsRoute: typeof AppSettingsRoute
+  AppStyleGuideRoute: typeof AppStyleGuideRoute
   AppIndexRoute: typeof AppIndexRoute
   AppAcademicIdRoute: typeof AppAcademicIdRoute
   AppAnnouncementsLogsRoute: typeof AppAnnouncementsLogsRoute
@@ -890,6 +910,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppMasterlistRoute: AppMasterlistRoute,
   AppSecurityRoute: AppSecurityRouteWithChildren,
   AppSettingsRoute: AppSettingsRoute,
+  AppStyleGuideRoute: AppStyleGuideRoute,
   AppIndexRoute: AppIndexRoute,
   AppAcademicIdRoute: AppAcademicIdRoute,
   AppAnnouncementsLogsRoute: AppAnnouncementsLogsRoute,
