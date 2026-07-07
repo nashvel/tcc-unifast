@@ -7,6 +7,7 @@ import {
 import { cn } from "@/lib/utils";
 import type { ComponentType } from "react";
 import { branding } from "@/config/branding";
+import { BrandLogo } from "@/components/brand/brand-logo";
 
 interface NavItem { to: string; label: string; icon: ComponentType<{ size?: number; className?: string }>; }
 
