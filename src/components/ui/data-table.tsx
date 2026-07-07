@@ -90,6 +90,7 @@ export function Td({ className, children, truncate, title, priority = "essential
         shouldTruncate
           ? "whitespace-nowrap overflow-hidden text-ellipsis"
           : "break-words [overflow-wrap:anywhere]",
+        priorityClass[priority],
         className,
       )}
       style={shouldTruncate ? { maxWidth: maxW } : undefined}
