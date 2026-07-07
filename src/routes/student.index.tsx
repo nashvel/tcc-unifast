@@ -54,26 +54,26 @@ function StudentHome() {
   ];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-8">
       {/* Header row */}
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-3xl font-semibold tracking-tight text-primary">
-            Hi, {firstName}! <span aria-hidden>👋</span>{" "}
-            <span className="text-text font-normal">Let's reach your goals together.</span>
+      <header className="flex flex-wrap items-end justify-between gap-4 pb-5 border-b">
+        <div className="min-w-0">
+          <p className="text-2xs uppercase tracking-[0.14em] text-text-soft">Student Dashboard</p>
+          <h1 className="mt-1 text-2xl sm:text-3xl font-semibold tracking-tight text-text">
+            Good to see you, <span className="text-primary">{firstName}</span>.
           </h1>
-          <p className="mt-1 text-sm text-text-muted">Here's your scholarship journey overview.</p>
+          <p className="mt-1.5 text-sm text-text-muted">Here's your scholarship journey overview.</p>
         </div>
-        <div className="flex items-center gap-4">
-          <p className="text-sm text-text-muted hidden sm:block">Today is {today}</p>
+        <div className="flex items-center gap-2">
+          <p className="text-xs text-text-muted hidden md:block pr-2 border-r">{today}</p>
           <button aria-label="Notifications" className="p-2 rounded-md hover:bg-surface-muted text-text-muted">
             <IconBell size={18} />
           </button>
           <button aria-label="Messages" className="relative p-2 rounded-md hover:bg-surface-muted text-text-muted">
             <IconMail size={18} />
-            <span className="absolute -top-0.5 -right-0.5 h-4 min-w-4 px-1 rounded-full bg-primary text-primary-foreground text-2xs font-semibold grid place-items-center">2</span>
+            <span className="absolute top-1 right-1 h-4 min-w-4 px-1 rounded-full bg-primary text-primary-foreground text-2xs font-semibold grid place-items-center">2</span>
           </button>
-          <div className="flex items-center gap-2 pl-3 border-l">
+          <div className="flex items-center gap-2 pl-3 ml-1 border-l">
             <div className="h-9 w-9 rounded-full bg-primary-soft text-primary grid place-items-center font-semibold">
               {firstName.slice(0, 1)}
             </div>
@@ -84,18 +84,24 @@ function StudentHome() {
             <IconChevronDown size={14} className="text-text-soft" />
           </div>
         </div>
-      </div>
+      </header>
 
       {/* Journey + Quick Actions */}
-      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,2.4fr)_minmax(0,1fr)] gap-4">
-        <section className="rounded-xl border bg-surface p-5 sm:p-6">
+      <section aria-labelledby="focus-heading" className="space-y-3">
+        <div className="flex items-baseline justify-between">
+          <p id="focus-heading" className="text-2xs uppercase tracking-[0.14em] text-text-soft font-semibold">Today&apos;s Focus</p>
+          <span className="text-xs text-text-muted">Updated just now</span>
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,2.4fr)_minmax(0,1fr)] gap-4">
+        <section className="rounded-xl border bg-surface p-6 sm:p-7 shadow-xs">
           <div className="flex items-baseline justify-between">
-            <h2 className="text-lg font-semibold tracking-tight">Your Journey Progress</h2>
+            <h3 className="text-lg font-semibold tracking-tight">Your Journey Progress</h3>
+            <span className="text-xs text-text-muted">Stage 2 of 5</span>
           </div>
-          <p className="mt-1 text-xs text-text-muted">Keep going! You're on the right track.</p>
+          <p className="mt-1 text-xs text-text-muted">Keep going — you're on the right track.</p>
 
-          <div className="mt-4 flex items-center gap-3">
-            <div className="flex-1 h-2.5 rounded-full bg-primary-soft overflow-hidden">
+          <div className="mt-5 flex items-center gap-3">
+            <div className="flex-1 h-2 rounded-full bg-primary-soft overflow-hidden">
               <div className="h-full bg-primary transition-all" style={{ width: `${journeyPct}%` }} />
             </div>
             <span className="text-lg font-semibold text-gold tabular-nums">{journeyPct}%</span>
@@ -124,8 +130,9 @@ function StudentHome() {
           </ol>
         </section>
 
-        <section className="rounded-xl border bg-surface p-5">
-          <h2 className="text-lg font-semibold tracking-tight">Quick Actions</h2>
+        <section className="rounded-xl border bg-surface p-6 shadow-xs">
+          <h3 className="text-lg font-semibold tracking-tight">Quick Actions</h3>
+          <p className="mt-1 text-xs text-text-muted">Shortcuts to common tasks.</p>
           <ul className="mt-4 space-y-1">
             <QuickAction icon={<IconFilePlus size={16} />} label="Start New Application" to="/student/submissions" />
             <QuickAction icon={<IconUpload size={16} />} label="Upload Document" to="/student/upload" />
@@ -133,13 +140,16 @@ function StudentHome() {
             <QuickAction icon={<IconBook size={16} />} label="View Scholarship Programs" to="/student/submissions" />
           </ul>
         </section>
-      </div>
+        </div>
+      </section>
 
       {/* Applications + Documents + Upcoming */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <section className="rounded-xl border bg-surface p-5">
+      <section aria-labelledby="track-heading" className="space-y-3">
+        <p id="track-heading" className="text-2xs uppercase tracking-[0.14em] text-text-soft font-semibold">Track &amp; Manage</p>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <section className="rounded-xl border bg-surface p-6 shadow-xs">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold tracking-tight">My Applications</h2>
+            <h3 className="text-lg font-semibold tracking-tight">My Applications</h3>
             <Link to="/student/submissions" className="text-xs text-primary hover:underline">View all</Link>
           </div>
           <ul className="mt-4 space-y-3">
@@ -162,9 +172,9 @@ function StudentHome() {
           </ul>
         </section>
 
-        <section className="rounded-xl border bg-surface p-5">
+        <section className="rounded-xl border bg-surface p-6 shadow-xs">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold tracking-tight">Required Documents</h2>
+            <h3 className="text-lg font-semibold tracking-tight">Required Documents</h3>
             <Link to="/student/documents" className="text-xs text-primary hover:underline">View all</Link>
           </div>
           <div className="mt-3 h-2 rounded-full bg-primary-soft overflow-hidden">
@@ -196,9 +206,9 @@ function StudentHome() {
           </div>
         </section>
 
-        <section className="rounded-xl border bg-surface p-5">
+        <section className="rounded-xl border bg-surface p-6 shadow-xs">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold tracking-tight">Upcoming</h2>
+            <h3 className="text-lg font-semibold tracking-tight">Upcoming</h3>
             <Link to="/student/notifications" className="text-xs text-primary hover:underline">View calendar</Link>
           </div>
           <ul className="mt-4 space-y-4">
@@ -216,42 +226,45 @@ function StudentHome() {
             ))}
           </ul>
         </section>
-      </div>
+        </div>
+      </section>
 
       {/* Bottom row: Recommended / Academic Snapshot / Stay Updated */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <section className="rounded-xl border bg-gold-soft p-5 overflow-hidden relative">
-          <h2 className="text-lg font-semibold tracking-tight">Recommended for You</h2>
-          <p className="mt-3 text-sm font-semibold">TCC Financial Assistance Grant</p>
-          <p className="text-xs text-text-muted">Open until June 30, 2025</p>
+      <section aria-labelledby="explore-heading" className="space-y-3">
+        <p id="explore-heading" className="text-2xs uppercase tracking-[0.14em] text-text-soft font-semibold">For You</p>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <section className="rounded-xl border bg-gold-soft p-6 overflow-hidden relative shadow-xs">
+          <p className="text-2xs uppercase tracking-[0.14em] text-primary/70 font-semibold">Recommended</p>
+          <h3 className="mt-2 text-lg font-semibold tracking-tight">TCC Financial Assistance Grant</h3>
+          <p className="mt-1 text-xs text-text-muted">Open until June 30, 2025</p>
           <button className="mt-5 inline-flex items-center rounded-md bg-gold hover:bg-gold-hover px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors">
             View Details
           </button>
         </section>
 
-        <section className="rounded-xl border bg-surface p-5">
-          <h2 className="text-lg font-semibold tracking-tight inline-flex items-center gap-2">
+        <section className="rounded-xl border bg-surface p-6 shadow-xs">
+          <h3 className="text-lg font-semibold tracking-tight inline-flex items-center gap-2">
             <IconSchool size={18} className="text-primary" /> Academic Snapshot
-          </h2>
+          </h3>
           <div className="mt-5 grid grid-cols-2 gap-4">
             <div>
-              <p className="text-xs text-text-muted">General Weighted Average</p>
+              <p className="text-2xs uppercase tracking-wide text-text-soft">GWA</p>
               <p className="mt-1 text-3xl font-semibold tabular-nums">1.35</p>
               <span className="mt-2 inline-block text-2xs font-semibold px-2 py-1 rounded-full bg-success-soft text-success">Very Good</span>
             </div>
             <div>
-              <p className="text-xs text-text-muted">Units Earned</p>
+              <p className="text-2xs uppercase tracking-wide text-text-soft">Units Earned</p>
               <p className="mt-1 text-3xl font-semibold tabular-nums">24 <span className="text-text-muted">/ 24</span></p>
               <span className="mt-2 inline-block text-2xs font-semibold px-2 py-1 rounded-full bg-primary-soft text-primary">Full Load</span>
             </div>
           </div>
         </section>
 
-        <section className="rounded-xl border bg-gold-soft p-5 relative overflow-hidden">
-          <h2 className="text-lg font-semibold tracking-tight inline-flex items-center gap-2">
+        <section className="rounded-xl border bg-gold-soft p-6 relative overflow-hidden shadow-xs">
+          <h3 className="text-lg font-semibold tracking-tight inline-flex items-center gap-2">
             <IconSpeakerphone size={18} className="text-primary" /> Stay Updated
-          </h2>
-          <p className="mt-3 text-sm text-text-muted max-w-[24ch]">
+          </h3>
+          <p className="mt-3 text-sm text-text-muted max-w-[28ch]">
             Don't miss important announcements and opportunities.
           </p>
           <Link
@@ -262,7 +275,8 @@ function StudentHome() {
           </Link>
           <IconCalendarEvent size={80} className="absolute -right-3 -bottom-3 text-primary/10" aria-hidden />
         </section>
-      </div>
+        </div>
+      </section>
     </div>
   );
 }
