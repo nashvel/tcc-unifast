@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import type { ReactNode } from "react";
+import { motion } from "framer-motion";
 
 interface Props {
   title: string;
@@ -12,7 +13,14 @@ interface Props {
 
 export function ChartCard({ title, description, actions, className, bodyClassName, children }: Props) {
   return (
-    <div className={cn("rounded-lg border bg-surface", className)}>
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-40px" }}
+      transition={{ duration: 0.4, ease: "easeOut" }}
+      whileHover={{ y: -2, boxShadow: "0 8px 24px -12px rgba(0,0,0,0.15)" }}
+      className={cn("rounded-lg border bg-surface", className)}
+    >
       <div className="flex items-start justify-between px-4 pt-3 pb-2 border-b">
         <div>
           <p className="text-sm font-semibold">{title}</p>
@@ -21,7 +29,7 @@ export function ChartCard({ title, description, actions, className, bodyClassNam
         {actions}
       </div>
       <div className={cn("p-4", bodyClassName)}>{children}</div>
-    </div>
+    </motion.div>
   );
 }
 
