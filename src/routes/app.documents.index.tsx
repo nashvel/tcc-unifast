@@ -46,8 +46,17 @@ function DocQueue() {
           <Tr><Th>Grantee</Th><Th>Document Type</Th><Th>File</Th><Th>Uploaded</Th><Th>Risk</Th><Th>Status</Th><Th></Th></Tr>
         </THead>
         <tbody>
-          {isLoading && <Tr><Td colSpan={7} className="text-center text-text-muted py-6">Loading…</Td></Tr>}
-          {!isLoading && filtered.length === 0 && <Tr><Td colSpan={7} className="text-center text-text-muted py-6">No documents in this view.</Td></Tr>}
+          <TableStates
+            colSpan={7}
+            isLoading={isLoading}
+            isFetching={isFetching}
+            isError={isError}
+            error={error}
+            isEmpty={!isLoading && !isError && filtered.length === 0}
+            onRetry={() => refetch()}
+            emptyTitle="No documents in this view"
+            emptyHint="Try clearing filters or check back once new documents are submitted."
+          />
           {pg.pageItems.map((d) => {
             const tone = d.risk_score >= 70 ? "danger" : d.risk_score >= 40 ? "warning" : "success";
             return (
