@@ -95,7 +95,7 @@ export const Route = createFileRoute("/student/documents")({
 
           <div className="mt-4 h-2 rounded-full bg-surface-muted overflow-hidden">
             <div
-              className="h-full bg-gradient-to-r from-primary to-primary-hover transition-all duration-500"
+              className="h-full bg-primary transition-all duration-500"
               style={{ width: `${pct}%` }}
             />
           </div>
