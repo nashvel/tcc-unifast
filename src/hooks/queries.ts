@@ -1,9 +1,21 @@
+/**
+ * Mock-only data layer. Every hook returns local mock data — no backend calls.
+ * Mutations mutate module-scope arrays and invalidate queries so the UI reacts.
+ */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuthStore } from "@/stores/authStore";
 
-/* ---------------- Masterlist ---------------- */
+import { mockMasterlist } from "@/data/mockMasterlist";
+import { mockDocuments, type DocumentItem } from "@/data/mockDocuments";
+import { mockNotifications, type Notification } from "@/data/mockNotifications";
+import { mockBatches } from "@/data/mockBatches";
+import { mockGrantees } from "@/data/mockGrantees";
+import { mockAcademicRecords } from "@/data/mockAcademicRecords";
+import { mockAnnouncements } from "@/data/mockAnnouncements";
+import { mockAuditLogs } from "@/data/mockAuditLogs";
+import { mockUsers } from "@/data/mockUsers";
 
+/* ---------------- Masterlist ---------------- */
 export interface MasterlistRow {
   id: string;
   student_number: string;
@@ -21,22 +33,31 @@ export interface MasterlistRow {
   imported_at: string;
 }
 
+const masterlistRows: MasterlistRow[] = mockMasterlist.map((m) => ({
+  id: m.id,
+  student_number: m.studentNumber,
+  first_name: m.firstName,
+  last_name: m.lastName,
+  middle_name: m.middleName ?? null,
+  birthdate: m.birthdate,
+  email: m.email,
+  contact: m.contact,
+  university: m.university,
+  program: m.program,
+  year_level: m.yearLevel,
+  batch: m.batch,
+  account_status: m.accountStatus,
+  imported_at: m.importedAt,
+}));
+
 export function useMasterlist() {
   return useQuery({
     queryKey: ["masterlist"],
-    queryFn: async (): Promise<MasterlistRow[]> => {
-      const { data, error } = await supabase
-        .from("masterlist")
-        .select("*")
-        .order("imported_at", { ascending: false });
-      if (error) throw error;
-      return (data ?? []) as MasterlistRow[];
-    },
+    queryFn: async () => masterlistRows,
   });
 }
 
 /* ---------------- Documents ---------------- */
-
 export type DocStatus = "pending" | "approved" | "rejected" | "resubmission" | "suspicious";
 
 export interface DocumentRow {
@@ -54,17 +75,33 @@ export interface DocumentRow {
   exif: Record<string, string> | null;
 }
 
+// Owner id mapping: default student demo owns their docs.
+const STUDENT_OWNER = "user-student";
+
+const documentRows: DocumentRow[] = mockDocuments.map((d: DocumentItem, i) => ({
+  id: d.id,
+  owner_id: i === 0 ? STUDENT_OWNER : null,
+  grantee_name: d.granteeName,
+  student_number: d.studentNumber,
+  type: d.type,
+  filename: d.filename,
+  uploaded_at: d.uploadedAt,
+  status: d.status,
+  risk_score: d.riskScore,
+  remarks: d.remarks ?? null,
+  ocr: d.ocr ?? null,
+  exif: d.exif ?? null,
+}));
+
 export function useDocuments(opts: { ownerOnly?: boolean } = {}) {
   const userId = useAuthStore((s) => s.userId);
   return useQuery({
     queryKey: ["documents", opts.ownerOnly ? userId : "all"],
     enabled: !opts.ownerOnly || !!userId,
-    queryFn: async (): Promise<DocumentRow[]> => {
-      let q = supabase.from("documents").select("*").order("uploaded_at", { ascending: false });
-      if (opts.ownerOnly && userId) q = q.eq("owner_id", userId);
-      const { data, error } = await q;
-      if (error) throw error;
-      return (data ?? []) as DocumentRow[];
+    queryFn: async () => {
+      let list = [...documentRows].sort((a, b) => b.uploaded_at.localeCompare(a.uploaded_at));
+      if (opts.ownerOnly && userId) list = list.filter((d) => d.owner_id === userId);
+      return list;
     },
   });
 }
@@ -73,12 +110,7 @@ export function useDocument(id: string | undefined) {
   return useQuery({
     queryKey: ["document", id],
     enabled: !!id,
-    queryFn: async (): Promise<DocumentRow | null> => {
-      if (!id) return null;
-      const { data, error } = await supabase.from("documents").select("*").eq("id", id).maybeSingle();
-      if (error) throw error;
-      return data as DocumentRow | null;
-    },
+    queryFn: async () => documentRows.find((d) => d.id === id) ?? null,
   });
 }
 
@@ -86,11 +118,10 @@ export function useUpdateDocumentStatus() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (args: { id: string; status: DocStatus; remarks?: string }) => {
-      const { error } = await supabase
-        .from("documents")
-        .update({ status: args.status, remarks: args.remarks ?? null })
-        .eq("id", args.id);
-      if (error) throw error;
+      const row = documentRows.find((d) => d.id === args.id);
+      if (!row) throw new Error("Document not found");
+      row.status = args.status;
+      row.remarks = args.remarks ?? null;
     },
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: ["documents"] });
@@ -106,23 +137,26 @@ export function useUploadDocument() {
   return useMutation({
     mutationFn: async (args: { type: string; filename: string }) => {
       if (!userId || !profile) throw new Error("Not signed in");
-      const { error } = await supabase.from("documents").insert({
+      documentRows.unshift({
+        id: `d-${Date.now()}`,
         owner_id: userId,
         grantee_name: profile.full_name,
         student_number: profile.student_number ?? "",
         type: args.type,
         filename: args.filename,
+        uploaded_at: new Date().toISOString().slice(0, 16).replace("T", " "),
         status: "pending",
-        // risk_score is enforced server-side via trigger; never client-supplied.
+        risk_score: 0,
+        remarks: null,
+        ocr: null,
+        exif: null,
       });
-      if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["documents"] }),
   });
 }
 
 /* ---------------- Notifications ---------------- */
-
 export interface NotificationRow {
   id: string;
   user_id: string;
@@ -133,19 +167,22 @@ export interface NotificationRow {
   created_at: string;
 }
 
+const notificationRows: NotificationRow[] = mockNotifications.map((n: Notification) => ({
+  id: n.id,
+  user_id: STUDENT_OWNER,
+  title: n.title,
+  body: n.body,
+  type: n.type,
+  read: n.read,
+  created_at: n.createdAt,
+}));
+
 export function useNotifications() {
   const userId = useAuthStore((s) => s.userId);
   return useQuery({
     queryKey: ["notifications", userId],
     enabled: !!userId,
-    queryFn: async (): Promise<NotificationRow[]> => {
-      const { data, error } = await supabase
-        .from("notifications")
-        .select("*")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return (data ?? []) as NotificationRow[];
-    },
+    queryFn: async () => [...notificationRows].sort((a, b) => b.created_at.localeCompare(a.created_at)),
   });
 }
 
@@ -153,12 +190,10 @@ export function useMarkNotificationRead() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string | "all") => {
-      if (id === "all") {
-        const { error } = await supabase.from("notifications").update({ read: true }).eq("read", false);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from("notifications").update({ read: true }).eq("id", id);
-        if (error) throw error;
+      if (id === "all") notificationRows.forEach((n) => (n.read = true));
+      else {
+        const n = notificationRows.find((x) => x.id === id);
+        if (n) n.read = true;
       }
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["notifications"] }),
@@ -168,21 +203,13 @@ export function useMarkNotificationRead() {
 /* ---------------- Batches ---------------- */
 export interface BatchRow {
   id: string; name: string; academicYear: string; semester: string;
-  status: "open"|"closed"|"archived"; totalGrantees: number; active: number;
+  status: "open" | "closed" | "archived"; totalGrantees: number; active: number;
   pending: number; validated: number; createdAt: string;
 }
 export function useBatches() {
   return useQuery({
     queryKey: ["batches"],
-    queryFn: async (): Promise<BatchRow[]> => {
-      const { data, error } = await supabase.from("batches").select("*").order("created_at", { ascending: false });
-      if (error) throw error;
-      return (data ?? []).map((b: any) => ({
-        id: b.id, name: b.name, academicYear: b.academic_year, semester: b.semester,
-        status: b.status, totalGrantees: b.total_grantees, active: b.active,
-        pending: b.pending, validated: b.validated, createdAt: b.created_at,
-      }));
-    },
+    queryFn: async (): Promise<BatchRow[]> => mockBatches.map((b) => ({ ...b })),
   });
 }
 
@@ -191,41 +218,22 @@ export interface GranteeRow {
   id: string; studentNumber: string; firstName: string; lastName: string; middleName?: string;
   birthdate: string; email: string; contact: string; university: string; program: string;
   yearLevel: number; batchId: string; batch: string;
-  accountStatus: "active"|"inactive"|"pending_activation"|"locked";
-  submissionStatus: "not_submitted"|"submitted"|"under_review"|"approved"|"rejected"|"resubmission_required";
-  eligibility: "eligible"|"ineligible"|"pending"|"for_evaluation";
-  risk: "low"|"medium"|"high"; gwa: number; profileCompletion: number; notes?: string;
-}
-function mapGrantee(g: any): GranteeRow {
-  return {
-    id: g.id, studentNumber: g.student_number, firstName: g.first_name, lastName: g.last_name,
-    middleName: g.middle_name ?? undefined, birthdate: g.birthdate ?? "", email: g.email ?? "",
-    contact: g.contact ?? "", university: g.university ?? "", program: g.program ?? "",
-    yearLevel: g.year_level ?? 0, batchId: g.batch_id ?? "", batch: g.batch ?? "",
-    accountStatus: g.account_status, submissionStatus: g.submission_status,
-    eligibility: g.eligibility, risk: g.risk, gwa: Number(g.gwa ?? 0),
-    profileCompletion: g.profile_completion, notes: g.notes ?? undefined,
-  };
+  accountStatus: "active" | "inactive" | "pending_activation" | "locked";
+  submissionStatus: "not_submitted" | "submitted" | "under_review" | "approved" | "rejected" | "resubmission_required";
+  eligibility: "eligible" | "ineligible" | "pending" | "for_evaluation";
+  risk: "low" | "medium" | "high"; gwa: number; profileCompletion: number; notes?: string;
 }
 export function useGrantees() {
   return useQuery({
     queryKey: ["grantees"],
-    queryFn: async (): Promise<GranteeRow[]> => {
-      const { data, error } = await supabase.from("grantees").select("*").order("id");
-      if (error) throw error;
-      return (data ?? []).map(mapGrantee);
-    },
+    queryFn: async (): Promise<GranteeRow[]> => mockGrantees.map((g) => ({ ...g })),
   });
 }
 export function useGrantee(id: string | undefined) {
   return useQuery({
-    queryKey: ["grantee", id], enabled: !!id,
-    queryFn: async (): Promise<GranteeRow | null> => {
-      if (!id) return null;
-      const { data, error } = await supabase.from("grantees").select("*").eq("id", id).maybeSingle();
-      if (error) throw error;
-      return data ? mapGrantee(data) : null;
-    },
+    queryKey: ["grantee", id],
+    enabled: !!id,
+    queryFn: async () => mockGrantees.find((g) => g.id === id) ?? null,
   });
 }
 
@@ -236,72 +244,40 @@ export interface AcademicSemester {
 export interface AcademicRow {
   granteeId: string; studentNumber: string; granteeName: string; program: string;
   cumulativeGwa: number; retentionPassed: boolean;
-  recommendation: "eligible"|"ineligible"|"for_evaluation"; semesters: AcademicSemester[];
-}
-function mapAcademic(r: any): AcademicRow {
-  return {
-    granteeId: r.grantee_id, studentNumber: r.student_number, granteeName: r.grantee_name,
-    program: r.program ?? "", cumulativeGwa: Number(r.cumulative_gwa ?? 0),
-    retentionPassed: r.retention_passed, recommendation: r.recommendation,
-    semesters: (r.semesters ?? []) as AcademicSemester[],
-  };
+  recommendation: "eligible" | "ineligible" | "for_evaluation"; semesters: AcademicSemester[];
 }
 export function useAcademicRecords() {
   return useQuery({
     queryKey: ["academic"],
-    queryFn: async (): Promise<AcademicRow[]> => {
-      const { data, error } = await supabase.from("academic_records").select("*");
-      if (error) throw error;
-      return (data ?? []).map(mapAcademic);
-    },
+    queryFn: async (): Promise<AcademicRow[]> => mockAcademicRecords.map((r) => ({ ...r })),
   });
 }
 export function useAcademicRecord(id: string | undefined) {
   return useQuery({
-    queryKey: ["academic", id], enabled: !!id,
-    queryFn: async (): Promise<AcademicRow | null> => {
-      if (!id) return null;
-      const { data, error } = await supabase.from("academic_records").select("*").eq("grantee_id", id).maybeSingle();
-      if (error) throw error;
-      return data ? mapAcademic(data) : null;
-    },
+    queryKey: ["academic", id],
+    enabled: !!id,
+    queryFn: async () => mockAcademicRecords.find((r) => r.granteeId === id) ?? null,
   });
 }
 
 /* ---------------- Announcements ---------------- */
 export interface AnnouncementRow {
   id: string; title: string; body: string;
-  audience: "all"|"batch"|"pending"|"rejected"|"eligible"; audienceLabel: string;
-  channels: ("in_app"|"email"|"sms")[]; status: "draft"|"scheduled"|"published";
+  audience: "all" | "batch" | "pending" | "rejected" | "eligible"; audienceLabel: string;
+  channels: ("in_app" | "email" | "sms")[]; status: "draft" | "scheduled" | "published";
   publishedAt?: string; scheduledFor?: string; author: string; reach?: number; opens?: number;
-}
-function mapAnnouncement(a: any): AnnouncementRow {
-  return {
-    id: a.id, title: a.title, body: a.body, audience: a.audience,
-    audienceLabel: a.audience_label ?? "", channels: a.channels ?? [], status: a.status,
-    publishedAt: a.published_at ?? undefined, scheduledFor: a.scheduled_for ?? undefined,
-    author: a.author ?? "", reach: a.reach ?? undefined, opens: a.opens ?? undefined,
-  };
 }
 export function useAnnouncements() {
   return useQuery({
     queryKey: ["announcements"],
-    queryFn: async (): Promise<AnnouncementRow[]> => {
-      const { data, error } = await supabase.from("announcements").select("*").order("created_at", { ascending: false });
-      if (error) throw error;
-      return (data ?? []).map(mapAnnouncement);
-    },
+    queryFn: async (): Promise<AnnouncementRow[]> => mockAnnouncements.map((a) => ({ ...a })),
   });
 }
 export function useAnnouncement(id: string | undefined) {
   return useQuery({
-    queryKey: ["announcement", id], enabled: !!id,
-    queryFn: async (): Promise<AnnouncementRow | null> => {
-      if (!id) return null;
-      const { data, error } = await supabase.from("announcements").select("*").eq("id", id).maybeSingle();
-      if (error) throw error;
-      return data ? mapAnnouncement(data) : null;
-    },
+    queryKey: ["announcement", id],
+    enabled: !!id,
+    queryFn: async () => mockAnnouncements.find((a) => a.id === id) ?? null,
   });
 }
 
@@ -314,15 +290,7 @@ export interface AuditLogRow {
 export function useAuditLogs() {
   return useQuery({
     queryKey: ["audit_logs"],
-    queryFn: async (): Promise<AuditLogRow[]> => {
-      const { data, error } = await supabase.from("audit_logs").select("*").order("timestamp", { ascending: false });
-      if (error) throw error;
-      return (data ?? []).map((l: any) => ({
-        id: l.id, user: l.user, role: l.role, action: l.action, module: l.module,
-        target: l.target, ip: l.ip ?? "", timestamp: new Date(l.timestamp).toLocaleString("sv-SE").replace("T", " ").slice(0, 16),
-        before: l.before ?? undefined, after: l.after ?? undefined,
-      }));
-    },
+    queryFn: async (): Promise<AuditLogRow[]> => mockAuditLogs.map((l) => ({ ...l })),
   });
 }
 
@@ -334,14 +302,10 @@ export interface StaffUserRow {
 export function useStaffUsers() {
   return useQuery({
     queryKey: ["staff_directory"],
-    queryFn: async (): Promise<StaffUserRow[]> => {
-      const { data, error } = await supabase.from("staff_directory").select("*").order("username");
-      if (error) throw error;
-      return (data ?? []).map((u: any) => ({
-        id: u.id, username: u.username, fullName: u.full_name, email: u.email,
-        role: u.role, active: u.active, mfa: u.mfa,
-        lastLogin: u.last_login ? new Date(u.last_login).toLocaleString("sv-SE").replace("T", " ").slice(0, 16) : "",
-      }));
-    },
+    queryFn: async (): Promise<StaffUserRow[]> =>
+      mockUsers.map((u) => ({
+        id: u.id, username: u.username, fullName: u.fullName, email: u.email,
+        role: u.role, active: u.active, mfa: u.mfa, lastLogin: u.lastLogin,
+      })),
   });
 }
