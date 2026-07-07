@@ -4,6 +4,8 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Btn } from "@/components/ui/btn";
 import { Selectish, TextInput } from "@/components/ui/form-field";
 import { DataTable, THead, Tr, Th, Td } from "@/components/ui/data-table";
+import { TablePagination } from "@/components/ui/table-pagination";
+import { usePagination } from "@/hooks/use-pagination";
 import { DetailDrawer } from "@/components/ui/modal";
 import { useAuditLogs, type AuditLogRow } from "@/hooks/queries";
 import { IconDownload } from "@tabler/icons-react";
@@ -26,6 +28,8 @@ function Audit() {
     if (action && !l.action.includes(action.toLowerCase())) return false;
     return true;
   });
+  const pg = usePagination(filtered, 25);
+
 
   return (
     <div>
@@ -49,7 +53,7 @@ function Audit() {
         <tbody>
           {isLoading && <Tr><Td colSpan={8} className="text-center text-text-muted py-6">Loading…</Td></Tr>}
           {!isLoading && filtered.length === 0 && <Tr><Td colSpan={8} className="text-center text-text-muted py-6">No audit logs.</Td></Tr>}
-          {filtered.map((l) => (
+          {pg.pageItems.map((l) => (
             <Tr key={l.id}>
               <Td className="text-text-muted whitespace-nowrap">{l.timestamp}</Td>
               <Td className="font-medium">{l.user}</Td>
@@ -63,6 +67,7 @@ function Audit() {
           ))}
         </tbody>
       </DataTable>
+      <TablePagination {...pg} onPageChange={pg.setPage} onPageSizeChange={pg.setPageSize} className="rounded-b-lg border border-t-0 -mt-px" />
 
       <DetailDrawer open={!!active} onClose={() => setActive(null)} title="Audit Log Detail">
         {active && (

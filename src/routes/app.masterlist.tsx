@@ -4,6 +4,8 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Btn } from "@/components/ui/btn";
 import { FileUpload } from "@/components/ui/file-upload";
 import { DataTable, THead, Tr, Th, Td } from "@/components/ui/data-table";
+import { TablePagination } from "@/components/ui/table-pagination";
+import { usePagination } from "@/hooks/use-pagination";
 import { StatusBadge, statusVariantFor, formatStatus } from "@/components/ui/status-badge";
 import { useMasterlist } from "@/hooks/queries";
 import { IconAlertTriangle, IconUpload, IconCheck, IconArrowRight } from "@tabler/icons-react";
@@ -15,6 +17,9 @@ export const Route = createFileRoute("/app/masterlist")({
 function MasterlistPage() {
   const { data: rows = [], isLoading } = useMasterlist();
   const [previewed, setPreviewed] = useState(false);
+  const pg = usePagination(rows, 20);
+
+
 
   const counts = {
     total: rows.length,
@@ -90,7 +95,7 @@ function MasterlistPage() {
               {!isLoading && rows.length === 0 && (
                 <Tr><Td colSpan={7} className="text-center text-text-muted py-6">No rows yet. Seed demo data from the login page.</Td></Tr>
               )}
-              {rows.map((r) => (
+              {pg.pageItems.map((r) => (
                 <Tr key={r.id}>
                   <Td className="font-mono text-xs">{r.student_number || <span className="text-danger italic">missing</span>}</Td>
                   <Td>{r.first_name} {r.last_name}</Td>
@@ -105,6 +110,7 @@ function MasterlistPage() {
               ))}
             </tbody>
           </DataTable>
+          <TablePagination {...pg} onPageChange={pg.setPage} onPageSizeChange={pg.setPageSize} className="rounded-b-lg border border-t-0 -mt-px" />
 
           <div className="flex justify-end gap-2">
             <Btn variant="outline" onClick={() => setPreviewed(false)}>Cancel</Btn>

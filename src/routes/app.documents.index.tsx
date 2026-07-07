@@ -4,6 +4,8 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Btn } from "@/components/ui/btn";
 import { Selectish } from "@/components/ui/form-field";
 import { DataTable, THead, Tr, Th, Td } from "@/components/ui/data-table";
+import { TablePagination } from "@/components/ui/table-pagination";
+import { usePagination } from "@/hooks/use-pagination";
 import { StatusBadge, statusVariantFor, formatStatus } from "@/components/ui/status-badge";
 import { useDocuments } from "@/hooks/queries";
 
@@ -23,6 +25,8 @@ function DocQueue() {
     if (risk === "low" && d.risk_score >= 40) return false;
     return true;
   });
+  const pg = usePagination(filtered, 15);
+
 
   return (
     <div>
@@ -44,7 +48,7 @@ function DocQueue() {
         <tbody>
           {isLoading && <Tr><Td colSpan={7} className="text-center text-text-muted py-6">Loading…</Td></Tr>}
           {!isLoading && filtered.length === 0 && <Tr><Td colSpan={7} className="text-center text-text-muted py-6">No documents in this view.</Td></Tr>}
-          {filtered.map((d) => {
+          {pg.pageItems.map((d) => {
             const tone = d.risk_score >= 70 ? "danger" : d.risk_score >= 40 ? "warning" : "success";
             return (
               <Tr key={d.id}>
@@ -60,6 +64,7 @@ function DocQueue() {
           })}
         </tbody>
       </DataTable>
+      <TablePagination {...pg} onPageChange={pg.setPage} onPageSizeChange={pg.setPageSize} className="rounded-b-lg border border-t-0 -mt-px" />
     </div>
   );
 }

@@ -2,6 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { PageHeader } from "@/components/ui/page-header";
 import { Btn } from "@/components/ui/btn";
 import { DataTable, THead, Tr, Th, Td } from "@/components/ui/data-table";
+import { TablePagination } from "@/components/ui/table-pagination";
+import { usePagination } from "@/hooks/use-pagination";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useStaffUsers } from "@/hooks/queries";
 import { IconPlus, IconKey, IconDownload } from "@tabler/icons-react";
@@ -13,6 +15,7 @@ export const Route = createFileRoute("/app/users/")({
 
 function UsersPage() {
   const { data: users = [], isLoading } = useStaffUsers();
+  const pg = usePagination(users, 15);
   return (
     <div>
       <PageHeader title="Users & Access" description="Manage staff accounts, roles, and permissions."
@@ -26,7 +29,7 @@ function UsersPage() {
         <tbody>
           {isLoading && <Tr><Td colSpan={8} className="text-center text-text-muted py-6">Loading…</Td></Tr>}
           {!isLoading && users.length === 0 && <Tr><Td colSpan={8} className="text-center text-text-muted py-6">No staff users.</Td></Tr>}
-          {users.map((u) => (
+          {pg.pageItems.map((u) => (
             <Tr key={u.id}>
               <Td className="font-mono text-xs">{u.username}</Td>
               <Td className="font-medium">{u.fullName}</Td>
@@ -43,6 +46,7 @@ function UsersPage() {
           ))}
         </tbody>
       </DataTable>
+      <TablePagination {...pg} onPageChange={pg.setPage} onPageSizeChange={pg.setPageSize} className="rounded-b-lg border border-t-0 -mt-px" />
     </div>
   );
 }

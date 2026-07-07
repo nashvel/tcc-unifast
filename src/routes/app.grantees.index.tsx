@@ -5,16 +5,18 @@ import { Btn } from "@/components/ui/btn";
 import { SearchInput } from "@/components/ui/search-input";
 import { Selectish } from "@/components/ui/form-field";
 import { DataTable, THead, Tr, Th, Td } from "@/components/ui/data-table";
+import { TablePagination } from "@/components/ui/table-pagination";
+import { usePagination } from "@/hooks/use-pagination";
 import { StatusBadge, statusVariantFor, formatStatus } from "@/components/ui/status-badge";
 import { useGrantees, useBatches } from "@/hooks/queries";
-import { IconDownload, IconChevronLeft, IconChevronRight } from "@tabler/icons-react";
+import { IconDownload } from "@tabler/icons-react";
 import { downloadCSV } from "@/lib/csv";
 
 export const Route = createFileRoute("/app/grantees/")({
   component: GranteeList,
 });
 
-const PAGE = 15;
+
 
 function GranteeList() {
   const { data: grantees = [], isLoading } = useGrantees();
@@ -25,7 +27,6 @@ function GranteeList() {
   const [sub, setSub] = useState("all");
   const [elig, setElig] = useState("all");
   const [risk, setRisk] = useState("all");
-  const [page, setPage] = useState(1);
 
   const filtered = useMemo(() => grantees.filter((g) => {
     if (q && !`${g.firstName} ${g.lastName} ${g.studentNumber}`.toLowerCase().includes(q.toLowerCase())) return false;
@@ -37,8 +38,7 @@ function GranteeList() {
     return true;
   }), [grantees, q, batch, acc, sub, elig, risk]);
 
-  const pages = Math.max(1, Math.ceil(filtered.length / PAGE));
-  const visible = filtered.slice((page - 1) * PAGE, page * PAGE);
+  const pg = usePagination(filtered, 15);
 
   return (
     <div>
@@ -81,8 +81,8 @@ function GranteeList() {
         </THead>
         <tbody>
           {isLoading && <Tr><Td colSpan={8} className="text-center text-text-muted py-6">Loading…</Td></Tr>}
-          {!isLoading && visible.length === 0 && <Tr><Td colSpan={8} className="text-center text-text-muted py-6">No grantees found.</Td></Tr>}
-          {visible.map((g) => (
+          {!isLoading && pg.pageItems.length === 0 && <Tr><Td colSpan={8} className="text-center text-text-muted py-6">No grantees found.</Td></Tr>}
+          {pg.pageItems.map((g) => (
             <Tr key={g.id}>
               <Td className="font-mono text-xs">{g.studentNumber}</Td>
               <Td><Link to="/app/grantees/$id" params={{ id: g.id }} className="font-medium hover:text-primary">{g.firstName} {g.lastName}</Link></Td>
@@ -96,15 +96,7 @@ function GranteeList() {
           ))}
         </tbody>
       </DataTable>
-
-      <div className="flex items-center justify-between mt-3 text-xs text-text-muted">
-        <span>Showing {Math.min(filtered.length, (page - 1) * PAGE + 1)}–{Math.min(filtered.length, page * PAGE)} of {filtered.length}</span>
-        <div className="flex items-center gap-1">
-          <button disabled={page <= 1} onClick={() => setPage((p) => p - 1)} className="h-7 w-7 grid place-items-center rounded border disabled:opacity-40 hover:bg-surface-muted"><IconChevronLeft size={14} /></button>
-          <span className="px-2">Page {page} / {pages}</span>
-          <button disabled={page >= pages} onClick={() => setPage((p) => p + 1)} className="h-7 w-7 grid place-items-center rounded border disabled:opacity-40 hover:bg-surface-muted"><IconChevronRight size={14} /></button>
-        </div>
-      </div>
+      <TablePagination {...pg} onPageChange={pg.setPage} onPageSizeChange={pg.setPageSize} className="rounded-b-lg border border-t-0 -mt-px" />
     </div>
   );
 }
