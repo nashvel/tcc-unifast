@@ -34,25 +34,44 @@ export function TablePagination({
   const canPrev = page > 1;
   const canNext = page < pageCount;
 
+  const clamp = (n: number) => Math.min(pageCount, Math.max(1, n));
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    // Ignore when typing inside inputs / selects.
+    const t = e.target as HTMLElement;
+    if (t.tagName === "SELECT" || t.tagName === "INPUT" || t.tagName === "TEXTAREA") return;
+    switch (e.key) {
+      case "ArrowLeft": e.preventDefault(); onPageChange(clamp(page - 1)); break;
+      case "ArrowRight": e.preventDefault(); onPageChange(clamp(page + 1)); break;
+      case "Home": e.preventDefault(); onPageChange(1); break;
+      case "End": e.preventDefault(); onPageChange(pageCount); break;
+      case "PageUp": e.preventDefault(); onPageChange(clamp(page - 5)); break;
+      case "PageDown": e.preventDefault(); onPageChange(clamp(page + 5)); break;
+    }
+  };
+
   return (
-    <div
+    <nav
+      aria-label="Table pagination"
+      onKeyDown={onKeyDown}
       className={cn(
         "flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-3 py-1.5 border-t bg-surface text-[11px] text-text-muted",
         className,
       )}
     >
       <div className="flex items-center gap-3">
-        <span className="tabular-nums">
+        <span className="tabular-nums" aria-live="polite" aria-atomic="true">
           <span className="font-medium text-text">
             {total === 0 ? "0" : `${from.toLocaleString()}–${to.toLocaleString()}`}
           </span>{" "}
           of <span className="tabular-nums">{total.toLocaleString()}</span>
+          <span className="sr-only"> results</span>
         </span>
         {onPageSizeChange && (
           <label className="flex items-center gap-1.5">
             <span>Rows per page</span>
             <select
-              className="h-6 rounded border bg-surface px-1 pr-4 text-[11px] font-medium text-text hover:bg-surface-muted focus:outline-none focus:ring-1 focus:ring-primary"
+              aria-label="Rows per page"
+              className="h-6 rounded border bg-surface px-1 pr-4 text-[11px] font-medium text-text hover:bg-surface-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:ring-offset-surface"
               value={pageSize}
               onChange={(e) => onPageSizeChange(Number(e.target.value))}
             >
@@ -65,26 +84,30 @@ export function TablePagination({
       </div>
 
       <div className="flex items-center gap-2">
-        <span className="tabular-nums">
+        <span className="tabular-nums" aria-live="polite" aria-atomic="true">
           Page <span className="font-medium text-text">{page}</span> of{" "}
           <span className="font-medium text-text">{pageCount}</span>
         </span>
-        <div className="inline-flex rounded-md border bg-surface shadow-xs overflow-hidden divide-x">
+        <div
+          role="group"
+          aria-label="Pagination navigation"
+          className="inline-flex rounded-md border bg-surface shadow-xs overflow-hidden divide-x"
+        >
           <PagerBtn label="First page" disabled={!canPrev} onClick={() => onPageChange(1)}>
-            <IconChevronsLeft size={13} stroke={2} />
+            <IconChevronsLeft size={13} stroke={2} aria-hidden />
           </PagerBtn>
           <PagerBtn label="Previous page" disabled={!canPrev} onClick={() => onPageChange(page - 1)}>
-            <IconChevronLeft size={13} stroke={2} />
+            <IconChevronLeft size={13} stroke={2} aria-hidden />
           </PagerBtn>
           <PagerBtn label="Next page" disabled={!canNext} onClick={() => onPageChange(page + 1)}>
-            <IconChevronRight size={13} stroke={2} />
+            <IconChevronRight size={13} stroke={2} aria-hidden />
           </PagerBtn>
           <PagerBtn label="Last page" disabled={!canNext} onClick={() => onPageChange(pageCount)}>
-            <IconChevronsRight size={13} stroke={2} />
+            <IconChevronsRight size={13} stroke={2} aria-hidden />
           </PagerBtn>
         </div>
       </div>
-    </div>
+    </nav>
   );
 }
 
@@ -103,11 +126,13 @@ function PagerBtn({
     <button
       type="button"
       aria-label={label}
+      aria-disabled={disabled || undefined}
       title={label}
       disabled={disabled}
       onClick={onClick}
       className={cn(
-        "h-6 w-7 grid place-items-center transition-colors",
+        "h-6 w-7 grid place-items-center transition-colors outline-none",
+        "focus-visible:relative focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset",
         disabled
           ? "text-text-soft/60 bg-surface-muted/40 cursor-not-allowed"
           : "text-text-muted hover:bg-surface-muted hover:text-text active:bg-surface-muted/80",
