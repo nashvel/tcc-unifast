@@ -51,6 +51,21 @@ const FORBIDDEN = [
     re: /shadow-(red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-\d{2,3}/,
     msg: "Colored shadows read as neon glow. Remove.",
   },
+  {
+    id: "arbitrary-text-size",
+    re: /\btext-\[\d+(px|rem|em)\]/,
+    msg: "Arbitrary text size. Use text-2xs / text-micro / text-xs / text-sm / text-base / text-lg / text-xl / text-2xl / text-3xl.",
+  },
+  {
+    id: "arbitrary-radius",
+    re: /\brounded-\[\d/,
+    msg: "Arbitrary radius. Use rounded-sm / rounded-md / rounded-lg / rounded-xl / rounded-full.",
+  },
+  {
+    id: "arbitrary-shadow",
+    re: /\bshadow-\[/,
+    msg: "Arbitrary shadow. Use shadow-xs / shadow-sm / shadow-md / shadow-pop.",
+  },
 ];
 
 const violations = [];
