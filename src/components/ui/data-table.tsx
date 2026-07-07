@@ -73,9 +73,10 @@ export function Tr({ className, children, ...props }: HTMLAttributes<HTMLTableRo
 type TdProps = TdHTMLAttributes<HTMLTableCellElement> & {
   truncate?: boolean | number; // true = default max-w, number = px
   title?: string;
+  priority?: ColPriority;
 };
 
-export function Td({ className, children, truncate, title, ...props }: TdProps) {
+export function Td({ className, children, truncate, title, priority = "essential", ...props }: TdProps) {
   const shouldTruncate = truncate !== undefined && truncate !== false;
   const maxW =
     typeof truncate === "number" ? `${truncate}px` : shouldTruncate ? "16ch" : undefined;
