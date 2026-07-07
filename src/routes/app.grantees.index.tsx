@@ -5,9 +5,11 @@ import { Btn } from "@/components/ui/btn";
 import { SearchInput } from "@/components/ui/search-input";
 import { Selectish } from "@/components/ui/form-field";
 import { DataTable, THead, Tr, Th, Td } from "@/components/ui/data-table";
+import { TablePagination } from "@/components/ui/table-pagination";
+import { usePagination } from "@/hooks/use-pagination";
 import { StatusBadge, statusVariantFor, formatStatus } from "@/components/ui/status-badge";
 import { useGrantees, useBatches } from "@/hooks/queries";
-import { IconDownload, IconChevronLeft, IconChevronRight } from "@tabler/icons-react";
+import { IconDownload } from "@tabler/icons-react";
 import { downloadCSV } from "@/lib/csv";
 
 export const Route = createFileRoute("/app/grantees/")({
