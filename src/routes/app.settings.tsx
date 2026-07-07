@@ -4,7 +4,10 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   IconDeviceLaptop, IconCheck, IconDownload, IconLogout, IconFilter,
   IconAlertCircle, IconShieldCheck, IconUser, IconKey, IconHistory, IconBuilding,
+  IconPalette, IconSun, IconMoon,
 } from "@tabler/icons-react";
+import { useThemeStore, FONT_OPTIONS } from "@/stores/themeStore";
+import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/ui/page-header";
 import { ChartCard } from "@/components/ui/chart-card";
 import { FormField, TextInput, Selectish } from "@/components/ui/form-field";
