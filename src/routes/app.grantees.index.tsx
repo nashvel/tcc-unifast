@@ -81,8 +81,8 @@ function GranteeList() {
         </THead>
         <tbody>
           {isLoading && <Tr><Td colSpan={8} className="text-center text-text-muted py-6">Loading…</Td></Tr>}
-          {!isLoading && visible.length === 0 && <Tr><Td colSpan={8} className="text-center text-text-muted py-6">No grantees found.</Td></Tr>}
-          {visible.map((g) => (
+          {!isLoading && pg.pageItems.length === 0 && <Tr><Td colSpan={8} className="text-center text-text-muted py-6">No grantees found.</Td></Tr>}
+          {pg.pageItems.map((g) => (
             <Tr key={g.id}>
               <Td className="font-mono text-xs">{g.studentNumber}</Td>
               <Td><Link to="/app/grantees/$id" params={{ id: g.id }} className="font-medium hover:text-primary">{g.firstName} {g.lastName}</Link></Td>
@@ -96,15 +96,7 @@ function GranteeList() {
           ))}
         </tbody>
       </DataTable>
-
-      <div className="flex items-center justify-between mt-3 text-xs text-text-muted">
-        <span>Showing {Math.min(filtered.length, (page - 1) * PAGE + 1)}–{Math.min(filtered.length, page * PAGE)} of {filtered.length}</span>
-        <div className="flex items-center gap-1">
-          <button disabled={page <= 1} onClick={() => setPage((p) => p - 1)} className="h-7 w-7 grid place-items-center rounded border disabled:opacity-40 hover:bg-surface-muted"><IconChevronLeft size={14} /></button>
-          <span className="px-2">Page {page} / {pages}</span>
-          <button disabled={page >= pages} onClick={() => setPage((p) => p + 1)} className="h-7 w-7 grid place-items-center rounded border disabled:opacity-40 hover:bg-surface-muted"><IconChevronRight size={14} /></button>
-        </div>
-      </div>
+      <TablePagination {...pg} onPageChange={pg.setPage} onPageSizeChange={pg.setPageSize} className="rounded-b-lg border border-t-0 -mt-px" />
     </div>
   );
 }
