@@ -10,8 +10,10 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "format": "prettier --write .",
+    "lint:tokens": "node tests/visual/taste-guard.mjs",
     "test:taste": "node tests/visual/taste-guard.mjs",
-    "test:visual": "node tests/visual/snapshot.mjs"
+    "test:visual": "node tests/visual/snapshot.mjs",
+    "ci": "npm run lint && npm run lint:tokens"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
