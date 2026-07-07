@@ -55,7 +55,7 @@ export function StudentMobileTopbar() {
         <div className="w-2" />
       )}
 
-      <h1 className="flex-1 text-[15px] font-semibold truncate">{title}</h1>
+      <h1 className="flex-1 text-base font-semibold truncate">{title}</h1>
 
       <button
         onClick={() => { setOpenProfile(false); navigate({ to: "/student/notifications" }); }}

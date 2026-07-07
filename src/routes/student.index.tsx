@@ -127,7 +127,7 @@ function StatsBoard({
           <p className="text-2xs uppercase tracking-[0.14em] text-text-soft">
             Application
           </p>
-          <p className="mt-0.5 text-2xl sm:text-[28px] font-semibold leading-none tabular-nums">
+          <p className="mt-0.5 text-2xl sm:text-3xl font-semibold leading-none tabular-nums">
             {submitted}
             <span className="text-text-muted font-normal">/{total}</span>
             <span className="ml-2 text-sm font-normal text-text-muted align-middle">
