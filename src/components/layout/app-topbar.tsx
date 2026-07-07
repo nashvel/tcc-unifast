@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { UserAvatar } from "@/components/ui/dicebear-avatar";
 import { signOut as mockSignOut } from "@/lib/mock-auth";
+import { BrandLogo } from "@/components/brand/brand-logo";
 
 export function AppTopbar({ onToggleSidebar }: { onToggleSidebar: () => void }) {
   const profile = useAuthStore((s) => s.profile);
