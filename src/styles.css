@@ -41,6 +41,9 @@ html {
   --sidebar-bg: #4a141d;            /* deep maroon */
   --sidebar-active: #611620;
   --sidebar-active-text: #f5e6c4;
+  --sidebar-text: #f5ece0;          /* warm ivory on maroon */
+  --sidebar-text-muted: #cdb8a6;
+  --sidebar-hover: #611620;
 
   --accent-gold: #b8894a;           /* muted gold — primary CTA */
   --accent-gold-hover: #9c7238;
@@ -97,6 +100,9 @@ html {
   --sidebar-bg: #2a0e14;
   --sidebar-active: #3a1620;
   --sidebar-active-text: #f5d99a;
+  --sidebar-text: #efe3d4;
+  --sidebar-text-muted: #b39c8a;
+  --sidebar-hover: #3a1620;
 
   --accent-gold: #d1a15c;            /* muted gold — primary CTA */
   --accent-gold-hover: #e0b56f;
@@ -152,6 +158,9 @@ html {
   --color-sidebar-bg: var(--sidebar-bg);
   --color-sidebar-active: var(--sidebar-active);
   --color-sidebar-active-text: var(--sidebar-active-text);
+  --color-sidebar-text: var(--sidebar-text);
+  --color-sidebar-text-muted: var(--sidebar-text-muted);
+  --color-sidebar-hover: var(--sidebar-hover);
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
