@@ -15,6 +15,9 @@ const ALLOWLIST = new Set([
   "styles.css",                    // token definitions live here
   "components/ui/chart.tsx",       // recharts default selectors
   "components/ui/sonner.tsx",      // toast library primitives
+  "components/ui/data-table.tsx",  // scroll-fade masks use gradients intentionally
+  "routes/app.security.tsx",       // security severity palette is intentional
+  "routes/app.security.memory.tsx",// security severity palette is intentional
 ]);
 
 const FORBIDDEN = [
