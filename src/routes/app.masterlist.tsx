@@ -17,6 +17,9 @@ export const Route = createFileRoute("/app/masterlist")({
 function MasterlistPage() {
   const { data: rows = [], isLoading } = useMasterlist();
   const [previewed, setPreviewed] = useState(false);
+  const pg = usePagination(rows, 20);
+
+
 
   const counts = {
     total: rows.length,
