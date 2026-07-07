@@ -43,14 +43,23 @@ export function THead({ children }: { children: ReactNode }) {
   );
 }
 
-type ThProps = ThHTMLAttributes<HTMLTableCellElement> & { priority?: ColPriority };
+const stickyClass =
+  "sticky left-0 z-20 bg-surface before:absolute before:inset-y-0 before:-right-2 before:w-2 before:pointer-events-none before:bg-gradient-to-r before:from-black/10 before:to-transparent";
+const stickyHeadClass =
+  "sticky left-0 z-30 bg-surface-muted/95 backdrop-blur before:absolute before:inset-y-0 before:-right-2 before:w-2 before:pointer-events-none before:bg-gradient-to-r before:from-black/10 before:to-transparent";
 
-export function Th({ className, children, priority = "essential", ...props }: ThProps) {
+type ThProps = ThHTMLAttributes<HTMLTableCellElement> & {
+  priority?: ColPriority;
+  sticky?: boolean;
+};
+
+export function Th({ className, children, priority = "essential", sticky, ...props }: ThProps) {
   return (
     <th
       className={cn(
         "h-9 px-2 xl:px-3 text-left font-medium whitespace-nowrap border-b",
         priorityClass[priority],
+        sticky && stickyHeadClass,
         className,
       )}
       {...props}
@@ -62,21 +71,26 @@ export function Th({ className, children, priority = "essential", ...props }: Th
 
 export function Tr({ className, children, ...props }: HTMLAttributes<HTMLTableRowElement>) {
   return (
-    <tr className={cn("border-b last:border-0 hover:bg-surface-muted/40 transition-colors", className)} {...props}>
+    <tr
+      className={cn(
+        "group border-b last:border-0 hover:bg-surface-muted/40 [&:hover_td.is-sticky]:bg-surface-muted/40 transition-colors",
+        className,
+      )}
+      {...props}
+    >
       {children}
     </tr>
   );
 }
 
-
-
 type TdProps = TdHTMLAttributes<HTMLTableCellElement> & {
   truncate?: boolean | number; // true = default max-w, number = px
   title?: string;
   priority?: ColPriority;
+  sticky?: boolean;
 };
 
-export function Td({ className, children, truncate, title, priority = "essential", ...props }: TdProps) {
+export function Td({ className, children, truncate, title, priority = "essential", sticky, ...props }: TdProps) {
   const shouldTruncate = truncate !== undefined && truncate !== false;
   const maxW =
     typeof truncate === "number" ? `${truncate}px` : shouldTruncate ? "16ch" : undefined;
@@ -91,6 +105,7 @@ export function Td({ className, children, truncate, title, priority = "essential
           ? "whitespace-nowrap overflow-hidden text-ellipsis"
           : "break-words [overflow-wrap:anywhere]",
         priorityClass[priority],
+        sticky && `is-sticky ${stickyClass}`,
         className,
       )}
       style={shouldTruncate ? { maxWidth: maxW } : undefined}
@@ -100,4 +115,5 @@ export function Td({ className, children, truncate, title, priority = "essential
       {children}
     </td>
   );
+}
 }
