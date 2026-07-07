@@ -36,8 +36,8 @@ export function ThemeToggle() {
     const color = styles.getPropertyValue("--bg").trim() || (nextDark ? "#0e1418" : "#f4f6f8");
     root.classList.toggle("dark", dark); // revert; effect below will re-apply
     setRipple({ x, y, r, color, id: Date.now() });
-    // Swap theme on next frame so the wave visually leads the change.
-    requestAnimationFrame(() => setDark(nextDark));
+    // Swap theme at the wave's peak coverage so light↔dark feels symmetric.
+    window.setTimeout(() => setDark(nextDark), 260);
   }
 
   return (
