@@ -118,7 +118,7 @@ export const Route = createFileRoute("/student/documents")({
               return (
                 <section key={g.title} aria-label={g.title} className="space-y-2">
                   <div className="flex items-baseline justify-between px-1">
-                    <h2 className={cn("text-xs font-semibold uppercase tracking-wide", g.tone)}>
+                    <h2 className={cn("text-sm font-semibold", g.tone)}>
                       {g.title}
                       <span className="ml-1.5 text-text-soft font-medium normal-case tracking-normal">
                         ({groupItems.length})
