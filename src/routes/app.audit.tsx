@@ -4,6 +4,8 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Btn } from "@/components/ui/btn";
 import { Selectish, TextInput } from "@/components/ui/form-field";
 import { DataTable, THead, Tr, Th, Td } from "@/components/ui/data-table";
+import { TablePagination } from "@/components/ui/table-pagination";
+import { usePagination } from "@/hooks/use-pagination";
 import { DetailDrawer } from "@/components/ui/modal";
 import { useAuditLogs, type AuditLogRow } from "@/hooks/queries";
 import { IconDownload } from "@tabler/icons-react";
