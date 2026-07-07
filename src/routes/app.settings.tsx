@@ -292,11 +292,11 @@ function SettingsPage() {
           {section === "appearance" && (
             <div className="space-y-3">
               <ChartCard title="Theme">
-                <p className="text-xs text-text-muted -mt-1 mb-3">Government Slate — light or dark.</p>
+                <p className="text-xs text-text-muted -mt-1 mb-3">CHED — modern blue & gold, light or dark.</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {([
-                    { active: !dark, on: () => setDark(false), label: "Light", icon: <IconSun size={16} />, swatch: ["#f4f6f8", "#ffffff", "#0f4c5c", "#14202b"] },
-                    { active: dark, on: () => setDark(true), label: "Dark", icon: <IconMoon size={16} />, swatch: ["#0e1418", "#141b21", "#6fb5c4", "#e6ecf0"] },
+                    { active: !dark, on: () => setDark(false), label: "Light", icon: <IconSun size={16} />, swatch: ["#f5f7fb", "#ffffff", "#003da5", "#fdb913"] },
+                    { active: dark, on: () => setDark(true), label: "Dark", icon: <IconMoon size={16} />, swatch: ["#0a1120", "#101a2e", "#6ea3ff", "#ffcf47"] },
                   ] as const).map((t) => (
                     <button
                       key={t.label}
