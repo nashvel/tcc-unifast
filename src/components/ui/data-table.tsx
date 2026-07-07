@@ -116,4 +116,3 @@ export function Td({ className, children, truncate, title, priority = "essential
     </td>
   );
 }
-}
