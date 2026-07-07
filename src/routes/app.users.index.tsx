@@ -2,6 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { PageHeader } from "@/components/ui/page-header";
 import { Btn } from "@/components/ui/btn";
 import { DataTable, THead, Tr, Th, Td } from "@/components/ui/data-table";
+import { TablePagination } from "@/components/ui/table-pagination";
+import { usePagination } from "@/hooks/use-pagination";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useStaffUsers } from "@/hooks/queries";
 import { IconPlus, IconKey, IconDownload } from "@tabler/icons-react";
