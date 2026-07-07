@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { PageHeader } from "@/components/ui/page-header";
 import { Btn } from "@/components/ui/btn";
-import { DataTable, THead, Tr, Th } from "@/components/ui/data-table";
+import { DataTable, THead, Tr, Th, Td } from "@/components/ui/data-table";
 import { TableStates } from "@/components/ui/table-states";
 import { TablePagination } from "@/components/ui/table-pagination";
 import { usePagination } from "@/hooks/use-pagination";
