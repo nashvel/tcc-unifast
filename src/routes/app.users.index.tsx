@@ -15,7 +15,7 @@ export const Route = createFileRoute("/app/users/")({
 });
 
 function UsersPage() {
-  const { data: users = [], isLoading } = useStaffUsers();
+  const { data: users = [], isLoading, isFetching, isError, error, refetch } = useStaffUsers();
   const pg = usePagination(users, 15);
   return (
     <div>
