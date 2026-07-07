@@ -8,6 +8,7 @@ import { requiredDocs } from "@/data/mockDocuments";
 import { useDocuments } from "@/hooks/queries";
 import { useAuthStore } from "@/stores/authStore";
 import { cn } from "@/lib/utils";
+import { branding } from "@/config/branding";
 
 export const Route = createFileRoute("/student/")({
   component: StudentHome,
@@ -55,6 +56,19 @@ function StudentHome() {
 
   return (
     <div className="space-y-8">
+      {/* Hero banner */}
+      <div className="relative overflow-hidden rounded-xl border bg-surface-muted aspect-[3/1] sm:aspect-[16/5]">
+        <img
+          src={branding.dashboardHeaderUrl}
+          alt="Tagoloan Community College campus banner"
+          className="absolute inset-0 h-full w-full object-cover"
+          loading="eager"
+          decoding="async"
+          fetchPriority="high"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
+      </div>
+
       {/* Header row */}
       <header className="flex flex-wrap items-end justify-between gap-4 pb-5 border-b">
         <div className="min-w-0">
