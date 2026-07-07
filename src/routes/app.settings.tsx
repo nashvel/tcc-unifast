@@ -4,7 +4,10 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   IconDeviceLaptop, IconCheck, IconDownload, IconLogout, IconFilter,
   IconAlertCircle, IconShieldCheck, IconUser, IconKey, IconHistory, IconBuilding,
+  IconPalette, IconSun, IconMoon,
 } from "@tabler/icons-react";
+import { useThemeStore, FONT_OPTIONS } from "@/stores/themeStore";
+import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/ui/page-header";
 import { ChartCard } from "@/components/ui/chart-card";
 import { FormField, TextInput, Selectish } from "@/components/ui/form-field";
@@ -171,12 +174,19 @@ function SettingsPage() {
 
   const currentUA = typeof navigator !== "undefined" ? navigator.userAgent : "";
 
-  type Section = "general" | "organization" | "security" | "sessions";
+  type Section = "general" | "organization" | "appearance" | "security" | "sessions";
   const [section, setSection] = useState<Section>("general");
+
+  const dark = useThemeStore((s) => s.dark);
+  const fontKey = useThemeStore((s) => s.font);
+  const setDark = useThemeStore((s) => s.set);
+  const setFont = useThemeStore((s) => s.setFont);
+  const activeFont = FONT_OPTIONS.find((f) => f.key === fontKey) ?? FONT_OPTIONS[0];
 
   const nav: { key: Section; label: string; icon: typeof IconUser; hint: string }[] = [
     { key: "general", label: "General", icon: IconUser, hint: "Profile & avatar" },
     { key: "organization", label: "Organization", icon: IconBuilding, hint: "Office & validation rules" },
+    { key: "appearance", label: "Appearance", icon: IconPalette, hint: "Theme & font" },
     { key: "security", label: "Security", icon: IconKey, hint: "Password" },
     { key: "sessions", label: "Sessions", icon: IconHistory, hint: "Current device & history" },
   ];
@@ -276,6 +286,83 @@ function SettingsPage() {
                 <Btn variant="outline">Cancel</Btn>
                 <Btn variant="primary">Save changes</Btn>
               </div>
+            </div>
+          )}
+
+          {section === "appearance" && (
+            <div className="space-y-3">
+              <ChartCard title="Theme">
+                <p className="text-xs text-text-muted -mt-1 mb-3">Government Slate — light or dark.</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {([
+                    { active: !dark, on: () => setDark(false), label: "Light", icon: <IconSun size={16} />, swatch: ["#f4f6f8", "#ffffff", "#0f4c5c", "#14202b"] },
+                    { active: dark, on: () => setDark(true), label: "Dark", icon: <IconMoon size={16} />, swatch: ["#0e1418", "#141b21", "#6fb5c4", "#e6ecf0"] },
+                  ] as const).map((t) => (
+                    <button
+                      key={t.label}
+                      type="button"
+                      onClick={t.on}
+                      aria-pressed={t.active}
+                      className={cn(
+                        "text-left rounded-md border p-3 focus-ring transition-colors",
+                        t.active ? "border-primary bg-primary-soft" : "hover:bg-surface-muted",
+                      )}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="inline-flex items-center gap-2 text-sm font-medium">{t.icon} {t.label}</span>
+                        {t.active && <IconCheck size={16} className="text-primary" />}
+                      </div>
+                      <div className="mt-3 flex overflow-hidden rounded border h-8">
+                        {t.swatch.map((c) => <div key={c} className="flex-1" style={{ backgroundColor: c }} />)}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </ChartCard>
+
+              <ChartCard title="Font family">
+                <p className="text-xs text-text-muted -mt-1 mb-2">Applies to the entire workspace. Non-default fonts load on demand.</p>
+                <FormField label="Font">
+                  <Selectish value={fontKey} onChange={(e) => setFont(e.target.value as typeof fontKey)}>
+                    {FONT_OPTIONS.map((f) => <option key={f.key} value={f.key}>{f.label}</option>)}
+                  </Selectish>
+                </FormField>
+                <p className="text-xs text-text-muted mt-2">{activeFont.description}</p>
+              </ChartCard>
+
+              <ChartCard title="Typography preview">
+                <p className="text-xs text-text-muted -mt-1 mb-3">
+                  Rendered in <span className="font-medium text-text">{activeFont.label}</span>. Updates live as you switch fonts.
+                </p>
+                <div key={fontKey} className="space-y-4" style={{ fontFamily: activeFont.stack }}>
+                  <div>
+                    <p className="text-2xs uppercase tracking-wide text-text-soft mb-1">Page title · 20/28 semibold</p>
+                    <h1 className="text-xl font-semibold tracking-tight">Government scholarship applications</h1>
+                  </div>
+                  <div>
+                    <p className="text-2xs uppercase tracking-wide text-text-soft mb-1">Section heading · 16/24 semibold</p>
+                    <h2 className="text-base font-semibold tracking-tight">Retention and eligibility</h2>
+                  </div>
+                  <div>
+                    <p className="text-2xs uppercase tracking-wide text-text-soft mb-1">Body · 14/20 regular</p>
+                    <p className="text-sm">
+                      The Tertiary Education Subsidy covers tuition and other school fees for qualified Filipino students at state universities and colleges.
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-2xs uppercase tracking-wide text-text-soft mb-1">Label · 12/16 medium</p>
+                    <p className="text-xs font-medium">Applicant ID · 2024-000487</p>
+                  </div>
+                  <div>
+                    <p className="text-2xs uppercase tracking-wide text-text-soft mb-1">Micro / muted · 11/14</p>
+                    <p className="text-micro text-text-muted">Last updated 3 minutes ago by reviewer</p>
+                  </div>
+                  <div>
+                    <p className="text-2xs uppercase tracking-wide text-text-soft mb-1">Numerals · tabular sample</p>
+                    <p className="text-sm tabular-nums">0123456789 · ₱ 1,248,900.00 · GWA 1.75</p>
+                  </div>
+                </div>
+              </ChartCard>
             </div>
           )}
 
