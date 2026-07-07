@@ -5,6 +5,10 @@
 @custom-variant dark (&:is(.dark *));
 
 /* === Design tokens === */
+html {
+  zoom: 1.25;
+}
+
 :root {
   --primary: #2563eb;
   --primary-hover: #1d4ed8;
