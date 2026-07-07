@@ -9,15 +9,37 @@ import {
   IconArrowLeft, IconPlus, IconEdit, IconHistory, IconTrash,
   IconArchive, IconArchiveOff, IconShieldCheck, IconAlertTriangle,
 } from "@tabler/icons-react";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuthStore } from "@/stores/authStore";
 import { toast } from "sonner";
-import type { Database } from "@/integrations/supabase/types";
 
-type Entry = Database["public"]["Tables"]["security_memory_entries"]["Row"];
-type Revision = Database["public"]["Tables"]["security_memory_revisions"]["Row"];
-type Category = Database["public"]["Enums"]["security_memory_category"];
-type Status = Database["public"]["Enums"]["security_memory_status"];
+type Category = "invariant" | "scanner_guidance" | "accepted_risk" | "note";
+type Status = "active" | "archived";
+
+interface Entry {
+  id: string;
+  title: string;
+  body: string;
+  category: Category;
+  status: Status;
+  related_finding_id: string | null;
+  version: number;
+  created_at: string;
+  updated_at: string;
+  updated_by: string | null;
+  created_by: string | null;
+}
+
+interface Revision {
+  id: string;
+  entry_id: string;
+  version: number;
+  title: string;
+  body: string;
+  category: Category;
+  status: Status;
+  related_finding_id: string | null;
+  created_at: string;
+}
 
 export const Route = createFileRoute("/app/security/memory")({
   component: SecurityMemoryPage,
@@ -46,6 +68,38 @@ function fmt(iso: string) {
   return new Date(iso).toLocaleString();
 }
 
+// In-memory mock store, seeded with a couple of entries.
+const nowIso = new Date().toISOString();
+const mockEntries: Entry[] = [
+  {
+    id: "mem-1",
+    title: "Staff directory is admin-read only",
+    body: "The staff_directory view must remain restricted to admins via has_role. Do not add public/anon SELECT policies.",
+    category: "invariant",
+    status: "active",
+    related_finding_id: "staff_directory_sensitive_exposure",
+    version: 1,
+    created_at: nowIso,
+    updated_at: nowIso,
+    updated_by: null,
+    created_by: null,
+  },
+  {
+    id: "mem-2",
+    title: "Avatars bucket per-user folder",
+    body: "SELECT/INSERT/UPDATE/DELETE policies on the avatars bucket must check the caller's user id prefix.",
+    category: "scanner_guidance",
+    status: "active",
+    related_finding_id: "avatars_storage_public_read",
+    version: 1,
+    created_at: nowIso,
+    updated_at: nowIso,
+    updated_by: null,
+    created_by: null,
+  },
+];
+const mockRevisions: Revision[] = [];
+
 function SecurityMemoryPage() {
   const role = useAuthStore((s) => s.role);
   const userId = useAuthStore((s) => s.userId);
@@ -63,14 +117,9 @@ function SecurityMemoryPage() {
   const [revisions, setRevisions] = useState<Revision[]>([]);
   const [confirmDel, setConfirmDel] = useState<Entry | null>(null);
 
-  const load = useCallback(async () => {
+  const load = useCallback(() => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("security_memory_entries")
-      .select("*")
-      .order("updated_at", { ascending: false });
-    if (error) toast.error(error.message);
-    setEntries(data ?? []);
+    setEntries([...mockEntries].sort((a, b) => b.updated_at.localeCompare(a.updated_at)));
     setLoading(false);
   }, []);
 
@@ -90,31 +139,24 @@ function SecurityMemoryPage() {
     });
   }, [entries, search, filterCat, filterStatus]);
 
-  const openHistory = useCallback(async (entry: Entry) => {
+  const openHistory = useCallback((entry: Entry) => {
     setHistoryFor(entry);
-    const { data, error } = await supabase
-      .from("security_memory_revisions")
-      .select("*")
-      .eq("entry_id", entry.id)
-      .order("version", { ascending: false });
-    if (error) toast.error(error.message);
-    setRevisions(data ?? []);
+    setRevisions(mockRevisions.filter((r) => r.entry_id === entry.id).sort((a, b) => b.version - a.version));
   }, []);
 
-  const toggleArchive = useCallback(async (entry: Entry) => {
+  const toggleArchive = useCallback((entry: Entry) => {
     const next: Status = entry.status === "active" ? "archived" : "active";
-    const { error } = await supabase
-      .from("security_memory_entries")
-      .update({ status: next, updated_by: userId })
-      .eq("id", entry.id);
-    if (error) return toast.error(error.message);
+    const idx = mockEntries.findIndex((e) => e.id === entry.id);
+    if (idx >= 0) {
+      mockEntries[idx] = { ...mockEntries[idx], status: next, updated_at: new Date().toISOString(), updated_by: userId };
+    }
     toast.success(next === "archived" ? "Entry archived" : "Entry restored");
     load();
   }, [load, userId]);
 
-  const remove = useCallback(async (entry: Entry) => {
-    const { error } = await supabase.from("security_memory_entries").delete().eq("id", entry.id);
-    if (error) return toast.error(error.message);
+  const remove = useCallback((entry: Entry) => {
+    const idx = mockEntries.findIndex((e) => e.id === entry.id);
+    if (idx >= 0) mockEntries.splice(idx, 1);
     toast.success("Entry deleted");
     setConfirmDel(null);
     load();
@@ -294,20 +336,54 @@ function EntryEditor({
       return;
     }
     setSaving(true);
-    const payload = {
-      title: title.trim(),
-      body: body.trim(),
-      category,
-      status,
-      related_finding_id: findingId.trim() || null,
-      updated_by: userId,
-    };
-    const res = entry
-      ? await supabase.from("security_memory_entries").update(payload).eq("id", entry.id)
-      : await supabase.from("security_memory_entries").insert({ ...payload, created_by: userId });
+    await new Promise((r) => setTimeout(r, 200));
+
+    const now = new Date().toISOString();
+    if (entry) {
+      // snapshot old revision
+      mockRevisions.push({
+        id: `rev-${Date.now()}`,
+        entry_id: entry.id,
+        version: entry.version,
+        title: entry.title,
+        body: entry.body,
+        category: entry.category,
+        status: entry.status,
+        related_finding_id: entry.related_finding_id,
+        created_at: now,
+      });
+      const idx = mockEntries.findIndex((e) => e.id === entry.id);
+      if (idx >= 0) {
+        mockEntries[idx] = {
+          ...mockEntries[idx],
+          title: title.trim(),
+          body: body.trim(),
+          category,
+          status,
+          related_finding_id: findingId.trim() || null,
+          version: entry.version + 1,
+          updated_at: now,
+          updated_by: userId,
+        };
+      }
+      toast.success(`Saved as v${entry.version + 1}`);
+    } else {
+      mockEntries.unshift({
+        id: `mem-${Date.now()}`,
+        title: title.trim(),
+        body: body.trim(),
+        category,
+        status,
+        related_finding_id: findingId.trim() || null,
+        version: 1,
+        created_at: now,
+        updated_at: now,
+        updated_by: userId,
+        created_by: userId,
+      });
+      toast.success("Entry created");
+    }
     setSaving(false);
-    if (res.error) return toast.error(res.error.message);
-    toast.success(entry ? `Saved as v${entry.version + 1}` : "Entry created");
     onSaved();
   };
 
