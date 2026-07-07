@@ -35,6 +35,7 @@ export function AppTopbar({ onToggleSidebar }: { onToggleSidebar: () => void }) 
       <button onClick={onToggleSidebar} className="lg:hidden p-1.5 rounded-md hover:bg-surface-muted">
         <IconMenu2 size={18} />
       </button>
+      <BrandLogo size="sm" className="lg:hidden" />
       <button
         onClick={() => window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }))}
         className="flex items-center gap-2 h-9 px-2.5 rounded-md border bg-input text-left flex-1 max-w-md text-text-muted hover:bg-surface-muted"
