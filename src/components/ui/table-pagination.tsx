@@ -62,26 +62,37 @@ export function TablePagination({
   return (
     <nav
       aria-label="Table pagination"
+      aria-busy={isLoading || undefined}
       onKeyDown={onKeyDown}
       className={cn(
         "flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-3 py-1.5 border-t bg-surface text-[11px] text-text-muted",
+        (disabled || isLoading) && "opacity-80",
         className,
       )}
     >
       <div className="flex items-center gap-3">
         <span className="tabular-nums" aria-live="polite" aria-atomic="true">
-          <span className="font-medium text-text">
-            {total === 0 ? "0" : `${from.toLocaleString()}–${to.toLocaleString()}`}
-          </span>{" "}
-          of <span className="tabular-nums">{total.toLocaleString()}</span>
-          <span className="sr-only"> results</span>
+          {isLoading ? (
+            <span className="text-text-muted">Loading…</span>
+          ) : isEmpty ? (
+            <span className="text-text-muted">No results</span>
+          ) : (
+            <>
+              <span className="font-medium text-text">
+                {from.toLocaleString()}–{to.toLocaleString()}
+              </span>{" "}
+              of <span className="tabular-nums">{total.toLocaleString()}</span>
+              <span className="sr-only"> results</span>
+            </>
+          )}
         </span>
         {onPageSizeChange && (
-          <label className="flex items-center gap-1.5">
+          <label className={cn("flex items-center gap-1.5", sizeLocked && "opacity-50")}>
             <span>Rows per page</span>
             <select
               aria-label="Rows per page"
-              className="h-6 rounded border bg-surface px-1 pr-4 text-[11px] font-medium text-text hover:bg-surface-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:ring-offset-surface"
+              disabled={sizeLocked}
+              className="h-6 rounded border bg-surface px-1 pr-4 text-[11px] font-medium text-text hover:bg-surface-muted disabled:cursor-not-allowed disabled:hover:bg-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:ring-offset-surface"
               value={pageSize}
               onChange={(e) => onPageSizeChange(Number(e.target.value))}
             >
@@ -95,8 +106,8 @@ export function TablePagination({
 
       <div className="flex items-center gap-2">
         <span className="tabular-nums" aria-live="polite" aria-atomic="true">
-          Page <span className="font-medium text-text">{page}</span> of{" "}
-          <span className="font-medium text-text">{pageCount}</span>
+          Page <span className="font-medium text-text">{isEmpty ? 0 : page}</span> of{" "}
+          <span className="font-medium text-text">{isEmpty ? 0 : pageCount}</span>
         </span>
         <div
           role="group"
