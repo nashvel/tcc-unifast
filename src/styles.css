@@ -10,43 +10,44 @@ html {
 }
 
 :root {
-  /* CHED — modern navy blue with gold accent. */
-  --primary: #003da5;              /* CHED blue */
-  --primary-hover: #002c7a;
-  --primary-soft: #e5edf8;
+  /* Heritage Maroon — deep maroon + warm ivory + muted gold. Apple-quality enterprise. */
+  --primary: #7a1e2b;               /* muted gold acts as accent; primary CTAs use gold */
+  --primary-hover: #611620;
+  --primary-soft: #f3e6e8;
 
-  --success: #1f7a4d;
-  --success-soft: #e4f1ea;
+  --success: #3f6b4a;
+  --success-soft: #ecf1ea;
 
-  --warning: #b8860b;               /* CHED gold, darkened for AA text */
-  --warning-soft: #fbf1d6;
+  --warning: #a0741f;
+  --warning-soft: #f5ecd8;
 
-  --danger: #b3261e;
-  --danger-soft: #f8e4e2;
+  --danger: #9a2a2a;
+  --danger-soft: #f4e3e1;
 
-  --info: #0057b7;
-  --info-soft: #e4eefb;
+  --info: #4a5d7a;
+  --info-soft: #ebeef4;
 
-  --bg: #f5f7fb;                    /* cool paper */
+  --bg: #faf6ef;                    /* warm ivory */
   --surface: #ffffff;
-  --surface-muted: #eef2f8;
+  --surface-muted: #f2ece1;
 
-  --border: #dbe2ec;
-  --border-strong: #b3bfd0;
+  --border: #e6ddcc;
+  --border-strong: #c9bda5;
 
-  --text: #0b1d3a;                  /* deep navy ink */
-  --text-muted: #4a5876;
-  --text-soft: #808da5;
+  --text: #2b1a18;                  /* warm near-black */
+  --text-muted: #6a5854;
+  --text-soft: #9b8b85;
 
-  --sidebar-bg: #ffffff;
-  --sidebar-active: var(--primary-soft);
-  --sidebar-active-text: var(--primary);
+  --sidebar-bg: #4a141d;            /* deep maroon */
+  --sidebar-active: #611620;
+  --sidebar-active-text: #f5e6c4;
 
-  --accent-gold: #fdb913;           /* CHED gold accent */
-  --accent-gold-soft: #fff4d1;
+  --accent-gold: #b8894a;           /* muted gold — primary CTA */
+  --accent-gold-hover: #9c7238;
+  --accent-gold-soft: #f5ecd8;
 
   --input-bg: #ffffff;
-  --ring: rgba(0, 61, 165, 0.28);
+  --ring: rgba(184, 137, 74, 0.32);
 
   --radius: 0.375rem;
 
