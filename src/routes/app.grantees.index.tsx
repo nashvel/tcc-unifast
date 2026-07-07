@@ -27,7 +27,6 @@ function GranteeList() {
   const [sub, setSub] = useState("all");
   const [elig, setElig] = useState("all");
   const [risk, setRisk] = useState("all");
-  const [page, setPage] = useState(1);
 
   const filtered = useMemo(() => grantees.filter((g) => {
     if (q && !`${g.firstName} ${g.lastName} ${g.studentNumber}`.toLowerCase().includes(q.toLowerCase())) return false;
@@ -39,8 +38,7 @@ function GranteeList() {
     return true;
   }), [grantees, q, batch, acc, sub, elig, risk]);
 
-  const pages = Math.max(1, Math.ceil(filtered.length / PAGE));
-  const visible = filtered.slice((page - 1) * PAGE, page * PAGE);
+  const pg = usePagination(filtered, 15);
 
   return (
     <div>
