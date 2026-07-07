@@ -226,42 +226,45 @@ function StudentHome() {
             ))}
           </ul>
         </section>
-      </div>
+        </div>
+      </section>
 
       {/* Bottom row: Recommended / Academic Snapshot / Stay Updated */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <section className="rounded-xl border bg-gold-soft p-5 overflow-hidden relative">
-          <h2 className="text-lg font-semibold tracking-tight">Recommended for You</h2>
-          <p className="mt-3 text-sm font-semibold">TCC Financial Assistance Grant</p>
-          <p className="text-xs text-text-muted">Open until June 30, 2025</p>
+      <section aria-labelledby="explore-heading" className="space-y-3">
+        <h2 id="explore-heading" className="text-2xs uppercase tracking-[0.14em] text-text-soft font-semibold">For You</h2>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <section className="rounded-xl border bg-gold-soft p-6 overflow-hidden relative shadow-xs">
+          <p className="text-2xs uppercase tracking-[0.14em] text-primary/70 font-semibold">Recommended</p>
+          <h3 className="mt-2 text-lg font-semibold tracking-tight">TCC Financial Assistance Grant</h3>
+          <p className="mt-1 text-xs text-text-muted">Open until June 30, 2025</p>
           <button className="mt-5 inline-flex items-center rounded-md bg-gold hover:bg-gold-hover px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors">
             View Details
           </button>
         </section>
 
-        <section className="rounded-xl border bg-surface p-5">
-          <h2 className="text-lg font-semibold tracking-tight inline-flex items-center gap-2">
+        <section className="rounded-xl border bg-surface p-6 shadow-xs">
+          <h3 className="text-lg font-semibold tracking-tight inline-flex items-center gap-2">
             <IconSchool size={18} className="text-primary" /> Academic Snapshot
-          </h2>
+          </h3>
           <div className="mt-5 grid grid-cols-2 gap-4">
             <div>
-              <p className="text-xs text-text-muted">General Weighted Average</p>
+              <p className="text-2xs uppercase tracking-wide text-text-soft">GWA</p>
               <p className="mt-1 text-3xl font-semibold tabular-nums">1.35</p>
               <span className="mt-2 inline-block text-2xs font-semibold px-2 py-1 rounded-full bg-success-soft text-success">Very Good</span>
             </div>
             <div>
-              <p className="text-xs text-text-muted">Units Earned</p>
+              <p className="text-2xs uppercase tracking-wide text-text-soft">Units Earned</p>
               <p className="mt-1 text-3xl font-semibold tabular-nums">24 <span className="text-text-muted">/ 24</span></p>
               <span className="mt-2 inline-block text-2xs font-semibold px-2 py-1 rounded-full bg-primary-soft text-primary">Full Load</span>
             </div>
           </div>
         </section>
 
-        <section className="rounded-xl border bg-gold-soft p-5 relative overflow-hidden">
-          <h2 className="text-lg font-semibold tracking-tight inline-flex items-center gap-2">
+        <section className="rounded-xl border bg-gold-soft p-6 relative overflow-hidden shadow-xs">
+          <h3 className="text-lg font-semibold tracking-tight inline-flex items-center gap-2">
             <IconSpeakerphone size={18} className="text-primary" /> Stay Updated
-          </h2>
-          <p className="mt-3 text-sm text-text-muted max-w-[24ch]">
+          </h3>
+          <p className="mt-3 text-sm text-text-muted max-w-[28ch]">
             Don't miss important announcements and opportunities.
           </p>
           <Link
@@ -272,7 +275,8 @@ function StudentHome() {
           </Link>
           <IconCalendarEvent size={80} className="absolute -right-3 -bottom-3 text-primary/10" aria-hidden />
         </section>
-      </div>
+        </div>
+      </section>
     </div>
   );
 }
