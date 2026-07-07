@@ -90,12 +90,17 @@ function MasterlistPage() {
               </Tr>
             </THead>
             <tbody>
-              {isLoading && (
-                <Tr><Td colSpan={7} className="text-center text-text-muted py-6">Loading…</Td></Tr>
-              )}
-              {!isLoading && rows.length === 0 && (
-                <Tr><Td colSpan={7} className="text-center text-text-muted py-6">No rows yet. Seed demo data from the login page.</Td></Tr>
-              )}
+              <TableStates
+                colSpan={7}
+                isLoading={isLoading}
+                isFetching={isFetching}
+                isError={isError}
+                error={error}
+                isEmpty={!isLoading && !isError && rows.length === 0}
+                onRetry={() => refetch()}
+                emptyTitle="No rows yet"
+                emptyHint="Upload a masterlist CSV or XLSX to preview rows here."
+              />
               {pg.pageItems.map((r) => (
                 <Tr key={r.id}>
                   <Td className="font-mono text-xs">{r.student_number || <span className="text-danger italic">missing</span>}</Td>
