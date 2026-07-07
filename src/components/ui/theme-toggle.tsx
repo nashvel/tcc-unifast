@@ -93,6 +93,10 @@ export function ThemeToggle() {
           0%   { transform: rotate(-90deg) scale(0.6); opacity: 0; }
           100% { transform: rotate(0deg)   scale(1);   opacity: 1; }
         }
+        @keyframes themePulse {
+          0%, 100% { opacity: 0.55; transform: scale(0.94); }
+          50%      { opacity: 1;    transform: scale(1.06); }
+        }
       `}</style>
     </>
   );
