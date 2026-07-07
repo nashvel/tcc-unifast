@@ -20,7 +20,7 @@ export const Route = createFileRoute("/app/grantees/")({
 
 
 function GranteeList() {
-  const { data: grantees = [], isLoading } = useGrantees();
+  const { data: grantees = [], isLoading, isFetching, isError, error, refetch } = useGrantees();
   const { data: batches = [] } = useBatches();
   const [q, setQ] = useState("");
   const [batch, setBatch] = useState("all");
