@@ -71,7 +71,7 @@ function Audit() {
               <Td>{l.action}</Td>
               <Td>{l.module}</Td>
               <Td className="text-text-muted truncate max-w-[220px]">{l.target}</Td>
-              <Td className="font-mono text-[11px] text-text-muted">{l.ip}</Td>
+              <Td className="font-mono text-micro text-text-muted">{l.ip}</Td>
               <Td><button onClick={() => setActive(l)} className="text-xs text-primary hover:underline">View</button></Td>
             </Tr>
           ))}
@@ -90,11 +90,11 @@ function Audit() {
             <Row label="IP Address" value={active.ip} />
             <div>
               <p className="text-xs text-text-muted mb-1">Before</p>
-              <pre className="rounded-md bg-surface-muted p-2 text-[11px] font-mono">{JSON.stringify(active.before ?? {}, null, 2)}</pre>
+              <pre className="rounded-md bg-surface-muted p-2 text-micro font-mono">{JSON.stringify(active.before ?? {}, null, 2)}</pre>
             </div>
             <div>
               <p className="text-xs text-text-muted mb-1">After</p>
-              <pre className="rounded-md bg-surface-muted p-2 text-[11px] font-mono">{JSON.stringify(active.after ?? {}, null, 2)}</pre>
+              <pre className="rounded-md bg-surface-muted p-2 text-micro font-mono">{JSON.stringify(active.after ?? {}, null, 2)}</pre>
             </div>
           </div>
         )}

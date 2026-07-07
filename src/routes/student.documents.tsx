@@ -124,7 +124,7 @@ export const Route = createFileRoute("/student/documents")({
                         ({groupItems.length})
                       </span>
                     </h2>
-                    <p className="hidden sm:block text-[11px] text-text-soft">{g.hint}</p>
+                    <p className="hidden sm:block text-micro text-text-soft">{g.hint}</p>
                   </div>
                   <ul className="space-y-2">
                     {groupItems.map(({ req, doc: d }) => (
@@ -147,7 +147,7 @@ function Stat({ label, value, tone }: { label: string; value: number; tone: stri
   return (
     <div className="rounded-lg bg-surface/70 border py-2">
       <p className={cn("text-base sm:text-lg font-semibold tabular-nums", tone)}>{value}</p>
-      <p className="text-[10px] uppercase tracking-wide text-text-soft">{label}</p>
+      <p className="text-2xs uppercase tracking-wide text-text-soft">{label}</p>
     </div>
   );
 }
@@ -166,7 +166,7 @@ function DocRow({ req, doc: d }: Item) {
       </div>
       <div className="min-w-0">
         <p className="text-sm font-medium truncate">{req}</p>
-        <p className="text-[11px] text-text-muted mt-0.5 truncate">
+        <p className="text-micro text-text-muted mt-0.5 truncate">
           {d ? `Updated ${new Date(d.uploaded_at).toLocaleDateString()}` : "Not yet submitted"}
         </p>
       </div>
@@ -174,7 +174,7 @@ function DocRow({ req, doc: d }: Item) {
         {d ? (
           <StatusBadge variant={statusVariantFor(d.status)}>{formatStatus(d.status)}</StatusBadge>
         ) : (
-          <span className="inline-flex items-center gap-1 rounded-full bg-primary-soft px-2 py-0.5 text-[11px] font-medium text-primary">
+          <span className="inline-flex items-center gap-1 rounded-full bg-primary-soft px-2 py-0.5 text-micro font-medium text-primary">
             <IconUpload size={12} /> Upload
           </span>
         )}

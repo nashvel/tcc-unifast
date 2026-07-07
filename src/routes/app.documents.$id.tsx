@@ -69,8 +69,8 @@ function DocDetail() {
             </Panel>
             <Panel title="Face Verification / Liveness" icon={IconCameraSelfie}>
               <div className="flex items-center gap-3">
-                <div className="h-16 w-16 rounded-md bg-surface-muted grid place-items-center text-text-soft text-[10px]">ID</div>
-                <div className="h-16 w-16 rounded-md bg-surface-muted grid place-items-center text-text-soft text-[10px]">Selfie</div>
+                <div className="h-16 w-16 rounded-md bg-surface-muted grid place-items-center text-text-soft text-2xs">ID</div>
+                <div className="h-16 w-16 rounded-md bg-surface-muted grid place-items-center text-text-soft text-2xs">Selfie</div>
                 <div className="text-xs">
                   <p>Match score: <span className="font-semibold">{100 - doc.risk_score}%</span></p>
                   <p className="text-text-muted">Liveness: {doc.risk_score < 50 ? "Pass" : "Review"}</p>

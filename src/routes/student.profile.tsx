@@ -98,10 +98,10 @@ function StatusRow({ icon: Icon, label, done }: { icon: typeof IconId; label: st
       </span>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium truncate">{label}</p>
-        <p className="text-[11px] text-text-muted">{done ? "Verified" : "Pending"}</p>
+        <p className="text-micro text-text-muted">{done ? "Verified" : "Pending"}</p>
       </div>
       <span
-        className={`inline-flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-full ${
+        className={`inline-flex items-center gap-1 text-micro font-medium px-2 py-1 rounded-full ${
           done ? "bg-success-soft text-success" : "bg-warning-soft text-warning"
         }`}
       >

@@ -93,7 +93,7 @@ function LoginPage() {
       </div>
 
       <div className="mt-7 border-t pt-4">
-        <p className="text-[11px] uppercase tracking-wider font-semibold text-text-soft mb-2">Demo logins</p>
+        <p className="text-micro uppercase tracking-wider font-semibold text-text-soft mb-2">Demo logins</p>
         <div className="grid grid-cols-2 gap-2">
           {DEMO_USERS.map((u) => (
             <button
@@ -105,13 +105,13 @@ function LoginPage() {
             >
               <IconUser size={14} className="text-text-muted" />
               <div className="leading-tight">
-                <p className="text-[12px] font-medium capitalize">{u.role === "head" ? "Office Head" : u.role === "staff" ? "UniFAST Staff" : u.role === "admin" ? "Admin" : "Student"}</p>
-                <p className="text-[10px] text-text-soft truncate max-w-[140px]">{u.email}</p>
+                <p className="text-xs font-medium capitalize">{u.role === "head" ? "Office Head" : u.role === "staff" ? "UniFAST Staff" : u.role === "admin" ? "Admin" : "Student"}</p>
+                <p className="text-2xs text-text-soft truncate max-w-[140px]">{u.email}</p>
               </div>
             </button>
           ))}
         </div>
-        <p className="mt-2 text-[10px] text-text-soft">Click a role to sign in instantly with that demo account.</p>
+        <p className="mt-2 text-2xs text-text-soft">Click a role to sign in instantly with that demo account.</p>
       </div>
     </div>
   );

@@ -86,7 +86,7 @@ export function CommandPalette() {
             placeholder="Jump to a page or action…"
             className="flex-1 bg-transparent outline-none text-sm placeholder:text-text-soft"
           />
-          <kbd className="hidden sm:inline-flex text-[10px] px-1.5 py-0.5 rounded border text-text-muted">ESC</kbd>
+          <kbd className="hidden sm:inline-flex text-2xs px-1.5 py-0.5 rounded border text-text-muted">ESC</kbd>
         </div>
         <ul className="max-h-80 overflow-y-auto py-1">
           {filtered.length === 0 && <li className="px-3 py-6 text-center text-xs text-text-muted">No matches</li>}
@@ -99,14 +99,14 @@ export function CommandPalette() {
               >
                 <div className="min-w-0">
                   <p className="font-medium truncate">{c.label}</p>
-                  <p className="text-[11px] text-text-muted truncate">{c.hint}</p>
+                  <p className="text-micro text-text-muted truncate">{c.hint}</p>
                 </div>
                 <IconArrowRight size={14} className="text-text-soft" />
               </button>
             </li>
           ))}
         </ul>
-        <div className="border-t px-3 py-1.5 flex items-center justify-between text-[10px] text-text-soft">
+        <div className="border-t px-3 py-1.5 flex items-center justify-between text-2xs text-text-soft">
           <span>↑↓ navigate · ↵ open</span>
           <span>⌘K to toggle</span>
         </div>

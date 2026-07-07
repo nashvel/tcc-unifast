@@ -146,7 +146,7 @@ function ReportPreview() {
           setFields={setPdfFields}
           extra={
             <div className="mt-3 pt-3 border-t">
-              <p className="text-[10px] uppercase tracking-wider font-semibold text-text-soft mb-2">Layout</p>
+              <p className="text-2xs uppercase tracking-wider font-semibold text-text-soft mb-2">Layout</p>
               <div className="flex flex-wrap gap-1.5">
                 {PDF_LAYOUTS.map((l) => (
                   <button
@@ -167,7 +167,7 @@ function ReportPreview() {
 
       <div className="rounded-lg border bg-surface p-6">
         <div className="text-center mb-6">
-          <p className="text-[10px] uppercase tracking-wider font-semibold text-text-soft">Commission on Higher Education — UniFAST</p>
+          <p className="text-2xs uppercase tracking-wider font-semibold text-text-soft">Commission on Higher Education — UniFAST</p>
           <p className="text-lg font-semibold mt-1">{REPORT_TITLE}</p>
           <p className="text-xs text-text-muted">{REPORT_SUB} • Generated {generatedAt} • {grantees.length} records</p>
         </div>
@@ -186,7 +186,7 @@ function ReportPreview() {
           </tbody>
         </DataTable>
         {grantees.length > 12 && (
-          <p className="text-[11px] text-text-muted mt-3 text-center">
+          <p className="text-micro text-text-muted mt-3 text-center">
             Showing 12 of {grantees.length} — export to view all.
           </p>
         )}
@@ -236,7 +236,7 @@ function TemplatePanel({
         ))}
       </div>
 
-      <p className="text-[10px] uppercase tracking-wider font-semibold text-text-soft mb-1.5">Fields ({fields.length}) — drag order</p>
+      <p className="text-2xs uppercase tracking-wider font-semibold text-text-soft mb-1.5">Fields ({fields.length}) — drag order</p>
       <ul className="space-y-1 mb-3">
         {fields.map((k, i) => (
           <li
@@ -265,14 +265,14 @@ function TemplatePanel({
 
       {available.length > 0 && (
         <>
-          <p className="text-[10px] uppercase tracking-wider font-semibold text-text-soft mb-1.5">Add field</p>
+          <p className="text-2xs uppercase tracking-wider font-semibold text-text-soft mb-1.5">Add field</p>
           <div className="flex flex-wrap gap-1">
             {available.map((f) => (
               <button
                 key={f.key}
                 type="button"
                 onClick={() => setFields([...fields, f.key])}
-                className="px-2 py-0.5 rounded text-[11px] border bg-surface hover:bg-surface-2"
+                className="px-2 py-0.5 rounded text-micro border bg-surface hover:bg-surface-2"
               >
                 + {f.label}
               </button>

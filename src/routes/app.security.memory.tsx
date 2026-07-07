@@ -61,7 +61,7 @@ const CAT_META: Record<Category, { label: string; cls: string }> = {
 
 function CatBadge({ c }: { c: Category }) {
   const m = CAT_META[c];
-  return <span className={`inline-flex items-center px-1.5 py-0.5 rounded border text-[10px] font-medium ${m.cls}`}>{m.label}</span>;
+  return <span className={`inline-flex items-center px-1.5 py-0.5 rounded border text-2xs font-medium ${m.cls}`}>{m.label}</span>;
 }
 
 function fmt(iso: string) {
@@ -276,12 +276,12 @@ function SecurityMemoryPage() {
             <div key={r.id} className="border rounded-md p-3 bg-surface">
               <div className="flex items-center justify-between mb-1">
                 <span className="text-xs font-semibold">v{r.version}</span>
-                <span className="text-[11px] text-text-muted">{fmt(r.created_at)}</span>
+                <span className="text-micro text-text-muted">{fmt(r.created_at)}</span>
               </div>
               <div className="flex items-center gap-2 mb-2">
                 <CatBadge c={r.category} />
-                <span className="text-[11px] text-text-muted">{r.status}</span>
-                {r.related_finding_id && <span className="text-[11px] text-text-muted">· {r.related_finding_id}</span>}
+                <span className="text-micro text-text-muted">{r.status}</span>
+                {r.related_finding_id && <span className="text-micro text-text-muted">· {r.related_finding_id}</span>}
               </div>
               <p className="text-sm font-medium">{r.title}</p>
               <pre className="mt-1 text-xs whitespace-pre-wrap font-sans text-text-muted">{r.body}</pre>
@@ -308,7 +308,7 @@ function Stat({ label, value, icon }: { label: string; value: number; icon: Reac
     <div className="border rounded-lg p-3 bg-surface flex items-center gap-3">
       <div className="h-8 w-8 rounded-md bg-surface-muted grid place-items-center">{icon}</div>
       <div>
-        <p className="text-[11px] uppercase tracking-wide text-text-muted">{label}</p>
+        <p className="text-micro uppercase tracking-wide text-text-muted">{label}</p>
         <p className="text-lg font-semibold">{value}</p>
       </div>
     </div>

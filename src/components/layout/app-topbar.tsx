@@ -40,7 +40,7 @@ export function AppTopbar({ onToggleSidebar }: { onToggleSidebar: () => void }) 
       >
         <IconSearch size={15} />
         <span className="text-sm flex-1 truncate">Search or jump to…</span>
-        <kbd className="hidden sm:inline-flex items-center gap-0.5 text-[10px] px-1 py-0.5 rounded border bg-surface text-text-soft">
+        <kbd className="hidden sm:inline-flex items-center gap-0.5 text-2xs px-1 py-0.5 rounded border bg-surface text-text-soft">
           <IconCommand size={10} /> K
         </kbd>
       </button>
@@ -51,7 +51,7 @@ export function AppTopbar({ onToggleSidebar }: { onToggleSidebar: () => void }) 
         <button onClick={() => { setOpenNotif((v) => !v); setOpenProfile(false); }} className="relative p-2 rounded-md hover:bg-surface-muted">
           <IconBell size={18} />
           {unread > 0 && (
-            <span className="absolute top-1 right-1 h-4 min-w-4 rounded-full bg-danger text-white text-[10px] font-medium px-1 grid place-items-center">
+            <span className="absolute top-1 right-1 h-4 min-w-4 rounded-full bg-danger text-white text-2xs font-medium px-1 grid place-items-center">
               {unread}
             </span>
           )}
@@ -80,8 +80,8 @@ export function AppTopbar({ onToggleSidebar }: { onToggleSidebar: () => void }) 
         <button onClick={() => { setOpenProfile((v) => !v); setOpenNotif(false); }} className="flex items-center gap-2 pl-1 pr-2 py-1 rounded-md hover:bg-surface-muted">
           <UserAvatar seed={avatarSeed} path={profile?.avatar_url} size={28} alt={displayName} />
           <div className="hidden sm:block text-left leading-tight">
-            <p className="text-[12px] font-medium">{displayName}</p>
-            <p className="text-[10px] text-text-muted capitalize">{role}</p>
+            <p className="text-xs font-medium">{displayName}</p>
+            <p className="text-2xs text-text-muted capitalize">{role}</p>
           </div>
           <IconChevronDown size={14} className="text-text-muted" />
         </button>

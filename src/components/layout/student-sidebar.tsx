@@ -26,8 +26,8 @@ export function StudentSidebar({ onNavigate }: { onNavigate?: () => void }) {
           <IconShieldCheck size={16} />
         </div>
         <div className="leading-tight">
-          <p className="text-[13px] font-semibold">Student Portal</p>
-          <p className="text-[10px] text-text-muted">UniFAST TES</p>
+          <p className="text-sm font-semibold">Student Portal</p>
+          <p className="text-2xs text-text-muted">UniFAST TES</p>
         </div>
       </div>
       <nav className="flex-1 overflow-y-auto py-3 px-2">
@@ -41,7 +41,7 @@ export function StudentSidebar({ onNavigate }: { onNavigate?: () => void }) {
                   to={it.to}
                   onClick={onNavigate}
                   className={cn(
-                    "flex items-center gap-2 px-2 h-8 rounded-md text-[13px] transition-colors",
+                    "flex items-center gap-2 px-2 h-8 rounded-md text-sm transition-colors",
                     active ? "bg-sidebar-active text-sidebar-active-text font-medium" : "text-text hover:bg-surface-muted",
                   )}
                 >

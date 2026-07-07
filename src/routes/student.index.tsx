@@ -124,7 +124,7 @@ function StatsBoard({
       >
         <ProgressRing value={completion} />
         <div className="min-w-0">
-          <p className="text-[10px] uppercase tracking-[0.14em] text-text-soft">
+          <p className="text-2xs uppercase tracking-[0.14em] text-text-soft">
             Application
           </p>
           <p className="mt-0.5 text-2xl sm:text-[28px] font-semibold leading-none tabular-nums">
@@ -159,7 +159,7 @@ function StatsBoard({
 function Metric({ label, value, dot }: { label: string; value: string; dot: string }) {
   return (
     <div className="px-3 py-3 sm:py-3.5 min-w-0">
-      <dt className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.14em] text-text-soft">
+      <dt className="flex items-center gap-1.5 text-2xs uppercase tracking-[0.14em] text-text-soft">
         <span className={cn("h-1.5 w-1.5 rounded-full", dot)} />
         <span className="truncate">{label}</span>
       </dt>
@@ -202,7 +202,7 @@ function ProgressRing({ value }: { value: number }) {
         />
       </svg>
       <div className="absolute inset-0 grid place-items-center">
-        <span className="text-[13px] font-semibold tabular-nums">{value}%</span>
+        <span className="text-sm font-semibold tabular-nums">{value}%</span>
       </div>
     </div>
   );

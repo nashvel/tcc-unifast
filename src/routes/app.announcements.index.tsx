@@ -31,7 +31,7 @@ function AnnouncementsPage() {
                 {a.channels.includes("in_app") && <StatusBadge variant="info"><IconMessage size={10} /> In-app</StatusBadge>}
                 {a.channels.includes("email") && <StatusBadge variant="info"><IconMail size={10} /> Email</StatusBadge>}
                 {a.channels.includes("sms") && <StatusBadge variant="info"><IconDeviceMobile size={10} /> SMS</StatusBadge>}
-                <span className="text-[11px] text-text-soft">{a.publishedAt ?? a.scheduledFor ?? "—"}</span>
+                <span className="text-micro text-text-soft">{a.publishedAt ?? a.scheduledFor ?? "—"}</span>
               </div>
             </div>
             <div className="flex gap-2 shrink-0">
