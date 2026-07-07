@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { IconCamera, IconCheck, IconRefresh, IconId, IconUser, IconX } from "@tabler/icons-react";
 import { Btn } from "@/components/ui/btn";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuthStore } from "@/stores/authStore";
 import { toast } from "sonner";
 
@@ -17,6 +16,8 @@ const STEP_META: Record<Exclude<Step, "done">, { title: string; hint: string; ic
   id:   { title: "Scan your Student ID",  hint: "Place your ID inside the frame. Make sure all text is readable.", icon: IconId,   frame: "aspect-[1.6/1]" },
   face: { title: "Scan your face",        hint: "Center your face in the oval. Good lighting helps verification.", icon: IconUser, frame: "aspect-[3/4] max-w-[260px] mx-auto" },
 };
+
+const DONE_KEY = "unifast.mock.onboarding_completed_at";
 
 export function OnboardingScan({ onClose, onSkip, onComplete }: Props) {
   const userId = useAuthStore((s) => s.userId);
@@ -91,12 +92,9 @@ export function OnboardingScan({ onClose, onSkip, onComplete }: Props) {
   const finish = async () => {
     if (!userId) return;
     setSaving(true);
-    const { error } = await supabase
-      .from("profiles")
-      .update({ onboarding_completed_at: new Date().toISOString() })
-      .eq("id", userId);
+    await new Promise((r) => setTimeout(r, 300));
+    localStorage.setItem(DONE_KEY, new Date().toISOString());
     setSaving(false);
-    if (error) return toast.error(error.message);
     toast.success("Verification scans saved");
     setStep("done");
     onComplete();

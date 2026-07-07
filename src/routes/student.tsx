@@ -7,10 +7,10 @@ import { useAuthStore } from "@/stores/authStore";
 import { CommandPalette } from "@/components/ui/command-palette";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { OnboardingScan } from "@/components/student/onboarding-scan";
-import { supabase } from "@/integrations/supabase/client";
 import { PageTransition } from "@/components/page-transition";
 
 const SKIP_KEY = "unifast.onboarding.skipped";
+const DONE_KEY = "unifast.mock.onboarding_completed_at";
 
 export const Route = createFileRoute("/student")({
   ssr: false,
@@ -30,19 +30,8 @@ function useOnboardingPrompt() {
 
   useEffect(() => {
     if (!userId) return;
-    // Skipped within this session → don't show again until next sign-in.
     if (sessionStorage.getItem(SKIP_KEY) === "1") return;
-    let cancelled = false;
-    (async () => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("onboarding_completed_at")
-        .eq("id", userId)
-        .maybeSingle();
-      if (cancelled) return;
-      if (!data?.onboarding_completed_at) setShow(true);
-    })();
-    return () => { cancelled = true; };
+    if (!localStorage.getItem(DONE_KEY)) setShow(true);
   }, [userId]);
 
   return {

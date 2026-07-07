@@ -3,10 +3,10 @@ import { IconBell, IconSearch, IconMenu2, IconUserCircle, IconLogout, IconChevro
 import { useAuthStore } from "@/stores/authStore";
 import { useNotifications, useMarkNotificationRead } from "@/hooks/queries";
 import { useNavigate } from "@tanstack/react-router";
-import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { UserAvatar } from "@/components/ui/dicebear-avatar";
+import { signOut as mockSignOut } from "@/lib/mock-auth";
 
 export function AppTopbar({ onToggleSidebar }: { onToggleSidebar: () => void }) {
   const profile = useAuthStore((s) => s.profile);
@@ -23,8 +23,8 @@ export function AppTopbar({ onToggleSidebar }: { onToggleSidebar: () => void }) 
   const displayName = profile?.full_name || email || "User";
   const avatarSeed = email || displayName;
 
-  async function signOut() {
-    await supabase.auth.signOut();
+  function signOut() {
+    mockSignOut();
     useAuthStore.getState().reset();
     navigate({ to: "/login" });
   }

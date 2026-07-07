@@ -3,9 +3,8 @@ import { useState } from "react";
 import { IconArrowRight, IconLock, IconMail, IconUser } from "@tabler/icons-react";
 import { FormField, TextInput } from "@/components/ui/form-field";
 import { Btn } from "@/components/ui/btn";
-import { supabase } from "@/integrations/supabase/client";
-import { useServerFn } from "@tanstack/react-start";
-import { DEMO_USERS, getDemoCredentials } from "@/lib/demo-seed.functions";
+import { useAuthStore } from "@/stores/authStore";
+import { DEMO_USERS, signInAs, signInWithEmail, type DemoRole } from "@/lib/mock-auth";
 
 export const Route = createFileRoute("/_auth/login")({
   component: LoginPage,
@@ -17,51 +16,56 @@ function LoginPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
-  const getDemoCredsFn = useServerFn(getDemoCredentials);
 
-  async function quickDemoLogin(role: "admin" | "head" | "staff" | "student") {
+  function applySession(role: DemoRole) {
+    const s = role === "student" ? signInAs("student") : signInAs(role);
+    const store = useAuthStore.getState();
+    store.setSession({ userId: s.userId, email: s.email });
+    store.setProfile(s.profile);
+    store.setRole(s.role);
+    store.setReady(true);
+    navigate({ to: role === "student" ? "/student" : "/app" });
+  }
+
+  function quickDemoLogin(role: DemoRole) {
     setError(null);
     setBusy(true);
     try {
-      const creds = await getDemoCredsFn({ data: { role } });
-      setEmail(creds.email);
-      setPassword(creds.password);
-      await signInWith(creds.email, creds.password);
+      applySession(role);
     } catch (e) {
+      setError(e instanceof Error ? e.message : "Login failed");
+    } finally {
       setBusy(false);
-      setError(e instanceof Error ? e.message : "Demo login failed.");
     }
-  }
-
-  async function signInWith(emailValue: string, passwordValue: string) {
-    setError(null);
-    setBusy(true);
-    const { data, error } = await supabase.auth.signInWithPassword({ email: emailValue, password: passwordValue });
-    setBusy(false);
-    if (error || !data.user) {
-      setError(error?.message ?? "Sign in failed.");
-      return;
-    }
-    // Record login event via SECURITY DEFINER RPC (best-effort, ignore errors)
-    supabase.rpc("record_login_event", {
-      _user_agent: typeof navigator !== "undefined" ? navigator.userAgent : "",
-    }).then(() => {});
-    // Look up role to decide which area to land on
-    const { data: roleRow } = await supabase.from("user_roles").select("role").eq("user_id", data.user.id).maybeSingle();
-    const role = (roleRow?.role as string | undefined) ?? "student";
-    navigate({ to: role === "student" ? "/student" : "/app" });
   }
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
-    signInWith(email, password);
+    setError(null);
+    if (!email || !password) {
+      setError("Enter email and password.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const s = signInWithEmail(email, password);
+      const store = useAuthStore.getState();
+      store.setSession({ userId: s.userId, email: s.email });
+      store.setProfile(s.profile);
+      store.setRole(s.role);
+      store.setReady(true);
+      navigate({ to: s.role === "student" ? "/student" : "/app" });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Login failed");
+    } finally {
+      setBusy(false);
+    }
   }
-
 
   return (
     <div>
       <h1 className="text-xl font-semibold tracking-tight">Sign in to your account</h1>
-      <p className="text-sm text-text-muted mt-1">Use your registered UniFAST credentials.</p>
+      <p className="text-sm text-text-muted mt-1">Demo mode — any email/password works.</p>
 
       <form onSubmit={submit} className="mt-6 space-y-4">
         <FormField label="Email" required>
@@ -77,7 +81,7 @@ function LoginPage() {
           </div>
         </FormField>
         {error && <p className="text-xs text-danger">{error}</p>}
-        
+
         <Btn variant="primary" type="submit" className="w-full" disabled={busy}>
           {busy ? "Signing in…" : <>Sign in <IconArrowRight size={14} /></>}
         </Btn>
