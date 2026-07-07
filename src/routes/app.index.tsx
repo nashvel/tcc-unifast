@@ -50,7 +50,10 @@ function Dashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 mt-4">
         <ChartCard title="Submission Trend" description="Daily submissions, last 14 days" className="lg:col-span-2">
-          <MiniLine points={[8, 12, 15, 11, 18, 22, 19, 25, 28, 24, 31, 36, 33, 41]} />
+          <MiniLine
+            points={[8, 12, 15, 11, 18, 22, 19, 25, 28, 24, 31, 36, 33, 41]}
+            labels={["Jun 24","25","26","27","28","29","30","Jul 1","2","3","4","5","6","7"]}
+          />
           <div className="grid grid-cols-3 gap-3 mt-3">
             <div><p className="text-xs text-text-muted">Today</p><p className="text-base font-semibold">41</p></div>
             <div><p className="text-xs text-text-muted">7-day avg</p><p className="text-base font-semibold">31</p></div>
