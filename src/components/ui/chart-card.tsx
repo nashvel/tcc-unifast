@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import type { ReactNode } from "react";
+import { motion } from "framer-motion";
 
 interface Props {
   title: string;
@@ -12,7 +13,14 @@ interface Props {
 
 export function ChartCard({ title, description, actions, className, bodyClassName, children }: Props) {
   return (
-    <div className={cn("rounded-lg border bg-surface", className)}>
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-40px" }}
+      transition={{ duration: 0.4, ease: "easeOut" }}
+      whileHover={{ y: -2, boxShadow: "0 8px 24px -12px rgba(0,0,0,0.15)" }}
+      className={cn("rounded-lg border bg-surface", className)}
+    >
       <div className="flex items-start justify-between px-4 pt-3 pb-2 border-b">
         <div>
           <p className="text-sm font-semibold">{title}</p>
@@ -21,7 +29,7 @@ export function ChartCard({ title, description, actions, className, bodyClassNam
         {actions}
       </div>
       <div className={cn("p-4", bodyClassName)}>{children}</div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -40,9 +48,12 @@ export function MiniBars({ data }: { data: { label: string; value: number; tone?
             <span className="tabular-nums font-medium">{d.value.toLocaleString()}</span>
           </div>
           <div className="h-1.5 rounded-full bg-surface-muted overflow-hidden">
-            <div
+            <motion.div
               className={cn("h-full rounded-full", toneClass[d.tone ?? "primary"])}
-              style={{ width: `${(d.value / max) * 100}%` }}
+              initial={{ width: 0 }}
+              whileInView={{ width: `${(d.value / max) * 100}%` }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
             />
           </div>
         </div>
@@ -105,15 +116,37 @@ export function MiniLine({ points, labels }: { points: number[]; labels?: string
       ))}
 
       {/* area + line */}
-      <path d={area} fill={`url(#${gradId})`} />
-      <path d={line} stroke="var(--primary)" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+      <motion.path
+        d={area}
+        fill={`url(#${gradId})`}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.6, delay: 0.6 }}
+      />
+      <motion.path
+        d={line}
+        stroke="var(--primary)"
+        strokeWidth="2"
+        fill="none"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        initial={{ pathLength: 0 }}
+        animate={{ pathLength: 1 }}
+        transition={{ duration: 1.2, ease: "easeInOut" }}
+      />
 
       {/* dots */}
       {xy.map((pt, i) => (
-        <g key={i}>
+        <motion.g
+          key={i}
+          initial={{ opacity: 0, scale: 0 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.3, delay: 0.8 + i * 0.05 }}
+          style={{ transformOrigin: `${pt.x}px ${pt.y}px` }}
+        >
           <circle cx={pt.x} cy={pt.y} r="3" fill="var(--surface, #fff)" stroke="var(--primary)" strokeWidth="1.5" />
           <title>{labels?.[i] ? `${labels[i]}: ${pt.v}` : `${pt.v}`}</title>
-        </g>
+        </motion.g>
       ))}
 
       {/* x labels */}
