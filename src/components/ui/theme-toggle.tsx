@@ -36,8 +36,8 @@ export function ThemeToggle() {
     const color = styles.getPropertyValue("--bg").trim() || (nextDark ? "#0e1418" : "#f4f6f8");
     root.classList.toggle("dark", dark); // revert; effect below will re-apply
     setRipple({ x, y, r, color, id: Date.now() });
-    // Swap theme on next frame so the wave visually leads the change.
-    requestAnimationFrame(() => setDark(nextDark));
+    // Swap theme at the wave's peak coverage so light↔dark feels symmetric.
+    window.setTimeout(() => setDark(nextDark), 260);
   }
 
   return (
@@ -63,7 +63,7 @@ export function ThemeToggle() {
           onAnimationEnd={() => setRipple(null)}
         >
           <span
-            className="absolute rounded-full will-change-transform animate-[themeDrop_720ms_cubic-bezier(0.22,1,0.36,1)_forwards]"
+            className="absolute rounded-full will-change-transform animate-[themeDrop_640ms_cubic-bezier(0.65,0,0.35,1)_forwards]"
             style={{
               left: ripple.x,
               top: ripple.y,
@@ -80,9 +80,9 @@ export function ThemeToggle() {
 
       <style>{`
         @keyframes themeDrop {
-          0%   { transform: scale(0);    opacity: 0.95; border-radius: 50%; }
-          55%  { transform: scale(0.55); opacity: 1;    border-radius: 45% 55% 60% 40% / 55% 45% 55% 45%; }
-          100% { transform: scale(1);    opacity: 0;    border-radius: 40% 60% 55% 45% / 50% 50% 50% 50%; }
+          0%   { transform: scale(0);   opacity: 1; border-radius: 50%; }
+          40%  { transform: scale(0.5); opacity: 1; border-radius: 46% 54% 58% 42% / 54% 46% 54% 46%; }
+          100% { transform: scale(1);   opacity: 0; border-radius: 42% 58% 54% 46% / 50% 50% 50% 50%; }
         }
         @keyframes themeSpin {
           0%   { transform: rotate(-90deg) scale(0.6); opacity: 0; }
