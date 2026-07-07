@@ -16,7 +16,7 @@ export const Route = createFileRoute("/app/grantees/")({
   component: GranteeList,
 });
 
-const PAGE = 15;
+
 
 function GranteeList() {
   const { data: grantees = [], isLoading } = useGrantees();
