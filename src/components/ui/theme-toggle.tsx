@@ -45,15 +45,20 @@ export function ThemeToggle() {
       <button
         ref={btnRef}
         onClick={handleClick}
+        disabled={!!ripple}
+        aria-busy={!!ripple}
         title={dark ? "Switch to light mode" : "Switch to dark mode"}
-        className="relative p-2 rounded-md hover:bg-surface-muted text-text-muted overflow-hidden"
+        className="relative p-2 rounded-md hover:bg-surface-muted text-text-muted overflow-hidden disabled:cursor-wait disabled:opacity-70"
       >
         <span
           key={dark ? "sun" : "moon"}
-          className="inline-flex animate-[themeSpin_420ms_ease-out]"
+          className={`inline-flex ${ripple ? "animate-[themePulse_640ms_ease-in-out_infinite]" : "animate-[themeSpin_420ms_ease-out]"}`}
         >
           {dark ? <IconSun size={18} /> : <IconMoon size={18} />}
         </span>
+        {ripple && (
+          <span className="pointer-events-none absolute inset-0 rounded-md ring-1 ring-primary/40 animate-[themePulse_640ms_ease-in-out_infinite]" />
+        )}
       </button>
 
       {ripple && (
@@ -87,6 +92,10 @@ export function ThemeToggle() {
         @keyframes themeSpin {
           0%   { transform: rotate(-90deg) scale(0.6); opacity: 0; }
           100% { transform: rotate(0deg)   scale(1);   opacity: 1; }
+        }
+        @keyframes themePulse {
+          0%, 100% { opacity: 0.55; transform: scale(0.94); }
+          50%      { opacity: 1;    transform: scale(1.06); }
         }
       `}</style>
     </>
