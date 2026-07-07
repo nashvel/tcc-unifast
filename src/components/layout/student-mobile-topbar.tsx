@@ -53,7 +53,7 @@ export function StudentMobileTopbar() {
           <IconChevronLeft size={20} />
         </button>
       ) : (
-        <div className="w-2" />
+        <BrandLogo size="sm" />
       )}
 
       <h1 className="flex-1 text-base font-semibold truncate">{title}</h1>
