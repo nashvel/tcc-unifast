@@ -56,7 +56,7 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void }) {
           <IconShieldCheck size={16} />
         </div>
         <div className="leading-tight">
-          <p className="text-sm font-semibold">UniFAST TES</p>
+          <p className="text-sm font-semibold text-sidebar-text">UniFAST TES</p>
           <p className="text-2xs text-sidebar-text-muted">Grantee Management</p>
         </div>
       </div>

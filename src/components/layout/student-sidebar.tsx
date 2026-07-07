@@ -26,7 +26,7 @@ export function StudentSidebar({ onNavigate }: { onNavigate?: () => void }) {
           <IconShieldCheck size={16} />
         </div>
         <div className="leading-tight">
-          <p className="text-sm font-semibold">Student Portal</p>
+          <p className="text-sm font-semibold text-sidebar-text">Student Portal</p>
           <p className="text-2xs text-sidebar-text-muted">UniFAST TES</p>
         </div>
       </div>
