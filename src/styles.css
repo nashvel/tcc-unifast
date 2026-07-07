@@ -100,6 +100,9 @@ html {
   --sidebar-bg: #2a0e14;
   --sidebar-active: #3a1620;
   --sidebar-active-text: #f5d99a;
+  --sidebar-text: #efe3d4;
+  --sidebar-text-muted: #b39c8a;
+  --sidebar-hover: #3a1620;
 
   --accent-gold: #d1a15c;            /* muted gold — primary CTA */
   --accent-gold-hover: #e0b56f;
