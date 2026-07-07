@@ -18,6 +18,8 @@ const ALLOWLIST = new Set([
   "components/ui/data-table.tsx",  // scroll-fade masks use gradients intentionally
   "routes/app.security.tsx",       // security severity palette is intentional
   "routes/app.security.memory.tsx",// security severity palette is intentional
+  "lib/error-page.ts",             // standalone HTML fallback — no runtime tokens
+  "routes/app.reports.preview.tsx",// printable PDF markup — self-contained styles
 ]);
 
 const FORBIDDEN = [
