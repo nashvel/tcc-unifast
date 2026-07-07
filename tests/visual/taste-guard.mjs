@@ -67,6 +67,24 @@ const FORBIDDEN = [
     re: /\bshadow-\[/,
     msg: "Arbitrary shadow. Use shadow-xs / shadow-sm / shadow-md / shadow-pop.",
   },
+  {
+    id: "oversized-text",
+    // text-4xl through text-9xl exceed the documented scale (max text-3xl).
+    re: /\btext-(4xl|5xl|6xl|7xl|8xl|9xl)\b/,
+    msg: "Text size exceeds the documented scale (max text-3xl). See design-tokens.md § Typography.",
+  },
+  {
+    id: "heavy-font-weight",
+    // Documented weights: 400 / 500 / 600. Anything above breaks the rhythm.
+    re: /\bfont-(bold|extrabold|black)\b/,
+    msg: "Font weight above 600 is not allowed. Use font-medium (500) or font-semibold (600).",
+  },
+  {
+    id: "unknown-text-size",
+    // Catches text-[N] and typo'd sizes like text-md that aren't in the scale.
+    re: /\btext-(md|4xs|3xs)\b/,
+    msg: "Unknown text size. Use text-2xs / text-micro / text-xs / text-sm / text-base / text-lg / text-xl / text-2xl / text-3xl.",
+  },
 ];
 
 const violations = [];
