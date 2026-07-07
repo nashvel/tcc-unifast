@@ -130,8 +130,9 @@ function StudentHome() {
           </ol>
         </section>
 
-        <section className="rounded-xl border bg-surface p-5">
-          <h2 className="text-lg font-semibold tracking-tight">Quick Actions</h2>
+        <section className="rounded-xl border bg-surface p-6 shadow-xs">
+          <h3 className="text-lg font-semibold tracking-tight">Quick Actions</h3>
+          <p className="mt-1 text-xs text-text-muted">Shortcuts to common tasks.</p>
           <ul className="mt-4 space-y-1">
             <QuickAction icon={<IconFilePlus size={16} />} label="Start New Application" to="/student/submissions" />
             <QuickAction icon={<IconUpload size={16} />} label="Upload Document" to="/student/upload" />
@@ -139,10 +140,13 @@ function StudentHome() {
             <QuickAction icon={<IconBook size={16} />} label="View Scholarship Programs" to="/student/submissions" />
           </ul>
         </section>
-      </div>
+        </div>
+      </section>
 
       {/* Applications + Documents + Upcoming */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <section aria-labelledby="track-heading" className="space-y-3">
+        <h2 id="track-heading" className="text-2xs uppercase tracking-[0.14em] text-text-soft font-semibold">Track & Manage</h2>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <section className="rounded-xl border bg-surface p-5">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold tracking-tight">My Applications</h2>
