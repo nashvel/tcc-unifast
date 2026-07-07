@@ -81,8 +81,17 @@ function GranteeList() {
           <Tr><Th>Student #</Th><Th>Name</Th><Th>Program</Th><Th>Batch</Th><Th>Account</Th><Th>Submission</Th><Th>Eligibility</Th><Th>Risk</Th></Tr>
         </THead>
         <tbody>
-          {isLoading && <Tr><Td colSpan={8} className="text-center text-text-muted py-6">Loading…</Td></Tr>}
-          {!isLoading && pg.pageItems.length === 0 && <Tr><Td colSpan={8} className="text-center text-text-muted py-6">No grantees found.</Td></Tr>}
+          <TableStates
+            colSpan={8}
+            isLoading={isLoading}
+            isFetching={isFetching}
+            isError={isError}
+            error={error}
+            isEmpty={!isLoading && !isError && pg.pageItems.length === 0}
+            onRetry={() => refetch()}
+            emptyTitle="No grantees found"
+            emptyHint="Adjust filters or import a masterlist to populate records."
+          />
           {pg.pageItems.map((g) => (
             <Tr key={g.id}>
               <Td className="font-mono text-xs">{g.studentNumber}</Td>
