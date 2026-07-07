@@ -113,7 +113,7 @@ function Panel({ title, icon: Icon, children }: { title: string; icon?: React.Co
     <div className="rounded-lg border bg-surface">
       <div className="px-3 h-9 flex items-center gap-1.5 border-b">
         {Icon && <Icon size={14} className="text-text-muted" />}
-        <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">{title}</p>
+        <p className="text-2xs uppercase tracking-wide text-text-muted font-medium">{title}</p>
       </div>
       <div className="p-3">{children}</div>
     </div>
