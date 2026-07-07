@@ -15,6 +15,7 @@ export const Route = createFileRoute("/app/users/")({
 
 function UsersPage() {
   const { data: users = [], isLoading } = useStaffUsers();
+  const pg = usePagination(users, 15);
   return (
     <div>
       <PageHeader title="Users & Access" description="Manage staff accounts, roles, and permissions."
