@@ -70,9 +70,9 @@ html {
 }
 
 .dark {
-  --primary: #c97a86;               /* maroon, lifted for dark bg */
-  --primary-hover: #d68f99;
-  --primary-soft: #3a1620;
+  --primary: #d1a15c;               /* muted gold — CTA */
+  --primary-hover: #e0b56f;
+  --primary-soft: #2a2113;
 
   --success: #7aa384;
   --success-soft: #1a241c;
