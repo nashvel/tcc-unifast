@@ -16,7 +16,7 @@ export const Route = createFileRoute("/app/masterlist")({
 });
 
 function MasterlistPage() {
-  const { data: rows = [], isLoading } = useMasterlist();
+  const { data: rows = [], isLoading, isFetching, isError, error, refetch } = useMasterlist();
   const [previewed, setPreviewed] = useState(false);
   const pg = usePagination(rows, 20);
 
