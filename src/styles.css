@@ -10,42 +10,40 @@ html {
 }
 
 :root {
-  /* One confident accent — deep navy ink. No vivid dashboard blue. */
-  --primary: #1c2a44;
-  --primary-hover: #0f1a2e;
-  --primary-soft: #eceff5;
+  /* Government Slate — cool neutrals, single teal accent. */
+  --primary: #0f4c5c;
+  --primary-hover: #0a3944;
+  --primary-soft: #e2edf0;
 
-  /* Status colors are desaturated so tables don't read like a rainbow. */
-  --success: #3f6b4e;
-  --success-soft: #eaf1ec;
+  --success: #2b6a4b;
+  --success-soft: #e6efe9;
 
-  --warning: #8a6a1f;
-  --warning-soft: #f6efdd;
+  --warning: #a06a1e;
+  --warning-soft: #f3ecdd;
 
-  --danger: #9b2c2c;
-  --danger-soft: #f5e6e6;
+  --danger: #8f2727;
+  --danger-soft: #f2e3e3;
 
-  --info: #325b7a;
-  --info-soft: #e8eef3;
+  --info: #2f5b7a;
+  --info-soft: #e6edf2;
 
-  /* Warm paper neutrals, not cold slate. */
-  --bg: #f6f5f1;
-  --surface: #fbfaf7;
-  --surface-muted: #efede7;
+  --bg: #f4f6f8;
+  --surface: #ffffff;
+  --surface-muted: #eceff3;
 
-  --border: #e4e1d8;
-  --border-strong: #c9c4b6;
+  --border: #dde2e8;
+  --border-strong: #b8c0cb;
 
-  --text: #1a1a1a;
-  --text-muted: #5c5a54;
-  --text-soft: #8f8c83;
+  --text: #14202b;
+  --text-muted: #566472;
+  --text-soft: #8a95a2;
 
-  --sidebar-bg: #f1efe9;
-  --sidebar-active: #e4e1d8;
+  --sidebar-bg: #ffffff;
+  --sidebar-active: var(--primary-soft);
   --sidebar-active-text: var(--primary);
 
-  --input-bg: #fbfaf7;
-  --ring: rgba(28, 42, 68, 0.22);
+  --input-bg: #ffffff;
+  --ring: rgba(15, 76, 92, 0.24);
 
   --radius: 0.375rem;
 
@@ -55,7 +53,7 @@ html {
   --card-foreground: var(--text);
   --popover: var(--surface);
   --popover-foreground: var(--text);
-  --primary-foreground: #fbfaf7;
+  --primary-foreground: #ffffff;
   --secondary: var(--surface-muted);
   --secondary-foreground: var(--text);
   --muted: var(--surface-muted);
@@ -63,7 +61,7 @@ html {
   --accent: var(--surface-muted);
   --accent-foreground: var(--text);
   --destructive: var(--danger);
-  --destructive-foreground: #fbfaf7;
+  --destructive-foreground: #ffffff;
   --input: var(--border);
 }
 
