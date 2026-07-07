@@ -38,17 +38,10 @@ function StyleGuide() {
         </div>
       </Section>
 
-      <Section title="Typography" hint="Absans sans, editorial scale. Weights: 400, 500, 600.">
-        <div className="space-y-2">
-          <p className="text-3xl font-semibold tracking-tight">Heading 3xl / semibold</p>
-          <p className="text-2xl font-semibold tracking-tight">Heading 2xl / semibold</p>
-          <p className="text-xl font-medium">Heading xl / medium</p>
-          <p className="text-base">Body base — the default reading size.</p>
-          <p className="text-sm text-text-muted">Small muted — secondary information.</p>
-          <p className="text-xs text-text-soft">Extra small soft — timestamps and captions.</p>
-          <p className="font-mono text-xs">2024-000123-CHED · monospace for IDs</p>
-        </div>
+      <Section title="Typography" hint="Absans sans. Every text element must match one role below — see design-tokens.md § Typography.">
+        <TypeRoles />
       </Section>
+
 
       <Section title="Spacing & radii" hint="4px scale. Prefer 2/3/4/6/8. Radius: sm, md (default), lg, full.">
         <div className="flex flex-wrap items-end gap-4">
