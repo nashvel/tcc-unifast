@@ -176,10 +176,12 @@ html {
   --font-sans: "Absans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
 
-  --text-xs: 0.75rem;
-  --text-sm: 0.8125rem;
-  --text-base: 0.875rem;
-  --text-lg: 1rem;
+  --text-2xs: 0.625rem;      /* 10px — micro meta (kbd hints, dense captions) */
+  --text-micro: 0.6875rem;   /* 11px — timestamps, badges, table meta */
+  --text-xs: 0.75rem;        /* 12px */
+  --text-sm: 0.8125rem;      /* 13px */
+  --text-base: 0.875rem;     /* 14px — default body */
+  --text-lg: 1rem;           /* 16px */
   --text-xl: 1.125rem;
   --text-2xl: 1.375rem;
   --text-3xl: 1.75rem;
