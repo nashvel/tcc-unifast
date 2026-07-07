@@ -12,8 +12,8 @@ export function PageHeader({ title, description, actions, className }: Props) {
   return (
     <div className={cn("flex flex-wrap items-start justify-between gap-3 mb-4", className)}>
       <div>
-        <h1 className="text-lg font-semibold tracking-tight">{title}</h1>
-        {description && <p className="text-sm text-text-muted mt-0.5">{description}</p>}
+        <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
+        {description && <p className="text-xs text-text-muted mt-1">{description}</p>}
       </div>
       {actions && <div className="flex items-center gap-2">{actions}</div>}
     </div>
