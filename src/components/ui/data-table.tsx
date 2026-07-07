@@ -3,8 +3,14 @@ import type { ReactNode, TableHTMLAttributes, ThHTMLAttributes, TdHTMLAttributes
 
 export function DataTable({ className, children, ...props }: TableHTMLAttributes<HTMLTableElement>) {
   return (
-    <div className="rounded-lg border bg-surface overflow-x-auto">
-      <table className={cn("w-full text-sm", className)} {...props}>
+    <div className="rounded-lg border bg-surface overflow-x-auto max-w-full [scrollbar-width:thin]">
+      <table
+        className={cn(
+          "w-full min-w-[640px] text-[13px] xl:text-sm table-auto",
+          className,
+        )}
+        {...props}
+      >
         {children}
       </table>
     </div>
@@ -13,7 +19,7 @@ export function DataTable({ className, children, ...props }: TableHTMLAttributes
 
 export function THead({ children }: { children: ReactNode }) {
   return (
-    <thead className="bg-surface-muted/60 text-text-muted text-[11px] uppercase tracking-wide">
+    <thead className="bg-surface-muted/60 text-text-muted text-[10px] xl:text-[11px] uppercase tracking-wide sticky top-0 z-10">
       {children}
     </thead>
   );
@@ -22,7 +28,7 @@ export function THead({ children }: { children: ReactNode }) {
 export function Th({ className, children, ...props }: ThHTMLAttributes<HTMLTableCellElement>) {
   return (
     <th
-      className={cn("h-9 px-3 text-left font-medium whitespace-nowrap border-b", className)}
+      className={cn("h-9 px-2 xl:px-3 text-left font-medium whitespace-nowrap border-b", className)}
       {...props}
     >
       {children}
@@ -40,7 +46,13 @@ export function Tr({ className, children, ...props }: HTMLAttributes<HTMLTableRo
 
 export function Td({ className, children, ...props }: TdHTMLAttributes<HTMLTableCellElement>) {
   return (
-    <td className={cn("px-3 py-2 align-middle", className)} {...props}>
+    <td
+      className={cn(
+        "px-2 xl:px-3 py-2 align-middle break-words [overflow-wrap:anywhere]",
+        className,
+      )}
+      {...props}
+    >
       {children}
     </td>
   );
