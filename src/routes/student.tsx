@@ -60,14 +60,16 @@ function StudentLayout() {
   }
 
   return (
-    <div className="min-h-screen flex bg-bg">
-      <div className="sticky top-0 self-start h-screen z-30">
+    <div className="h-screen overflow-hidden flex bg-bg">
+      <div className="h-screen shrink-0 overflow-hidden z-30">
         <StudentSidebar />
       </div>
-      <div className="flex-1 min-w-0 flex flex-col">
+      <div className="h-screen flex-1 min-w-0 flex flex-col overflow-hidden">
         <AppTopbar onToggleSidebar={() => {}} />
-        <main className="flex-1 p-6 max-w-[1200px] w-full mx-auto">
+        <main className="flex-1 min-h-0 overflow-y-auto">
+          <div className="p-6 max-w-[1200px] w-full mx-auto">
           <PageTransition><Outlet /></PageTransition>
+          </div>
         </main>
       </div>
       <CommandPalette />
