@@ -75,7 +75,7 @@ export const Route = createFileRoute("/student/documents")({
         {/* Progress card */}
         <section
           aria-label="Submission progress"
-          className="rounded-2xl border bg-gradient-to-br from-surface to-surface-muted/40 p-4 sm:p-5 shadow-sm"
+          className="rounded-2xl border bg-surface p-4 sm:p-5 shadow-sm"
         >
           <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
             <div className="min-w-0">
@@ -95,7 +95,7 @@ export const Route = createFileRoute("/student/documents")({
 
           <div className="mt-4 h-2 rounded-full bg-surface-muted overflow-hidden">
             <div
-              className="h-full bg-gradient-to-r from-primary to-primary-hover transition-all duration-500"
+              className="h-full bg-primary transition-all duration-500"
               style={{ width: `${pct}%` }}
             />
           </div>
