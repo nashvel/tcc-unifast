@@ -7,17 +7,20 @@ async function loadFont(key: string) {
   if (loaded.has(key)) return;
   loaded.add(key);
   try {
-    if (key === "inter") await import("@fontsource/inter/400.css");
-    else if (key === "inter-500") return;
-    if (key === "inter") await import("@fontsource/inter/500.css");
-    if (key === "inter") await import("@fontsource/inter/600.css");
-    if (key === "ibm-plex") {
-      await import("@fontsource/ibm-plex-sans/400.css");
-      await import("@fontsource/ibm-plex-sans/500.css");
-      await import("@fontsource/ibm-plex-sans/600.css");
+    if (key === "inter") {
+      await Promise.all([
+        import("@fontsource/inter/400.css"),
+        import("@fontsource/inter/500.css"),
+        import("@fontsource/inter/600.css"),
+      ]);
+    } else if (key === "ibm-plex") {
+      await Promise.all([
+        import("@fontsource/ibm-plex-sans/400.css"),
+        import("@fontsource/ibm-plex-sans/500.css"),
+        import("@fontsource/ibm-plex-sans/600.css"),
+      ]);
     }
-    // "absans" is already loaded via @font-face in styles.css.
-    // "system" needs no download.
+    // "absans" is bundled via @font-face in styles.css; "system" needs no download.
   } catch {
     /* ignore font-load failures */
   }
