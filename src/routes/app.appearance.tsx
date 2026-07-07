@@ -23,7 +23,7 @@ function AppearancePage() {
 
       <section className="rounded-md border bg-surface p-4 sm:p-5">
         <h2 className="text-base font-semibold tracking-tight">Theme</h2>
-        <p className="text-xs text-text-muted mt-0.5">Government Slate — light or dark.</p>
+        <p className="text-xs text-text-muted mt-0.5">CHED — modern blue & gold, light or dark.</p>
 
         <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
           <ThemeCard
@@ -31,14 +31,14 @@ function AppearancePage() {
             onClick={() => setDark(false)}
             label="Light"
             icon={<IconSun size={16} />}
-            swatch={["#f4f6f8", "#ffffff", "#0f4c5c", "#14202b"]}
+            swatch={["#f5f7fb", "#ffffff", "#003da5", "#fdb913"]}
           />
           <ThemeCard
             active={dark}
             onClick={() => setDark(true)}
             label="Dark"
             icon={<IconMoon size={16} />}
-            swatch={["#0e1418", "#141b21", "#6fb5c4", "#e6ecf0"]}
+            swatch={["#0a1120", "#101a2e", "#6ea3ff", "#ffcf47"]}
           />
         </div>
       </section>
