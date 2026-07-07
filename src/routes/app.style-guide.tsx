@@ -158,6 +158,39 @@ function Swatch({ name, className }: { name: string; className: string }) {
   );
 }
 
+const TYPE_ROLES: { role: string; cls: string; sample: string; note: string }[] = [
+  { role: "Page title (h1)",   cls: "text-2xl font-semibold tracking-tight",                            sample: "Grantee Management",              note: "Via <PageHeader>. One per route." },
+  { role: "Section title (h2)",cls: "text-base font-semibold tracking-tight",                           sample: "Import rules",                    note: "Card / panel heading." },
+  { role: "Subsection (h3)",   cls: "text-sm font-semibold",                                            sample: "Contact information",             note: "Grouping inside a card." },
+  { role: "Body — default",    cls: "text-sm",                                                          sample: "Validate submissions and track academic records from a single workspace.", note: "Table cells, forms, paragraphs." },
+  { role: "Body — reading",    cls: "text-base",                                                        sample: "Long-form only — announcements, published docs.", note: "Prose that will actually be read." },
+  { role: "Muted meta",        cls: "text-xs text-text-muted",                                          sample: "Helper text, secondary information, descriptions.", note: "Below inputs, in card footers." },
+  { role: "Micro caption",     cls: "text-micro text-text-soft",                                        sample: "Updated 2 hours ago · 2026-07-07 14:32", note: "Timestamps, footnotes." },
+  { role: "Eyebrow / label chip", cls: "text-2xs uppercase tracking-wide text-text-muted font-medium", sample: "Submission progress",             note: "Micro label above a value." },
+  { role: "Form label",        cls: "text-xs font-medium text-text",                                    sample: "Full name",                       note: "Above the input, via <FormField>." },
+  { role: "Table header",      cls: "text-2xs uppercase tracking-wide text-text-muted font-medium",    sample: "Student #",                       note: "Handled by <THead>." },
+  { role: "Table cell",        cls: "text-sm",                                                          sample: "Ana Reyes",                       note: "Inherited from <DataTable>." },
+  { role: "ID / code (mono)",  cls: "font-mono text-xs",                                                sample: "2024-000123-CHED",                note: "IDs, request codes, IPs." },
+  { role: "Kbd hint (mono)",   cls: "font-mono text-2xs",                                               sample: "⌘K",                              note: "Keyboard shortcut chips." },
+];
+
+function TypeRoles() {
+  return (
+    <div className="divide-y">
+      {TYPE_ROLES.map((r) => (
+        <div key={r.role} className="grid grid-cols-1 md:grid-cols-[12rem_1fr_16rem] items-baseline gap-3 py-3 first:pt-0 last:pb-0">
+          <div>
+            <p className="text-xs font-medium text-text">{r.role}</p>
+            <p className="text-micro text-text-soft mt-0.5">{r.note}</p>
+          </div>
+          <div className={r.cls}>{r.sample}</div>
+          <code className="text-micro font-mono text-text-muted break-words">{r.cls}</code>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 const rows = [
   { id: "2024-000123", name: "Ana Reyes", program: "BS CS", status: "approved" as const },
   { id: "2024-000124", name: "Miguel Santos", program: "BS Accountancy", status: "pending" as const },
