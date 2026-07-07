@@ -9,6 +9,7 @@ export function ThemeToggle() {
   const [ripple, setRipple] = useState<{
     x: number; y: number; r: number; color: string; id: number;
   } | null>(null);
+  const [announcement, setAnnouncement] = useState("");
 
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -70,11 +71,20 @@ export function ThemeToggle() {
         </span>
       </button>
 
+      <span role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+        {announcement}
+      </span>
+
       {ripple && (
         <div
           key={ripple.id}
           className="pointer-events-none fixed inset-0 z-[9999]"
-          onAnimationEnd={() => setRipple(null)}
+          onAnimationEnd={() => {
+            setRipple(null);
+            // Announce AFTER the wave finishes so the mode change is confirmed.
+            const nowDark = document.documentElement.classList.contains("dark");
+            setAnnouncement(nowDark ? "Dark mode activated" : "Light mode activated");
+          }}
         >
           <span
             className="absolute rounded-full will-change-transform animate-[themeDrop_640ms_cubic-bezier(0.65,0,0.35,1)_forwards]"
