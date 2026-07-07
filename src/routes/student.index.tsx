@@ -89,7 +89,7 @@ function StudentHome() {
       {/* Journey + Quick Actions */}
       <section aria-labelledby="focus-heading" className="space-y-3">
         <div className="flex items-baseline justify-between">
-          <h2 id="focus-heading" className="text-2xs uppercase tracking-[0.14em] text-text-soft font-semibold">Today's Focus</h2>
+          <p id="focus-heading" className="text-2xs uppercase tracking-[0.14em] text-text-soft font-semibold">Today&apos;s Focus</p>
           <span className="text-xs text-text-muted">Updated just now</span>
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,2.4fr)_minmax(0,1fr)] gap-4">
@@ -145,7 +145,7 @@ function StudentHome() {
 
       {/* Applications + Documents + Upcoming */}
       <section aria-labelledby="track-heading" className="space-y-3">
-        <h2 id="track-heading" className="text-2xs uppercase tracking-[0.14em] text-text-soft font-semibold">Track & Manage</h2>
+        <p id="track-heading" className="text-2xs uppercase tracking-[0.14em] text-text-soft font-semibold">Track &amp; Manage</p>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <section className="rounded-xl border bg-surface p-6 shadow-xs">
           <div className="flex items-center justify-between">
@@ -231,7 +231,7 @@ function StudentHome() {
 
       {/* Bottom row: Recommended / Academic Snapshot / Stay Updated */}
       <section aria-labelledby="explore-heading" className="space-y-3">
-        <h2 id="explore-heading" className="text-2xs uppercase tracking-[0.14em] text-text-soft font-semibold">For You</h2>
+        <p id="explore-heading" className="text-2xs uppercase tracking-[0.14em] text-text-soft font-semibold">For You</p>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <section className="rounded-xl border bg-gold-soft p-6 overflow-hidden relative shadow-xs">
           <p className="text-2xs uppercase tracking-[0.14em] text-primary/70 font-semibold">Recommended</p>
