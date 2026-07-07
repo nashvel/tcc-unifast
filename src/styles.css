@@ -10,40 +10,43 @@ html {
 }
 
 :root {
-  /* Government Slate — cool neutrals, single teal accent. */
-  --primary: #0f4c5c;
-  --primary-hover: #0a3944;
-  --primary-soft: #e2edf0;
+  /* CHED — modern navy blue with gold accent. */
+  --primary: #003da5;              /* CHED blue */
+  --primary-hover: #002c7a;
+  --primary-soft: #e5edf8;
 
-  --success: #2b6a4b;
-  --success-soft: #e6efe9;
+  --success: #1f7a4d;
+  --success-soft: #e4f1ea;
 
-  --warning: #a06a1e;
-  --warning-soft: #f3ecdd;
+  --warning: #b8860b;               /* CHED gold, darkened for AA text */
+  --warning-soft: #fbf1d6;
 
-  --danger: #8f2727;
-  --danger-soft: #f2e3e3;
+  --danger: #b3261e;
+  --danger-soft: #f8e4e2;
 
-  --info: #2f5b7a;
-  --info-soft: #e6edf2;
+  --info: #0057b7;
+  --info-soft: #e4eefb;
 
-  --bg: #f4f6f8;
+  --bg: #f5f7fb;                    /* cool paper */
   --surface: #ffffff;
-  --surface-muted: #eceff3;
+  --surface-muted: #eef2f8;
 
-  --border: #dde2e8;
-  --border-strong: #b8c0cb;
+  --border: #dbe2ec;
+  --border-strong: #b3bfd0;
 
-  --text: #14202b;
-  --text-muted: #566472;
-  --text-soft: #8a95a2;
+  --text: #0b1d3a;                  /* deep navy ink */
+  --text-muted: #4a5876;
+  --text-soft: #808da5;
 
   --sidebar-bg: #ffffff;
   --sidebar-active: var(--primary-soft);
   --sidebar-active-text: var(--primary);
 
+  --accent-gold: #fdb913;           /* CHED gold accent */
+  --accent-gold-soft: #fff4d1;
+
   --input-bg: #ffffff;
-  --ring: rgba(15, 76, 92, 0.24);
+  --ring: rgba(0, 61, 165, 0.28);
 
   --radius: 0.375rem;
 
@@ -66,36 +69,39 @@ html {
 }
 
 .dark {
-  --primary: #6fb5c4;
-  --primary-hover: #8dc8d4;
-  --primary-soft: #16333a;
+  --primary: #6ea3ff;               /* CHED blue, lifted for dark bg */
+  --primary-hover: #89b6ff;
+  --primary-soft: #142347;
 
   --success: #6fae86;
   --success-soft: #17281f;
-  --warning: #c9955a;
-  --warning-soft: #2a2116;
-  --danger: #d67a7a;
+  --warning: #e0b04a;
+  --warning-soft: #2b2213;
+  --danger: #e28a83;
   --danger-soft: #2a1717;
-  --info: #7ea4bf;
-  --info-soft: #16232c;
+  --info: #7fb0ff;
+  --info-soft: #142240;
 
-  --bg: #0e1418;
-  --surface: #141b21;
-  --surface-muted: #1c242b;
+  --bg: #0a1120;                    /* deep navy */
+  --surface: #101a2e;
+  --surface-muted: #172239;
 
-  --border: #232c34;
-  --border-strong: #3a4652;
+  --border: #223052;
+  --border-strong: #3a4b74;
 
-  --text: #e6ecf0;
-  --text-muted: #93a1ad;
-  --text-soft: #6a7784;
+  --text: #e7ecf5;
+  --text-muted: #97a3ba;
+  --text-soft: #6d7891;
 
-  --sidebar-bg: #0b1114;
-  --sidebar-active: #1c242b;
+  --sidebar-bg: #08101f;
+  --sidebar-active: #172239;
   --sidebar-active-text: var(--primary);
 
-  --input-bg: #0e1418;
-  --ring: rgba(111, 181, 196, 0.28);
+  --accent-gold: #ffcf47;
+  --accent-gold-soft: #2c2410;
+
+  --input-bg: #0a1120;
+  --ring: rgba(110, 163, 255, 0.32);
 
   --background: var(--bg);
   --foreground: var(--text);
@@ -103,7 +109,7 @@ html {
   --card-foreground: var(--text);
   --popover: var(--surface);
   --popover-foreground: var(--text);
-  --primary-foreground: #0e1418;
+  --primary-foreground: #0a1120;
   --secondary: var(--surface-muted);
   --secondary-foreground: var(--text);
   --muted: var(--surface-muted);

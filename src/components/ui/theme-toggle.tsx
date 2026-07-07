@@ -34,7 +34,7 @@ export function ThemeToggle() {
     // Trick: temporarily toggle .dark class, read --bg, revert.
     const root = document.documentElement;
     root.classList.toggle("dark", nextDark);
-    const color = styles.getPropertyValue("--bg").trim() || (nextDark ? "#0e1418" : "#f4f6f8");
+    const color = styles.getPropertyValue("--bg").trim() || (nextDark ? "#0a1120" : "#f5f7fb");
     root.classList.toggle("dark", dark); // revert; effect below will re-apply
     setRipple({ x, y, r, color, id: Date.now() });
     // Swap theme at the wave's peak coverage so light↔dark feels symmetric.
