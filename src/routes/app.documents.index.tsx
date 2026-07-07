@@ -25,6 +25,8 @@ function DocQueue() {
     if (risk === "low" && d.risk_score >= 40) return false;
     return true;
   });
+  const pg = usePagination(filtered, 15);
+
 
   return (
     <div>
