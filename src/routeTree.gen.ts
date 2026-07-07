@@ -27,6 +27,7 @@ import { Route as AppSettingsRouteImport } from './routes/app.settings'
 import { Route as AppSecurityRouteImport } from './routes/app.security'
 import { Route as AppMasterlistRouteImport } from './routes/app.masterlist'
 import { Route as AppAuditRouteImport } from './routes/app.audit'
+import { Route as AppAppearanceRouteImport } from './routes/app.appearance'
 import { Route as AuthLoginRouteImport } from './routes/_auth.login'
 import { Route as AuthLockedRouteImport } from './routes/_auth.locked'
 import { Route as AuthForgotPasswordRouteImport } from './routes/_auth.forgot-password'
@@ -140,6 +141,11 @@ const AppMasterlistRoute = AppMasterlistRouteImport.update({
 const AppAuditRoute = AppAuditRouteImport.update({
   id: '/audit',
   path: '/audit',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAppearanceRoute = AppAppearanceRouteImport.update({
+  id: '/appearance',
+  path: '/appearance',
   getParentRoute: () => AppRoute,
 } as any)
 const AuthLoginRoute = AuthLoginRouteImport.update({
@@ -277,6 +283,7 @@ export interface FileRoutesByFullPath {
   '/forgot-password': typeof AuthForgotPasswordRoute
   '/locked': typeof AuthLockedRoute
   '/login': typeof AuthLoginRoute
+  '/app/appearance': typeof AppAppearanceRoute
   '/app/audit': typeof AppAuditRoute
   '/app/masterlist': typeof AppMasterlistRoute
   '/app/security': typeof AppSecurityRouteWithChildren
@@ -319,6 +326,7 @@ export interface FileRoutesByTo {
   '/forgot-password': typeof AuthForgotPasswordRoute
   '/locked': typeof AuthLockedRoute
   '/login': typeof AuthLoginRoute
+  '/app/appearance': typeof AppAppearanceRoute
   '/app/audit': typeof AppAuditRoute
   '/app/masterlist': typeof AppMasterlistRoute
   '/app/security': typeof AppSecurityRouteWithChildren
@@ -365,6 +373,7 @@ export interface FileRoutesById {
   '/_auth/forgot-password': typeof AuthForgotPasswordRoute
   '/_auth/locked': typeof AuthLockedRoute
   '/_auth/login': typeof AuthLoginRoute
+  '/app/appearance': typeof AppAppearanceRoute
   '/app/audit': typeof AppAuditRoute
   '/app/masterlist': typeof AppMasterlistRoute
   '/app/security': typeof AppSecurityRouteWithChildren
@@ -411,6 +420,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/locked'
     | '/login'
+    | '/app/appearance'
     | '/app/audit'
     | '/app/masterlist'
     | '/app/security'
@@ -453,6 +463,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/locked'
     | '/login'
+    | '/app/appearance'
     | '/app/audit'
     | '/app/masterlist'
     | '/app/security'
@@ -498,6 +509,7 @@ export interface FileRouteTypes {
     | '/_auth/forgot-password'
     | '/_auth/locked'
     | '/_auth/login'
+    | '/app/appearance'
     | '/app/audit'
     | '/app/masterlist'
     | '/app/security'
@@ -667,6 +679,13 @@ declare module '@tanstack/react-router' {
       path: '/audit'
       fullPath: '/app/audit'
       preLoaderRoute: typeof AppAuditRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/appearance': {
+      id: '/app/appearance'
+      path: '/appearance'
+      fullPath: '/app/appearance'
+      preLoaderRoute: typeof AppAppearanceRouteImport
       parentRoute: typeof AppRoute
     }
     '/_auth/login': {
@@ -878,6 +897,7 @@ const AppSecurityRouteWithChildren = AppSecurityRoute._addFileChildren(
 )
 
 interface AppRouteChildren {
+  AppAppearanceRoute: typeof AppAppearanceRoute
   AppAuditRoute: typeof AppAuditRoute
   AppMasterlistRoute: typeof AppMasterlistRoute
   AppSecurityRoute: typeof AppSecurityRouteWithChildren
@@ -906,6 +926,7 @@ interface AppRouteChildren {
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppAppearanceRoute: AppAppearanceRoute,
   AppAuditRoute: AppAuditRoute,
   AppMasterlistRoute: AppMasterlistRoute,
   AppSecurityRoute: AppSecurityRouteWithChildren,
