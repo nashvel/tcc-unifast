@@ -65,6 +65,7 @@ function StudentHome() {
           loading="eager"
           decoding="async"
           fetchPriority="high"
+          onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
         />
         {/* Color blend layers — tint without washing out */}
         <div className="absolute inset-0 bg-primary/30 mix-blend-multiply" />
