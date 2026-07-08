@@ -57,22 +57,22 @@ function StudentHome() {
   return (
     <div className="space-y-8">
       {/* Hero + greeting */}
-      <header className="relative overflow-hidden rounded-xl border bg-primary">
+      <header className="relative overflow-hidden rounded-xl border bg-slate-800">
         <img
           src={branding.dashboardHeaderUrl}
           alt="Tagoloan Community College campus banner"
-          className="absolute inset-0 h-full w-full object-cover opacity-90 mix-blend-multiply"
+          className="absolute inset-0 h-full w-full object-cover"
           loading="eager"
           decoding="async"
           fetchPriority="high"
           onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
         />
-        {/* Color blend layers — tint without washing out */}
-        <div className="absolute inset-0 bg-primary/30 mix-blend-multiply" />
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/85 via-primary/40 to-transparent" />
-        {/* WCAG contrast scrim — darkens image so white text/icons stay ≥ 4.5:1 on any tint */}
-        <div className="absolute inset-0 bg-black/35" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/20 to-black/10" />
+        {/* Neutral tint — keeps photo natural, no red cast */}
+        <div className="absolute inset-0 bg-slate-900/40" />
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-900/70 via-slate-900/30 to-transparent" />
+        {/* Subtle contrast scrim for white text */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-transparent" />
+
 
         <div className="relative flex flex-wrap items-end justify-between gap-4 p-6 sm:p-8 min-h-[180px] sm:min-h-[220px]">
           <div className="min-w-0">
