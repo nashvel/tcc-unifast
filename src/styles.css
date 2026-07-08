@@ -31,8 +31,9 @@ html {
   --surface: #ffffff;
   --surface-muted: #eef0f3;
 
-  --border: #e6ddcc;
-  --border-strong: #c9bda5;
+  --border: #e3e5ea;
+  --border-strong: #c4c8d0;
+
 
   --text: #2b1a18;                  /* warm near-black */
   --text-muted: #6a5854;
