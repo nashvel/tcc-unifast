@@ -68,10 +68,10 @@ function StudentHome() {
           onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
         />
         {/* White tint — soft, airy wash over the photo */}
-        <div className="absolute inset-0 bg-white/55" />
-        <div className="absolute inset-0 bg-gradient-to-r from-white/80 via-white/40 to-white/20" />
-        {/* Subtle bottom scrim to anchor text */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-white/60" />
+        {/* Dark gradient from left keeps white text/icons legible */}
+        <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/25 to-transparent" />
+
 
 
 
