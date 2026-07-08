@@ -35,9 +35,9 @@ html {
   --border-strong: #c4c8d0;
 
 
-  --text: #2b1a18;                  /* warm near-black */
-  --text-muted: #6a5854;
-  --text-soft: #9b8b85;
+  --text: #1a1d24;                  /* neutral near-black */
+  --text-muted: #5b6472;
+  --text-soft: #8a93a1;
 
   --sidebar-bg: #4a141d;            /* deep maroon */
   --sidebar-active: #611620;
