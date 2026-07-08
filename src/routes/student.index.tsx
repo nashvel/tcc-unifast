@@ -56,46 +56,48 @@ function StudentHome() {
 
   return (
     <div className="space-y-8">
-      {/* Hero banner */}
-      <div className="relative overflow-hidden rounded-xl border bg-surface-muted aspect-[3/1] sm:aspect-[16/5]">
+      {/* Hero + greeting */}
+      <header className="relative overflow-hidden rounded-xl border bg-primary">
         <img
           src={branding.dashboardHeaderUrl}
           alt="Tagoloan Community College campus banner"
-          className="absolute inset-0 h-full w-full object-cover"
+          className="absolute inset-0 h-full w-full object-cover opacity-40 mix-blend-luminosity"
           loading="eager"
           decoding="async"
           fetchPriority="high"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
-      </div>
+        {/* Color blend layers */}
+        <div className="absolute inset-0 bg-primary/70" />
+        <div className="absolute inset-0 bg-gradient-to-r from-primary via-primary/60 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
 
-      {/* Header row */}
-      <header className="flex flex-wrap items-end justify-between gap-4 pb-5 border-b">
-        <div className="min-w-0">
-          <p className="text-2xs uppercase tracking-[0.14em] text-text-soft">Student Dashboard</p>
-          <h1 className="mt-1 text-2xl sm:text-3xl font-semibold tracking-tight text-text">
-            Good to see you, <span className="text-primary">{firstName}</span>.
-          </h1>
-          <p className="mt-1.5 text-sm text-text-muted">Here's your scholarship journey overview.</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <p className="text-xs text-text-muted hidden md:block pr-2 border-r">{today}</p>
-          <button aria-label="Notifications" className="p-2 rounded-md hover:bg-surface-muted text-text-muted">
-            <IconBell size={18} />
-          </button>
-          <button aria-label="Messages" className="relative p-2 rounded-md hover:bg-surface-muted text-text-muted">
-            <IconMail size={18} />
-            <span className="absolute top-1 right-1 h-4 min-w-4 px-1 rounded-full bg-primary text-primary-foreground text-2xs font-semibold grid place-items-center">2</span>
-          </button>
-          <div className="flex items-center gap-2 pl-3 ml-1 border-l">
-            <div className="h-9 w-9 rounded-full bg-primary-soft text-primary grid place-items-center font-semibold">
-              {firstName.slice(0, 1)}
+        <div className="relative flex flex-wrap items-end justify-between gap-4 p-6 sm:p-8 min-h-[180px] sm:min-h-[220px]">
+          <div className="min-w-0">
+            <p className="text-2xs uppercase tracking-[0.14em] text-white/70">Student Dashboard</p>
+            <h1 className="mt-1 text-2xl sm:text-3xl font-semibold tracking-tight text-white">
+              Good to see you, <span className="text-gold">{firstName}</span>.
+            </h1>
+            <p className="mt-1.5 text-sm text-white/80">Here's your scholarship journey overview.</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <p className="text-xs text-white/70 hidden md:block pr-2 border-r border-white/20">{today}</p>
+            <button aria-label="Notifications" className="p-2 rounded-md hover:bg-white/10 text-white/80">
+              <IconBell size={18} />
+            </button>
+            <button aria-label="Messages" className="relative p-2 rounded-md hover:bg-white/10 text-white/80">
+              <IconMail size={18} />
+              <span className="absolute top-1 right-1 h-4 min-w-4 px-1 rounded-full bg-gold text-white text-2xs font-semibold grid place-items-center">2</span>
+            </button>
+            <div className="flex items-center gap-2 pl-3 ml-1 border-l border-white/20">
+              <div className="h-9 w-9 rounded-full bg-white/15 text-white grid place-items-center font-semibold">
+                {firstName.slice(0, 1)}
+              </div>
+              <div className="text-sm leading-tight">
+                <p className="font-medium text-white">{profile?.full_name || email || "Student"}</p>
+                <p className="text-xs text-white/70">Student</p>
+              </div>
+              <IconChevronDown size={14} className="text-white/60" />
             </div>
-            <div className="text-sm leading-tight">
-              <p className="font-medium">{profile?.full_name || email || "Student"}</p>
-              <p className="text-xs text-text-muted">Student</p>
-            </div>
-            <IconChevronDown size={14} className="text-text-soft" />
           </div>
         </div>
       </header>
