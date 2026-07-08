@@ -57,7 +57,7 @@ function StudentHome() {
   return (
     <div className="space-y-8">
       {/* Hero + greeting */}
-      <header className="relative overflow-hidden rounded-xl border bg-slate-800">
+      <header className="relative overflow-hidden rounded-xl border bg-white">
         <img
           src={branding.dashboardHeaderUrl}
           alt="Tagoloan Community College campus banner"
@@ -67,11 +67,12 @@ function StudentHome() {
           fetchPriority="high"
           onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
         />
-        {/* Neutral tint — keeps photo natural, no red cast */}
-        <div className="absolute inset-0 bg-slate-900/40" />
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-900/70 via-slate-900/30 to-transparent" />
-        {/* Subtle contrast scrim for white text */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-transparent" />
+        {/* White tint — soft, airy wash over the photo */}
+        <div className="absolute inset-0 bg-white/60" />
+        {/* Dark gradient from left keeps white text/icons legible */}
+        <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/25 to-transparent" />
+
+
 
 
         <div className="relative flex flex-wrap items-end justify-between gap-4 p-6 sm:p-8 min-h-[180px] sm:min-h-[220px]">
