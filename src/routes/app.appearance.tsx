@@ -31,7 +31,7 @@ function AppearancePage() {
             onClick={() => setDark(false)}
             label="Light"
             icon={<IconSun size={16} />}
-            swatch={["#faf6ef", "#ffffff", "#4a141d", "#b8894a"]}
+            swatch={["#f6f7f9", "#ffffff", "#4a141d", "#b8894a"]}
           />
           <ThemeCard
             active={dark}
