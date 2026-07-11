@@ -16,6 +16,7 @@ import { StatusBadge, statusVariantFor, formatStatus } from "@/components/ui/sta
 import { Btn } from "@/components/ui/btn";
 import { FileUpload } from "@/components/ui/file-upload";
 import { useDocuments, useUploadDocument } from "@/hooks/queries";
+import { useAuthStore } from "@/stores/authStore";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -71,6 +72,8 @@ function timeAgo(iso: string): string {
 const STORAGE_QUOTA_BYTES = 15 * 1_000_000_000;
 
 function FileManager() {
+  const role = useAuthStore((s) => s.role);
+  const canManage = role !== "admin"; // staff/head can upload & manage; admin is monitor-only
   const { data: docs = [], isLoading, isFetching, isError, error, refetch } = useDocuments();
   const [q, setQ] = useState("");
   const [category, setCategory] = useState<Category | "all">("all");
@@ -82,6 +85,7 @@ function FileManager() {
   const uploadMut = useUploadDocument();
 
   async function submitUploads() {
+    if (!canManage) { toast.error("Admins have monitor-only access."); return; }
     if (pendingFiles.length === 0) return;
     try {
       for (const f of pendingFiles) {
@@ -203,8 +207,12 @@ function FileManager() {
     <div>
       <PageHeader
         title="File Manager"
-        description="Browse every submitted file across grantees. Connected to the document submission pipeline."
-        actions={<Btn onClick={() => setUploadOpen(true)}><IconUpload size={14} className="mr-1.5" />Upload</Btn>}
+        description={canManage
+          ? "Browse every submitted file across grantees. Connected to the document submission pipeline."
+          : "Read-only view of all submitted files. Admins have monitor-only access."}
+        actions={canManage
+          ? <Btn onClick={() => setUploadOpen(true)}><IconUpload size={14} className="mr-1.5" />Upload</Btn>
+          : <StatusBadge variant="neutral">Monitor mode</StatusBadge>}
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4">
@@ -250,9 +258,11 @@ function FileManager() {
                       <div className="h-9 w-9 rounded-md flex items-center justify-center bg-primary/10">
                         <IconFolder size={18} className="text-primary" />
                       </div>
-                      <button className="text-text-soft hover:text-text" aria-label="Folder actions">
-                        <IconDotsVertical size={16} />
-                      </button>
+                      {canManage && (
+                        <button className="text-text-soft hover:text-text" aria-label="Folder actions">
+                          <IconDotsVertical size={16} />
+                        </button>
+                      )}
                     </div>
                     <div className="text-sm font-medium truncate" title={f.name}>{f.name}</div>
                     <div className="text-2xs text-text-muted mt-1">{f.count} files · {formatBytes(f.bytes)}</div>
@@ -323,13 +333,15 @@ function FileManager() {
                     <Td><StatusBadge variant={statusVariantFor(f.status)}>{formatStatus(f.status)}</StatusBadge></Td>
                     <Td>
                       <div className="flex items-center gap-1 justify-end">
-                        <button
-                          onClick={() => setStarred((s) => ({ ...s, [f.id]: !s[f.id] }))}
-                          className={cn("p-1 rounded hover:bg-surface-muted", isStar ? "text-amber-500" : "text-text-soft")}
-                          aria-label={isStar ? "Unstar" : "Star"}
-                        >
-                          {isStar ? <IconStarFilled size={16} /> : <IconStar size={16} />}
-                        </button>
+                        {canManage && (
+                          <button
+                            onClick={() => setStarred((s) => ({ ...s, [f.id]: !s[f.id] }))}
+                            className={cn("p-1 rounded hover:bg-surface-muted", isStar ? "text-amber-500" : "text-text-soft")}
+                            aria-label={isStar ? "Unstar" : "Star"}
+                          >
+                            {isStar ? <IconStarFilled size={16} /> : <IconStar size={16} />}
+                          </button>
+                        )}
                         <button
                           onClick={() => setPreview(f)}
                           className="p-1 rounded hover:bg-surface-muted text-text-soft"
@@ -346,9 +358,11 @@ function FileManager() {
                         >
                           <IconDownload size={16} />
                         </button>
-                        <button className="p-1 rounded hover:bg-surface-muted text-text-soft" aria-label="More">
-                          <IconDotsVertical size={16} />
-                        </button>
+                        {canManage && (
+                          <button className="p-1 rounded hover:bg-surface-muted text-text-soft" aria-label="More">
+                            <IconDotsVertical size={16} />
+                          </button>
+                        )}
                       </div>
                     </Td>
                   </Tr>
@@ -436,7 +450,7 @@ function FileManager() {
       </div>
 
       {/* Upload drawer */}
-      {uploadOpen && (
+      {uploadOpen && canManage && (
         <div className="fixed inset-0 z-50">
           <div
             className="absolute inset-0 bg-black/40 backdrop-blur-sm"
