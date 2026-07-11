@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import {
   IconPhoto, IconVideo, IconFileText, IconArchive, IconFile,
   IconFolder, IconStar, IconStarFilled, IconDotsVertical, IconDownload,
-  IconUpload, IconX,
+  IconUpload, IconX, IconEye,
 } from "@tabler/icons-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { SearchInput } from "@/components/ui/search-input";
