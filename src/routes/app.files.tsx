@@ -207,8 +207,12 @@ function FileManager() {
     <div>
       <PageHeader
         title="File Manager"
-        description="Browse every submitted file across grantees. Connected to the document submission pipeline."
-        actions={<Btn onClick={() => setUploadOpen(true)}><IconUpload size={14} className="mr-1.5" />Upload</Btn>}
+        description={canManage
+          ? "Browse every submitted file across grantees. Connected to the document submission pipeline."
+          : "Read-only view of all submitted files. Admins have monitor-only access."}
+        actions={canManage
+          ? <Btn onClick={() => setUploadOpen(true)}><IconUpload size={14} className="mr-1.5" />Upload</Btn>
+          : <StatusBadge variant="neutral">Monitor mode</StatusBadge>}
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4">
