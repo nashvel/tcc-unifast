@@ -36,7 +36,7 @@ function AppLayout() {
       )}
       <div className="min-h-screen flex flex-col lg:pl-60">
         <AppTopbar onToggleSidebar={() => setOpen((v) => !v)} />
-        <main className="flex-1 p-4 sm:p-6 max-w-[1400px] w-full mx-auto">
+        <main data-tour="page-content" className="flex-1 p-4 sm:p-6 max-w-[1400px] w-full mx-auto">
           <AppBreadcrumbs />
           <PageTransition><Outlet /></PageTransition>
         </main>

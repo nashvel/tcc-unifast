@@ -68,7 +68,7 @@ function StudentLayout() {
       </div>
       <div className="h-full flex-1 min-w-0 flex flex-col overflow-hidden">
         <AppTopbar onToggleSidebar={() => {}} />
-        <main className="flex-1 min-h-0 overflow-y-auto">
+        <main data-tour="page-content" className="flex-1 min-h-0 overflow-y-auto">
           <div className="p-6 max-w-[1200px] w-full mx-auto">
           <AppBreadcrumbs />
           <PageTransition><Outlet /></PageTransition>

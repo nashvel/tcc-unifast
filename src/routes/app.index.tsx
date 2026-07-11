@@ -97,7 +97,7 @@ function Dashboard() {
   return (
     <div className="space-y-4">
       {/* Header + variant switcher */}
-      <div className="flex flex-wrap items-start justify-between gap-3">
+      <div data-tour="page-header" className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-xs font-medium uppercase tracking-[0.14em] text-text-muted">Operations · {today}</p>
           <h1 className="mt-1 text-3xl font-semibold tracking-tight text-primary">
@@ -107,7 +107,7 @@ function Dashboard() {
         </div>
         <div className="flex items-center gap-2">
           <HelpButton />
-          <VariantSwitcher value={variant} onChange={choose} />
+          <div data-tour="dashboard-switcher"><VariantSwitcher value={variant} onChange={choose} /></div>
           <button aria-label="Notifications" className="p-2 rounded-md hover:bg-surface-muted text-text-muted">
             <IconBell size={18} />
           </button>
@@ -183,7 +183,7 @@ function OperationsView({ data }: { data: Data }) {
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div data-tour="dashboard-kpis" className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard label="Total grantees" value={stats.total.toLocaleString()} delta="+4.2%" up spark={SPARK_APPROVAL} />
         <KpiCard label="Auto-approval rate" value="68%" delta="+5.0%" up spark={SPARK_APPROVAL} />
         <KpiCard label="Avg validation" value="2.4h" delta="-0.3h" up spark={SPARK_TIME} tone="gold" />
