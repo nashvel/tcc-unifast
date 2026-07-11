@@ -17,7 +17,8 @@ const viewportClampMiddleware: Middleware = {
   name: "viewportClamp",
   fn({ x, y, rects }) {
     const parsedZoom = Number.parseFloat(getComputedStyle(document.documentElement).zoom);
-    const zoom = Number.isFinite(parsedZoom) && parsedZoom > 0 ? parsedZoom : APP_ZOOM;
+    const renderedZoom = document.documentElement.getBoundingClientRect().width / window.innerWidth;
+    const zoom = renderedZoom > 1 ? renderedZoom : Number.isFinite(parsedZoom) && parsedZoom > 1 ? parsedZoom : APP_ZOOM;
     const padding = VIEWPORT_PADDING / zoom;
     const maxX = Math.max(padding, window.innerWidth / zoom - rects.floating.width - padding);
     const maxY = Math.max(padding, window.innerHeight / zoom - rects.floating.height - padding);
