@@ -57,11 +57,11 @@ function MasterlistPage() {
       />
 
       {!previewed ? (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div data-tour="masterlist-upload" className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div className="lg:col-span-2">
             <FileUpload hint="CSV or XLSX up to 20MB" />
           </div>
-          <div className="rounded-lg border bg-surface p-4">
+          <div data-tour="masterlist-rules" className="rounded-lg border bg-surface p-4">
             <p className="text-sm font-semibold">Import rules</p>
             <ul className="text-xs text-text-muted mt-2 space-y-1.5 list-disc list-inside">
               <li>Student accounts are <strong>auto-generated</strong> from the masterlist.</li>
@@ -72,9 +72,10 @@ function MasterlistPage() {
             </ul>
           </div>
         </div>
+
       ) : (
         <div className="space-y-4">
-          <div className="grid grid-cols-2 sm:grid-cols-6 gap-3">
+          <div data-tour="masterlist-stats" className="grid grid-cols-2 sm:grid-cols-6 gap-3">
             <Stat label="Total rows" value={counts.total} />
             <Stat label="Active" value={counts.active} variant="success" />
             <Stat label="Pending activation" value={counts.pending} variant="warning" />

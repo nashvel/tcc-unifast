@@ -30,7 +30,7 @@ function EligibilityPage() {
     <div>
       <PageHeader title="Eligibility Evaluation" description="Rules-based decisions for the current period."
         actions={<Btn variant="outline" icon={IconDownload}>Export results</Btn>} />
-      <div className="rounded-lg border bg-surface p-3 mb-4 grid grid-cols-1 md:grid-cols-4 gap-2">
+      <div data-tour="eligibility-filters" className="rounded-lg border bg-surface p-3 mb-4 grid grid-cols-1 md:grid-cols-4 gap-2">
         <SearchInput placeholder="Search by name or student #" value={q} onChange={(e) => setQ(e.target.value)} className="md:col-span-2" />
         <Selectish value={elig} onChange={(e) => setElig(e.target.value)}>
           <option value="all">All eligibility</option>
@@ -41,7 +41,9 @@ function EligibilityPage() {
           <option>low</option><option>medium</option><option>high</option>
         </Selectish>
       </div>
+      <div data-tour="eligibility-table">
       <DataTable>
+
         <THead><Tr><Th>Student #</Th><Th>Name</Th><Th>GWA</Th><Th>Risk</Th><Th>Recommendation</Th><Th></Th></Tr></THead>
         <tbody>
           {isLoading && <Tr><Td colSpan={6} className="text-center text-text-muted py-6">Loading…</Td></Tr>}
@@ -58,6 +60,8 @@ function EligibilityPage() {
           ))}
         </tbody>
       </DataTable>
+      </div>
     </div>
+
   );
 }
