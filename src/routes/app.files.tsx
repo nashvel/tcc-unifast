@@ -333,13 +333,15 @@ function FileManager() {
                     <Td><StatusBadge variant={statusVariantFor(f.status)}>{formatStatus(f.status)}</StatusBadge></Td>
                     <Td>
                       <div className="flex items-center gap-1 justify-end">
-                        <button
-                          onClick={() => setStarred((s) => ({ ...s, [f.id]: !s[f.id] }))}
-                          className={cn("p-1 rounded hover:bg-surface-muted", isStar ? "text-amber-500" : "text-text-soft")}
-                          aria-label={isStar ? "Unstar" : "Star"}
-                        >
-                          {isStar ? <IconStarFilled size={16} /> : <IconStar size={16} />}
-                        </button>
+                        {canManage && (
+                          <button
+                            onClick={() => setStarred((s) => ({ ...s, [f.id]: !s[f.id] }))}
+                            className={cn("p-1 rounded hover:bg-surface-muted", isStar ? "text-amber-500" : "text-text-soft")}
+                            aria-label={isStar ? "Unstar" : "Star"}
+                          >
+                            {isStar ? <IconStarFilled size={16} /> : <IconStar size={16} />}
+                          </button>
+                        )}
                         <button
                           onClick={() => setPreview(f)}
                           className="p-1 rounded hover:bg-surface-muted text-text-soft"
@@ -356,9 +358,11 @@ function FileManager() {
                         >
                           <IconDownload size={16} />
                         </button>
-                        <button className="p-1 rounded hover:bg-surface-muted text-text-soft" aria-label="More">
-                          <IconDotsVertical size={16} />
-                        </button>
+                        {canManage && (
+                          <button className="p-1 rounded hover:bg-surface-muted text-text-soft" aria-label="More">
+                            <IconDotsVertical size={16} />
+                          </button>
+                        )}
                       </div>
                     </Td>
                   </Tr>
