@@ -150,6 +150,7 @@ function FileManager() {
       <PageHeader
         title="File Manager"
         description="Browse every submitted file across grantees. Connected to the document submission pipeline."
+        actions={<Btn onClick={() => setUploadOpen(true)}><IconUpload size={14} className="mr-1.5" />Upload</Btn>}
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4">
