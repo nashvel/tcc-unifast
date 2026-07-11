@@ -114,6 +114,7 @@ export function HelpButton({ className }: { className?: string }) {
   function onCallback(data: EventData) {
     const finished: string[] = [STATUS.FINISHED, STATUS.SKIPPED];
     if (finished.includes(data.status)) setRun(false);
+    window.requestAnimationFrame(clampJoyrideTooltipToViewport);
   }
 
   return (
