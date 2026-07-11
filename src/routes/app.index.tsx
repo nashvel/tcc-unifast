@@ -15,6 +15,7 @@ import { StatusBadge, statusVariantFor, formatStatus } from "@/components/ui/sta
 import { useGrantees, useBatches, useAnnouncements } from "@/hooks/queries";
 import { useAuthStore } from "@/stores/authStore";
 import { cn } from "@/lib/utils";
+import { HelpButton } from "@/components/tour/help-button";
 
 export const Route = createFileRoute("/app/")({
   component: Dashboard,
@@ -105,6 +106,7 @@ function Dashboard() {
           </h1>
         </div>
         <div className="flex items-center gap-2">
+          <HelpButton />
           <VariantSwitcher value={variant} onChange={choose} />
           <button aria-label="Notifications" className="p-2 rounded-md hover:bg-surface-muted text-text-muted">
             <IconBell size={18} />
