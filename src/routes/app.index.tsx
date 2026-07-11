@@ -97,7 +97,7 @@ function Dashboard() {
   return (
     <div className="space-y-4">
       {/* Header + variant switcher */}
-      <div className="flex flex-wrap items-start justify-between gap-3">
+      <div data-tour="page-header" className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-xs font-medium uppercase tracking-[0.14em] text-text-muted">Operations · {today}</p>
           <h1 className="mt-1 text-3xl font-semibold tracking-tight text-primary">
@@ -107,7 +107,7 @@ function Dashboard() {
         </div>
         <div className="flex items-center gap-2">
           <HelpButton />
-          <VariantSwitcher value={variant} onChange={choose} />
+          <div data-tour="dashboard-switcher"><VariantSwitcher value={variant} onChange={choose} /></div>
           <button aria-label="Notifications" className="p-2 rounded-md hover:bg-surface-muted text-text-muted">
             <IconBell size={18} />
           </button>
