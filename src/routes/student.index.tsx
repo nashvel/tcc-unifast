@@ -92,17 +92,8 @@ function StudentHome() {
               <IconMail size={18} />
               <span className="absolute top-1 right-1 h-4 min-w-4 px-1 rounded-full bg-gold text-white text-2xs font-semibold grid place-items-center">2</span>
             </button>
-            <div className="flex items-center gap-2 pl-3 ml-1 border-l border-white/20">
-              <div className="h-9 w-9 rounded-full bg-white/15 text-white grid place-items-center font-semibold">
-                {firstName.slice(0, 1)}
-              </div>
-              <div className="text-sm leading-tight">
-                <p className="font-medium text-white">{profile?.full_name || email || "Student"}</p>
-                <p className="text-xs text-white/70">Student</p>
-              </div>
-              <IconChevronDown size={14} className="text-white/60" />
-            </div>
           </div>
+
         </div>
       </header>
 
