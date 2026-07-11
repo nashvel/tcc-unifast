@@ -258,9 +258,11 @@ function FileManager() {
                       <div className="h-9 w-9 rounded-md flex items-center justify-center bg-primary/10">
                         <IconFolder size={18} className="text-primary" />
                       </div>
-                      <button className="text-text-soft hover:text-text" aria-label="Folder actions">
-                        <IconDotsVertical size={16} />
-                      </button>
+                      {canManage && (
+                        <button className="text-text-soft hover:text-text" aria-label="Folder actions">
+                          <IconDotsVertical size={16} />
+                        </button>
+                      )}
                     </div>
                     <div className="text-sm font-medium truncate" title={f.name}>{f.name}</div>
                     <div className="text-2xs text-text-muted mt-1">{f.count} files · {formatBytes(f.bytes)}</div>
