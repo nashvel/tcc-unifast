@@ -15,7 +15,7 @@ import { usePagination } from "@/hooks/use-pagination";
 import { StatusBadge, statusVariantFor, formatStatus } from "@/components/ui/status-badge";
 import { Btn } from "@/components/ui/btn";
 import { FileUpload } from "@/components/ui/file-upload";
-import { useDocuments, useUploadDocument, useAppendAuditLog, useReassignDocument } from "@/hooks/queries";
+import { useDocuments, useUploadDocument, useAppendAuditLog, useReassignDocument, useGrantees } from "@/hooks/queries";
 import { useAuthStore } from "@/stores/authStore";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
