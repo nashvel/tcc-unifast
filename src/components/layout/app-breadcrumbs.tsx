@@ -73,7 +73,7 @@ function labelForMatch(match: {
   return titleFromSegment(last);
 }
 
-export function AppBreadcrumbs() {
+export function AppBreadcrumbs({ separator = "chevron" }: AppBreadcrumbsProps = {}) {
   const matches = useRouterState({ select: (s) => s.matches });
   const navigate = useNavigate();
 
