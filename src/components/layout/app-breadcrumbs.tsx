@@ -1,4 +1,4 @@
-import { Link, useRouterState } from "@tanstack/react-router";
+import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { IconChevronRight, IconHome } from "@tabler/icons-react";
 
 // Human labels for known route segments. Unknown segments (ids, slugs) fall
