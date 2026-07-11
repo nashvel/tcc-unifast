@@ -514,6 +514,20 @@ function FileManager() {
             </div>
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
               <div>
+                <label className="text-xs font-medium text-text-muted mb-1 block">Link to grantee</label>
+                <Selectish value={uploadGranteeId} onChange={(e) => setUploadGranteeId(e.target.value)}>
+                  <option value="">Select a grantee…</option>
+                  {granteeList.map((g) => (
+                    <option key={g.id} value={g.id}>
+                      {g.firstName} {g.lastName} · {g.studentNumber}
+                    </option>
+                  ))}
+                </Selectish>
+                <p className="text-2xs text-text-muted mt-1">
+                  Uploaded files attach to this grantee's submission &amp; validation record.
+                </p>
+              </div>
+              <div>
                 <label className="text-xs font-medium text-text-muted mb-1 block">Document type</label>
                 <Selectish value={uploadType} onChange={(e) => setUploadType(e.target.value)}>
                   <option>Certificate of Registration</option>
