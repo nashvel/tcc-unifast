@@ -1,6 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useMemo, useState } from "react";
 import { PageHeader } from "@/components/ui/page-header";
 import { Btn } from "@/components/ui/btn";
+import { SearchInput } from "@/components/ui/search-input";
+import { Selectish } from "@/components/ui/form-field";
 import { DataTable, THead, Tr, Th, Td } from "@/components/ui/data-table";
 import { StatusBadge, statusVariantFor, formatStatus } from "@/components/ui/status-badge";
 import { useBatches } from "@/hooks/queries";
@@ -12,6 +15,15 @@ export const Route = createFileRoute("/app/batches/")({
 
 function BatchesPage() {
   const { data: batches = [], isLoading } = useBatches();
+  const [q, setQ] = useState("");
+  const [status, setStatus] = useState("all");
+
+  const filtered = useMemo(() => batches.filter((b) => {
+    if (q && !`${b.name} ${b.academicYear} ${b.semester}`.toLowerCase().includes(q.toLowerCase())) return false;
+    if (status !== "all" && b.status !== status) return false;
+    return true;
+  }), [batches, q, status]);
+
   return (
     <div>
       <PageHeader
@@ -19,6 +31,13 @@ function BatchesPage() {
         description="Manage TES grantee batches per academic period."
         actions={<Btn variant="primary" icon={IconPlus}>New batch</Btn>}
       />
+      <div className="rounded-lg border bg-surface p-3 mb-4 grid grid-cols-1 md:grid-cols-4 gap-2">
+        <SearchInput placeholder="Search by batch, AY, or semester" value={q} onChange={(e) => setQ(e.target.value)} className="md:col-span-3" />
+        <Selectish value={status} onChange={(e) => setStatus(e.target.value)}>
+          <option value="all">All statuses</option>
+          <option>active</option><option>closed</option><option>draft</option><option>archived</option>
+        </Selectish>
+      </div>
       <DataTable>
         <THead>
           <Tr>
@@ -28,8 +47,8 @@ function BatchesPage() {
         </THead>
         <tbody>
           {isLoading && <Tr><Td colSpan={9} className="text-center text-text-muted py-6">Loading…</Td></Tr>}
-          {!isLoading && batches.length === 0 && <Tr><Td colSpan={9} className="text-center text-text-muted py-6">No batches yet.</Td></Tr>}
-          {batches.map((b) => (
+          {!isLoading && filtered.length === 0 && <Tr><Td colSpan={9} className="text-center text-text-muted py-6">No batches match your filters.</Td></Tr>}
+          {filtered.map((b) => (
             <Tr key={b.id}>
               <Td><Link to="/app/batches/$id" params={{ id: b.id }} className="font-medium hover:text-primary">{b.name}</Link></Td>
               <Td className="text-text-muted">{b.academicYear}</Td>
