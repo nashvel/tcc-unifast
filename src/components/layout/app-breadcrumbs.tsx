@@ -1,5 +1,12 @@
 import { useNavigate, useRouterState } from "@tanstack/react-router";
-import { IconChevronRight, IconHome, IconSlash } from "@tabler/icons-react";
+import { IconChevronRight, IconDots, IconHome, IconSlash } from "@tabler/icons-react";
+import { useIsMobile } from "@/hooks/use-mobile";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export type BreadcrumbSeparator = "chevron" | "dot" | "slash";
 
