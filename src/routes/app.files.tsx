@@ -16,6 +16,7 @@ import { StatusBadge, statusVariantFor, formatStatus } from "@/components/ui/sta
 import { Btn } from "@/components/ui/btn";
 import { FileUpload } from "@/components/ui/file-upload";
 import { useDocuments, useUploadDocument } from "@/hooks/queries";
+import { useAuthStore } from "@/stores/authStore";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
