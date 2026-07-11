@@ -112,7 +112,7 @@ export function AppBreadcrumbs({ separator = "chevron" }: AppBreadcrumbsProps = 
         const isLast = i === rest.length - 1;
         return (
           <span key={c.href} className="flex items-center gap-0.5 shrink-0">
-            <IconChevronRight size={12} className="text-text-soft/60 mx-0.5" />
+            <SeparatorIcon kind={separator} />
             {isLast ? (
               <span
                 aria-current="page"
