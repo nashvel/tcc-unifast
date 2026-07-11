@@ -552,7 +552,7 @@ function FileManager() {
               <Btn variant="ghost" onClick={() => { setPendingFiles([]); setUploadOpen(false); }} disabled={uploadMut.isPending}>
                 Cancel
               </Btn>
-              <Btn onClick={submitUploads} disabled={pendingFiles.length === 0 || uploadMut.isPending}>
+              <Btn onClick={submitUploads} disabled={pendingFiles.length === 0 || !uploadGranteeId || uploadMut.isPending}>
                 {uploadMut.isPending ? "Uploading…" : `Upload ${pendingFiles.length || ""}`.trim()}
               </Btn>
             </div>
