@@ -3,6 +3,8 @@ import { useState } from "react";
 import { PageHeader } from "@/components/ui/page-header";
 import { Btn } from "@/components/ui/btn";
 import { FileUpload } from "@/components/ui/file-upload";
+import { SearchInput } from "@/components/ui/search-input";
+import { Selectish } from "@/components/ui/form-field";
 import { DataTable, THead, Tr, Th, Td } from "@/components/ui/data-table";
 import { TableStates } from "@/components/ui/table-states";
 import { TablePagination } from "@/components/ui/table-pagination";
@@ -18,7 +20,15 @@ export const Route = createFileRoute("/app/masterlist")({
 function MasterlistPage() {
   const { data: rows = [], isLoading, isFetching, isError, error, refetch } = useMasterlist();
   const [previewed, setPreviewed] = useState(false);
-  const pg = usePagination(rows, 20);
+  const [q, setQ] = useState("");
+  const [statusF, setStatusF] = useState("all");
+  const filteredRows = rows.filter((r) => {
+    if (q && !`${r.student_number ?? ""} ${r.first_name} ${r.last_name} ${r.university} ${r.program}`.toLowerCase().includes(q.toLowerCase())) return false;
+    if (statusF !== "all" && r.account_status !== statusF) return false;
+    return true;
+  });
+  const pg = usePagination(filteredRows, 20);
+
 
 
 
