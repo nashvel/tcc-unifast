@@ -15,7 +15,7 @@ import { usePagination } from "@/hooks/use-pagination";
 import { StatusBadge, statusVariantFor, formatStatus } from "@/components/ui/status-badge";
 import { Btn } from "@/components/ui/btn";
 import { FileUpload } from "@/components/ui/file-upload";
-import { useDocuments, useUploadDocument } from "@/hooks/queries";
+import { useDocuments, useUploadDocument, useAppendAuditLog, useReassignDocument } from "@/hooks/queries";
 import { useAuthStore } from "@/stores/authStore";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -83,6 +83,8 @@ function FileManager() {
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [uploadType, setUploadType] = useState("Certificate of Registration");
   const uploadMut = useUploadDocument();
+  const auditMut = useAppendAuditLog();
+  const reassignMut = useReassignDocument();
 
   async function submitUploads() {
     if (!canManage) { toast.error("Admins have monitor-only access."); return; }
@@ -90,6 +92,12 @@ function FileManager() {
     try {
       for (const f of pendingFiles) {
         await uploadMut.mutateAsync({ type: uploadType, filename: f.name });
+        await auditMut.mutateAsync({
+          action: "file.upload",
+          module: "File Manager",
+          target: f.name,
+          after: { type: uploadType, size: f.size, filename: f.name },
+        });
       }
       toast.success(`Uploaded ${pendingFiles.length} file${pendingFiles.length === 1 ? "" : "s"}`);
       setPendingFiles([]);
@@ -123,7 +131,25 @@ function FileManager() {
     return null;
   }
 
+  function logAudit(action: string, target: string, extra?: Record<string, unknown>, before?: Record<string, unknown>) {
+    auditMut.mutate({ action, module: "File Manager", target, after: extra, before });
+  }
+
+  async function reassignFile(f: PreviewFile) {
+    if (!canManage) { toast.error("Admins have monitor-only access."); return; }
+    const newType = window.prompt(`Reassign document type for "${f.name}"`, f.type);
+    if (!newType || newType === f.type) return;
+    try {
+      const res = await reassignMut.mutateAsync({ id: f.id, type: newType });
+      logAudit("file.reassign", f.name, res.after, res.before);
+      toast.success(`Reassigned "${f.name}" to ${newType}`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Reassign failed");
+    }
+  }
+
   function downloadFile(f: PreviewFile) {
+    logAudit("file.download", f.name, { type: f.type, grantee: f.grantee, size: f.size });
     const url = previewUrlFor(f);
     if (url) {
       const a = document.createElement("a");
@@ -359,7 +385,12 @@ function FileManager() {
                           <IconDownload size={16} />
                         </button>
                         {canManage && (
-                          <button className="p-1 rounded hover:bg-surface-muted text-text-soft" aria-label="More">
+                          <button
+                            onClick={() => reassignFile(f)}
+                            className="p-1 rounded hover:bg-surface-muted text-text-soft"
+                            aria-label="Reassign"
+                            title="Reassign document type"
+                          >
                             <IconDotsVertical size={16} />
                           </button>
                         )}
