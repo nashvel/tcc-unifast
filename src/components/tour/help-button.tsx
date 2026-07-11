@@ -58,8 +58,7 @@ export function HelpButton({ className }: { className?: string }) {
         run={run}
         continuous
         scrollToFirstStep
-        disableScrollParentFix
-        scrollOffset={100}
+
         onEvent={onCallback}
         floaterProps={{
           disableAnimation: true,
