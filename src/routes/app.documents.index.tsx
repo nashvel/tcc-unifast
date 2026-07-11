@@ -35,7 +35,8 @@ function DocQueue() {
   return (
     <div>
       <PageHeader title="Document Validation Queue" description="Review submitted documents and take action." />
-      <div className="rounded-lg border bg-surface p-3 mb-4 grid grid-cols-2 md:grid-cols-4 gap-2">
+      <div className="rounded-lg border bg-surface p-3 mb-4 grid grid-cols-1 md:grid-cols-4 gap-2">
+        <SearchInput placeholder="Search by grantee, student #, type, or file" value={q} onChange={(e) => setQ(e.target.value)} className="md:col-span-2" />
         <Selectish value={status} onChange={(e) => setStatus(e.target.value)}>
           <option value="all">All statuses</option>
           <option>pending</option><option>approved</option><option>rejected</option><option>resubmission</option><option>suspicious</option>
