@@ -51,7 +51,7 @@ const SPARK_BATCHES = [4, 5, 5, 6, 7, 7, 8].map((v, i) => ({ i, v }));
 
 function Dashboard() {
   const profile = useAuthStore((s) => s.profile);
-  const email = useAuthStore((s) => s.email);
+  useAuthStore((s) => s.email);
   const { data: g = [] } = useGrantees();
   const { data: batches = [] } = useBatches();
   const { data: announcements = [] } = useAnnouncements();
