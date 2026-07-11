@@ -15,6 +15,7 @@ import { StatusBadge, statusVariantFor, formatStatus } from "@/components/ui/sta
 import { useGrantees, useBatches, useAnnouncements } from "@/hooks/queries";
 import { useAuthStore } from "@/stores/authStore";
 import { cn } from "@/lib/utils";
+import { HelpButton } from "@/components/tour/help-button";
 
 export const Route = createFileRoute("/app/")({
   component: Dashboard,
