@@ -330,9 +330,22 @@ function FileManager() {
                         >
                           {isStar ? <IconStarFilled size={16} /> : <IconStar size={16} />}
                         </button>
-                        <Link to="/app/documents/$id" params={{ id: f.id }} className="p-1 rounded hover:bg-surface-muted text-text-soft" aria-label="Download / open">
+                        <button
+                          onClick={() => setPreview(f)}
+                          className="p-1 rounded hover:bg-surface-muted text-text-soft"
+                          aria-label="Preview"
+                          title="Preview"
+                        >
+                          <IconEye size={16} />
+                        </button>
+                        <button
+                          onClick={() => downloadFile(f)}
+                          className="p-1 rounded hover:bg-surface-muted text-text-soft"
+                          aria-label="Download"
+                          title="Download"
+                        >
                           <IconDownload size={16} />
-                        </Link>
+                        </button>
                         <button className="p-1 rounded hover:bg-surface-muted text-text-soft" aria-label="More">
                           <IconDotsVertical size={16} />
                         </button>
