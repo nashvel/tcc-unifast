@@ -83,6 +83,8 @@ function FileManager() {
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [uploadType, setUploadType] = useState("Certificate of Registration");
   const uploadMut = useUploadDocument();
+  const auditMut = useAppendAuditLog();
+  const reassignMut = useReassignDocument();
 
   async function submitUploads() {
     if (!canManage) { toast.error("Admins have monitor-only access."); return; }
@@ -90,6 +92,12 @@ function FileManager() {
     try {
       for (const f of pendingFiles) {
         await uploadMut.mutateAsync({ type: uploadType, filename: f.name });
+        await auditMut.mutateAsync({
+          action: "file.upload",
+          module: "File Manager",
+          target: f.name,
+          after: { type: uploadType, size: f.size, filename: f.name },
+        });
       }
       toast.success(`Uploaded ${pendingFiles.length} file${pendingFiles.length === 1 ? "" : "s"}`);
       setPendingFiles([]);
