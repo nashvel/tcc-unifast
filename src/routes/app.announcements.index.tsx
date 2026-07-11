@@ -16,7 +16,8 @@ function AnnouncementsPage() {
   return (
     <div>
       <PageHeader title="Announcements" description="Broadcast updates to grantees by audience and channel."
-        actions={canWrite ? <Link to="/app/announcements/new"><Btn variant="primary" icon={IconPlus}>New announcement</Btn></Link> : null} />
+        actions={canWrite ? <span data-tour="announcements-new"><Link to="/app/announcements/new"><Btn variant="primary" icon={IconPlus}>New announcement</Btn></Link></span> : null} />
+
       <div data-tour="announcements-list" className="space-y-2">
         {isLoading && <p className="text-sm text-text-muted">Loading…</p>}
         {!isLoading && announcements.length === 0 && <p className="text-sm text-text-muted">No announcements yet.</p>}
