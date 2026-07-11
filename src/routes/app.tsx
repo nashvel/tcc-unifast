@@ -5,6 +5,7 @@ import { AppTopbar } from "@/components/layout/app-topbar";
 import { useAuthStore } from "@/stores/authStore";
 import { CommandPalette } from "@/components/ui/command-palette";
 import { PageTransition } from "@/components/page-transition";
+import { AppBreadcrumbs } from "@/components/layout/app-breadcrumbs";
 
 export const Route = createFileRoute("/app")({
   ssr: false,
@@ -36,6 +37,7 @@ function AppLayout() {
       <div className="min-h-screen flex flex-col lg:pl-60">
         <AppTopbar onToggleSidebar={() => setOpen((v) => !v)} />
         <main className="flex-1 p-4 sm:p-6 max-w-[1400px] w-full mx-auto">
+          <AppBreadcrumbs />
           <PageTransition><Outlet /></PageTransition>
         </main>
       </div>

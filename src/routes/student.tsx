@@ -8,6 +8,7 @@ import { CommandPalette } from "@/components/ui/command-palette";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { OnboardingScan } from "@/components/student/onboarding-scan";
 import { PageTransition } from "@/components/page-transition";
+import { AppBreadcrumbs } from "@/components/layout/app-breadcrumbs";
 
 const SKIP_KEY = "unifast.onboarding.skipped";
 const DONE_KEY = "unifast.mock.onboarding_completed_at";
@@ -53,6 +54,7 @@ function StudentLayout() {
   if (isMobile) {
     return (
       <StudentMobileShell>
+        <div className="px-4 pt-3"><AppBreadcrumbs /></div>
         <PageTransition><Outlet /></PageTransition>
         {overlay}
       </StudentMobileShell>
@@ -68,8 +70,10 @@ function StudentLayout() {
         <AppTopbar onToggleSidebar={() => {}} />
         <main className="flex-1 min-h-0 overflow-y-auto">
           <div className="p-6 max-w-[1200px] w-full mx-auto">
+          <AppBreadcrumbs />
           <PageTransition><Outlet /></PageTransition>
           </div>
+
         </main>
       </div>
       <CommandPalette />
