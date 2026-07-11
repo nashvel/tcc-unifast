@@ -3,6 +3,7 @@ import { useState } from "react";
 import { PageHeader } from "@/components/ui/page-header";
 import { Btn } from "@/components/ui/btn";
 import { Selectish } from "@/components/ui/form-field";
+import { SearchInput } from "@/components/ui/search-input";
 import { DataTable, THead, Tr, Th, Td } from "@/components/ui/data-table";
 import { TableStates } from "@/components/ui/table-states";
 import { TablePagination } from "@/components/ui/table-pagination";
@@ -16,10 +17,12 @@ export const Route = createFileRoute("/app/documents/")({
 
 function DocQueue() {
   const { data: docs = [], isLoading, isFetching, isError, error, refetch } = useDocuments();
+  const [q, setQ] = useState("");
   const [status, setStatus] = useState("all");
   const [risk, setRisk] = useState("all");
 
   const filtered = docs.filter((d) => {
+    if (q && !`${d.grantee_name} ${d.student_number} ${d.type} ${d.filename}`.toLowerCase().includes(q.toLowerCase())) return false;
     if (status !== "all" && d.status !== status) return false;
     if (risk === "high" && d.risk_score < 70) return false;
     if (risk === "medium" && (d.risk_score < 40 || d.risk_score >= 70)) return false;
@@ -32,7 +35,8 @@ function DocQueue() {
   return (
     <div>
       <PageHeader title="Document Validation Queue" description="Review submitted documents and take action." />
-      <div className="rounded-lg border bg-surface p-3 mb-4 grid grid-cols-2 md:grid-cols-4 gap-2">
+      <div className="rounded-lg border bg-surface p-3 mb-4 grid grid-cols-1 md:grid-cols-4 gap-2">
+        <SearchInput placeholder="Search by grantee, student #, type, or file" value={q} onChange={(e) => setQ(e.target.value)} className="md:col-span-2" />
         <Selectish value={status} onChange={(e) => setStatus(e.target.value)}>
           <option value="all">All statuses</option>
           <option>pending</option><option>approved</option><option>rejected</option><option>resubmission</option><option>suspicious</option>

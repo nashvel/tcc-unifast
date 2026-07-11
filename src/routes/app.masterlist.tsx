@@ -3,6 +3,8 @@ import { useState } from "react";
 import { PageHeader } from "@/components/ui/page-header";
 import { Btn } from "@/components/ui/btn";
 import { FileUpload } from "@/components/ui/file-upload";
+import { SearchInput } from "@/components/ui/search-input";
+import { Selectish } from "@/components/ui/form-field";
 import { DataTable, THead, Tr, Th, Td } from "@/components/ui/data-table";
 import { TableStates } from "@/components/ui/table-states";
 import { TablePagination } from "@/components/ui/table-pagination";
@@ -18,7 +20,15 @@ export const Route = createFileRoute("/app/masterlist")({
 function MasterlistPage() {
   const { data: rows = [], isLoading, isFetching, isError, error, refetch } = useMasterlist();
   const [previewed, setPreviewed] = useState(false);
-  const pg = usePagination(rows, 20);
+  const [q, setQ] = useState("");
+  const [statusF, setStatusF] = useState("all");
+  const filteredRows = rows.filter((r) => {
+    if (q && !`${r.student_number ?? ""} ${r.first_name} ${r.last_name} ${r.university} ${r.program}`.toLowerCase().includes(q.toLowerCase())) return false;
+    if (statusF !== "all" && r.account_status !== statusF) return false;
+    return true;
+  });
+  const pg = usePagination(filteredRows, 20);
+
 
 
 
@@ -82,6 +92,18 @@ function MasterlistPage() {
               </div>
             </div>
           )}
+
+          <div className="rounded-lg border bg-surface p-3 grid grid-cols-1 md:grid-cols-4 gap-2">
+            <SearchInput placeholder="Search by student #, name, university, or program" value={q} onChange={(e) => setQ(e.target.value)} className="md:col-span-3" />
+            <Selectish value={statusF} onChange={(e) => setStatusF(e.target.value)}>
+              <option value="all">All statuses</option>
+              <option value="active">Active</option>
+              <option value="pending_activation">Pending activation</option>
+              <option value="inactive">Inactive</option>
+              <option value="duplicate">Duplicate</option>
+              <option value="invalid">Invalid</option>
+            </Selectish>
+          </div>
 
           <DataTable>
             <THead>

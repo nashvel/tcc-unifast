@@ -3,6 +3,7 @@ import { useState } from "react";
 import { PageHeader } from "@/components/ui/page-header";
 import { Btn } from "@/components/ui/btn";
 import { Selectish, TextInput } from "@/components/ui/form-field";
+import { SearchInput } from "@/components/ui/search-input";
 import { DataTable, THead, Tr, Th, Td } from "@/components/ui/data-table";
 import { TableStates } from "@/components/ui/table-states";
 import { TablePagination } from "@/components/ui/table-pagination";
@@ -20,13 +21,13 @@ function Audit() {
   const { data: logs = [], isLoading, isFetching, isError, error, refetch } = useAuditLogs();
   const [user, setUser] = useState("all");
   const [module, setModule] = useState("all");
-  const [action, setAction] = useState("");
+  const [q, setQ] = useState("");
   const [active, setActive] = useState<AuditLogRow | null>(null);
 
   const filtered = logs.filter((l) => {
     if (user !== "all" && l.user !== user) return false;
     if (module !== "all" && l.module !== module) return false;
-    if (action && !l.action.includes(action.toLowerCase())) return false;
+    if (q && !`${l.action} ${l.user} ${l.target}`.toLowerCase().includes(q.toLowerCase())) return false;
     return true;
   });
   const pg = usePagination(filtered, 25);
@@ -36,7 +37,8 @@ function Audit() {
     <div>
       <PageHeader title="Audit Trail" description="System-wide audit log of all staff and user actions."
         actions={<Btn variant="outline" icon={IconDownload} onClick={() => downloadCSV("audit-trail.csv", filtered.map((l) => ({ timestamp: l.timestamp, user: l.user, role: l.role, action: l.action, module: l.module, target: l.target, ip: l.ip, before: JSON.stringify(l.before ?? {}), after: JSON.stringify(l.after ?? {}) })))}>Export CSV</Btn>} />
-      <div className="rounded-lg border bg-surface p-3 mb-4 grid grid-cols-2 md:grid-cols-5 gap-2">
+      <div className="rounded-lg border bg-surface p-3 mb-4 grid grid-cols-1 md:grid-cols-5 gap-2">
+        <SearchInput placeholder="Search action, user, or target" value={q} onChange={(e) => setQ(e.target.value)} className="md:col-span-2" />
         <Selectish value={user} onChange={(e) => setUser(e.target.value)}>
           <option value="all">All users</option>
           {[...new Set(logs.map((l) => l.user))].map((u) => <option key={u}>{u}</option>)}
@@ -45,8 +47,6 @@ function Audit() {
           <option value="all">All modules</option>
           {[...new Set(logs.map((l) => l.module))].map((m) => <option key={m}>{m}</option>)}
         </Selectish>
-        <TextInput placeholder="Action contains…" value={action} onChange={(e) => setAction(e.target.value)} />
-        <TextInput type="date" />
         <TextInput type="date" />
       </div>
       <DataTable>
