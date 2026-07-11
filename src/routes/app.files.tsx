@@ -85,6 +85,7 @@ function FileManager() {
   const uploadMut = useUploadDocument();
 
   async function submitUploads() {
+    if (!canManage) { toast.error("Admins have monitor-only access."); return; }
     if (pendingFiles.length === 0) return;
     try {
       for (const f of pendingFiles) {
