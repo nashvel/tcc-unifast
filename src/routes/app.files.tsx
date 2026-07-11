@@ -82,6 +82,8 @@ function FileManager() {
   const [uploadOpen, setUploadOpen] = useState(false);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [uploadType, setUploadType] = useState("Certificate of Registration");
+  const [uploadGranteeId, setUploadGranteeId] = useState<string>("");
+  const { data: granteeList = [] } = useGrantees();
   const uploadMut = useUploadDocument();
   const auditMut = useAppendAuditLog();
   const reassignMut = useReassignDocument();
