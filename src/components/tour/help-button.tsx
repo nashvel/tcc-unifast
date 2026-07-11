@@ -30,7 +30,7 @@ export function HelpButton({ className }: { className?: string }) {
 
   if (!tour) return null;
 
-  function onCallback(data: CallBackProps) {
+  function onCallback(data: EventData) {
     const finished: string[] = [STATUS.FINISHED, STATUS.SKIPPED];
     if (finished.includes(data.status)) setRun(false);
   }
