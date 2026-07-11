@@ -183,7 +183,7 @@ function OperationsView({ data }: { data: Data }) {
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div data-tour="dashboard-kpis" className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard label="Total grantees" value={stats.total.toLocaleString()} delta="+4.2%" up spark={SPARK_APPROVAL} />
         <KpiCard label="Auto-approval rate" value="68%" delta="+5.0%" up spark={SPARK_APPROVAL} />
         <KpiCard label="Avg validation" value="2.4h" delta="-0.3h" up spark={SPARK_TIME} tone="gold" />
