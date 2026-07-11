@@ -105,6 +105,7 @@ function Dashboard() {
           </h1>
         </div>
         <div className="flex items-center gap-2">
+          <HelpButton />
           <VariantSwitcher value={variant} onChange={choose} />
           <button aria-label="Notifications" className="p-2 rounded-md hover:bg-surface-muted text-text-muted">
             <IconBell size={18} />
