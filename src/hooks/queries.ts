@@ -294,6 +294,51 @@ export function useAuditLogs() {
   });
 }
 
+export function useAppendAuditLog() {
+  const qc = useQueryClient();
+  const profile = useAuthStore((s) => s.profile);
+  const role = useAuthStore((s) => s.role);
+  return useMutation({
+    mutationFn: async (args: {
+      action: string;
+      module: string;
+      target: string;
+      before?: Record<string, unknown>;
+      after?: Record<string, unknown>;
+    }) => {
+      mockAuditLogs.unshift({
+        id: `a-${Date.now()}`,
+        user: profile?.full_name || profile?.username || "system",
+        role: role ?? "system",
+        action: args.action,
+        module: args.module,
+        target: args.target,
+        ip: "127.0.0.1",
+        timestamp: new Date().toISOString().slice(0, 19).replace("T", " "),
+        before: args.before,
+        after: args.after,
+      });
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["audit_logs"] }),
+  });
+}
+
+export function useReassignDocument() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (args: { id: string; type?: string; grantee_name?: string; student_number?: string }) => {
+      const row = mockDocuments.find((d) => d.id === args.id);
+      if (!row) throw new Error("Document not found");
+      const before = { type: row.type, granteeName: row.granteeName, studentNumber: row.studentNumber };
+      if (args.type !== undefined) row.type = args.type;
+      if (args.grantee_name !== undefined) row.granteeName = args.grantee_name;
+      if (args.student_number !== undefined) row.studentNumber = args.student_number;
+      return { before, after: { type: row.type, granteeName: row.granteeName, studentNumber: row.studentNumber } };
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["documents"] }),
+  });
+}
+
 /* ---------------- Staff Directory ---------------- */
 export interface StaffUserRow {
   id: string; username: string; fullName: string; email: string;
