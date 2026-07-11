@@ -91,14 +91,23 @@ function FileManager() {
   async function submitUploads() {
     if (!canManage) { toast.error("Admins have monitor-only access."); return; }
     if (pendingFiles.length === 0) return;
+    if (!uploadGranteeId) { toast.error("Pick a grantee to link this upload to."); return; }
     try {
       for (const f of pendingFiles) {
-        await uploadMut.mutateAsync({ type: uploadType, filename: f.name });
+        const res = await uploadMut.mutateAsync({ type: uploadType, filename: f.name, granteeId: uploadGranteeId });
         await auditMut.mutateAsync({
           action: "file.upload",
           module: "File Manager",
-          target: f.name,
-          after: { type: uploadType, size: f.size, filename: f.name },
+          target: `${f.name} → ${res.grantee_name} (${res.student_number})`,
+          after: {
+            documentId: res.id,
+            granteeId: uploadGranteeId,
+            grantee: res.grantee_name,
+            studentNumber: res.student_number,
+            type: uploadType,
+            size: f.size,
+            filename: f.name,
+          },
         });
       }
       toast.success(`Uploaded ${pendingFiles.length} file${pendingFiles.length === 1 ? "" : "s"}`);
