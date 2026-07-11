@@ -71,6 +71,8 @@ function StudentLayout() {
           <div className="p-6 max-w-[1200px] w-full mx-auto">
           <AppBreadcrumbs />
           <PageTransition><Outlet /></PageTransition>
+          </div>
+
         </main>
       </div>
       <CommandPalette />
