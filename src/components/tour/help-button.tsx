@@ -72,7 +72,7 @@ export function HelpButton({ className }: { className?: string }) {
         styles={{
           tooltip: { borderRadius: 12, fontSize: 14 },
           tooltipTitle: { fontSize: 15, fontWeight: 600 },
-          buttonNext: { borderRadius: 6, fontSize: 13 },
+          buttonPrimary: { borderRadius: 6, fontSize: 13 },
           buttonBack: { color: "var(--color-text-muted)", fontSize: 13 },
           buttonSkip: { color: "var(--color-text-muted)", fontSize: 13 },
         }}
