@@ -75,7 +75,7 @@ function MasterlistPage() {
 
       ) : (
         <div className="space-y-4">
-          <div className="grid grid-cols-2 sm:grid-cols-6 gap-3">
+          <div data-tour="masterlist-stats" className="grid grid-cols-2 sm:grid-cols-6 gap-3">
             <Stat label="Total rows" value={counts.total} />
             <Stat label="Active" value={counts.active} variant="success" />
             <Stat label="Pending activation" value={counts.pending} variant="warning" />
