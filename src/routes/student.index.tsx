@@ -24,7 +24,7 @@ const JOURNEY: { key: string; label: string; done: boolean; current?: boolean }[
 
 function StudentHome() {
   const profile = useAuthStore((s) => s.profile);
-  const email = useAuthStore((s) => s.email);
+  
   const { data: myDocs = [] } = useDocuments({ ownerOnly: true });
 
   const firstName = (profile?.full_name ?? "").split(" ")[0] || "Grantee";
