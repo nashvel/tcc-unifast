@@ -8,6 +8,7 @@ import { CommandPalette } from "@/components/ui/command-palette";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { OnboardingScan } from "@/components/student/onboarding-scan";
 import { PageTransition } from "@/components/page-transition";
+import { AppBreadcrumbs } from "@/components/layout/app-breadcrumbs";
 
 const SKIP_KEY = "unifast.onboarding.skipped";
 const DONE_KEY = "unifast.mock.onboarding_completed_at";
