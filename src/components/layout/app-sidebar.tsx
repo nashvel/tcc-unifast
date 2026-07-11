@@ -2,7 +2,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import {
   IconDashboard, IconFileImport, IconFolders, IconUsersGroup, IconFileCheck,
   IconSchool, IconChecklist, IconSpeakerphone, IconReportAnalytics, IconHistory,
-  IconUserCog, IconSettings, IconShieldCheck, IconLifebuoy,
+  IconUserCog, IconSettings, IconShieldCheck, IconLifebuoy, IconFolder,
 } from "@tabler/icons-react";
 import { cn } from "@/lib/utils";
 import type { ComponentType } from "react";
