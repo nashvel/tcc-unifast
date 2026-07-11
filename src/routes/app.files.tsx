@@ -15,7 +15,7 @@ import { usePagination } from "@/hooks/use-pagination";
 import { StatusBadge, statusVariantFor, formatStatus } from "@/components/ui/status-badge";
 import { Btn } from "@/components/ui/btn";
 import { FileUpload } from "@/components/ui/file-upload";
-import { useDocuments, useUploadDocument, useAppendAuditLog, useReassignDocument } from "@/hooks/queries";
+import { useDocuments, useUploadDocument, useAppendAuditLog, useReassignDocument, useGrantees } from "@/hooks/queries";
 import { useAuthStore } from "@/stores/authStore";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -82,6 +82,8 @@ function FileManager() {
   const [uploadOpen, setUploadOpen] = useState(false);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [uploadType, setUploadType] = useState("Certificate of Registration");
+  const [uploadGranteeId, setUploadGranteeId] = useState<string>("");
+  const { data: granteeList = [] } = useGrantees();
   const uploadMut = useUploadDocument();
   const auditMut = useAppendAuditLog();
   const reassignMut = useReassignDocument();
@@ -89,14 +91,23 @@ function FileManager() {
   async function submitUploads() {
     if (!canManage) { toast.error("Admins have monitor-only access."); return; }
     if (pendingFiles.length === 0) return;
+    if (!uploadGranteeId) { toast.error("Pick a grantee to link this upload to."); return; }
     try {
       for (const f of pendingFiles) {
-        await uploadMut.mutateAsync({ type: uploadType, filename: f.name });
+        const res = await uploadMut.mutateAsync({ type: uploadType, filename: f.name, granteeId: uploadGranteeId });
         await auditMut.mutateAsync({
           action: "file.upload",
           module: "File Manager",
-          target: f.name,
-          after: { type: uploadType, size: f.size, filename: f.name },
+          target: `${f.name} → ${res.grantee_name} (${res.student_number})`,
+          after: {
+            documentId: res.id,
+            granteeId: uploadGranteeId,
+            grantee: res.grantee_name,
+            studentNumber: res.student_number,
+            type: uploadType,
+            size: f.size,
+            filename: f.name,
+          },
         });
       }
       toast.success(`Uploaded ${pendingFiles.length} file${pendingFiles.length === 1 ? "" : "s"}`);
@@ -503,6 +514,20 @@ function FileManager() {
             </div>
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
               <div>
+                <label className="text-xs font-medium text-text-muted mb-1 block">Link to grantee</label>
+                <Selectish value={uploadGranteeId} onChange={(e) => setUploadGranteeId(e.target.value)}>
+                  <option value="">Select a grantee…</option>
+                  {granteeList.map((g) => (
+                    <option key={g.id} value={g.id}>
+                      {g.firstName} {g.lastName} · {g.studentNumber}
+                    </option>
+                  ))}
+                </Selectish>
+                <p className="text-2xs text-text-muted mt-1">
+                  Uploaded files attach to this grantee's submission &amp; validation record.
+                </p>
+              </div>
+              <div>
                 <label className="text-xs font-medium text-text-muted mb-1 block">Document type</label>
                 <Selectish value={uploadType} onChange={(e) => setUploadType(e.target.value)}>
                   <option>Certificate of Registration</option>
@@ -527,7 +552,7 @@ function FileManager() {
               <Btn variant="ghost" onClick={() => { setPendingFiles([]); setUploadOpen(false); }} disabled={uploadMut.isPending}>
                 Cancel
               </Btn>
-              <Btn onClick={submitUploads} disabled={pendingFiles.length === 0 || uploadMut.isPending}>
+              <Btn onClick={submitUploads} disabled={pendingFiles.length === 0 || !uploadGranteeId || uploadMut.isPending}>
                 {uploadMut.isPending ? "Uploading…" : `Upload ${pendingFiles.length || ""}`.trim()}
               </Btn>
             </div>

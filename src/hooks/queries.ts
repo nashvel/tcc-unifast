@@ -135,13 +135,21 @@ export function useUploadDocument() {
   const profile = useAuthStore((s) => s.profile);
   const userId = useAuthStore((s) => s.userId);
   return useMutation({
-    mutationFn: async (args: { type: string; filename: string }) => {
-      if (!userId || !profile) throw new Error("Not signed in");
+    mutationFn: async (args: { type: string; filename: string; granteeId?: string }) => {
+      // Link the upload to the target submission/validation record:
+      //  - if granteeId provided (staff uploading on behalf of a grantee), use that grantee
+      //  - otherwise fall back to the signed-in user's profile (student self-upload)
+      const g = args.granteeId ? mockGrantees.find((x) => x.id === args.granteeId) : undefined;
+      const grantee_name = g ? `${g.firstName} ${g.lastName}` : profile?.full_name ?? "";
+      const student_number = g ? g.studentNumber : profile?.student_number ?? "";
+      const owner_id = g ? g.id : userId;
+      if (!owner_id || !grantee_name) throw new Error("No grantee to link this file to");
+      const id = `d-${Date.now()}`;
       documentRows.unshift({
-        id: `d-${Date.now()}`,
-        owner_id: userId,
-        grantee_name: profile.full_name,
-        student_number: profile.student_number ?? "",
+        id,
+        owner_id,
+        grantee_name,
+        student_number,
         type: args.type,
         filename: args.filename,
         uploaded_at: new Date().toISOString().slice(0, 16).replace("T", " "),
@@ -151,6 +159,7 @@ export function useUploadDocument() {
         ocr: null,
         exif: null,
       });
+      return { id, grantee_name, student_number, owner_id };
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["documents"] }),
   });
