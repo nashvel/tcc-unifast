@@ -54,6 +54,7 @@ function StudentLayout() {
   if (isMobile) {
     return (
       <StudentMobileShell>
+        <div className="px-4 pt-3"><AppBreadcrumbs /></div>
         <PageTransition><Outlet /></PageTransition>
         {overlay}
       </StudentMobileShell>
