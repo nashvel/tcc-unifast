@@ -385,7 +385,12 @@ function FileManager() {
                           <IconDownload size={16} />
                         </button>
                         {canManage && (
-                          <button className="p-1 rounded hover:bg-surface-muted text-text-soft" aria-label="More">
+                          <button
+                            onClick={() => reassignFile(f)}
+                            className="p-1 rounded hover:bg-surface-muted text-text-soft"
+                            aria-label="Reassign"
+                            title="Reassign document type"
+                          >
                             <IconDotsVertical size={16} />
                           </button>
                         )}
