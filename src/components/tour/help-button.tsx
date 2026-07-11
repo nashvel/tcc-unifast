@@ -29,6 +29,29 @@ const viewportClampMiddleware: Middleware = {
   },
 };
 
+function isTourDebugEnabled() {
+  if (typeof window === "undefined") return false;
+  try {
+    if (new URLSearchParams(window.location.search).get("tourDebug") === "1") return true;
+    if (window.localStorage.getItem("tourDebug") === "1") return true;
+  } catch {
+    /* ignore */
+  }
+  return false;
+}
+
+function logTourDebug(label: string, payload: Record<string, unknown>) {
+  if (!isTourDebugEnabled()) return;
+  // eslint-disable-next-line no-console
+  console.groupCollapsed(`[tour] ${label}`);
+  for (const [k, v] of Object.entries(payload)) {
+    // eslint-disable-next-line no-console
+    console.log(k, v);
+  }
+  // eslint-disable-next-line no-console
+  console.groupEnd();
+}
+
 function clampJoyrideTooltipToViewport() {
   const floater = document.querySelector<HTMLElement>("#react-joyride-portal .react-joyride__floater[data-testid='floater']");
   if (!floater) return;
@@ -43,7 +66,13 @@ function clampJoyrideTooltipToViewport() {
   if (rect.top < padding) deltaY = padding - rect.top;
   if (rect.bottom > window.innerHeight - padding) deltaY = window.innerHeight - padding - rect.bottom;
 
-  if (deltaX === 0 && deltaY === 0) return;
+  if (deltaX === 0 && deltaY === 0) {
+    logTourDebug("tooltip bounds (in viewport)", {
+      rect: rect.toJSON(),
+      viewport: { w: window.innerWidth, h: window.innerHeight },
+    });
+    return;
+  }
 
   const transform = floater.style.transform;
   const match = transform.match(/translate\(([-\d.]+)px,\s*([-\d.]+)px\)/);
@@ -54,7 +83,15 @@ function clampJoyrideTooltipToViewport() {
   if (!Number.isFinite(x) || !Number.isFinite(y)) return;
 
   floater.style.transform = `translate(${x + deltaX / APP_ZOOM}px, ${y + deltaY / APP_ZOOM}px)`;
+
+  logTourDebug("tooltip clamped into viewport", {
+    before: rect.toJSON(),
+    after: floater.getBoundingClientRect().toJSON(),
+    delta: { x: deltaX, y: deltaY },
+    viewport: { w: window.innerWidth, h: window.innerHeight },
+  });
 }
+
 
 /**
  * Renders a "Tour" button that starts a react-joyride walkthrough for the
@@ -114,8 +151,25 @@ export function HelpButton({ className }: { className?: string }) {
   function onCallback(data: EventData) {
     const finished: string[] = [STATUS.FINISHED, STATUS.SKIPPED];
     if (finished.includes(data.status)) setRun(false);
+
+    const step = steps[data.index];
+    const targetSel = typeof step?.target === "string" ? step.target : "(element ref)";
+    const targetEl =
+      typeof step?.target === "string"
+        ? document.querySelector<HTMLElement>(step.target)
+        : (step?.target as HTMLElement | undefined) ?? null;
+    logTourDebug(`step ${data.index} • ${data.type} • ${data.status}`, {
+      action: data.action,
+      lifecycle: data.lifecycle,
+      targetSelector: targetSel,
+      targetElement: targetEl,
+      targetBounds: targetEl?.getBoundingClientRect().toJSON() ?? null,
+      viewport: { w: window.innerWidth, h: window.innerHeight },
+    });
+
     window.requestAnimationFrame(clampJoyrideTooltipToViewport);
   }
+
 
   return (
     <>
