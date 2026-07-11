@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useRouterState } from "@tanstack/react-router";
 import { IconHelpCircle } from "@tabler/icons-react";
+import type { Middleware } from "@floating-ui/react-dom";
 import { Joyride, type Step, type EventData, STATUS } from "react-joyride";
 import { cn } from "@/lib/utils";
 import { resolveTour } from "./tour-registry";
@@ -11,6 +12,22 @@ const TOOLTIP_WIDTH = 340;
 const scaledSize = (value: number) => value / APP_ZOOM;
 const TOOLTIP_WIDTH_CSS = `min(${scaledSize(TOOLTIP_WIDTH)}px, calc((100vw - ${VIEWPORT_PADDING * 2}px) / ${APP_ZOOM}))`;
 const TOOLTIP_MAX_HEIGHT_CSS = `calc((100dvh - ${VIEWPORT_PADDING * 2}px) / ${APP_ZOOM})`;
+
+const viewportClampMiddleware: Middleware = {
+  name: "viewportClamp",
+  fn({ x, y, rects }) {
+    const parsedZoom = Number.parseFloat(getComputedStyle(document.documentElement).zoom);
+    const zoom = Number.isFinite(parsedZoom) && parsedZoom > 0 ? parsedZoom : APP_ZOOM;
+    const padding = VIEWPORT_PADDING / zoom;
+    const maxX = Math.max(padding, window.innerWidth / zoom - rects.floating.width - padding);
+    const maxY = Math.max(padding, window.innerHeight / zoom - rects.floating.height - padding);
+
+    return {
+      x: Math.min(Math.max(x, padding), maxX),
+      y: Math.min(Math.max(y, padding), maxY),
+    };
+  },
+};
 
 /**
  * Renders a "Tour" button that starts a react-joyride walkthrough for the
@@ -93,6 +110,7 @@ export function HelpButton({ className }: { className?: string }) {
             rootBoundary: "viewport",
             crossAxis: true,
           },
+          middleware: [viewportClampMiddleware],
         }}
         options={{
           buttons: ["skip", "back", "primary"],
