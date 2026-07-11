@@ -489,6 +489,58 @@ function FileManager() {
           </div>
         </div>
       )}
+
+      {/* Preview modal */}
+      {preview && (() => {
+        const url = previewUrlFor(preview);
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setPreview(null)} />
+            <div className="relative z-10 w-full max-w-4xl h-[85vh] bg-surface border rounded-lg shadow-xl flex flex-col overflow-hidden">
+              <div className="h-14 flex items-center justify-between px-4 border-b">
+                <div className="min-w-0">
+                  <div className="text-sm font-semibold truncate">{preview.name}</div>
+                  <div className="text-2xs text-text-muted truncate">
+                    {preview.grantee} · {preview.type} · {formatBytes(preview.size)}
+                  </div>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Btn size="sm" variant="secondary" onClick={() => downloadFile(preview)}>
+                    <IconDownload size={14} className="mr-1.5" />Download
+                  </Btn>
+                  <button
+                    onClick={() => setPreview(null)}
+                    className="p-1.5 rounded-md hover:bg-surface-muted text-text-soft"
+                    aria-label="Close"
+                  >
+                    <IconX size={16} />
+                  </button>
+                </div>
+              </div>
+              <div className="flex-1 bg-surface-muted/40 overflow-auto flex items-center justify-center">
+                {url && preview.category === "image" && (
+                  <img src={url} alt={preview.name} className="max-h-full max-w-full object-contain" />
+                )}
+                {url && preview.category === "document" && preview.name.toLowerCase().endsWith(".pdf") && (
+                  <iframe src={url} title={preview.name} className="w-full h-full bg-white" />
+                )}
+                {!url && (
+                  <div className="text-center p-8">
+                    <IconFile size={40} className="mx-auto text-text-soft mb-3" />
+                    <div className="text-sm font-medium">No preview available</div>
+                    <div className="text-xs text-text-muted mt-1">This file type can't be previewed in-browser.</div>
+                    <div className="mt-4">
+                      <Btn size="sm" onClick={() => downloadFile(preview)}>
+                        <IconDownload size={14} className="mr-1.5" />Download instead
+                      </Btn>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
