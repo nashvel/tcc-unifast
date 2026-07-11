@@ -102,10 +102,38 @@ export function AppBreadcrumbs({ separator = "chevron" }: AppBreadcrumbsProps = 
 
   const [root, ...rest] = crumbs;
 
+  // Collapse the middle when the path is deep. Always keep the current page
+  // visible; on desktop also keep the parent visible; put the rest behind "…".
+  const keepTail = isMobile ? 1 : 2;
+  const maxVisible = isMobile ? 1 : 3; // rest items to show inline before collapsing
+  const collapsed =
+    rest.length > maxVisible ? rest.slice(0, rest.length - keepTail) : [];
+  const visible = collapsed.length > 0 ? rest.slice(-keepTail) : rest;
+
+  const renderCrumb = (c: { label: string; href: string }, isLast: boolean) =>
+    isLast ? (
+      <span
+        aria-current="page"
+        className="px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium truncate max-w-[240px]"
+        title={c.label}
+      >
+        {c.label}
+      </span>
+    ) : (
+      <button
+        type="button"
+        onClick={() => navigate({ to: c.href })}
+        className="px-2 py-0.5 rounded-full hover:bg-surface-hover hover:text-text transition-colors truncate max-w-[160px]"
+        title={c.label}
+      >
+        {c.label}
+      </button>
+    );
+
   return (
     <nav
       aria-label="Breadcrumb"
-      className="mb-4 inline-flex max-w-full items-center gap-0.5 rounded-full border border-border/60 bg-surface/60 px-2.5 py-1 text-xs text-text-muted backdrop-blur-sm shadow-sm overflow-x-auto"
+      className="mb-4 inline-flex max-w-full items-center gap-0.5 rounded-full border border-border/60 bg-surface/60 px-2.5 py-1 text-xs text-text-muted backdrop-blur-sm shadow-sm overflow-hidden"
     >
       <button
         type="button"
@@ -116,27 +144,41 @@ export function AppBreadcrumbs({ separator = "chevron" }: AppBreadcrumbsProps = 
       >
         <IconHome size={13} />
       </button>
-      {rest.map((c, i) => {
-        const isLast = i === rest.length - 1;
-        return (
-          <span key={c.href} className="flex items-center gap-0.5 shrink-0">
-            <SeparatorIcon kind={separator} />
-            {isLast ? (
-              <span
-                aria-current="page"
-                className="px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium truncate max-w-[240px]"
-              >
-                {c.label}
-              </span>
-            ) : (
+
+      {collapsed.length > 0 && (
+        <span className="flex items-center gap-0.5 shrink-0">
+          <SeparatorIcon kind={separator} />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
               <button
                 type="button"
-                onClick={() => navigate({ to: c.href })}
-                className="px-2 py-0.5 rounded-full hover:bg-surface-hover hover:text-text transition-colors truncate max-w-[180px]"
+                aria-label={`Show ${collapsed.length} hidden breadcrumb${collapsed.length === 1 ? "" : "s"}`}
+                className="flex items-center justify-center h-6 w-6 rounded-full text-text-muted hover:text-text hover:bg-surface-hover transition-colors shrink-0"
               >
-                {c.label}
+                <IconDots size={13} />
               </button>
-            )}
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="min-w-[180px]">
+              {collapsed.map((c) => (
+                <DropdownMenuItem
+                  key={c.href}
+                  onSelect={() => navigate({ to: c.href })}
+                  className="cursor-pointer"
+                >
+                  {c.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </span>
+      )}
+
+      {visible.map((c, i) => {
+        const isLast = i === visible.length - 1;
+        return (
+          <span key={c.href} className="flex items-center gap-0.5 min-w-0 shrink">
+            <SeparatorIcon kind={separator} />
+            {renderCrumb(c, isLast)}
           </span>
         );
       })}
