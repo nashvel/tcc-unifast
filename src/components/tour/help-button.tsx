@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouterState } from "@tanstack/react-router";
 import { IconHelpCircle } from "@tabler/icons-react";
 import type { Middleware } from "@floating-ui/react-dom";
@@ -29,6 +29,33 @@ const viewportClampMiddleware: Middleware = {
   },
 };
 
+function clampJoyrideTooltipToViewport() {
+  const floater = document.querySelector<HTMLElement>("#react-joyride-portal .react-joyride__floater[data-testid='floater']");
+  if (!floater) return;
+
+  const rect = floater.getBoundingClientRect();
+  const padding = VIEWPORT_PADDING;
+  let deltaX = 0;
+  let deltaY = 0;
+
+  if (rect.left < padding) deltaX = padding - rect.left;
+  if (rect.right > window.innerWidth - padding) deltaX = window.innerWidth - padding - rect.right;
+  if (rect.top < padding) deltaY = padding - rect.top;
+  if (rect.bottom > window.innerHeight - padding) deltaY = window.innerHeight - padding - rect.bottom;
+
+  if (deltaX === 0 && deltaY === 0) return;
+
+  const transform = floater.style.transform;
+  const match = transform.match(/translate\(([-\d.]+)px,\s*([-\d.]+)px\)/);
+  if (!match) return;
+
+  const x = Number.parseFloat(match[1]);
+  const y = Number.parseFloat(match[2]);
+  if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+
+  floater.style.transform = `translate(${x + deltaX / APP_ZOOM}px, ${y + deltaY / APP_ZOOM}px)`;
+}
+
 /**
  * Renders a "Tour" button that starts a react-joyride walkthrough for the
  * current route. Highlights the actual card / element on the page via CSS
@@ -39,6 +66,28 @@ export function HelpButton({ className }: { className?: string }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const tour = resolveTour(pathname);
   const [run, setRun] = useState(false);
+
+  useEffect(() => {
+    if (!run) return undefined;
+
+    let frame = 0;
+    const clamp = () => {
+      window.cancelAnimationFrame(frame);
+      frame = window.requestAnimationFrame(clampJoyrideTooltipToViewport);
+    };
+    const interval = window.setInterval(clamp, 120);
+
+    clamp();
+    window.addEventListener("resize", clamp);
+    window.addEventListener("scroll", clamp, true);
+
+    return () => {
+      window.clearInterval(interval);
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("resize", clamp);
+      window.removeEventListener("scroll", clamp, true);
+    };
+  }, [run]);
 
   const steps: Step[] = useMemo(
     () =>
