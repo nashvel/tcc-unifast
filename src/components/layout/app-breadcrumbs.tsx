@@ -110,6 +110,9 @@ export function AppBreadcrumbs({ separator = "chevron" }: AppBreadcrumbsProps = 
     rest.length > maxVisible ? rest.slice(0, rest.length - keepTail) : [];
   const visible = collapsed.length > 0 ? rest.slice(-keepTail) : rest;
 
+  const focusRing =
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-1 focus-visible:ring-offset-surface";
+
   const renderCrumb = (c: { label: string; href: string }, isLast: boolean) =>
     isLast ? (
       <span
@@ -123,7 +126,7 @@ export function AppBreadcrumbs({ separator = "chevron" }: AppBreadcrumbsProps = 
       <button
         type="button"
         onClick={() => navigate({ to: c.href })}
-        className="px-2 py-0.5 rounded-full hover:bg-surface-hover hover:text-text transition-colors truncate max-w-[160px]"
+        className={`px-2 py-0.5 rounded-full hover:bg-surface-hover hover:text-text transition-colors truncate max-w-[160px] ${focusRing}`}
         title={c.label}
       >
         {c.label}
@@ -133,55 +136,64 @@ export function AppBreadcrumbs({ separator = "chevron" }: AppBreadcrumbsProps = 
   return (
     <nav
       aria-label="Breadcrumb"
-      className="mb-4 inline-flex max-w-full items-center gap-0.5 rounded-full border border-border/60 bg-surface/60 px-2.5 py-1 text-xs text-text-muted backdrop-blur-sm shadow-sm overflow-hidden"
+      className="mb-4 inline-flex max-w-full items-center rounded-full border border-border/60 bg-surface/60 px-2.5 py-1 text-xs text-text-muted backdrop-blur-sm shadow-sm overflow-hidden"
     >
-      <button
-        type="button"
-        onClick={() => navigate({ to: root.href })}
-        aria-label={root.label}
-        title={root.label}
-        className="flex items-center justify-center h-6 w-6 rounded-full text-text-muted hover:text-text hover:bg-surface-hover transition-colors shrink-0"
-      >
-        <IconHome size={13} />
-      </button>
+      <ol className="flex items-center gap-0.5 min-w-0" role="list">
+        <li className="flex items-center shrink-0">
+          <button
+            type="button"
+            onClick={() => navigate({ to: root.href })}
+            aria-label={`${root.label} (home)`}
+            title={root.label}
+            className={`flex items-center justify-center h-6 w-6 rounded-full text-text-muted hover:text-text hover:bg-surface-hover transition-colors ${focusRing}`}
+          >
+            <IconHome size={13} aria-hidden="true" />
+          </button>
+        </li>
 
-      {collapsed.length > 0 && (
-        <span className="flex items-center gap-0.5 shrink-0">
-          <SeparatorIcon kind={separator} />
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                type="button"
-                aria-label={`Show ${collapsed.length} hidden breadcrumb${collapsed.length === 1 ? "" : "s"}`}
-                className="flex items-center justify-center h-6 w-6 rounded-full text-text-muted hover:text-text hover:bg-surface-hover transition-colors shrink-0"
-              >
-                <IconDots size={13} />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="min-w-[180px]">
-              {collapsed.map((c) => (
-                <DropdownMenuItem
-                  key={c.href}
-                  onSelect={() => navigate({ to: c.href })}
-                  className="cursor-pointer"
+        {collapsed.length > 0 && (
+          <li className="flex items-center gap-0.5 shrink-0">
+            <span role="presentation">
+              <SeparatorIcon kind={separator} />
+            </span>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  aria-label={`Show ${collapsed.length} hidden breadcrumb${collapsed.length === 1 ? "" : "s"}`}
+                  aria-haspopup="menu"
+                  className={`flex items-center justify-center h-6 w-6 rounded-full text-text-muted hover:text-text hover:bg-surface-hover transition-colors ${focusRing}`}
                 >
-                  {c.label}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </span>
-      )}
+                  <IconDots size={13} aria-hidden="true" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="min-w-[180px]">
+                {collapsed.map((c) => (
+                  <DropdownMenuItem
+                    key={c.href}
+                    onSelect={() => navigate({ to: c.href })}
+                    className="cursor-pointer"
+                  >
+                    {c.label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </li>
+        )}
 
-      {visible.map((c, i) => {
-        const isLast = i === visible.length - 1;
-        return (
-          <span key={c.href} className="flex items-center gap-0.5 min-w-0 shrink">
-            <SeparatorIcon kind={separator} />
-            {renderCrumb(c, isLast)}
-          </span>
-        );
-      })}
+        {visible.map((c, i) => {
+          const isLast = i === visible.length - 1;
+          return (
+            <li key={c.href} className="flex items-center gap-0.5 min-w-0 shrink">
+              <span role="presentation">
+                <SeparatorIcon kind={separator} />
+              </span>
+              {renderCrumb(c, isLast)}
+            </li>
+          );
+        })}
+      </ol>
     </nav>
   );
 }
