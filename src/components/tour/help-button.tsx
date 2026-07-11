@@ -60,14 +60,6 @@ export function HelpButton({ className }: { className?: string }) {
         scrollToFirstStep
 
         onEvent={onCallback}
-        floaterProps={{
-          disableAnimation: true,
-          hideArrow: false,
-          options: {
-            preventOverflow: { boundariesElement: "viewport", padding: 12 },
-            flip: { boundariesElement: "viewport", padding: 12 },
-          },
-        }}
         locale={{ back: "Back", close: "Close", last: "Done", next: "Next", skip: "Skip" }}
         options={{
           primaryColor: "var(--color-primary)",
