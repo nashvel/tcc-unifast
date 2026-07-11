@@ -1,13 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import {
   IconBell, IconMail, IconCheck, IconCircle,
-  IconClipboardList, IconFileCheck, IconShieldCheck, IconSpeakerphone,
+  IconFileCheck, IconShieldCheck, IconSpeakerphone,
   IconCircleCheck, IconCircleX, IconCalendarEvent, IconChartBar,
-  IconArrowUpRight, IconArrowDownRight,
+  IconArrowUpRight, IconArrowDownRight, IconLayoutDashboard,
+  IconChartHistogram, IconLayoutGrid,
 } from "@tabler/icons-react";
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid,
-  PieChart, Pie, Cell, BarChart, Bar, LineChart, Line,
+  PieChart, Pie, Cell, BarChart, Bar, LineChart, Line, RadialBarChart, RadialBar,
 } from "recharts";
 import { StatusBadge, statusVariantFor, formatStatus } from "@/components/ui/status-badge";
 import { useGrantees, useBatches, useAnnouncements } from "@/hooks/queries";
@@ -49,16 +51,13 @@ const SPARK_APPROVAL = [58, 61, 60, 63, 66, 65, 68].map((v, i) => ({ i, v }));
 const SPARK_TIME = [3.1, 2.9, 2.8, 2.7, 2.6, 2.5, 2.4].map((v, i) => ({ i, v }));
 const SPARK_BATCHES = [4, 5, 5, 6, 7, 7, 8].map((v, i) => ({ i, v }));
 
-function Dashboard() {
-  const profile = useAuthStore((s) => s.profile);
-  
+type Variant = "operations" | "analytics" | "compact";
+const STORE_KEY = "unifast.dashboard.variant";
+
+function useDashboardData() {
   const { data: g = [] } = useGrantees();
   const { data: batches = [] } = useBatches();
   const { data: announcements = [] } = useAnnouncements();
-
-  const firstName = (profile?.full_name ?? "").split(" ")[0] || "Admin";
-  const today = new Date().toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" });
-
   const stats = {
     total: g.length,
     active: g.filter((x) => x.accountStatus === "active").length,
@@ -67,19 +66,103 @@ function Dashboard() {
     eligible: g.filter((x) => x.eligibility === "eligible").length,
     risk: g.filter((x) => x.risk === "high").length,
   };
-  const pipelinePct = 62;
-
   const activeBatches = batches.slice(0, 2);
   const publishedAnns = announcements.filter((a) => a.status === "published").slice(0, 3);
-
   const donutData = [
     { name: "Active", value: stats.active || 1, color: "var(--color-primary)" },
     { name: "Pending", value: stats.pending || 1, color: "var(--color-gold)" },
     { name: "Validated", value: stats.validated || 1, color: "var(--color-success)" },
     { name: "At risk", value: stats.risk || 1, color: "var(--color-danger)" },
   ];
-  const donutTotal = donutData.reduce((s, x) => s + x.value, 0);
+  return { stats, activeBatches, publishedAnns, donutData };
+}
 
+function Dashboard() {
+  const profile = useAuthStore((s) => s.profile);
+  const [variant, setVariant] = useState<Variant>("operations");
+  useEffect(() => {
+    const v = (typeof window !== "undefined" && localStorage.getItem(STORE_KEY)) as Variant | null;
+    if (v === "operations" || v === "analytics" || v === "compact") setVariant(v);
+  }, []);
+  function choose(v: Variant) {
+    setVariant(v);
+    try { localStorage.setItem(STORE_KEY, v); } catch {}
+  }
+
+  const data = useDashboardData();
+  const firstName = (profile?.full_name ?? "").split(" ")[0] || "Admin";
+  const today = new Date().toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" });
+
+  return (
+    <div className="space-y-4">
+      {/* Header + variant switcher */}
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-medium uppercase tracking-[0.14em] text-text-muted">Operations · {today}</p>
+          <h1 className="mt-1 text-3xl font-semibold tracking-tight text-primary">
+            Good day, {firstName}.{" "}
+            <span className="text-text font-normal">Here's your overview.</span>
+          </h1>
+        </div>
+        <div className="flex items-center gap-2">
+          <VariantSwitcher value={variant} onChange={choose} />
+          <button aria-label="Notifications" className="p-2 rounded-md hover:bg-surface-muted text-text-muted">
+            <IconBell size={18} />
+          </button>
+          <button aria-label="Messages" className="relative p-2 rounded-md hover:bg-surface-muted text-text-muted">
+            <IconMail size={18} />
+            <span className="absolute -top-0.5 -right-0.5 h-4 min-w-4 px-1 rounded-full bg-primary text-primary-foreground text-2xs font-semibold grid place-items-center">3</span>
+          </button>
+        </div>
+      </div>
+
+      {variant === "operations" && <OperationsView data={data} />}
+      {variant === "analytics" && <AnalyticsView data={data} />}
+      {variant === "compact" && <CompactView data={data} />}
+    </div>
+  );
+}
+
+/* ============================== Switcher =============================== */
+
+function VariantSwitcher({ value, onChange }: { value: Variant; onChange: (v: Variant) => void }) {
+  const opts: { v: Variant; label: string; icon: React.ReactNode }[] = [
+    { v: "operations", label: "Operations", icon: <IconLayoutDashboard size={14} /> },
+    { v: "analytics", label: "Analytics", icon: <IconChartHistogram size={14} /> },
+    { v: "compact", label: "Compact", icon: <IconLayoutGrid size={14} /> },
+  ];
+  return (
+    <div role="tablist" aria-label="Dashboard layout" className="inline-flex rounded-md border bg-surface p-0.5">
+      {opts.map((o) => {
+        const active = value === o.v;
+        return (
+          <button
+            key={o.v}
+            role="tab"
+            aria-selected={active}
+            onClick={() => onChange(o.v)}
+            className={cn(
+              "inline-flex items-center gap-1.5 px-2.5 h-8 rounded text-xs font-medium transition-colors",
+              active ? "bg-primary text-primary-foreground" : "text-text-muted hover:text-text",
+            )}
+          >
+            {o.icon}
+            <span className="hidden sm:inline">{o.label}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ============================ Operations view ========================== */
+
+type Data = ReturnType<typeof useDashboardData>;
+
+function OperationsView({ data }: { data: Data }) {
+  const { stats, activeBatches, publishedAnns, donutData } = data;
+  const donutTotal = donutData.reduce((s, x) => s + x.value, 0);
+  const pipelinePct = 62;
   const validation = [
     { label: "PSA Birth Certificate", state: "Approved" as const },
     { label: "Certificate of Enrollment", state: "Approved" as const },
@@ -90,7 +173,6 @@ function Dashboard() {
   const valDone = validation.filter((v) => v.state === "Approved").length;
   const valTotal = validation.length;
   const valPct = Math.round((valDone / valTotal) * 100);
-
   const upcoming = [
     { m: "MAY", d: "15", title: "Batch Cut-off", meta: "AY 2024–2025 · Semester 2" },
     { m: "MAY", d: "31", title: "Eligibility Review", meta: "Committee session · 10:00 AM" },
@@ -99,28 +181,6 @@ function Dashboard() {
 
   return (
     <div className="space-y-4">
-      {/* Header */}
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p className="text-xs font-medium uppercase tracking-[0.14em] text-text-muted">Operations · {today}</p>
-          <h1 className="mt-1 text-3xl font-semibold tracking-tight text-primary">
-            Good day, {firstName}.{" "}
-            <span className="text-text font-normal">Here's your operations overview.</span>
-          </h1>
-        </div>
-        <div className="flex items-center gap-2">
-          <button aria-label="Notifications" className="p-2 rounded-md hover:bg-surface-muted text-text-muted">
-            <IconBell size={18} />
-          </button>
-          <button aria-label="Messages" className="relative p-2 rounded-md hover:bg-surface-muted text-text-muted">
-            <IconMail size={18} />
-            <span className="absolute -top-0.5 -right-0.5 h-4 min-w-4 px-1 rounded-full bg-primary text-primary-foreground text-2xs font-semibold grid place-items-center">3</span>
-          </button>
-        </div>
-
-      </div>
-
-      {/* KPI strip with sparklines */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard label="Total grantees" value={stats.total.toLocaleString()} delta="+4.2%" up spark={SPARK_APPROVAL} />
         <KpiCard label="Auto-approval rate" value="68%" delta="+5.0%" up spark={SPARK_APPROVAL} />
@@ -128,7 +188,6 @@ function Dashboard() {
         <KpiCard label="Active batches" value={String(activeBatches.length || 8)} delta="+2" up spark={SPARK_BATCHES} />
       </div>
 
-      {/* Hero chart + Donut */}
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,2.2fr)_minmax(0,1fr)] gap-4">
         <section className="rounded-xl border bg-surface p-5 sm:p-6">
           <div className="flex flex-wrap items-start justify-between gap-3">
@@ -157,14 +216,7 @@ function Dashboard() {
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
                 <XAxis dataKey="d" stroke="var(--color-text-muted)" fontSize={11} tickLine={false} axisLine={false} />
                 <YAxis stroke="var(--color-text-muted)" fontSize={11} tickLine={false} axisLine={false} />
-                <Tooltip
-                  contentStyle={{
-                    background: "var(--color-surface)",
-                    border: "1px solid var(--color-border)",
-                    borderRadius: 8,
-                    fontSize: 12,
-                  }}
-                />
+                <Tooltip contentStyle={tooltipStyle} />
                 <Area type="monotone" dataKey="submitted" stroke="var(--color-gold)" strokeWidth={2} fill="url(#gGold)" />
                 <Area type="monotone" dataKey="validated" stroke="var(--color-primary)" strokeWidth={2} fill="url(#gPri)" />
               </AreaChart>
@@ -183,14 +235,7 @@ function Dashboard() {
                 <Pie data={donutData} dataKey="value" innerRadius={56} outerRadius={80} paddingAngle={2} stroke="none">
                   {donutData.map((d) => <Cell key={d.name} fill={d.color} />)}
                 </Pie>
-                <Tooltip
-                  contentStyle={{
-                    background: "var(--color-surface)",
-                    border: "1px solid var(--color-border)",
-                    borderRadius: 8,
-                    fontSize: 12,
-                  }}
-                />
+                <Tooltip contentStyle={tooltipStyle} />
               </PieChart>
             </ResponsiveContainer>
             <div className="absolute inset-0 grid place-items-center pointer-events-none">
@@ -214,7 +259,6 @@ function Dashboard() {
         </section>
       </div>
 
-      {/* Pipeline + Quick Actions */}
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,2.4fr)_minmax(0,1fr)] gap-4">
         <section className="rounded-xl border bg-surface p-5 sm:p-6">
           <div className="flex items-center justify-between">
@@ -256,7 +300,6 @@ function Dashboard() {
         </section>
       </div>
 
-      {/* Regions bar chart + Validation queue + Upcoming */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <section className="rounded-xl border bg-surface p-5">
           <div className="flex items-center justify-between">
@@ -269,15 +312,7 @@ function Dashboard() {
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" horizontal={false} />
                 <XAxis type="number" stroke="var(--color-text-muted)" fontSize={11} tickLine={false} axisLine={false} />
                 <YAxis type="category" dataKey="name" stroke="var(--color-text-muted)" fontSize={11} tickLine={false} axisLine={false} width={90} />
-                <Tooltip
-                  cursor={{ fill: "var(--color-primary-soft)" }}
-                  contentStyle={{
-                    background: "var(--color-surface)",
-                    border: "1px solid var(--color-border)",
-                    borderRadius: 8,
-                    fontSize: 12,
-                  }}
-                />
+                <Tooltip cursor={{ fill: "var(--color-primary-soft)" }} contentStyle={tooltipStyle} />
                 <Bar dataKey="value" fill="var(--color-primary)" radius={[0, 4, 4, 0]} barSize={14} />
               </BarChart>
             </ResponsiveContainer>
@@ -300,17 +335,13 @@ function Dashboard() {
           <ul className="mt-3 divide-y">
             {validation.map((v) => {
               const ok = v.state === "Approved";
-              const toneCls = v.state === "Approved" ? "text-success"
-                : v.state === "Pending" ? "text-warning"
-                : "text-danger";
+              const toneCls = v.state === "Approved" ? "text-success" : v.state === "Pending" ? "text-warning" : "text-danger";
               return (
                 <li key={v.label} className="flex items-center justify-between py-2.5 text-sm">
                   <span className="inline-flex items-center gap-2">
-                    {ok
-                      ? <IconCheck size={16} className="text-success" />
-                      : v.state === "Flagged"
-                        ? <IconCircleX size={16} className="text-danger" />
-                        : <IconCircle size={16} className="text-text-soft" />}
+                    {ok ? <IconCheck size={16} className="text-success" />
+                      : v.state === "Flagged" ? <IconCircleX size={16} className="text-danger" />
+                      : <IconCircle size={16} className="text-text-soft" />}
                     <span>{v.label}</span>
                   </span>
                   <span className={cn("text-xs font-medium", toneCls)}>{v.state}</span>
@@ -364,7 +395,6 @@ function Dashboard() {
         </section>
       </div>
 
-      {/* Priority batch / Ops snapshot / Broadcasts */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <section className="rounded-xl border bg-gold-soft p-5 relative overflow-hidden">
           <h2 className="text-lg font-semibold tracking-tight">Priority batch</h2>
@@ -405,10 +435,7 @@ function Dashboard() {
           ) : (
             <p className="mt-3 text-sm text-text-muted max-w-[28ch]">No published announcements yet.</p>
           )}
-          <Link
-            to="/app/announcements"
-            className="mt-5 inline-flex items-center rounded-md bg-gold hover:bg-gold-hover px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors"
-          >
+          <Link to="/app/announcements" className="mt-5 inline-flex items-center rounded-md bg-gold hover:bg-gold-hover px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors">
             Manage announcements
           </Link>
           <IconCalendarEvent size={80} className="absolute -right-3 -bottom-3 text-primary/10" aria-hidden />
@@ -417,6 +444,171 @@ function Dashboard() {
     </div>
   );
 }
+
+/* ============================ Analytics view =========================== */
+
+function AnalyticsView({ data }: { data: Data }) {
+  const { stats, donutData } = data;
+  const donutTotal = donutData.reduce((s, x) => s + x.value, 0);
+  const radialData = donutData.map((d, i) => ({ name: d.name, value: d.value, fill: d.color, i }));
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <BigStat label="Total grantees" value={stats.total.toLocaleString()} accent="primary" />
+        <BigStat label="Validated" value={stats.validated.toLocaleString()} accent="success" />
+        <BigStat label="Pending" value={stats.pending.toLocaleString()} accent="gold" />
+        <BigStat label="At risk" value={stats.risk.toLocaleString()} accent="danger" />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <section className="rounded-xl border bg-surface p-5">
+          <h2 className="text-lg font-semibold tracking-tight">Throughput trend</h2>
+          <p className="text-xs text-text-muted mt-1">Line comparison · last 7 days</p>
+          <div className="mt-4 h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={THROUGHPUT} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
+                <XAxis dataKey="d" stroke="var(--color-text-muted)" fontSize={11} />
+                <YAxis stroke="var(--color-text-muted)" fontSize={11} />
+                <Tooltip contentStyle={tooltipStyle} />
+                <Line type="monotone" dataKey="submitted" stroke="var(--color-gold)" strokeWidth={2.5} dot={{ r: 3 }} />
+                <Line type="monotone" dataKey="validated" stroke="var(--color-primary)" strokeWidth={2.5} dot={{ r: 3 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </section>
+
+        <section className="rounded-xl border bg-surface p-5">
+          <h2 className="text-lg font-semibold tracking-tight">Status breakdown</h2>
+          <p className="text-xs text-text-muted mt-1">Radial view · {donutTotal.toLocaleString()} grantees</p>
+          <div className="mt-4 h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <RadialBarChart innerRadius="30%" outerRadius="100%" data={radialData} startAngle={90} endAngle={-270}>
+                <RadialBar background dataKey="value" cornerRadius={6} />
+                <Tooltip contentStyle={tooltipStyle} />
+              </RadialBarChart>
+            </ResponsiveContainer>
+          </div>
+          <ul className="mt-2 grid grid-cols-2 gap-1.5">
+            {donutData.map((d) => (
+              <li key={d.name} className="flex items-center justify-between text-xs">
+                <span className="inline-flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-sm" style={{ background: d.color }} />
+                  <span>{d.name}</span>
+                </span>
+                <span className="tabular-nums text-text-muted">{d.value.toLocaleString()}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      </div>
+
+      <section className="rounded-xl border bg-surface p-5">
+        <h2 className="text-lg font-semibold tracking-tight">Grantees by region</h2>
+        <div className="mt-4 h-64">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={REGIONS} margin={{ top: 4, right: 8, left: -12, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
+              <XAxis dataKey="name" stroke="var(--color-text-muted)" fontSize={11} />
+              <YAxis stroke="var(--color-text-muted)" fontSize={11} />
+              <Tooltip cursor={{ fill: "var(--color-primary-soft)" }} contentStyle={tooltipStyle} />
+              <Bar dataKey="value" fill="var(--color-gold)" radius={[6, 6, 0, 0]} barSize={32} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+/* ============================= Compact view ============================ */
+
+function CompactView({ data }: { data: Data }) {
+  const { stats, activeBatches, publishedAnns, donutData } = data;
+  const rows: { label: string; value: string | number; tone?: string }[] = [
+    { label: "Total grantees", value: stats.total },
+    { label: "Active", value: stats.active, tone: "text-success" },
+    { label: "Pending", value: stats.pending, tone: "text-warning" },
+    { label: "Validated", value: stats.validated, tone: "text-primary" },
+    { label: "Eligible", value: stats.eligible },
+    { label: "At risk", value: stats.risk, tone: "text-danger" },
+    { label: "Auto-approval rate", value: "68%" },
+    { label: "Avg validation", value: "2.4h" },
+    { label: "Active batches", value: activeBatches.length || 8 },
+  ];
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <section className="rounded-xl border bg-surface p-4 lg:col-span-2">
+        <h2 className="text-sm font-semibold tracking-tight text-text-muted uppercase">Metrics</h2>
+        <dl className="mt-3 divide-y">
+          {rows.map((r) => (
+            <div key={r.label} className="flex items-center justify-between py-2.5">
+              <dt className="text-sm text-text">{r.label}</dt>
+              <dd className={cn("text-sm font-semibold tabular-nums", r.tone)}>
+                {typeof r.value === "number" ? r.value.toLocaleString() : r.value}
+              </dd>
+            </div>
+          ))}
+        </dl>
+        <div className="mt-4 h-24">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={THROUGHPUT} margin={{ top: 4, right: 0, left: 0, bottom: 0 }}>
+              <Area type="monotone" dataKey="validated" stroke="var(--color-primary)" fill="var(--color-primary)" fillOpacity={0.15} strokeWidth={2} />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      </section>
+
+      <section className="rounded-xl border bg-surface p-4">
+        <h2 className="text-sm font-semibold tracking-tight text-text-muted uppercase">Status</h2>
+        <ul className="mt-3 space-y-2">
+          {donutData.map((d) => {
+            const total = donutData.reduce((s, x) => s + x.value, 0);
+            const pct = Math.round((d.value / total) * 100);
+            return (
+              <li key={d.name}>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="inline-flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-sm" style={{ background: d.color }} />
+                    {d.name}
+                  </span>
+                  <span className="tabular-nums text-text-muted">{d.value.toLocaleString()} · {pct}%</span>
+                </div>
+                <div className="mt-1 h-1.5 rounded-full bg-surface-muted overflow-hidden">
+                  <div className="h-full" style={{ width: `${pct}%`, background: d.color }} />
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+
+        <h2 className="mt-5 text-sm font-semibold tracking-tight text-text-muted uppercase">Latest broadcast</h2>
+        {publishedAnns[0] ? (
+          <div className="mt-2">
+            <p className="text-sm font-medium line-clamp-1">{publishedAnns[0].title}</p>
+            <p className="text-xs text-text-muted mt-0.5 line-clamp-2">{publishedAnns[0].body}</p>
+          </div>
+        ) : (
+          <p className="mt-2 text-xs text-text-muted">No published announcements.</p>
+        )}
+        <Link to="/app/announcements" className="mt-3 inline-block text-xs text-primary hover:underline">
+          Manage announcements →
+        </Link>
+      </section>
+    </div>
+  );
+}
+
+/* =============================== Shared UI ============================= */
+
+const tooltipStyle = {
+  background: "var(--color-surface)",
+  border: "1px solid var(--color-border)",
+  borderRadius: 8,
+  fontSize: 12,
+};
 
 function Legend({ swatch, label }: { swatch: string; label: string }) {
   return (
@@ -430,12 +622,8 @@ function Legend({ swatch, label }: { swatch: string; label: string }) {
 function KpiCard({
   label, value, delta, up, spark, tone = "primary",
 }: {
-  label: string;
-  value: string;
-  delta: string;
-  up: boolean;
-  spark: { i: number; v: number }[];
-  tone?: "primary" | "gold";
+  label: string; value: string; delta: string; up: boolean;
+  spark: { i: number; v: number }[]; tone?: "primary" | "gold";
 }) {
   const stroke = tone === "gold" ? "var(--color-gold)" : "var(--color-primary)";
   return (
@@ -464,6 +652,21 @@ function KpiCard({
   );
 }
 
+function BigStat({ label, value, accent }: { label: string; value: string; accent: "primary" | "success" | "gold" | "danger" }) {
+  const map = {
+    primary: "border-l-primary",
+    success: "border-l-success",
+    gold: "border-l-gold",
+    danger: "border-l-danger",
+  } as const;
+  return (
+    <div className={cn("rounded-xl border border-l-4 bg-surface p-5", map[accent])}>
+      <p className="text-xs text-text-muted uppercase tracking-wide">{label}</p>
+      <p className="mt-2 text-3xl font-semibold tabular-nums">{value}</p>
+    </div>
+  );
+}
+
 function QuickAction({ icon, label, to }: { icon: React.ReactNode; label: string; to: string }) {
   return (
     <li>
@@ -478,9 +681,7 @@ function QuickAction({ icon, label, to }: { icon: React.ReactNode; label: string
 function SnapshotStat({
   label, value, icon, tone = "primary",
 }: {
-  label: string;
-  value: number;
-  icon: React.ReactNode;
+  label: string; value: number; icon: React.ReactNode;
   tone?: "primary" | "success" | "warning" | "danger";
 }) {
   const toneMap = {
