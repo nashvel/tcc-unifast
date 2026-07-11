@@ -55,11 +55,8 @@ export function HelpButton({ className }: { className?: string }) {
         steps={steps}
         run={run}
         continuous
-        showProgress
-        showSkipButton
         scrollToFirstStep
-        disableOverlayClose
-        callback={onCallback}
+        onEvent={onCallback}
         locale={{ back: "Back", close: "Close", last: "Done", next: "Next", skip: "Skip" }}
         options={{
           primaryColor: "var(--color-primary)",
