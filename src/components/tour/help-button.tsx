@@ -16,12 +16,12 @@ const TOOLTIP_MAX_HEIGHT_CSS = `calc((100dvh - ${VIEWPORT_PADDING * 2}px) / ${AP
 const viewportClampMiddleware: Middleware = {
   name: "viewportClamp",
   fn({ x, y, rects }) {
-    const parsedZoom = Number.parseFloat(getComputedStyle(document.documentElement).zoom);
-    const renderedZoom = document.documentElement.getBoundingClientRect().width / window.innerWidth;
-    const zoom = renderedZoom > 1 ? renderedZoom : Number.isFinite(parsedZoom) && parsedZoom > 1 ? parsedZoom : APP_ZOOM;
+    const zoom = APP_ZOOM;
     const padding = VIEWPORT_PADDING / zoom;
-    const maxX = Math.max(padding, window.innerWidth / zoom - rects.floating.width - padding);
-    const maxY = Math.max(padding, window.innerHeight / zoom - rects.floating.height - padding);
+    const safeWidth = Math.max(rects.floating.width, scaledSize(TOOLTIP_WIDTH));
+    const safeHeight = rects.floating.height;
+    const maxX = Math.max(padding, window.innerWidth / zoom - safeWidth - padding);
+    const maxY = Math.max(padding, window.innerHeight / zoom - safeHeight - padding);
 
     return {
       x: Math.min(Math.max(x, padding), maxX),
