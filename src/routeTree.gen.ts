@@ -26,6 +26,7 @@ import { Route as AppStyleGuideRouteImport } from './routes/app.style-guide'
 import { Route as AppSettingsRouteImport } from './routes/app.settings'
 import { Route as AppSecurityRouteImport } from './routes/app.security'
 import { Route as AppMasterlistRouteImport } from './routes/app.masterlist'
+import { Route as AppFilesRouteImport } from './routes/app.files'
 import { Route as AppAuditRouteImport } from './routes/app.audit'
 import { Route as AppAppearanceRouteImport } from './routes/app.appearance'
 import { Route as AuthLoginRouteImport } from './routes/_auth.login'
@@ -139,6 +140,11 @@ const AppSecurityRoute = AppSecurityRouteImport.update({
 const AppMasterlistRoute = AppMasterlistRouteImport.update({
   id: '/masterlist',
   path: '/masterlist',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppFilesRoute = AppFilesRouteImport.update({
+  id: '/files',
+  path: '/files',
   getParentRoute: () => AppRoute,
 } as any)
 const AppAuditRoute = AppAuditRouteImport.update({
@@ -303,6 +309,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof AuthLoginRoute
   '/app/appearance': typeof AppAppearanceRoute
   '/app/audit': typeof AppAuditRoute
+  '/app/files': typeof AppFilesRoute
   '/app/masterlist': typeof AppMasterlistRoute
   '/app/security': typeof AppSecurityRouteWithChildren
   '/app/settings': typeof AppSettingsRoute
@@ -349,6 +356,7 @@ export interface FileRoutesByTo {
   '/login': typeof AuthLoginRoute
   '/app/appearance': typeof AppAppearanceRoute
   '/app/audit': typeof AppAuditRoute
+  '/app/files': typeof AppFilesRoute
   '/app/masterlist': typeof AppMasterlistRoute
   '/app/security': typeof AppSecurityRouteWithChildren
   '/app/settings': typeof AppSettingsRoute
@@ -399,6 +407,7 @@ export interface FileRoutesById {
   '/_auth/login': typeof AuthLoginRoute
   '/app/appearance': typeof AppAppearanceRoute
   '/app/audit': typeof AppAuditRoute
+  '/app/files': typeof AppFilesRoute
   '/app/masterlist': typeof AppMasterlistRoute
   '/app/security': typeof AppSecurityRouteWithChildren
   '/app/settings': typeof AppSettingsRoute
@@ -449,6 +458,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/app/appearance'
     | '/app/audit'
+    | '/app/files'
     | '/app/masterlist'
     | '/app/security'
     | '/app/settings'
@@ -495,6 +505,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/app/appearance'
     | '/app/audit'
+    | '/app/files'
     | '/app/masterlist'
     | '/app/security'
     | '/app/settings'
@@ -544,6 +555,7 @@ export interface FileRouteTypes {
     | '/_auth/login'
     | '/app/appearance'
     | '/app/audit'
+    | '/app/files'
     | '/app/masterlist'
     | '/app/security'
     | '/app/settings'
@@ -708,6 +720,13 @@ declare module '@tanstack/react-router' {
       path: '/masterlist'
       fullPath: '/app/masterlist'
       preLoaderRoute: typeof AppMasterlistRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/files': {
+      id: '/app/files'
+      path: '/files'
+      fullPath: '/app/files'
+      preLoaderRoute: typeof AppFilesRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/audit': {
@@ -956,6 +975,7 @@ const AppSecurityRouteWithChildren = AppSecurityRoute._addFileChildren(
 interface AppRouteChildren {
   AppAppearanceRoute: typeof AppAppearanceRoute
   AppAuditRoute: typeof AppAuditRoute
+  AppFilesRoute: typeof AppFilesRoute
   AppMasterlistRoute: typeof AppMasterlistRoute
   AppSecurityRoute: typeof AppSecurityRouteWithChildren
   AppSettingsRoute: typeof AppSettingsRoute
@@ -988,6 +1008,7 @@ interface AppRouteChildren {
 const AppRouteChildren: AppRouteChildren = {
   AppAppearanceRoute: AppAppearanceRoute,
   AppAuditRoute: AppAuditRoute,
+  AppFilesRoute: AppFilesRoute,
   AppMasterlistRoute: AppMasterlistRoute,
   AppSecurityRoute: AppSecurityRouteWithChildren,
   AppSettingsRoute: AppSettingsRoute,

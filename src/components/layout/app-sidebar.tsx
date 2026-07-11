@@ -2,7 +2,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import {
   IconDashboard, IconFileImport, IconFolders, IconUsersGroup, IconFileCheck,
   IconSchool, IconChecklist, IconSpeakerphone, IconReportAnalytics, IconHistory,
-  IconUserCog, IconSettings, IconShieldCheck, IconLifebuoy,
+  IconUserCog, IconSettings, IconShieldCheck, IconLifebuoy, IconFolder,
 } from "@tabler/icons-react";
 import { cn } from "@/lib/utils";
 import type { ComponentType } from "react";
@@ -25,6 +25,7 @@ const sections: { label?: string; items: NavItem[] }[] = [
     label: "Validation",
     items: [
       { to: "/app/documents", label: "Document Validation", icon: IconFileCheck },
+      { to: "/app/files", label: "File Manager", icon: IconFolder },
       { to: "/app/academic", label: "Academic Records", icon: IconSchool },
       { to: "/app/eligibility", label: "Eligibility", icon: IconChecklist },
     ],
