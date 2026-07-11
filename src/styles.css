@@ -284,6 +284,12 @@ html, body {
   border-color: var(--border-strong);
 }
 
+/* Keep guided-tour controls inside the real viewport even when the app shell is zoomed. */
+#react-joyride-portal,
+#react-joyride-portal .react-joyride__floater {
+  zoom: 0.8 !important;
+}
+
 /* Smooth defaults — interactive primitives feel snappier */
 a, button, [role="button"], input, textarea, select {
   transition: color 0.15s ease, background-color 0.15s ease,
