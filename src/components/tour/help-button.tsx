@@ -9,16 +9,15 @@ import { resolveTour } from "./tour-registry";
 const VIEWPORT_PADDING = 16;
 const APP_ZOOM = 1.25;
 const TOOLTIP_WIDTH = 340;
-const scaledSize = (value: number) => value / APP_ZOOM;
-const TOOLTIP_WIDTH_CSS = `min(${scaledSize(TOOLTIP_WIDTH)}px, calc((100vw - ${VIEWPORT_PADDING * 2}px) / ${APP_ZOOM}))`;
-const TOOLTIP_MAX_HEIGHT_CSS = `calc((100dvh - ${VIEWPORT_PADDING * 2}px) / ${APP_ZOOM})`;
+const TOOLTIP_WIDTH_CSS = `min(${TOOLTIP_WIDTH}px, calc(100vw - ${VIEWPORT_PADDING * 2}px))`;
+const TOOLTIP_MAX_HEIGHT_CSS = `calc(100dvh - ${VIEWPORT_PADDING * 2}px)`;
 
 const viewportClampMiddleware: Middleware = {
   name: "viewportClamp",
   fn({ x, y, rects }) {
     const zoom = APP_ZOOM;
     const padding = VIEWPORT_PADDING / zoom;
-    const safeWidth = Math.max(rects.floating.width, scaledSize(TOOLTIP_WIDTH));
+    const safeWidth = Math.max(rects.floating.width, TOOLTIP_WIDTH);
     const safeHeight = rects.floating.height;
     const maxX = Math.max(padding, window.innerWidth / zoom - safeWidth - padding);
     const maxY = Math.max(padding, window.innerHeight / zoom - safeHeight - padding);
@@ -130,6 +129,8 @@ export function HelpButton({ className }: { className?: string }) {
           floater: {
             maxWidth: TOOLTIP_WIDTH_CSS,
             pointerEvents: "auto",
+            transformOrigin: "top left",
+            zoom: 1 / APP_ZOOM,
           },
           tooltip: {
             borderRadius: 12,
