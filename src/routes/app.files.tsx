@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import {
   IconPhoto, IconVideo, IconFileText, IconArchive, IconFile,
   IconFolder, IconStar, IconStarFilled, IconDotsVertical, IconDownload,
+  IconUpload, IconX,
 } from "@tabler/icons-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { SearchInput } from "@/components/ui/search-input";
@@ -12,7 +13,10 @@ import { TableStates } from "@/components/ui/table-states";
 import { TablePagination } from "@/components/ui/table-pagination";
 import { usePagination } from "@/hooks/use-pagination";
 import { StatusBadge, statusVariantFor, formatStatus } from "@/components/ui/status-badge";
-import { useDocuments } from "@/hooks/queries";
+import { Btn } from "@/components/ui/btn";
+import { FileUpload } from "@/components/ui/file-upload";
+import { useDocuments, useUploadDocument } from "@/hooks/queries";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/app/files")({
