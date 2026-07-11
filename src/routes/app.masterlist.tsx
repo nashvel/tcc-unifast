@@ -20,6 +20,7 @@ export const Route = createFileRoute("/app/masterlist")({
 
 function MasterlistPage() {
   const { data: rows = [], isLoading, isFetching, isError, error, refetch } = useMasterlist();
+  const canWrite = useAuthStore((s) => s.role) !== "admin";
   const [previewed, setPreviewed] = useState(false);
   const [q, setQ] = useState("");
   const [statusF, setStatusF] = useState("all");
@@ -50,7 +51,7 @@ function MasterlistPage() {
         actions={
           <>
             <Btn variant="outline" icon={IconUpload}>Download template</Btn>
-            <Btn variant="primary" icon={IconArrowRight} onClick={() => setPreviewed(true)}>Process import</Btn>
+            {canWrite && <Btn variant="primary" icon={IconArrowRight} onClick={() => setPreviewed(true)}>Process import</Btn>}
           </>
         }
       />
