@@ -128,23 +128,27 @@ export function HelpButton({ className }: { className?: string }) {
 
   const steps: Step[] = useMemo(
     () =>
-      (tour?.steps ?? []).map((s) => ({
-        target: s.target,
-        title: s.title,
-        content: s.body,
-        isFixed: true,
-        placement: s.target === "body" ? "center" : "bottom",
-        offset: 10,
-        scrollOffset: 112,
-        scrollDuration: 240,
-        skipBeacon: true,
-        skipScroll: false,
-        spotlightPadding: 8,
-        spotlightRadius: 8,
-        targetWaitTimeout: 1500,
-      })),
+      (tour?.steps ?? []).map((s) => {
+        const isCenter = s.target === "body";
+        return {
+          target: s.target,
+          title: s.title,
+          content: s.body,
+          isFixed: isCenter,
+          placement: isCenter ? "center" : "bottom",
+          offset: 10,
+          scrollOffset: 112,
+          scrollDuration: 300,
+          skipBeacon: true,
+          skipScroll: isCenter,
+          spotlightPadding: 8,
+          spotlightRadius: 8,
+          targetWaitTimeout: 1500,
+        };
+      }),
     [tour],
   );
+
 
   if (!tour) return null;
 
