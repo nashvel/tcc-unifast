@@ -12,6 +12,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { useStaffUsers } from "@/hooks/queries";
 import { IconPlus, IconKey, IconDownload } from "@tabler/icons-react";
 import { downloadCSV } from "@/lib/csv";
+import { useAuthStore } from "@/stores/authStore";
 
 export const Route = createFileRoute("/app/users/")({
   component: UsersPage,
@@ -19,8 +20,10 @@ export const Route = createFileRoute("/app/users/")({
 
 function UsersPage() {
   const { data: users = [], isLoading, isFetching, isError, error, refetch } = useStaffUsers();
+  const role = useAuthStore((s) => s.role);
+  const canWrite = role !== "admin";
   const [q, setQ] = useState("");
-  const [role, setRole] = useState("all");
+  const [roleF, setRoleF] = useState("all");
   const [status, setStatus] = useState("all");
 
   const filtered = useMemo(() => users.filter((u) => {
