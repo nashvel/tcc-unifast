@@ -1,5 +1,26 @@
 import { useNavigate, useRouterState } from "@tanstack/react-router";
-import { IconChevronRight, IconHome } from "@tabler/icons-react";
+import { IconChevronRight, IconHome, IconSlash } from "@tabler/icons-react";
+
+export type BreadcrumbSeparator = "chevron" | "dot" | "slash";
+
+interface AppBreadcrumbsProps {
+  separator?: BreadcrumbSeparator;
+}
+
+function SeparatorIcon({ kind }: { kind: BreadcrumbSeparator }) {
+  if (kind === "dot") {
+    return (
+      <span
+        aria-hidden="true"
+        className="mx-1 inline-block h-1 w-1 rounded-full bg-text-soft/60"
+      />
+    );
+  }
+  if (kind === "slash") {
+    return <IconSlash size={12} className="text-text-soft/60 mx-0.5" aria-hidden="true" />;
+  }
+  return <IconChevronRight size={12} className="text-text-soft/60 mx-0.5" aria-hidden="true" />;
+}
 
 // Derive a human label from a route id segment ("app.users.$id" -> "Users").
 function titleFromSegment(seg: string): string {
