@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useRouterState } from "@tanstack/react-router";
 import { IconHelpCircle } from "@tabler/icons-react";
-import Joyride, { type Step, type CallBackProps, STATUS } from "react-joyride";
+import { Joyride, type Step, type EventData, STATUS } from "react-joyride";
 import { cn } from "@/lib/utils";
 import { resolveTour } from "./tour-registry";
 
