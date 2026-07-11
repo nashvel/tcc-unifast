@@ -24,6 +24,8 @@ export function HelpButton({ className }: { className?: string }) {
         content: s.body,
         disableBeacon: true,
         placement: s.target === "body" ? "center" : "auto",
+        scrollTo: true,
+        offset: 12,
       })),
     [tour],
   );
@@ -56,7 +58,17 @@ export function HelpButton({ className }: { className?: string }) {
         run={run}
         continuous
         scrollToFirstStep
+        disableScrollParentFix
+        scrollOffset={100}
         onEvent={onCallback}
+        floaterProps={{
+          disableAnimation: true,
+          hideArrow: false,
+          options: {
+            preventOverflow: { boundariesElement: "viewport", padding: 12 },
+            flip: { boundariesElement: "viewport", padding: 12 },
+          },
+        }}
         locale={{ back: "Back", close: "Close", last: "Done", next: "Next", skip: "Skip" }}
         options={{
           primaryColor: "var(--color-primary)",
@@ -64,14 +76,18 @@ export function HelpButton({ className }: { className?: string }) {
           backgroundColor: "var(--color-surface)",
           arrowColor: "var(--color-surface)",
           overlayColor: "rgba(0,0,0,0.5)",
-          zIndex: 1000,
+          zIndex: 10000,
+          width: 340,
         }}
         styles={{
-          tooltip: { borderRadius: 12, fontSize: 14 },
-          tooltipTitle: { fontSize: 15, fontWeight: 600 },
-          buttonPrimary: { borderRadius: 6, fontSize: 13 },
+          tooltip: { borderRadius: 12, fontSize: 14, padding: 16, maxWidth: "calc(100vw - 24px)" },
+          tooltipContainer: { textAlign: "left" },
+          tooltipTitle: { fontSize: 15, fontWeight: 600, marginBottom: 6 },
+          tooltipContent: { padding: "6px 0", fontSize: 13, lineHeight: 1.5 },
+          buttonPrimary: { borderRadius: 6, fontSize: 13, padding: "8px 14px" },
           buttonBack: { color: "var(--color-text-muted)", fontSize: 13 },
           buttonSkip: { color: "var(--color-text-muted)", fontSize: 13 },
+          buttonClose: { display: "none" },
         }}
       />
     </>
