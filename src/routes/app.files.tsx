@@ -76,6 +76,24 @@ function FileManager() {
   const [category, setCategory] = useState<Category | "all">("all");
   const [status, setStatus] = useState("all");
   const [starred, setStarred] = useState<Record<string, boolean>>({});
+  const [uploadOpen, setUploadOpen] = useState(false);
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [uploadType, setUploadType] = useState("Certificate of Registration");
+  const uploadMut = useUploadDocument();
+
+  async function submitUploads() {
+    if (pendingFiles.length === 0) return;
+    try {
+      for (const f of pendingFiles) {
+        await uploadMut.mutateAsync({ type: uploadType, filename: f.name });
+      }
+      toast.success(`Uploaded ${pendingFiles.length} file${pendingFiles.length === 1 ? "" : "s"}`);
+      setPendingFiles([]);
+      setUploadOpen(false);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Upload failed");
+    }
+  }
 
   const files = useMemo(() => docs.map((d) => {
     const cat = categorize(d.filename);
