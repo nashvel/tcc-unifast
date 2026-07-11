@@ -308,7 +308,7 @@ export function useAppendAuditLog() {
     }) => {
       mockAuditLogs.unshift({
         id: `a-${Date.now()}`,
-        user: profile?.full_name || profile?.username || "system",
+        user: profile?.full_name || "system",
         role: role ?? "system",
         action: args.action,
         module: args.module,
