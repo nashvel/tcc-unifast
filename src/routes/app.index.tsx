@@ -108,7 +108,7 @@ function Dashboard() {
             <span className="text-text font-normal">Here's your operations overview.</span>
           </h1>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
           <button aria-label="Notifications" className="p-2 rounded-md hover:bg-surface-muted text-text-muted">
             <IconBell size={18} />
           </button>
@@ -116,17 +116,8 @@ function Dashboard() {
             <IconMail size={18} />
             <span className="absolute -top-0.5 -right-0.5 h-4 min-w-4 px-1 rounded-full bg-primary text-primary-foreground text-2xs font-semibold grid place-items-center">3</span>
           </button>
-          <div className="flex items-center gap-2 pl-3 border-l">
-            <div className="h-9 w-9 rounded-full bg-primary-soft text-primary grid place-items-center font-semibold">
-              {firstName.slice(0, 1)}
-            </div>
-            <div className="text-sm leading-tight">
-              <p className="font-medium">{profile?.full_name || email || "Admin"}</p>
-              <p className="text-xs text-text-muted">Administrator</p>
-            </div>
-            <IconChevronDown size={14} className="text-text-soft" />
-          </div>
         </div>
+
       </div>
 
       {/* KPI strip with sparklines */}
