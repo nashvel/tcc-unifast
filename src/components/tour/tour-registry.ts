@@ -32,9 +32,12 @@ export const TOURS: Record<string, Tour> = {
     title: "Masterlist tour",
     steps: [
       { target: H, title: "Master roster", body: "Source-of-truth roster of all imported grantee records." },
-      { target: C, title: "Import & filter", body: "Import CSV/XLSX rosters and narrow the list by status, program, or university." },
+      { target: "[data-tour=\"masterlist-upload\"]", title: "Upload the file", body: "Drop a CSV or XLSX (up to 20MB) here to stage a new import." },
+      { target: "[data-tour=\"masterlist-rules\"]", title: "Import rules", body: "How duplicates, invalid rows, and account activation are handled." },
+      { target: "[data-tour=\"masterlist-stats\"]", title: "Preview counts", body: "After preview, review totals per status before processing." },
     ],
   },
+
   "/app/batches": {
     title: "Batches tour",
     steps: [
