@@ -8,10 +8,37 @@ import { cn } from "@/lib/utils";
 import type { ComponentType } from "react";
 import { branding } from "@/config/branding";
 import { BrandLogo } from "@/components/brand/brand-logo";
+import { useAuthStore } from "@/stores/authStore";
 
 interface NavItem { to: string; label: string; icon: ComponentType<{ size?: number; className?: string }>; }
+type Section = { label?: string; items: NavItem[] };
 
-const sections: { label?: string; items: NavItem[] }[] = [
+// Admin: oversight only — monitoring, announcements, audit, security,
+// users, settings (SMTP/legal/consent live under Settings).
+const adminSections: Section[] = [
+  { items: [{ to: "/app", label: "Dashboard", icon: IconDashboard }] },
+  {
+    label: "Communication",
+    items: [
+      { to: "/app/announcements", label: "Announcements", icon: IconSpeakerphone },
+      { to: "/app/reports", label: "Monitoring & Reports", icon: IconReportAnalytics },
+      { to: "/app/support", label: "Support Tickets", icon: IconLifebuoy },
+    ],
+  },
+  {
+    label: "Administration",
+    items: [
+      { to: "/app/audit", label: "Audit Trail", icon: IconHistory },
+      { to: "/app/security", label: "Security Findings", icon: IconShieldCheck },
+      { to: "/app/security/memory", label: "Security Memory", icon: IconShieldCheck },
+      { to: "/app/users", label: "Users & Roles", icon: IconUserCog },
+      { to: "/app/settings", label: "Settings", icon: IconSettings },
+    ],
+  },
+];
+
+// Staff/head: day-to-day operations and validation work.
+const staffSections: Section[] = [
   { items: [{ to: "/app", label: "Dashboard", icon: IconDashboard }] },
   {
     label: "Operations",
@@ -42,9 +69,6 @@ const sections: { label?: string; items: NavItem[] }[] = [
     label: "Administration",
     items: [
       { to: "/app/audit", label: "Audit Trail", icon: IconHistory },
-      { to: "/app/security", label: "Security Findings", icon: IconShieldCheck },
-      { to: "/app/security/memory", label: "Security Memory", icon: IconShieldCheck },
-      { to: "/app/users", label: "Users & Roles", icon: IconUserCog },
       { to: "/app/settings", label: "Settings", icon: IconSettings },
     ],
   },
