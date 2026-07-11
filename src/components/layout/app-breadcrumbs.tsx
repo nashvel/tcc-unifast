@@ -44,6 +44,7 @@ function label(seg: string) {
 
 export function AppBreadcrumbs() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const navigate = useNavigate();
   const segments = pathname.split("/").filter(Boolean);
   if (segments.length === 0) return null;
 
@@ -66,12 +67,13 @@ export function AppBreadcrumbs() {
             {isLast ? (
               <span className="font-medium text-text truncate max-w-[200px]">{c.label}</span>
             ) : (
-              <Link
-                to={c.href}
+              <button
+                type="button"
+                onClick={() => navigate({ to: c.href })}
                 className="hover:text-text hover:underline truncate max-w-[160px]"
               >
                 {c.label}
-              </Link>
+              </button>
             )}
           </span>
         );
@@ -79,3 +81,4 @@ export function AppBreadcrumbs() {
     </nav>
   );
 }
+
