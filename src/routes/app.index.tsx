@@ -20,13 +20,13 @@ export const Route = createFileRoute("/app/")({
   component: Dashboard,
 });
 
-const PIPELINE = [
+const PIPELINE: { key: string; label: string; done: boolean; current?: boolean }[] = [
   { key: "intake", label: "Intake", done: true },
   { key: "validation", label: "Validation", done: true, current: true },
   { key: "eligibility", label: "Eligibility", done: false },
   { key: "batching", label: "Batching", done: false },
   { key: "release", label: "Release", done: false },
-] as const;
+];
 
 const THROUGHPUT = [
   { d: "Mon", validated: 82, submitted: 120 },
