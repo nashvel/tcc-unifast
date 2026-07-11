@@ -72,6 +72,8 @@ function timeAgo(iso: string): string {
 const STORAGE_QUOTA_BYTES = 15 * 1_000_000_000;
 
 function FileManager() {
+  const role = useAuthStore((s) => s.role);
+  const canManage = role !== "admin"; // staff/head can upload & manage; admin is monitor-only
   const { data: docs = [], isLoading, isFetching, isError, error, refetch } = useDocuments();
   const [q, setQ] = useState("");
   const [category, setCategory] = useState<Category | "all">("all");
