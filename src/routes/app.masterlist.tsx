@@ -11,6 +11,7 @@ import { TablePagination } from "@/components/ui/table-pagination";
 import { usePagination } from "@/hooks/use-pagination";
 import { StatusBadge, statusVariantFor, formatStatus } from "@/components/ui/status-badge";
 import { useMasterlist } from "@/hooks/queries";
+import { useAuthStore } from "@/stores/authStore";
 import { IconAlertTriangle, IconUpload, IconCheck, IconArrowRight } from "@tabler/icons-react";
 
 export const Route = createFileRoute("/app/masterlist")({
