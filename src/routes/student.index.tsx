@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
-  IconBell, IconMail, IconChevronDown, IconCheck, IconCircle,
+  IconBell, IconMail, IconCheck, IconCircle,
   IconFilePlus, IconUpload, IconListCheck, IconBook,
   IconSpeakerphone, IconSchool, IconCalendarEvent,
 } from "@tabler/icons-react";
