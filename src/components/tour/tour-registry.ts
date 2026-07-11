@@ -56,9 +56,11 @@ export const TOURS: Record<string, Tour> = {
     title: "Document validation tour",
     steps: [
       { target: H, title: "Validation queue", body: "Submitted documents awaiting review, sorted by priority." },
-      { target: C, title: "Take action", body: "Approve, reject, or flag documents — every action is audit-logged." },
+      { target: "[data-tour=\"documents-filters\"]", title: "Narrow the queue", body: "Search or filter by status and risk level to focus on what needs attention now." },
+      { target: "[data-tour=\"documents-queue\"]", title: "Review a document", body: "Open Review on any row to approve, reject, resubmit, or flag — every action is audit-logged." },
     ],
   },
+
   "/app/files": {
     title: "File manager tour",
     steps: [
