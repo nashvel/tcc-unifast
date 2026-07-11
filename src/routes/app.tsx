@@ -5,6 +5,7 @@ import { AppTopbar } from "@/components/layout/app-topbar";
 import { useAuthStore } from "@/stores/authStore";
 import { CommandPalette } from "@/components/ui/command-palette";
 import { PageTransition } from "@/components/page-transition";
+import { AppBreadcrumbs } from "@/components/layout/app-breadcrumbs";
 
 export const Route = createFileRoute("/app")({
   ssr: false,
