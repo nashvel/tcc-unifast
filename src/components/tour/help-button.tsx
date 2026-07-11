@@ -6,6 +6,11 @@ import { cn } from "@/lib/utils";
 import { resolveTour } from "./tour-registry";
 
 const VIEWPORT_PADDING = 16;
+const APP_ZOOM = 1.25;
+const TOOLTIP_WIDTH = 340;
+const scaledSize = (value: number) => value / APP_ZOOM;
+const TOOLTIP_WIDTH_CSS = `min(${scaledSize(TOOLTIP_WIDTH)}px, calc((100vw - ${VIEWPORT_PADDING * 2}px) / ${APP_ZOOM}))`;
+const TOOLTIP_MAX_HEIGHT_CSS = `calc((100dvh - ${VIEWPORT_PADDING * 2}px) / ${APP_ZOOM})`;
 
 /**
  * Renders a "Tour" button that starts a react-joyride walkthrough for the
@@ -100,11 +105,11 @@ export function HelpButton({ className }: { className?: string }) {
           scrollOffset: 112,
           spotlightPadding: 8,
           zIndex: 10000,
-          width: "min(340px, calc(100vw - 32px))",
+          width: TOOLTIP_WIDTH_CSS,
         }}
         styles={{
           floater: {
-            maxWidth: "calc(100vw - 32px)",
+            maxWidth: TOOLTIP_WIDTH_CSS,
             pointerEvents: "auto",
           },
           tooltip: {
@@ -113,11 +118,11 @@ export function HelpButton({ className }: { className?: string }) {
             display: "flex",
             flexDirection: "column",
             fontSize: 14,
-            maxHeight: "calc(100dvh - 32px)",
-            maxWidth: "calc(100vw - 32px)",
+            maxHeight: TOOLTIP_MAX_HEIGHT_CSS,
+            maxWidth: TOOLTIP_WIDTH_CSS,
             overflow: "hidden",
             padding: 16,
-            width: "min(340px, calc(100vw - 32px))",
+            width: TOOLTIP_WIDTH_CSS,
           },
           tooltipContainer: {
             flex: "1 1 auto",
