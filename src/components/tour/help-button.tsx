@@ -151,8 +151,25 @@ export function HelpButton({ className }: { className?: string }) {
   function onCallback(data: EventData) {
     const finished: string[] = [STATUS.FINISHED, STATUS.SKIPPED];
     if (finished.includes(data.status)) setRun(false);
+
+    const step = steps[data.index];
+    const targetSel = typeof step?.target === "string" ? step.target : "(element ref)";
+    const targetEl =
+      typeof step?.target === "string"
+        ? document.querySelector<HTMLElement>(step.target)
+        : (step?.target as HTMLElement | undefined) ?? null;
+    logTourDebug(`step ${data.index} • ${data.type} • ${data.status}`, {
+      action: data.action,
+      lifecycle: data.lifecycle,
+      targetSelector: targetSel,
+      targetElement: targetEl,
+      targetBounds: targetEl?.getBoundingClientRect().toJSON() ?? null,
+      viewport: { w: window.innerWidth, h: window.innerHeight },
+    });
+
     window.requestAnimationFrame(clampJoyrideTooltipToViewport);
   }
+
 
   return (
     <>
