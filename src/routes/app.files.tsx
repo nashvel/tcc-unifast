@@ -450,7 +450,7 @@ function FileManager() {
       </div>
 
       {/* Upload drawer */}
-      {uploadOpen && (
+      {uploadOpen && canManage && (
         <div className="fixed inset-0 z-50">
           <div
             className="absolute inset-0 bg-black/40 backdrop-blur-sm"
