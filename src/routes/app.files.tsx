@@ -173,7 +173,7 @@ function FileManager() {
                       <div className="h-9 w-9 rounded-md flex items-center justify-center bg-primary/10">
                         <IconFolder size={18} className="text-primary" />
                       </div>
-                      <button className="text-text-soft hover:text-text-strong" aria-label="Folder actions">
+                      <button className="text-text-soft hover:text-text" aria-label="Folder actions">
                         <IconDotsVertical size={16} />
                       </button>
                     </div>
