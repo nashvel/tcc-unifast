@@ -78,16 +78,19 @@ export const TOURS: Record<string, Tour> = {
     title: "Eligibility tour",
     steps: [
       { target: H, title: "Eligibility engine", body: "Run and review eligibility results against configured program rules." },
-      { target: C, title: "Sign-off", body: "Committee sign-off is required before batches move to release." },
+      { target: "[data-tour=\"eligibility-filters\"]", title: "Filter candidates", body: "Search or filter by eligibility outcome and risk to focus on borderline cases." },
+      { target: "[data-tour=\"eligibility-table\"]", title: "Evaluate a grantee", body: "Open Evaluate on any row to view the rules trace and record a decision. Committee sign-off is required before release." },
     ],
   },
   "/app/announcements": {
     title: "Announcements tour",
     steps: [
       { target: H, title: "Broadcast center", body: "Draft, schedule, and publish announcements by audience and channel." },
-      { target: C, title: "Delivery logs", body: "Notification Logs show per-channel delivery results (email, SMS, in-app)." },
+      { target: "[data-tour=\"announcements-new\"]", title: "Compose a new one", body: "Start a new announcement — pick audience, channels (in-app, email, SMS), and schedule." },
+      { target: "[data-tour=\"announcements-list\"]", title: "Manage & inspect", body: "Edit any announcement, or open Logs to see per-channel delivery results." },
     ],
   },
+
   "/app/reports": {
     title: "Reports tour",
     steps: [
