@@ -93,6 +93,18 @@ function MasterlistPage() {
             </div>
           )}
 
+          <div className="rounded-lg border bg-surface p-3 grid grid-cols-1 md:grid-cols-4 gap-2">
+            <SearchInput placeholder="Search by student #, name, university, or program" value={q} onChange={(e) => setQ(e.target.value)} className="md:col-span-3" />
+            <Selectish value={statusF} onChange={(e) => setStatusF(e.target.value)}>
+              <option value="all">All statuses</option>
+              <option value="active">Active</option>
+              <option value="pending_activation">Pending activation</option>
+              <option value="inactive">Inactive</option>
+              <option value="duplicate">Duplicate</option>
+              <option value="invalid">Invalid</option>
+            </Selectish>
+          </div>
+
           <DataTable>
             <THead>
               <Tr>
