@@ -61,15 +61,15 @@ export function HelpButton({ className }: { className?: string }) {
         disableOverlayClose
         callback={onCallback}
         locale={{ back: "Back", close: "Close", last: "Done", next: "Next", skip: "Skip" }}
+        options={{
+          primaryColor: "var(--color-primary)",
+          textColor: "var(--color-text)",
+          backgroundColor: "var(--color-surface)",
+          arrowColor: "var(--color-surface)",
+          overlayColor: "rgba(0,0,0,0.5)",
+          zIndex: 1000,
+        }}
         styles={{
-          options: {
-            primaryColor: "var(--color-primary)",
-            textColor: "var(--color-text)",
-            backgroundColor: "var(--color-surface)",
-            arrowColor: "var(--color-surface)",
-            overlayColor: "rgba(0,0,0,0.5)",
-            zIndex: 1000,
-          },
           tooltip: { borderRadius: 12, fontSize: 14 },
           tooltipTitle: { fontSize: 15, fontWeight: 600 },
           buttonNext: { borderRadius: 6, fontSize: 13 },
