@@ -83,6 +83,7 @@ function labelForMatch(match: {
 export function AppBreadcrumbs({ separator = "chevron" }: AppBreadcrumbsProps = {}) {
   const matches = useRouterState({ select: (s) => s.matches });
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
 
   // Skip the __root match and any pathless layout matches (routeId starts with "/_"
   // or produces an empty label). Drop duplicates that share a pathname with their
