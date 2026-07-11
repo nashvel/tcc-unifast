@@ -37,7 +37,6 @@ const LABELS: Record<string, string> = {
 
 function label(seg: string) {
   if (LABELS[seg]) return LABELS[seg];
-  // treat numeric / uuid-ish ids as "Detail"
   if (/^[0-9a-f-]{6,}$/i.test(seg) || /^\d+$/.test(seg)) return "Detail";
   return seg.replace(/[-_]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
@@ -48,29 +47,42 @@ export function AppBreadcrumbs() {
   const segments = pathname.split("/").filter(Boolean);
   if (segments.length === 0) return null;
 
-  const crumbs = segments.map((seg, i) => ({
+  const rootHref = "/" + segments[0];
+  const crumbs = segments.slice(1).map((seg, i) => ({
     label: label(seg),
-    href: "/" + segments.slice(0, i + 1).join("/"),
+    href: "/" + segments.slice(0, i + 2).join("/"),
   }));
 
   return (
     <nav
       aria-label="Breadcrumb"
-      className="mb-3 flex items-center gap-1 text-xs text-text-muted overflow-x-auto"
+      className="mb-4 inline-flex max-w-full items-center gap-0.5 rounded-full border border-border/60 bg-surface/60 px-2.5 py-1 text-xs text-text-muted backdrop-blur-sm shadow-sm overflow-x-auto"
     >
-      <IconHome size={13} className="shrink-0" />
+      <button
+        type="button"
+        onClick={() => navigate({ to: rootHref })}
+        aria-label="Home"
+        className="flex items-center justify-center h-6 w-6 rounded-full text-text-muted hover:text-text hover:bg-surface-hover transition-colors shrink-0"
+      >
+        <IconHome size={13} />
+      </button>
       {crumbs.map((c, i) => {
         const isLast = i === crumbs.length - 1;
         return (
-          <span key={c.href} className="flex items-center gap-1 shrink-0">
-            <IconChevronRight size={12} className="text-text-soft" />
+          <span key={c.href} className="flex items-center gap-0.5 shrink-0">
+            <IconChevronRight size={12} className="text-text-soft/60 mx-0.5" />
             {isLast ? (
-              <span className="font-medium text-text truncate max-w-[200px]">{c.label}</span>
+              <span
+                aria-current="page"
+                className="px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium truncate max-w-[220px]"
+              >
+                {c.label}
+              </span>
             ) : (
               <button
                 type="button"
                 onClick={() => navigate({ to: c.href })}
-                className="hover:text-text hover:underline truncate max-w-[160px]"
+                className="px-2 py-0.5 rounded-full hover:bg-surface-hover hover:text-text transition-colors truncate max-w-[160px]"
               >
                 {c.label}
               </button>
@@ -81,4 +93,3 @@ export function AppBreadcrumbs() {
     </nav>
   );
 }
-
