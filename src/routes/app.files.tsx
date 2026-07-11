@@ -131,7 +131,25 @@ function FileManager() {
     return null;
   }
 
+  function logAudit(action: string, target: string, extra?: Record<string, unknown>, before?: Record<string, unknown>) {
+    auditMut.mutate({ action, module: "File Manager", target, after: extra, before });
+  }
+
+  async function reassignFile(f: PreviewFile) {
+    if (!canManage) { toast.error("Admins have monitor-only access."); return; }
+    const newType = window.prompt(`Reassign document type for "${f.name}"`, f.type);
+    if (!newType || newType === f.type) return;
+    try {
+      const res = await reassignMut.mutateAsync({ id: f.id, type: newType });
+      logAudit("file.reassign", f.name, res.after, res.before);
+      toast.success(`Reassigned "${f.name}" to ${newType}`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Reassign failed");
+    }
+  }
+
   function downloadFile(f: PreviewFile) {
+    logAudit("file.download", f.name, { type: f.type, grantee: f.grantee, size: f.size });
     const url = previewUrlFor(f);
     if (url) {
       const a = document.createElement("a");
