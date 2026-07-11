@@ -60,6 +60,8 @@ function EligibilityPage() {
           ))}
         </tbody>
       </DataTable>
+      </div>
     </div>
+
   );
 }
