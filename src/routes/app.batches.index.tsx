@@ -8,6 +8,7 @@ import { DataTable, THead, Tr, Th, Td } from "@/components/ui/data-table";
 import { StatusBadge, statusVariantFor, formatStatus } from "@/components/ui/status-badge";
 import { useBatches } from "@/hooks/queries";
 import { IconPlus } from "@tabler/icons-react";
+import { useAuthStore } from "@/stores/authStore";
 
 export const Route = createFileRoute("/app/batches/")({
   component: BatchesPage,
@@ -15,6 +16,8 @@ export const Route = createFileRoute("/app/batches/")({
 
 function BatchesPage() {
   const { data: batches = [], isLoading } = useBatches();
+  const role = useAuthStore((s) => s.role);
+  const canWrite = role !== "admin";
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("all");
 
@@ -29,7 +32,7 @@ function BatchesPage() {
       <PageHeader
         title="Batches"
         description="Manage TES grantee batches per academic period."
-        actions={<Btn variant="primary" icon={IconPlus}>New batch</Btn>}
+        actions={canWrite ? <Btn variant="primary" icon={IconPlus}>New batch</Btn> : null}
       />
       <div className="rounded-lg border bg-surface p-3 mb-4 grid grid-cols-1 md:grid-cols-4 gap-2">
         <SearchInput placeholder="Search by batch, AY, or semester" value={q} onChange={(e) => setQ(e.target.value)} className="md:col-span-3" />

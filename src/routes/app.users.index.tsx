@@ -12,6 +12,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { useStaffUsers } from "@/hooks/queries";
 import { IconPlus, IconKey, IconDownload } from "@tabler/icons-react";
 import { downloadCSV } from "@/lib/csv";
+import { useAuthStore } from "@/stores/authStore";
 
 export const Route = createFileRoute("/app/users/")({
   component: UsersPage,
@@ -19,17 +20,19 @@ export const Route = createFileRoute("/app/users/")({
 
 function UsersPage() {
   const { data: users = [], isLoading, isFetching, isError, error, refetch } = useStaffUsers();
+  const role = useAuthStore((s) => s.role);
+  const canWrite = role !== "admin";
   const [q, setQ] = useState("");
-  const [role, setRole] = useState("all");
+  const [roleF, setRoleF] = useState("all");
   const [status, setStatus] = useState("all");
 
   const filtered = useMemo(() => users.filter((u) => {
     if (q && !`${u.username} ${u.fullName} ${u.email}`.toLowerCase().includes(q.toLowerCase())) return false;
-    if (role !== "all" && u.role !== role) return false;
+    if (roleF !== "all" && u.role !== roleF) return false;
     if (status === "active" && !u.active) return false;
     if (status === "disabled" && u.active) return false;
     return true;
-  }), [users, q, role, status]);
+  }), [users, q, roleF, status]);
 
   const roles = useMemo(() => [...new Set(users.map((u) => u.role))], [users]);
   const pg = usePagination(filtered, 15);
@@ -40,11 +43,11 @@ function UsersPage() {
         actions={<>
           <Btn variant="outline" icon={IconDownload} onClick={() => downloadCSV("users.csv", filtered)}>Export</Btn>
           <Link to="/app/users/permissions"><Btn variant="outline">Permission matrix</Btn></Link>
-          <Btn variant="primary" icon={IconPlus}>New user</Btn>
+          {canWrite && <Btn variant="primary" icon={IconPlus}>New user</Btn>}
         </>} />
       <div className="rounded-lg border bg-surface p-3 mb-4 grid grid-cols-1 md:grid-cols-4 gap-2">
         <SearchInput placeholder="Search by name, username, or email" value={q} onChange={(e) => setQ(e.target.value)} className="md:col-span-2" />
-        <Selectish value={role} onChange={(e) => setRole(e.target.value)}>
+        <Selectish value={roleF} onChange={(e) => setRoleF(e.target.value)}>
           <option value="all">All roles</option>
           {roles.map((r) => <option key={r}>{r}</option>)}
         </Selectish>

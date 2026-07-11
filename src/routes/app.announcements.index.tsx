@@ -4,6 +4,7 @@ import { Btn } from "@/components/ui/btn";
 import { StatusBadge, statusVariantFor, formatStatus } from "@/components/ui/status-badge";
 import { useAnnouncements } from "@/hooks/queries";
 import { IconPlus, IconMail, IconMessage, IconDeviceMobile } from "@tabler/icons-react";
+import { useAuthStore } from "@/stores/authStore";
 
 export const Route = createFileRoute("/app/announcements/")({
   component: AnnouncementsPage,
@@ -11,10 +12,11 @@ export const Route = createFileRoute("/app/announcements/")({
 
 function AnnouncementsPage() {
   const { data: announcements = [], isLoading } = useAnnouncements();
+  const canWrite = useAuthStore((s) => s.role) !== "admin";
   return (
     <div>
       <PageHeader title="Announcements" description="Broadcast updates to grantees by audience and channel."
-        actions={<Link to="/app/announcements/new"><Btn variant="primary" icon={IconPlus}>New announcement</Btn></Link>} />
+        actions={canWrite ? <Link to="/app/announcements/new"><Btn variant="primary" icon={IconPlus}>New announcement</Btn></Link> : null} />
       <div className="space-y-2">
         {isLoading && <p className="text-sm text-text-muted">Loading…</p>}
         {!isLoading && announcements.length === 0 && <p className="text-sm text-text-muted">No announcements yet.</p>}

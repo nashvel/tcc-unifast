@@ -11,6 +11,7 @@ import { TablePagination } from "@/components/ui/table-pagination";
 import { usePagination } from "@/hooks/use-pagination";
 import { StatusBadge, statusVariantFor, formatStatus } from "@/components/ui/status-badge";
 import { useMasterlist } from "@/hooks/queries";
+import { useAuthStore } from "@/stores/authStore";
 import { IconAlertTriangle, IconUpload, IconCheck, IconArrowRight } from "@tabler/icons-react";
 
 export const Route = createFileRoute("/app/masterlist")({
@@ -19,6 +20,7 @@ export const Route = createFileRoute("/app/masterlist")({
 
 function MasterlistPage() {
   const { data: rows = [], isLoading, isFetching, isError, error, refetch } = useMasterlist();
+  const canWrite = useAuthStore((s) => s.role) !== "admin";
   const [previewed, setPreviewed] = useState(false);
   const [q, setQ] = useState("");
   const [statusF, setStatusF] = useState("all");
@@ -49,7 +51,7 @@ function MasterlistPage() {
         actions={
           <>
             <Btn variant="outline" icon={IconUpload}>Download template</Btn>
-            <Btn variant="primary" icon={IconArrowRight} onClick={() => setPreviewed(true)}>Process import</Btn>
+            {canWrite && <Btn variant="primary" icon={IconArrowRight} onClick={() => setPreviewed(true)}>Process import</Btn>}
           </>
         }
       />

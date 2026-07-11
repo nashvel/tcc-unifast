@@ -47,6 +47,11 @@ export function AppTopbar({ onToggleSidebar }: { onToggleSidebar: () => void }) 
         </kbd>
       </button>
       <div className="flex-1" />
+      {role === "admin" && (
+        <span className="hidden md:inline-flex items-center gap-1 text-2xs font-medium px-2 py-1 rounded-full bg-primary-soft text-primary" title="Admins have monitoring-only access to operational modules">
+          Monitor mode
+        </span>
+      )}
       <ThemeToggle />
 
       <div className="relative">

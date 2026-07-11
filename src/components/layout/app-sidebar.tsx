@@ -2,7 +2,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import {
   IconDashboard, IconFileImport, IconFolders, IconUsersGroup, IconFileCheck,
   IconSchool, IconChecklist, IconSpeakerphone, IconReportAnalytics, IconHistory,
-  IconUserCog, IconSettings, IconShieldCheck,
+  IconUserCog, IconSettings, IconShieldCheck, IconLifebuoy,
 } from "@tabler/icons-react";
 import { cn } from "@/lib/utils";
 import type { ComponentType } from "react";
@@ -34,6 +34,7 @@ const sections: { label?: string; items: NavItem[] }[] = [
     items: [
       { to: "/app/announcements", label: "Announcements", icon: IconSpeakerphone },
       { to: "/app/reports", label: "Reports", icon: IconReportAnalytics },
+      { to: "/app/support", label: "Support Tickets", icon: IconLifebuoy },
     ],
   },
   {
