@@ -76,6 +76,9 @@ const staffSections: Section[] = [
 
 export function AppSidebar({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const role = useAuthStore((s) => s.role);
+  const sections = role === "admin" ? adminSections : staffSections;
+
 
   return (
     <aside className="h-full w-60 shrink-0 border-r bg-sidebar-bg flex flex-col">
