@@ -590,6 +590,83 @@ export type Database = {
         }
         Relationships: []
       }
+      support_ticket_messages: {
+        Row: {
+          author_id: string
+          body: string
+          created_at: string
+          id: string
+          is_internal: boolean
+          ticket_id: string
+          updated_at: string
+        }
+        Insert: {
+          author_id: string
+          body: string
+          created_at?: string
+          id?: string
+          is_internal?: boolean
+          ticket_id: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string
+          body?: string
+          created_at?: string
+          id?: string
+          is_internal?: boolean
+          ticket_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_ticket_messages_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_tickets: {
+        Row: {
+          assigned_to: string | null
+          body: string
+          category: Database["public"]["Enums"]["support_category"]
+          created_at: string
+          created_by: string
+          id: string
+          priority: Database["public"]["Enums"]["support_priority"]
+          status: Database["public"]["Enums"]["support_status"]
+          subject: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          body: string
+          category?: Database["public"]["Enums"]["support_category"]
+          created_at?: string
+          created_by: string
+          id?: string
+          priority?: Database["public"]["Enums"]["support_priority"]
+          status?: Database["public"]["Enums"]["support_status"]
+          subject: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          body?: string
+          category?: Database["public"]["Enums"]["support_category"]
+          created_at?: string
+          created_by?: string
+          id?: string
+          priority?: Database["public"]["Enums"]["support_priority"]
+          status?: Database["public"]["Enums"]["support_status"]
+          subject?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
@@ -631,6 +708,9 @@ export type Database = {
         | "accepted_risk"
         | "note"
       security_memory_status: "active" | "archived"
+      support_category: "bug" | "question" | "request"
+      support_priority: "low" | "normal" | "high"
+      support_status: "open" | "in_progress" | "resolved" | "closed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -766,6 +846,9 @@ export const Constants = {
         "note",
       ],
       security_memory_status: ["active", "archived"],
+      support_category: ["bug", "question", "request"],
+      support_priority: ["low", "normal", "high"],
+      support_status: ["open", "in_progress", "resolved", "closed"],
     },
   },
 } as const
