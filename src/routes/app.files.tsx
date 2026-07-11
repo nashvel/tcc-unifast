@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import {
   IconPhoto, IconVideo, IconFileText, IconArchive, IconFile,
   IconFolder, IconStar, IconStarFilled, IconDotsVertical, IconDownload,
+  IconUpload, IconX,
 } from "@tabler/icons-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { SearchInput } from "@/components/ui/search-input";
@@ -12,7 +13,10 @@ import { TableStates } from "@/components/ui/table-states";
 import { TablePagination } from "@/components/ui/table-pagination";
 import { usePagination } from "@/hooks/use-pagination";
 import { StatusBadge, statusVariantFor, formatStatus } from "@/components/ui/status-badge";
-import { useDocuments } from "@/hooks/queries";
+import { Btn } from "@/components/ui/btn";
+import { FileUpload } from "@/components/ui/file-upload";
+import { useDocuments, useUploadDocument } from "@/hooks/queries";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/app/files")({
@@ -72,6 +76,24 @@ function FileManager() {
   const [category, setCategory] = useState<Category | "all">("all");
   const [status, setStatus] = useState("all");
   const [starred, setStarred] = useState<Record<string, boolean>>({});
+  const [uploadOpen, setUploadOpen] = useState(false);
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [uploadType, setUploadType] = useState("Certificate of Registration");
+  const uploadMut = useUploadDocument();
+
+  async function submitUploads() {
+    if (pendingFiles.length === 0) return;
+    try {
+      for (const f of pendingFiles) {
+        await uploadMut.mutateAsync({ type: uploadType, filename: f.name });
+      }
+      toast.success(`Uploaded ${pendingFiles.length} file${pendingFiles.length === 1 ? "" : "s"}`);
+      setPendingFiles([]);
+      setUploadOpen(false);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Upload failed");
+    }
+  }
 
   const files = useMemo(() => docs.map((d) => {
     const cat = categorize(d.filename);
@@ -128,6 +150,7 @@ function FileManager() {
       <PageHeader
         title="File Manager"
         description="Browse every submitted file across grantees. Connected to the document submission pipeline."
+        actions={<Btn onClick={() => setUploadOpen(true)}><IconUpload size={14} className="mr-1.5" />Upload</Btn>}
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4">
@@ -344,6 +367,61 @@ function FileManager() {
           </div>
         </aside>
       </div>
+
+      {/* Upload drawer */}
+      {uploadOpen && (
+        <div className="fixed inset-0 z-50">
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={() => !uploadMut.isPending && setUploadOpen(false)}
+          />
+          <div className="absolute right-0 top-0 h-full w-full sm:w-[440px] bg-surface border-l shadow-xl flex flex-col animate-in slide-in-from-right duration-200">
+            <div className="h-14 flex items-center justify-between px-4 border-b">
+              <div>
+                <div className="text-sm font-semibold">Upload files</div>
+                <div className="text-2xs text-text-muted">Drag & drop or pick from your device</div>
+              </div>
+              <button
+                onClick={() => !uploadMut.isPending && setUploadOpen(false)}
+                className="p-1.5 rounded-md hover:bg-surface-muted text-text-soft"
+                aria-label="Close"
+              >
+                <IconX size={16} />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              <div>
+                <label className="text-xs font-medium text-text-muted mb-1 block">Document type</label>
+                <Selectish value={uploadType} onChange={(e) => setUploadType(e.target.value)}>
+                  <option>Certificate of Registration</option>
+                  <option>Grades / Transcript</option>
+                  <option>Enrollment Form</option>
+                  <option>Valid ID</option>
+                  <option>Other</option>
+                </Selectish>
+              </div>
+              <FileUpload
+                multiple
+                hint="PDF, JPG, PNG, DOCX up to 10MB"
+                onFiles={(f) => setPendingFiles((prev) => [...prev, ...f])}
+              />
+              {pendingFiles.length > 0 && (
+                <div className="text-2xs text-text-muted">
+                  {pendingFiles.length} file{pendingFiles.length === 1 ? "" : "s"} ready to upload
+                </div>
+              )}
+            </div>
+            <div className="border-t p-3 flex items-center justify-end gap-2">
+              <Btn variant="ghost" onClick={() => { setPendingFiles([]); setUploadOpen(false); }} disabled={uploadMut.isPending}>
+                Cancel
+              </Btn>
+              <Btn onClick={submitUploads} disabled={pendingFiles.length === 0 || uploadMut.isPending}>
+                {uploadMut.isPending ? "Uploading…" : `Upload ${pendingFiles.length || ""}`.trim()}
+              </Btn>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
