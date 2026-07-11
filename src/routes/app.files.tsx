@@ -248,15 +248,15 @@ function FileManager() {
                       <div className="flex items-center gap-1 justify-end">
                         <button
                           onClick={() => setStarred((s) => ({ ...s, [f.id]: !s[f.id] }))}
-                          className={cn("p-1 rounded hover:bg-surface-hover", isStar ? "text-amber-500" : "text-text-soft")}
+                          className={cn("p-1 rounded hover:bg-surface-muted", isStar ? "text-amber-500" : "text-text-soft")}
                           aria-label={isStar ? "Unstar" : "Star"}
                         >
                           {isStar ? <IconStarFilled size={16} /> : <IconStar size={16} />}
                         </button>
-                        <Link to="/app/documents/$id" params={{ id: f.id }} className="p-1 rounded hover:bg-surface-hover text-text-soft" aria-label="Download / open">
+                        <Link to="/app/documents/$id" params={{ id: f.id }} className="p-1 rounded hover:bg-surface-muted text-text-soft" aria-label="Download / open">
                           <IconDownload size={16} />
                         </Link>
-                        <button className="p-1 rounded hover:bg-surface-hover text-text-soft" aria-label="More">
+                        <button className="p-1 rounded hover:bg-surface-muted text-text-soft" aria-label="More">
                           <IconDotsVertical size={16} />
                         </button>
                       </div>
