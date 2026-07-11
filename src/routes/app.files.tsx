@@ -367,6 +367,61 @@ function FileManager() {
           </div>
         </aside>
       </div>
+
+      {/* Upload drawer */}
+      {uploadOpen && (
+        <div className="fixed inset-0 z-50">
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={() => !uploadMut.isPending && setUploadOpen(false)}
+          />
+          <div className="absolute right-0 top-0 h-full w-full sm:w-[440px] bg-surface border-l shadow-xl flex flex-col animate-in slide-in-from-right duration-200">
+            <div className="h-14 flex items-center justify-between px-4 border-b">
+              <div>
+                <div className="text-sm font-semibold">Upload files</div>
+                <div className="text-2xs text-text-muted">Drag & drop or pick from your device</div>
+              </div>
+              <button
+                onClick={() => !uploadMut.isPending && setUploadOpen(false)}
+                className="p-1.5 rounded-md hover:bg-surface-muted text-text-soft"
+                aria-label="Close"
+              >
+                <IconX size={16} />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              <div>
+                <label className="text-xs font-medium text-text-muted mb-1 block">Document type</label>
+                <Selectish value={uploadType} onChange={(e) => setUploadType(e.target.value)}>
+                  <option>Certificate of Registration</option>
+                  <option>Grades / Transcript</option>
+                  <option>Enrollment Form</option>
+                  <option>Valid ID</option>
+                  <option>Other</option>
+                </Selectish>
+              </div>
+              <FileUpload
+                multiple
+                hint="PDF, JPG, PNG, DOCX up to 10MB"
+                onFiles={(f) => setPendingFiles((prev) => [...prev, ...f])}
+              />
+              {pendingFiles.length > 0 && (
+                <div className="text-2xs text-text-muted">
+                  {pendingFiles.length} file{pendingFiles.length === 1 ? "" : "s"} ready to upload
+                </div>
+              )}
+            </div>
+            <div className="border-t p-3 flex items-center justify-end gap-2">
+              <Btn variant="ghost" onClick={() => { setPendingFiles([]); setUploadOpen(false); }} disabled={uploadMut.isPending}>
+                Cancel
+              </Btn>
+              <Btn onClick={submitUploads} disabled={pendingFiles.length === 0 || uploadMut.isPending}>
+                {uploadMut.isPending ? "Uploading…" : `Upload ${pendingFiles.length || ""}`.trim()}
+              </Btn>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
