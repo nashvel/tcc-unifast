@@ -25,6 +25,7 @@ const sections: { label?: string; items: NavItem[] }[] = [
     label: "Validation",
     items: [
       { to: "/app/documents", label: "Document Validation", icon: IconFileCheck },
+      { to: "/app/files", label: "File Manager", icon: IconFolder },
       { to: "/app/academic", label: "Academic Records", icon: IconSchool },
       { to: "/app/eligibility", label: "Eligibility", icon: IconChecklist },
     ],
