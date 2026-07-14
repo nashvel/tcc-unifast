@@ -9,11 +9,19 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\ValidationException;
+use App\Services\BatchWindowService;
 
 class StudentDocumentOcrController extends Controller
 {
-    public function __invoke(Request $request): JsonResponse
+    public function __invoke(Request $request, BatchWindowService $windows): JsonResponse
     {
+        $window = $windows->windowForStudent($request->user());
+        if (! $window['open']) {
+            throw ValidationException::withMessages([
+                'submission_window' => $window['message'],
+            ]);
+        }
+
         $validated = $request->validate([
             'document_type' => ['required', 'string', 'in:Course History,COR'],
             'file' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png,webp', 'max:20480'],

@@ -1,90 +1,61 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
-import { IconBellRinging, IconEye, IconSearch, IconSend } from "@tabler/icons-vue";
+import { computed, onMounted, ref } from "vue";
+import { IconEye, IconSearch } from "@tabler/icons-vue";
 import PageHeader from "@/components/ui/PageHeader.vue";
 import DataTable from "@/components/tables/DataTable.vue";
-import AppDialog from "@/components/dialogs/AppDialog.vue";
 
+type CourseRemark = "Passed" | "Failed" | "Dropped";
 type AcademicRecord = {
   id: number;
-  studentNo: string;
+  student_number: string | null;
+  student_id: string;
   name: string;
   program: string;
-  gwa: string;
-  standing: string;
-  risk: "Clear" | "Watchlist" | "At risk";
-  reason: string;
-  notified: string;
+  year_level: string | null;
+  latest_gwa: string | null;
+  approved_submissions: number;
+  total_submissions: number;
+  remarks: { passed: number; failed: number; dropped: number };
 };
 
 const query = ref("");
-const notifyOpen = ref(false);
-const selected = ref<AcademicRecord | null>(null);
+const remarkFilter = ref<"All" | CourseRemark>("All");
+const records = ref<AcademicRecord[]>([]);
+const loading = ref(true);
+const error = ref("");
 
-const records: AcademicRecord[] = [
-  {
-    id: 1,
-    studentNo: "2024-00182",
-    name: "Maria Angela Santos",
-    program: "BS Information Technology",
-    gwa: "1.42",
-    standing: "Regular",
-    risk: "Clear",
-    reason: "GWA and unit load are within expected range.",
-    notified: "No notice needed",
-  },
-  {
-    id: 2,
-    studentNo: "2024-00194",
-    name: "John Paul Ramirez",
-    program: "BS Business Administration",
-    gwa: "1.88",
-    standing: "Regular",
-    risk: "Clear",
-    reason: "Academic standing remains stable.",
-    notified: "No notice needed",
-  },
-  {
-    id: 3,
-    studentNo: "2024-00207",
-    name: "Nicole Anne Flores",
-    program: "BS Education",
-    gwa: "2.31",
-    standing: "Regular",
-    risk: "Watchlist",
-    reason: "GWA is close to the monitoring threshold.",
-    notified: "Reminder sent",
-  },
-  {
-    id: 4,
-    studentNo: "2024-00231",
-    name: "Christian Dela Cruz",
-    program: "BS Criminology",
-    gwa: "2.76",
-    standing: "Probation",
-    risk: "At risk",
-    reason: "Probation standing and GWA require student follow-up.",
-    notified: "Needs notice",
-  },
-];
+onMounted(async () => {
+  try {
+    const response = await fetch("/api/academic-records", { headers: { Accept: "application/json" } });
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.message || "Unable to load academic records.");
+    records.value = payload.data || [];
+  } catch (exception) {
+    error.value = exception instanceof Error ? exception.message : "Unable to load academic records.";
+  } finally {
+    loading.value = false;
+  }
+});
 
 const filtered = computed(() =>
-  records.filter((record) =>
-    `${record.studentNo} ${record.name} ${record.program} ${record.risk}`
+  records.value.filter((record) => {
+    const matchesQuery = `${record.student_number ?? ""} ${record.student_id} ${record.name} ${record.program}`
       .toLowerCase()
-      .includes(query.value.toLowerCase()),
-  ),
+      .includes(query.value.toLowerCase());
+    const matchesRemark =
+      remarkFilter.value === "All" || remarkCount(record, remarkFilter.value) > 0;
+    return matchesQuery && matchesRemark;
+  }),
 );
 
-function badgeClass(risk: AcademicRecord["risk"]) {
-  if (risk === "At risk") return "bg-danger-soft text-danger";
-  if (risk === "Watchlist") return "bg-warning-soft text-warning";
-  return "bg-success-soft text-success";
+function remarkCount(record: AcademicRecord, remark: CourseRemark) {
+  return record.remarks[remark.toLowerCase() as "passed" | "failed" | "dropped"] ?? 0;
 }
 
-function openNotify(record: AcademicRecord) {
-  selected.value = record;
-  notifyOpen.value = true;
+function remarkClass(remark: CourseRemark) {
+  if (remark === "Failed") return "bg-danger-soft text-danger";
+  if (remark === "Dropped") return "bg-warning-soft text-warning";
+  return "bg-success-soft text-success";
 }
 </script>
 
@@ -92,103 +63,82 @@ function openNotify(record: AcademicRecord) {
   <div>
     <PageHeader
       title="Academic Records"
-      description="Monitor academic standing and notify students who may be at risk."
+      description="Review each grantee's course history, grades, semester remarks, and approved scholarship submissions."
     />
 
-    <div class="relative mb-3 max-w-lg">
-      <IconSearch :size="14" class="absolute left-3 top-1/2 -translate-y-1/2 text-text-soft" />
-      <input
-        v-model="query"
-        class="h-9 w-full rounded-md border pl-9 pr-3 text-xs"
-        placeholder="Search academic records or risk status"
-      />
+    <div class="mb-4 grid gap-2 md:grid-cols-[1fr_180px]">
+      <div class="relative">
+        <IconSearch :size="14" class="absolute left-3 top-1/2 -translate-y-1/2 text-text-soft" />
+        <input
+          v-model="query"
+          class="h-9 w-full rounded-md border pl-9 pr-3 text-xs"
+          placeholder="Search by student number, name, or program"
+        />
+      </div>
+      <select v-model="remarkFilter" class="h-9 rounded-md border bg-surface px-3 text-xs">
+        <option>All</option>
+        <option>Passed</option>
+        <option>Failed</option>
+        <option>Dropped</option>
+      </select>
     </div>
+
+    <p v-if="error" class="mb-3 rounded-md border border-danger/30 bg-danger-soft p-3 text-xs text-danger">
+      {{ error }}
+    </p>
 
     <DataTable
       :headings="[
         'Student #',
         'Grantee',
         'Program',
-        'GWA',
-        'Standing',
-        'Risk status',
-        'Notification',
+        'Latest GWA',
+        'Course remarks',
+        'Approved submissions',
         '',
       ]"
     >
+      <tr v-if="loading">
+        <td colspan="7" class="px-3 py-8 text-center text-text-muted">Loading academic records...</td>
+      </tr>
       <tr v-for="record in filtered" :key="record.id">
-        <td class="px-3 py-3 font-mono">{{ record.studentNo }}</td>
-        <td class="px-3 py-3 font-medium">{{ record.name }}</td>
-        <td class="px-3 py-3 text-text-muted">{{ record.program }}</td>
-        <td class="px-3 py-3">{{ record.gwa }}</td>
-        <td class="px-3 py-3">{{ record.standing }}</td>
+        <td class="px-3 py-3 font-mono">{{ record.student_number || record.student_id }}</td>
         <td class="px-3 py-3">
-          <span class="rounded-full px-2 py-0.5 text-micro" :class="badgeClass(record.risk)">
-            {{ record.risk }}
-          </span>
+          <p class="font-medium">{{ record.name }}</p>
+          <p class="mt-0.5 text-micro text-text-muted">{{ record.year_level || "Year level not set" }}</p>
         </td>
-        <td class="px-3 py-3 text-xs text-text-muted">{{ record.notified }}</td>
+        <td class="px-3 py-3 text-text-muted">{{ record.program }}</td>
+        <td class="px-3 py-3 font-semibold tabular-nums">{{ record.latest_gwa || "-" }}</td>
         <td class="px-3 py-3">
-          <div class="flex justify-end gap-3">
-            <button
-              v-if="record.risk !== 'Clear'"
-              class="inline-flex items-center gap-1 text-primary"
-              @click="openNotify(record)"
+          <div class="flex flex-wrap gap-1.5">
+            <span
+              v-for="remark in (['Passed', 'Failed', 'Dropped'] as CourseRemark[])"
+              :key="remark"
+              class="rounded-full px-2 py-0.5 text-micro"
+              :class="remarkClass(remark)"
             >
-              <IconSend :size="14" /> Notify
-            </button>
-            <RouterLink
-              :to="`/app/academic/${record.id}`"
-              class="inline-flex items-center gap-1 text-text-muted hover:text-primary"
-            >
-              <IconEye :size="14" /> View
-            </RouterLink>
+              {{ remarkCount(record, remark) }} {{ remark }}
+            </span>
           </div>
+        </td>
+        <td class="px-3 py-3">
+          <p class="font-semibold tabular-nums">{{ record.approved_submissions }}</p>
+          <p class="mt-0.5 text-micro text-text-muted">
+            only approved count / {{ record.total_submissions }} total
+          </p>
+        </td>
+        <td class="px-3 py-3 text-right">
+          <RouterLink
+            :to="`/app/academic/${record.id}`"
+            class="inline-flex items-center gap-1 text-primary"
+          >
+            <IconEye :size="14" /> View history
+          </RouterLink>
         </td>
       </tr>
+      <tr v-if="!loading && !filtered.length">
+        <td colspan="7" class="px-3 py-8 text-center text-text-muted">No academic records found.</td>
+      </tr>
     </DataTable>
-
-    <AppDialog
-      v-model="notifyOpen"
-      title="Notify at-risk student"
-      :description="
-        selected
-          ? `Prepare an academic risk notice for ${selected.name}.`
-          : 'Prepare an academic risk notice.'
-      "
-    >
-      <div v-if="selected" class="space-y-4">
-        <article class="rounded-lg border bg-surface-muted/50 p-4">
-          <div class="flex items-start gap-3">
-            <IconBellRinging :size="18" class="mt-0.5 text-primary" />
-            <div>
-              <p class="text-sm font-semibold">{{ selected.name }}</p>
-              <p class="mt-1 text-xs text-text-muted">
-                {{ selected.studentNo }} · {{ selected.program }}
-              </p>
-              <p class="mt-2 text-xs leading-5 text-text-muted">{{ selected.reason }}</p>
-            </div>
-          </div>
-        </article>
-
-        <label class="block">
-          <span class="text-xs font-medium">Mock notification message</span>
-          <textarea
-            class="mt-1 min-h-28 w-full rounded-md border bg-surface p-3 text-xs leading-5"
-            :value="`Hello ${selected.name}, our office noticed that your current academic standing may put your TES status at risk. Please visit the scholarship office or reply to this notice so we can guide you on the next steps.`"
-          />
-        </label>
-      </div>
-
-      <template #footer="{ close }">
-        <button class="h-9 rounded-md border px-3 text-xs" @click="close">Cancel</button>
-        <button
-          class="h-9 rounded-md bg-primary px-3 text-xs font-medium text-white"
-          @click="close"
-        >
-          Send mocked notice
-        </button>
-      </template>
-    </AppDialog>
   </div>
 </template>

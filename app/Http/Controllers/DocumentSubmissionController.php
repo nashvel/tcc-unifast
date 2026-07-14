@@ -53,6 +53,21 @@ class DocumentSubmissionController extends Controller
 
     private function present(DocumentSubmission $item): array
     {
-        return array_merge($item->toArray(), ['file_url' => Storage::disk('public')->url($item->stored_path)]);
+        $latestCheck = $item->identityChecks()->latest('checked_at')->first();
+        $data = $item->toArray();
+        unset($data['face_descriptor_payload']);
+
+        return array_merge($data, [
+            'file_url' => Storage::disk('public')->url($item->stored_path),
+            'secondary_file_url' => $item->secondary_stored_path ? Storage::disk('public')->url($item->secondary_stored_path) : null,
+            'identity_check' => $latestCheck ? [
+                'result' => $latestCheck->result,
+                'distance' => $latestCheck->distance,
+                'confidence_score' => $latestCheck->confidence_score,
+                'manual_review_required' => $latestCheck->manual_review_required,
+                'challenge_sequence' => $latestCheck->challenge_sequence,
+                'checked_at' => $latestCheck->checked_at,
+            ] : null,
+        ]);
     }
 }

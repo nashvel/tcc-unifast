@@ -8,8 +8,10 @@ type Doc = {
   student_name: string;
   student_id: string;
   document_type: string;
+  slot_key: string | null;
   status: string;
   risk_level: string;
+  identity_review_required: boolean;
   created_at: string;
 };
 const query = ref("");
@@ -48,24 +50,25 @@ const rows = computed(() =>
       />
     </div>
     <div data-tour="documents-queue">
-      <DataTable :headings="['Grantee', 'Student #', 'Document', 'Submitted', 'Status', 'Risk', '']"
+      <DataTable :headings="['Grantee', 'Student #', 'Slot', 'Document', 'Submitted', 'Status', 'Risk', '']"
         ><tr v-for="d in rows" :key="d.id">
           <td class="px-3 py-3 font-medium">{{ d.student_name }}</td>
           <td class="px-3 py-3 font-mono">{{ d.student_id }}</td>
+          <td class="px-3 py-3 text-text-muted">{{ d.slot_key?.replaceAll("_", " ") || "Legacy" }}</td>
           <td class="px-3 py-3 text-text-muted">{{ d.document_type }}</td>
           <td class="px-3 py-3 text-text-muted">{{ new Date(d.created_at).toLocaleString() }}</td>
           <td class="px-3 py-3 capitalize">{{ d.status.replaceAll("_", " ") }}</td>
           <td class="px-3 py-3">
-            <span class="rounded-full bg-warning-soft px-2 py-0.5 text-micro text-warning">{{
-              d.risk_level
-            }}</span>
+            <span class="rounded-full bg-warning-soft px-2 py-0.5 text-micro text-warning">
+              {{ d.identity_review_required ? "identity review" : d.risk_level }}
+            </span>
           </td>
           <td class="px-3 py-3 text-right">
             <RouterLink :to="`/app/documents/${d.id}`" class="text-primary">Review</RouterLink>
           </td>
         </tr>
         <tr v-if="!loading && !rows.length">
-          <td colspan="7" class="px-3 py-8 text-center text-text-muted">
+          <td colspan="8" class="px-3 py-8 text-center text-text-muted">
             No submissions in the queue.
           </td>
         </tr></DataTable

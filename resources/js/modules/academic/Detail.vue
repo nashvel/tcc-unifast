@@ -1,23 +1,90 @@
 <script setup lang="ts">
+import { computed, onMounted, ref } from "vue";
+import { useRoute } from "vue-router";
 import {
+  IconAlertTriangle,
   IconArrowLeft,
-  IconBellRinging,
+  IconCheck,
   IconChecklist,
+  IconFileCheck,
   IconSchool,
-  IconSend,
 } from "@tabler/icons-vue";
 import PageHeader from "@/components/ui/PageHeader.vue";
+import DataTable from "@/components/tables/DataTable.vue";
 
-const terms = [
-  ["1st Semester AY 2025-2026", "2.76", "18 units", "Probation"],
-  ["2nd Semester AY 2024-2025", "2.58", "21 units", "Watchlist"],
-  ["1st Semester AY 2024-2025", "2.22", "21 units", "Clear"],
-];
+type CourseRemark = "Passed" | "Failed" | "Dropped";
+type AcademicCourse = {
+  id: number;
+  code: string;
+  title: string;
+  units: number;
+  grade: string | null;
+  remark: CourseRemark;
+};
+type AcademicSemester = {
+  id: number;
+  term: string;
+  gwa: string | null;
+  units_taken: number;
+  units_passed: number;
+  courses: AcademicCourse[];
+};
+type AcademicRecord = {
+  id: number;
+  student_number: string | null;
+  student_id: string;
+  name: string;
+  program: string;
+  year_level: string | null;
+  latest_gwa: string | null;
+  approved_submissions: number;
+  total_submissions: number;
+  remarks: { passed: number; failed: number; dropped: number };
+  semesters: AcademicSemester[];
+};
 
-const notices = [
-  ["July 11, 2026", "Risk notice drafted", "Pending student acknowledgement"],
-  ["July 4, 2026", "Academic reminder sent", "Delivered by portal notification"],
-];
+const route = useRoute();
+const record = ref<AcademicRecord | null>(null);
+const loading = ref(true);
+const error = ref("");
+
+onMounted(async () => {
+  try {
+    const response = await fetch(`/api/academic-records/${route.params.id}`, {
+      headers: { Accept: "application/json" },
+    });
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.message || "Unable to load academic record.");
+    record.value = payload.data;
+  } catch (exception) {
+    error.value = exception instanceof Error ? exception.message : "Unable to load academic record.";
+  } finally {
+    loading.value = false;
+  }
+});
+
+const totalUnitsTaken = computed(() =>
+  record.value?.semesters.reduce((total, semester) => total + semester.units_taken, 0) ?? 0,
+);
+const totalUnitsPassed = computed(() =>
+  record.value?.semesters.reduce((total, semester) => total + semester.units_passed, 0) ?? 0,
+);
+
+function remarkCount(remark: CourseRemark) {
+  return record.value?.remarks[remark.toLowerCase() as "passed" | "failed" | "dropped"] ?? 0;
+}
+
+function remarkClass(remark: CourseRemark) {
+  if (remark === "Failed") return "bg-danger-soft text-danger";
+  if (remark === "Dropped") return "bg-warning-soft text-warning";
+  return "bg-success-soft text-success";
+}
+
+function remarkIcon(remark: CourseRemark) {
+  if (remark === "Passed") return IconCheck;
+  if (remark === "Failed") return IconAlertTriangle;
+  return IconChecklist;
+}
 </script>
 
 <template>
@@ -30,89 +97,100 @@ const notices = [
     </RouterLink>
 
     <PageHeader
-      title="Christian Dela Cruz"
-      description="2024-00231 · BS Criminology · Academic risk monitoring"
+      :title="record?.name || 'Academic record'"
+      :description="
+        record
+          ? `${record.student_number || record.student_id} - ${record.program} - ${record.year_level || 'Year level not set'}`
+          : 'Loading academic history'
+      "
     />
 
-    <section class="grid gap-4 lg:grid-cols-[2fr_1fr]">
-      <div class="space-y-4">
-        <article class="rounded-lg border bg-surface">
-          <header class="border-b p-4">
-            <h2 class="font-semibold">Term history</h2>
-            <p class="mt-1 text-xs text-text-muted">
-              Used to identify students who need guidance or academic follow-up.
-            </p>
-          </header>
-          <div
-            v-for="term in terms"
-            :key="term[0]"
-            class="flex flex-wrap items-center justify-between gap-3 border-b p-4 last:border-0"
-          >
-            <div>
-              <p class="text-sm font-medium">{{ term[0] }}</p>
-              <p class="mt-1 text-xs text-text-muted">{{ term[2] }}</p>
-            </div>
-            <div class="text-right">
-              <p class="text-lg font-semibold">{{ term[1] }} GWA</p>
-              <span
-                class="text-xs"
-                :class="term[3] === 'Probation' ? 'text-danger' : 'text-text-muted'"
-              >
-                {{ term[3] }}
-              </span>
-            </div>
-          </div>
-        </article>
+    <p v-if="loading" class="rounded-lg border bg-surface p-4 text-sm text-text-muted">
+      Loading academic record...
+    </p>
+    <p v-else-if="error" class="rounded-md border border-danger/30 bg-danger-soft p-3 text-xs text-danger">
+      {{ error }}
+    </p>
 
-        <article class="rounded-lg border bg-surface">
-          <header class="border-b p-4">
-            <h2 class="font-semibold">Notification history</h2>
-          </header>
-          <div
-            v-for="notice in notices"
-            :key="notice[0]"
-            class="flex flex-wrap items-center justify-between gap-3 border-b p-4 last:border-0"
-          >
-            <div>
-              <p class="text-sm font-medium">{{ notice[1] }}</p>
-              <p class="mt-1 text-xs text-text-muted">{{ notice[2] }}</p>
-            </div>
-            <p class="text-xs text-text-muted">{{ notice[0] }}</p>
-          </div>
-        </article>
-      </div>
-
-      <aside class="space-y-4">
-        <article class="rounded-lg border bg-danger-soft p-4">
-          <IconBellRinging :size="20" class="text-danger" />
-          <h2 class="mt-3 text-sm font-semibold text-danger">Student is at risk</h2>
-          <p class="mt-2 text-xs leading-5 text-text-muted">
-            This record should trigger a student notice and adviser follow-up, not an eligibility
-            evaluation.
-          </p>
-          <button
-            class="mt-4 inline-flex h-9 items-center gap-2 rounded-md bg-primary px-3 text-xs font-medium text-white"
-          >
-            <IconSend :size="14" /> Send mocked notice
-          </button>
-        </article>
-
-        <article class="rounded-lg border bg-surface p-4">
-          <IconSchool :size="20" class="text-primary" />
-          <p class="mt-3 text-xs text-text-muted">Current standing</p>
-          <p class="mt-1 text-xl font-semibold">Probation</p>
-        </article>
-
-        <article class="rounded-lg border bg-surface p-4">
-          <IconChecklist :size="20" class="text-primary" />
-          <h2 class="mt-3 text-sm font-semibold">Recommended next steps</h2>
-          <ul class="mt-2 space-y-2 text-xs leading-5 text-text-muted">
-            <li>Notify the student through portal notification.</li>
-            <li>Ask the student to visit the scholarship office.</li>
-            <li>Record acknowledgement once the student responds.</li>
-          </ul>
-        </article>
-      </aside>
+    <template v-else-if="record">
+    <section class="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+      <article class="rounded-lg border bg-surface p-4">
+        <IconSchool :size="18" class="text-primary" />
+        <p class="mt-3 text-xs text-text-muted">Latest GWA</p>
+        <p class="mt-1 text-xl font-semibold tabular-nums">{{ record.latest_gwa || "-" }}</p>
+      </article>
+      <article class="rounded-lg border bg-surface p-4">
+        <IconChecklist :size="18" class="text-primary" />
+        <p class="mt-3 text-xs text-text-muted">Units passed</p>
+        <p class="mt-1 text-xl font-semibold tabular-nums">
+          {{ totalUnitsPassed }} / {{ totalUnitsTaken }}
+        </p>
+      </article>
+      <article
+        v-for="remark in (['Passed', 'Failed', 'Dropped'] as CourseRemark[])"
+        :key="remark"
+        class="rounded-lg border bg-surface p-4"
+      >
+        <component :is="remarkIcon(remark)" :size="18" class="text-primary" />
+        <p class="mt-3 text-xs text-text-muted">{{ remark }} courses</p>
+        <p class="mt-1 text-xl font-semibold tabular-nums">
+          {{ remarkCount(remark) }}
+        </p>
+      </article>
     </section>
+
+    <section class="mb-4 rounded-lg border bg-surface p-4">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 class="text-sm font-semibold">Scholarship submission count</h2>
+          <p class="mt-1 text-xs text-text-muted">
+            Only submissions reviewed as approved are counted for scholarship program history.
+          </p>
+        </div>
+        <div class="rounded-lg bg-success-soft px-4 py-3 text-right text-success">
+          <div class="flex items-center justify-end gap-2">
+            <IconFileCheck :size="18" />
+            <p class="text-2xl font-semibold tabular-nums">{{ record.approved_submissions }}</p>
+          </div>
+          <p class="text-micro">approved of {{ record.total_submissions }} total submissions</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="space-y-4">
+      <article
+        v-for="semester in record.semesters"
+        :key="semester.term"
+        class="overflow-hidden rounded-lg border bg-surface"
+      >
+        <header class="flex flex-wrap items-center justify-between gap-3 border-b p-4">
+          <div>
+            <h2 class="text-sm font-semibold">{{ semester.term }}</h2>
+            <p class="mt-1 text-xs text-text-muted">
+              {{ semester.units_passed }} of {{ semester.units_taken }} units passed
+            </p>
+          </div>
+          <div class="text-right">
+            <p class="text-lg font-semibold tabular-nums">{{ semester.gwa || "-" }}</p>
+            <p class="text-micro text-text-muted">semester GWA</p>
+          </div>
+        </header>
+
+        <DataTable :headings="['Course code', 'Course title', 'Units', 'Grade', 'Remarks']">
+          <tr v-for="course in semester.courses" :key="`${semester.term}-${course.code}`">
+            <td class="px-3 py-3 font-mono">{{ course.code }}</td>
+            <td class="px-3 py-3 font-medium">{{ course.title }}</td>
+            <td class="px-3 py-3 tabular-nums">{{ course.units }}</td>
+            <td class="px-3 py-3 font-semibold tabular-nums">{{ course.grade || "-" }}</td>
+            <td class="px-3 py-3">
+              <span class="rounded-full px-2 py-0.5 text-micro" :class="remarkClass(course.remark)">
+                {{ course.remark }}
+              </span>
+            </td>
+          </tr>
+        </DataTable>
+      </article>
+    </section>
+    </template>
   </div>
 </template>

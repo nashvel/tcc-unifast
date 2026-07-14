@@ -14,6 +14,7 @@
     "@tabler/icons-vue": "^3.44.0",
     "@tailwindcss/vite": "^4.2.1",
     "@vitejs/plugin-vue": "^6.0.1",
+    "face-api.js": "^0.22.2",
     "laravel-vite-plugin": "^2.0.0",
     "lucide-vue-next": "^0.468.0",
     "tailwindcss": "^4.2.1",

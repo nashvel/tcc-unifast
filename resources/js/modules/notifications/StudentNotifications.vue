@@ -1,37 +1,40 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { onMounted, ref } from "vue";
 import PageHeader from "@/components/ui/PageHeader.vue";
-const items = ref([
-  {
-    id: 1,
-    title: "Document approved",
-    body: "Your PSA Birth Certificate was verified and accepted.",
-    time: "May 12, 2025, 10:14 AM",
-    type: "success",
-    read: false,
-  },
-  {
-    id: 2,
-    title: "Resubmission required",
-    body: "Please upload a clearer 2x2 ID Picture.",
-    time: "May 11, 2025, 3:48 PM",
-    type: "warning",
-    read: false,
-  },
-  {
-    id: 3,
-    title: "Orientation reminder",
-    body: "Scholarship orientation begins May 15 at the TCC AVR.",
-    time: "May 10, 2025, 9:00 AM",
-    type: "info",
-    read: true,
-  },
-]);
+
+type Notification = {
+  id: number;
+  title: string;
+  body: string;
+  time: string;
+  type: string;
+  read: boolean;
+};
+const items = ref<Notification[]>([]);
+const loading = ref(true);
+const error = ref("");
+
+onMounted(async () => {
+  try {
+    const response = await fetch("/api/student/notifications", { headers: { Accept: "application/json" } });
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.message || "Unable to load notifications.");
+    items.value = payload.data || [];
+  } catch (exception) {
+    error.value = exception instanceof Error ? exception.message : "Unable to load notifications.";
+  } finally {
+    loading.value = false;
+  }
+});
+
 const tones: Record<string, string> = {
   info: "bg-info",
   success: "bg-success",
   warning: "bg-warning",
   danger: "bg-danger",
+  window_opened: "bg-success",
+  window_closed: "bg-warning",
+  deadline_extended: "bg-info",
 };
 </script>
 <template>
@@ -48,6 +51,12 @@ const tones: Record<string, string> = {
         </button></template
       ></PageHeader
     >
+    <p v-if="loading" class="rounded-lg border bg-surface p-4 text-sm text-text-muted">
+      Loading notifications...
+    </p>
+    <p v-else-if="error" class="rounded-lg border border-danger/30 bg-danger-soft p-4 text-sm text-danger">
+      {{ error }}
+    </p>
     <ul class="space-y-2">
       <li
         v-for="item in items"
@@ -57,7 +66,7 @@ const tones: Record<string, string> = {
           !item.read && 'border-primary/30 bg-primary-soft/20',
         ]"
       >
-        <i :class="['mt-2 h-2 w-2 shrink-0 rounded-full', tones[item.type]]" />
+        <i :class="['mt-2 h-2 w-2 shrink-0 rounded-full', tones[item.type] || 'bg-info']" />
         <div class="min-w-0 flex-1">
           <div class="flex justify-between gap-2">
             <p class="text-sm font-medium">{{ item.title }}</p>
@@ -72,6 +81,9 @@ const tones: Record<string, string> = {
         >
           Mark read
         </button>
+      </li>
+      <li v-if="!loading && !items.length" class="rounded-lg border bg-surface p-4 text-sm text-text-muted">
+        No notifications yet.
       </li>
     </ul>
   </div>
