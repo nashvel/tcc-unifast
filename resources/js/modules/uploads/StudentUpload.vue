@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { IconFile, IconUpload, IconX } from "@tabler/icons-vue";
+import { IconFile, IconLock, IconUpload, IconX } from "@tabler/icons-vue";
 import PageHeader from "@/components/ui/PageHeader.vue";
 import { csrfToken } from "@/auth/session";
+import { useSubmissionWindow } from "@/modules/submissionWindow";
 
 const router = useRouter();
 const route = useRoute();
@@ -17,6 +18,9 @@ const file = ref<File | null>(null);
 const error = ref("");
 const busy = ref(false);
 const result = ref<{ text: string; confidence: number | null } | null>(null);
+const { windowState, loadingWindow, windowError, loadWindow } = useSubmissionWindow();
+
+onMounted(loadWindow);
 
 function choose(event: Event) {
   file.value = (event.target as HTMLInputElement).files?.[0] ?? null;
@@ -72,7 +76,19 @@ async function submit() {
       title="Upload Document"
       description="Submit your Course History or COR for OCR-assisted validation."
     />
-    <div class="grid gap-4 lg:grid-cols-3">
+    <section
+      v-if="loadingWindow || windowError || !windowState?.open"
+      class="rounded-2xl border bg-surface p-6 shadow-sm"
+    >
+      <span class="inline-flex items-center gap-2 rounded-full bg-warning-soft px-3 py-1 text-xs font-semibold text-warning">
+        <IconLock :size="14" /> Locked vault
+      </span>
+      <h2 class="mt-4 text-2xl font-semibold tracking-tight">Submission window is closed</h2>
+      <p class="mt-2 max-w-2xl text-sm text-text-muted">
+        {{ loadingWindow ? "Checking your batch submission window..." : windowError || windowState?.message }}
+      </p>
+    </section>
+    <div v-else class="grid gap-4 lg:grid-cols-3">
       <section class="space-y-4 rounded-lg border bg-surface p-4 lg:col-span-2">
         <div class="rounded-lg border bg-surface-muted px-3 py-2.5">
           <label class="block text-xs font-medium text-text-muted" for="document_type"

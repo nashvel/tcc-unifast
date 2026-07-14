@@ -29,13 +29,13 @@ class AuthController extends Controller
             'ip_address' => $request->ip(),
         ]);
 
-        return response()->json(['user' => $request->user()->only('id', 'name', 'email', 'role', 'student_id')]);
+        return response()->json(['user' => $this->presentUser($request->user())]);
     }
 
     public function me(Request $request): JsonResponse
     {
         return $request->user()
-            ? response()->json(['user' => $request->user()->only('id', 'name', 'email', 'role', 'student_id')])
+            ? response()->json(['user' => $this->presentUser($request->user())])
             : response()->json(['message' => 'Unauthenticated.'], 401);
     }
 
@@ -58,5 +58,15 @@ class AuthController extends Controller
         $request->session()->regenerateToken();
 
         return response()->json(['message' => 'Signed out.']);
+    }
+
+    private function presentUser(\App\Models\User $user): array
+    {
+        $user->loadMissing('kycProfile');
+
+        return [
+            ...$user->only('id', 'name', 'email', 'role', 'student_id', 'account_status'),
+            'kyc_status' => $user->kycProfile?->status,
+        ];
     }
 }

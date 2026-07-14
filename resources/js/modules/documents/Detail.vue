@@ -9,11 +9,26 @@ type Submission = {
   student_name: string;
   student_id: string;
   document_type: string;
+  slot_key: string | null;
   original_name: string;
+  secondary_original_name: string | null;
   file_url: string;
+  secondary_file_url: string | null;
   mime_type: string;
+  secondary_mime_type: string | null;
   status: string;
   risk_level: string;
+  face_quality_score: number | null;
+  identity_review_required: boolean;
+  identity_review_reason: string | null;
+  identity_check: {
+    result: string;
+    distance: number;
+    confidence_score: number | null;
+    manual_review_required: boolean;
+    challenge_sequence: string[];
+    checked_at: string;
+  } | null;
   extracted_text: string | null;
   ocr_confidence: number | null;
   metadata_payload: Record<string, unknown> | null;
@@ -69,16 +84,31 @@ onMounted(load);
         <h2 class="flex items-center gap-2 text-sm font-semibold">
           <IconFile :size="17" />File preview
         </h2>
-        <iframe
-          v-if="item.mime_type === 'application/pdf'"
-          :src="item.file_url"
-          class="mt-4 h-[34rem] w-full rounded-md border"
-        /><img
-          v-else
-          :src="item.file_url"
-          :alt="item.original_name"
-          class="mt-4 max-h-[34rem] w-full rounded-md bg-surface-muted object-contain"
-        />
+        <div class="mt-4 grid gap-3" :class="item.secondary_file_url ? 'lg:grid-cols-2' : ''">
+          <figure>
+            <figcaption class="mb-2 text-xs font-semibold text-text-muted">
+              {{ item.slot_key === "school_id" ? "Front" : item.original_name }}
+            </figcaption>
+            <iframe
+              v-if="item.mime_type === 'application/pdf'"
+              :src="item.file_url"
+              class="h-[34rem] w-full rounded-md border"
+            /><img
+              v-else
+              :src="item.file_url"
+              :alt="item.original_name"
+              class="max-h-[34rem] w-full rounded-md bg-surface-muted object-contain"
+            />
+          </figure>
+          <figure v-if="item.secondary_file_url">
+            <figcaption class="mb-2 text-xs font-semibold text-text-muted">Back</figcaption>
+            <img
+              :src="item.secondary_file_url"
+              :alt="item.secondary_original_name || 'School ID back'"
+              class="max-h-[34rem] w-full rounded-md bg-surface-muted object-contain"
+            />
+          </figure>
+        </div>
       </div>
       <div class="space-y-4">
         <article class="rounded-lg border bg-surface p-4">
@@ -100,9 +130,32 @@ onMounted(load);
             class="mt-3 inline-block rounded-full bg-warning-soft px-2 py-1 text-xs text-warning"
             >{{ item.risk_level }} risk</span
           >
+          <div class="mt-3 space-y-1 text-xs text-text-muted">
+            <p v-if="item.slot_key">Slot: {{ item.slot_key.replaceAll("_", " ") }}</p>
+            <p v-if="item.face_quality_score !== null">
+              ID face quality: {{ item.face_quality_score.toFixed(2) }}
+            </p>
+            <p v-if="item.identity_review_required" class="text-warning">
+              Manual identity review: {{ item.identity_review_reason || "Required" }}
+            </p>
+          </div>
           <pre class="mt-3 max-h-40 overflow-auto whitespace-pre-wrap text-micro text-text-muted">{{
             JSON.stringify(item.metadata_payload, null, 2) || "No metadata recorded."
           }}</pre>
+        </article>
+        <article v-if="item.identity_check" class="rounded-lg border bg-surface p-4">
+          <h2 class="text-sm font-semibold">Identity check</h2>
+          <div class="mt-3 space-y-1 text-xs text-text-muted">
+            <p class="capitalize">Result: {{ item.identity_check.result.replace("_", " ") }}</p>
+            <p>Distance: {{ item.identity_check.distance.toFixed(4) }}</p>
+            <p v-if="item.identity_check.confidence_score !== null">
+              Confidence: {{ item.identity_check.confidence_score.toFixed(1) }}%
+            </p>
+            <p>Challenges: {{ item.identity_check.challenge_sequence.join(", ").replaceAll("_", " ") }}</p>
+            <p v-if="item.identity_check.manual_review_required" class="text-warning">
+              Manual review required
+            </p>
+          </div>
         </article>
         <article class="rounded-lg border bg-surface p-4">
           <h2 class="text-sm font-semibold">Staff decision</h2>

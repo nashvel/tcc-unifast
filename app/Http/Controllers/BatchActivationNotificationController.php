@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ActivationToken;
+use App\Models\Grantee;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -17,14 +19,11 @@ class BatchActivationNotificationController extends Controller
             'message' => ['nullable', 'string', 'max:3000'],
         ]);
 
-        // Demo batch members. Replace this with imported masterlist records once the real
-        // masterlist table is finalized.
-        $students = [
-            ['name' => 'Maria Angela Santos', 'email' => 'student001@tcc.edu.ph'],
-            ['name' => 'John Paul Ramirez', 'email' => 'student002@tcc.edu.ph'],
-            ['name' => 'Nicole Anne Flores', 'email' => 'student003@tcc.edu.ph'],
-            ['name' => 'Christian Dela Cruz', 'email' => 'student004@tcc.edu.ph'],
-        ];
+        $students = Grantee::query()
+            ->with('user')
+            ->where('batch_id', $batch)
+            ->whereHas('user', fn ($query) => $query->where('account_status', 'unverified'))
+            ->get();
 
         $subject = $validated['subject'] ?? 'Activate your TCC UniFAST TES student portal account';
         $intro = $validated['message'] ?? 'Your student portal account has been created from the TES masterlist.';
@@ -32,33 +31,40 @@ class BatchActivationNotificationController extends Controller
         $failed = [];
 
         foreach ($students as $student) {
-            $temporaryPassword = $this->temporaryPassword();
-
-            $user = \App\Models\User::query()->where('email', $student['email'])->first();
-            if ($user) {
-                $user->forceFill([
-                    'password' => Hash::make($temporaryPassword),
-                    'email_verified_at' => null,
-                ])->save();
+            if (! $student->user) {
+                continue;
             }
+            $temporaryPassword = $this->temporaryPassword();
+            $plainToken = Str::random(48);
+
+            $student->user->forceFill([
+                'password' => Hash::make($temporaryPassword),
+                'email_verified_at' => null,
+            ])->save();
+
+            ActivationToken::create([
+                'user_id' => $student->user->id,
+                'token_hash' => hash('sha256', $plainToken),
+                'expires_at' => now()->addDays(7),
+            ]);
 
             $body = implode("\n\n", [
-                "Hello {$student['name']},",
+                "Hello {$student->full_name},",
                 $intro,
                 "Temporary password: {$temporaryPassword}",
-                'Activation page: '.url('/activate'),
-                'After activation, please change your password, upload your student ID, and complete live face verification.',
+                'Activation link: '.url('/activate/'.$plainToken),
+                'After activation, please change your password and complete your KYC profile.',
                 'Do not share this temporary password with anyone.',
             ]);
 
             try {
                 Mail::raw($body, fn ($message) => $message
-                    ->to($student['email'], $student['name'])
+                    ->to($student->email, $student->full_name)
                     ->subject($subject));
                 $sent++;
             } catch (\Throwable $exception) {
                 report($exception);
-                $failed[] = ['email' => $student['email'], 'message' => $exception->getMessage()];
+                $failed[] = ['email' => $student->email, 'message' => $exception->getMessage()];
             }
         }
 

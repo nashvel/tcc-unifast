@@ -6,6 +6,8 @@ export type AuthUser = {
   email: string;
   role: "admin" | "head" | "staff" | "student";
   student_id: string | null;
+  account_status?: "active" | "unverified" | "pending_kyc" | "blocked";
+  kyc_status?: string | null;
 };
 export const authSession = reactive<{ user: AuthUser | null; loaded: boolean }>({
   user: null,

@@ -9,8 +9,9 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
-#[Fillable(['name', 'email', 'role', 'student_id', 'password', 'email_verified_at'])]
+#[Fillable(['name', 'email', 'role', 'student_id', 'account_status', 'activated_at', 'password', 'email_verified_at'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -26,7 +27,18 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'activated_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    public function grantee(): HasOne
+    {
+        return $this->hasOne(Grantee::class);
+    }
+
+    public function kycProfile(): HasOne
+    {
+        return $this->hasOne(KycProfile::class);
     }
 }

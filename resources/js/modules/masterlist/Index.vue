@@ -2,108 +2,183 @@
 import { computed, ref } from "vue";
 import {
   IconAlertTriangle,
-  IconArrowRight,
   IconCheck,
-  IconMail,
   IconFileSpreadsheet,
+  IconMail,
   IconSearch,
   IconUpload,
-  IconUsers,
 } from "@tabler/icons-vue";
 import DataTable from "@/components/tables/DataTable.vue";
 import PageHeader from "@/components/ui/PageHeader.vue";
 import AppDialog from "@/components/dialogs/AppDialog.vue";
-import { masterlist } from "./data";
+import { csrfToken } from "@/auth/session";
 
-const previewed = ref(false);
+type ImportRow = {
+  id: number;
+  row_number: number;
+  student_id: string | null;
+  student_number: string | null;
+  full_name: string | null;
+  email: string | null;
+  program: string | null;
+  year_level: string | null;
+  status: "valid" | "invalid";
+  errors: string[];
+};
+
+type ImportPreview = {
+  id: number;
+  status: string;
+  total_rows: number;
+  valid_rows: number;
+  invalid_rows: number;
+  imported_rows: number;
+  rows: ImportRow[];
+};
+
+const batchName = ref("TES Batch");
+const academicYear = ref("2026-2027");
+const semester = ref("1st Semester");
+const selectedFile = ref<File | null>(null);
+const preview = ref<ImportPreview | null>(null);
 const query = ref("");
+const busy = ref(false);
+const confirming = ref(false);
+const error = ref("");
 const confirmDialog = ref(false);
+const mailResult = ref<{ sent: number; failed: { email: string; message: string }[] } | null>(null);
 
-const rows = computed(() =>
-  masterlist.filter((row) => {
-    return `${row[0]} ${row[1]} ${row[2]} ${row[3]}`
+const rows = computed(() => {
+  const q = query.value.toLowerCase();
+  return (preview.value?.rows ?? []).filter((row) =>
+    `${row.student_id ?? ""} ${row.student_number ?? ""} ${row.full_name ?? ""} ${row.email ?? ""} ${row.program ?? ""}`
       .toLowerCase()
-      .includes(query.value.toLowerCase());
-  }),
-);
+      .includes(q),
+  );
+});
 
-const counts = computed(() => ({
-  total: masterlist.length,
-  active: masterlist.filter((row) => row[4] === "active").length,
-  pending: masterlist.filter((row) => row[4] === "pending_activation").length,
-  inactive: masterlist.filter((row) => row[4] === "inactive").length,
-  duplicate: masterlist.filter((row) => row[4] === "duplicate").length,
-  invalid: masterlist.filter((row) => row[4] === "invalid").length,
-}));
+function chooseFile(event: Event) {
+  const input = event.target as HTMLInputElement;
+  selectedFile.value = input.files?.[0] ?? null;
+  preview.value = null;
+  mailResult.value = null;
+}
 
-const importableCount = computed(
-  () => counts.value.total - counts.value.duplicate - counts.value.invalid,
-);
+async function previewImport() {
+  if (!selectedFile.value) {
+    error.value = "Choose a CSV or XLSX masterlist file first.";
+    return;
+  }
+
+  busy.value = true;
+  error.value = "";
+  mailResult.value = null;
+  const body = new FormData();
+  body.append("file", selectedFile.value);
+  body.append("batch_name", batchName.value);
+  body.append("academic_year", academicYear.value);
+  body.append("semester", semester.value);
+
+  try {
+    const response = await fetch("/api/masterlist/imports/preview", {
+      method: "POST",
+      headers: { "X-CSRF-TOKEN": csrfToken(), Accept: "application/json" },
+      body,
+    });
+    const payload = await response.json();
+    if (!response.ok) {
+      const validation = payload.errors ? Object.values(payload.errors).flat().join(" ") : "";
+      throw new Error(validation || payload.message || "Unable to preview import.");
+    }
+    preview.value = payload.data;
+  } catch (exception) {
+    error.value = exception instanceof Error ? exception.message : "Unable to preview import.";
+  } finally {
+    busy.value = false;
+  }
+}
+
+async function confirmImport(close: () => void) {
+  if (!preview.value) return;
+  confirming.value = true;
+  error.value = "";
+
+  try {
+    const response = await fetch(`/api/masterlist/imports/${preview.value.id}/confirm`, {
+      method: "POST",
+      headers: { "X-CSRF-TOKEN": csrfToken(), Accept: "application/json" },
+    });
+    const payload = await response.json();
+    if (!response.ok && response.status !== 207) {
+      throw new Error(payload.message || "Unable to confirm import.");
+    }
+    preview.value = payload.data;
+    mailResult.value = payload.mail;
+    close();
+  } catch (exception) {
+    error.value = exception instanceof Error ? exception.message : "Unable to confirm import.";
+  } finally {
+    confirming.value = false;
+  }
+}
 </script>
 
 <template>
   <div>
     <PageHeader
       title="Masterlist Import"
-      description="Head uploads the TES masterlist. For the mockup, it only needs student ID, student name, email, and student number."
-    >
-      <template #actions>
-        <button class="inline-flex h-9 items-center gap-1.5 rounded-md border px-3 text-xs">
-          <IconUpload :size="14" />
-          Download template
-        </button>
+      description="Upload the CHED masterlist, preview row errors, then create grantee accounts."
+    />
+
+    <section class="mb-4 grid gap-4 rounded-lg border bg-surface p-4 lg:grid-cols-4">
+      <label class="block">
+        <span class="mb-1.5 block text-xs font-medium">Batch name</span>
+        <input v-model="batchName" class="h-9 w-full rounded-md border px-3 text-sm" />
+      </label>
+      <label class="block">
+        <span class="mb-1.5 block text-xs font-medium">Academic year</span>
+        <input v-model="academicYear" class="h-9 w-full rounded-md border px-3 text-sm" />
+      </label>
+      <label class="block">
+        <span class="mb-1.5 block text-xs font-medium">Semester</span>
+        <input v-model="semester" class="h-9 w-full rounded-md border px-3 text-sm" />
+      </label>
+      <label class="block">
+        <span class="mb-1.5 block text-xs font-medium">CHED file</span>
+        <input
+          type="file"
+          accept=".csv,.xlsx"
+          class="block w-full text-xs"
+          data-tour="masterlist-upload"
+          @change="chooseFile"
+        />
+      </label>
+      <div class="flex items-end lg:col-span-4">
         <button
-          class="inline-flex h-9 items-center gap-1.5 rounded-md bg-primary px-3 text-xs font-medium text-white"
-          @click="previewed = true"
+          :disabled="busy"
+          class="inline-flex h-9 items-center gap-1.5 rounded-md bg-primary px-3 text-xs font-medium text-white disabled:opacity-60"
+          @click="previewImport"
         >
-          <IconArrowRight :size="14" />
-          Process import
+          <IconUpload :size="14" />{{ busy ? "Processing..." : "Preview import" }}
         </button>
-      </template>
-    </PageHeader>
+      </div>
+    </section>
 
-    <div v-if="!previewed" class="grid gap-4 lg:grid-cols-3">
-      <button
-        data-tour="masterlist-upload"
-        class="flex min-h-64 flex-col items-center justify-center rounded-lg border-2 border-dashed bg-surface p-8 text-center transition hover:border-primary/50 hover:bg-primary/5 lg:col-span-2"
-        @click="previewed = true"
-      >
-        <span
-          class="mb-3 grid size-12 place-items-center rounded-full bg-primary-soft text-primary"
-        >
-          <IconFileSpreadsheet :size="24" />
-        </span>
-        <span class="text-sm font-semibold">Drop your masterlist here or browse</span>
-        <span class="mt-1 text-xs text-text-muted">CSV or XLSX up to 20MB</span>
-      </button>
+    <p
+      v-if="error"
+      class="mb-4 flex gap-2 rounded-md border border-danger/30 bg-danger-soft p-3 text-xs text-danger"
+    >
+      <IconAlertTriangle :size="14" />{{ error }}
+    </p>
 
-      <aside class="rounded-lg border bg-surface p-4" data-tour="masterlist-rules">
-        <h2 class="text-sm font-semibold">Import rules</h2>
-        <ul class="mt-3 list-inside list-disc space-y-2 text-xs leading-5 text-text-muted">
-          <li>The Office Head uploads the student masterlist.</li>
-          <li>Required columns: student ID, student name, email, and student number.</li>
-          <li>Student accounts are auto-generated from those records.</li>
-          <li>All new accounts are inactive by default.</li>
-          <li>Students activate by verifying their identity and contact details.</li>
-          <li>Duplicate student numbers are flagged and skipped.</li>
-          <li>Missing or malformed required data is marked invalid.</li>
-        </ul>
-      </aside>
-    </div>
-
-    <div v-else class="space-y-4">
-      <section
-        class="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6"
-        data-tour="masterlist-stats"
-      >
+    <div v-if="preview" class="space-y-4">
+      <section class="grid grid-cols-2 gap-3 sm:grid-cols-4" data-tour="masterlist-stats">
         <article
           v-for="item in [
-            ['Total rows', counts.total, 'text-text'],
-            ['Active', counts.active, 'text-success'],
-            ['Pending activation', counts.pending, 'text-warning'],
-            ['Inactive', counts.inactive, 'text-text-muted'],
-            ['Duplicate', counts.duplicate, 'text-info'],
-            ['Invalid', counts.invalid, 'text-danger'],
+            ['Total rows', preview.total_rows, 'text-text'],
+            ['Valid rows', preview.valid_rows, 'text-success'],
+            ['Error rows', preview.invalid_rows, 'text-danger'],
+            ['Imported', preview.imported_rows, 'text-primary'],
           ]"
           :key="String(item[0])"
           class="rounded-lg border bg-surface p-3"
@@ -114,14 +189,16 @@ const importableCount = computed(
       </section>
 
       <div
+        v-if="preview.invalid_rows"
         class="flex items-start gap-2 rounded-lg border border-warning/30 bg-warning-soft p-3 text-xs"
+        data-tour="masterlist-rules"
       >
         <IconAlertTriangle :size="15" class="mt-0.5 shrink-0 text-warning" />
         <div>
-          <p class="font-medium text-warning">Some rows need attention</p>
+          <p class="font-medium text-warning">Rows with errors will be skipped</p>
           <p class="mt-0.5 text-text-muted">
-            {{ counts.duplicate }} duplicate and {{ counts.invalid }} invalid row detected. They
-            will not create accounts.
+            Fix missing email, duplicate student ID, duplicate student number, or incomplete data
+            before confirming if those rows should be included.
           </p>
         </div>
       </div>
@@ -132,86 +209,101 @@ const importableCount = computed(
           <input
             v-model="query"
             class="h-9 w-full rounded-md border pl-9 pr-3 text-xs"
-            placeholder="Search by student ID, name, email, or student number"
+            placeholder="Search preview rows"
           />
         </div>
       </section>
 
-      <DataTable :headings="['Student ID', 'Student name', 'Student email', 'Student number']">
-        <tr v-for="row in rows" :key="String(row[0] || row[1])">
-          <td class="px-3 py-3 font-mono">
-            <span v-if="row[0]">{{ row[0] }}</span>
-            <span v-else class="italic text-danger">missing</span>
+      <DataTable
+        :headings="['Row', 'Student ID', 'Name', 'Email', 'Program', 'Year', 'Status']"
+      >
+        <tr
+          v-for="row in rows"
+          :key="row.id"
+          :class="row.status === 'invalid' ? 'bg-danger-soft/40' : ''"
+        >
+          <td class="px-3 py-3 font-mono">{{ row.row_number }}</td>
+          <td class="px-3 py-3 font-mono">{{ row.student_id || "missing" }}</td>
+          <td class="px-3 py-3 font-medium">{{ row.full_name || "missing" }}</td>
+          <td class="px-3 py-3 text-text-muted">{{ row.email || "missing" }}</td>
+          <td class="px-3 py-3 text-text-muted">{{ row.program || "missing" }}</td>
+          <td class="px-3 py-3">{{ row.year_level || "-" }}</td>
+          <td class="px-3 py-3">
+            <span
+              :class="[
+                'rounded-full px-2 py-0.5 text-micro',
+                row.status === 'valid' ? 'bg-success-soft text-success' : 'bg-danger-soft text-danger',
+              ]"
+            >
+              {{ row.status }}
+            </span>
+            <p v-if="row.errors.length" class="mt-1 max-w-xs text-micro text-danger">
+              {{ row.errors.join(" ") }}
+            </p>
           </td>
-          <td class="px-3 py-3 font-medium">{{ row[1] }}</td>
-          <td class="px-3 py-3 text-text-muted">{{ row[2] }}</td>
-          <td class="px-3 py-3 text-text-muted">{{ row[3] }}</td>
         </tr>
         <tr v-if="!rows.length">
-          <td colspan="4" class="p-8 text-center text-text-muted">No matching rows found.</td>
+          <td colspan="7" class="p-8 text-center text-text-muted">No matching rows found.</td>
         </tr>
-        <template #footer>
-          <footer class="flex justify-between border-t px-3 py-2.5 text-xs text-text-muted">
-            <span>Showing {{ rows.length }} of {{ masterlist.length }}</span>
-            <span>Page 1 of 1</span>
-          </footer>
-        </template>
       </DataTable>
 
-      <div class="flex justify-end gap-2">
-        <button class="h-9 rounded-md border px-3 text-xs" @click="previewed = false">
-          Cancel
-        </button>
+      <section
+        v-if="mailResult"
+        class="rounded-lg border bg-surface p-4"
+      >
+        <h2 class="flex items-center gap-2 text-sm font-semibold">
+          <IconMail :size="16" class="text-primary" /> Invitation emails
+        </h2>
+        <p class="mt-1 text-xs text-text-muted">
+          {{ mailResult.sent }} activation emails sent. {{ mailResult.failed.length }} failed.
+        </p>
+      </section>
+
+      <div class="flex justify-end">
         <button
-          class="inline-flex h-9 items-center gap-1.5 rounded-md bg-primary px-3 text-xs font-medium text-white"
+          :disabled="preview.status === 'imported' || preview.valid_rows === 0"
+          class="inline-flex h-9 items-center gap-1.5 rounded-md bg-primary px-3 text-xs font-medium text-white disabled:opacity-60"
           @click="confirmDialog = true"
         >
           <IconCheck :size="14" />
-          Confirm import ({{ importableCount }} accounts)
+          {{ preview.status === "imported" ? "Import confirmed" : `Confirm import (${preview.valid_rows} accounts)` }}
         </button>
       </div>
-
-      <section class="grid gap-3 rounded-xl border bg-surface p-4 lg:grid-cols-[1fr_auto]">
-        <div>
-          <h2 class="text-sm font-semibold">Next flow after upload</h2>
-          <p class="mt-1 text-xs text-text-muted">
-            Import creates inactive student accounts from the masterlist. When Batch 1 is ready, the
-            Head can notify students by SMTP with a safely generated temporary password.
-          </p>
-        </div>
-        <div class="flex flex-wrap gap-2">
-          <RouterLink
-            to="/app/batches/1"
-            class="inline-flex h-9 items-center gap-1.5 rounded-md border px-3 text-xs"
-          >
-            <IconUsers :size="14" /> Open Batch 1
-          </RouterLink>
-          <RouterLink
-            to="/app/batches/1"
-            class="inline-flex h-9 items-center gap-1.5 rounded-md bg-primary px-3 text-xs font-medium text-white"
-          >
-            <IconMail :size="14" /> Notify Batch 1 activation
-          </RouterLink>
-        </div>
-      </section>
     </div>
+
+    <section
+      v-else
+      class="flex min-h-64 flex-col items-center justify-center rounded-lg border-2 border-dashed bg-surface p-8 text-center"
+    >
+      <span class="mb-3 grid size-12 place-items-center rounded-full bg-primary-soft text-primary">
+        <IconFileSpreadsheet :size="24" />
+      </span>
+      <span class="text-sm font-semibold">Upload a CHED CSV or XLSX file</span>
+      <span class="mt-1 text-xs text-text-muted">
+        Required columns: student ID, name, email, program, year level, and optional student number.
+      </span>
+    </section>
+
     <AppDialog
       v-model="confirmDialog"
       title="Confirm masterlist import"
-      :description="`${importableCount} accounts will be created. Duplicate and invalid rows will be skipped.`"
+      :description="preview ? `${preview.valid_rows} valid rows will create accounts and receive activation emails.` : ''"
       size="sm"
-      ><div class="space-y-2 text-sm text-text-muted">
-        <p>New student accounts will start inactive and require identity verification.</p>
-        <label class="flex items-center gap-2 text-xs"
-          ><input type="checkbox" />I reviewed the duplicate and invalid rows.</label
-        >
-      </div>
-      <template #footer="{ close }"
-        ><button class="rounded-md border px-4 py-2 text-xs" @click="close">Cancel</button
-        ><button class="rounded-md bg-primary px-4 py-2 text-xs text-white" @click="close">
-          Confirm import
-        </button></template
-      ></AppDialog
     >
+      <p class="text-sm text-text-muted">
+        New accounts will start as unverified. Each grantee receives a one-time activation link and
+        temporary password.
+      </p>
+      <template #footer="{ close }">
+        <button class="rounded-md border px-4 py-2 text-xs" @click="close">Cancel</button>
+        <button
+          class="rounded-md bg-primary px-4 py-2 text-xs text-white disabled:opacity-60"
+          :disabled="confirming"
+          @click="confirmImport(close)"
+        >
+          {{ confirming ? "Importing..." : "Confirm import" }}
+        </button>
+      </template>
+    </AppDialog>
   </div>
 </template>

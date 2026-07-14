@@ -8,7 +8,6 @@ import {
 } from "vue-router";
 import App from "./App.vue";
 import { authSession, loadAuthUser } from "@/auth/session";
-import { studentVerification } from "@/auth/studentVerification";
 
 const appChildren: RouteRecordRaw[] = [
   { path: "", component: () => import("@/modules/dashboard/AdminDashboard.vue") },
@@ -46,11 +45,12 @@ const appChildren: RouteRecordRaw[] = [
 
 const studentChildren: RouteRecordRaw[] = [
   { path: "", component: () => import("@/modules/dashboard/StudentDashboard.vue") },
+  { path: "kyc", component: () => import("@/modules/kyc/StudentKyc.vue") },
   { path: "verify", component: () => import("@/modules/verification/StudentVerification.vue") },
   { path: "submissions", redirect: "/student/documents" },
   { path: "profile", component: () => import("@/modules/profile/Index.vue") },
   { path: "documents", component: () => import("@/modules/documents/StudentDocuments.vue") },
-  { path: "upload", component: () => import("@/modules/uploads/StudentUpload.vue") },
+  { path: "upload", redirect: "/student/documents" },
   { path: "announcements", component: () => import("@/modules/announcements/StudentIndex.vue") },
   {
     path: "notifications",
@@ -67,6 +67,7 @@ function createAppRouter(ssr: boolean): Router {
       { path: "/login", component: () => import("@/auth/Login.vue") },
       { path: "/forgot-password", component: () => import("@/auth/ForgotPassword.vue") },
       { path: "/activate", component: () => import("@/auth/Activate.vue") },
+      { path: "/activate/:token", component: () => import("@/auth/Activate.vue") },
       { path: "/activate-success", component: () => import("@/auth/ActivateSuccess.vue") },
       { path: "/locked", component: () => import("@/auth/Locked.vue") },
       { path: "/app", component: () => import("@/layouts/AppShell.vue"), children: appChildren },
@@ -93,10 +94,10 @@ function createAppRouter(ssr: boolean): Router {
     if (
       user.role === "student" &&
       to.path.startsWith("/student") &&
-      !studentVerification.verified &&
-      !["/student", "/student/verify", "/student/settings"].includes(to.path)
+      ["unverified", "pending_kyc", "blocked"].includes(user.account_status ?? "") &&
+      !["/student/kyc", "/student/settings"].includes(to.path)
     ) {
-      return "/student/verify";
+      return "/student/kyc";
     }
     return true;
   });

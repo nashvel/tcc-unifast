@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { onMounted, ref } from "vue";
 import {
   IconArrowRight,
   IconCalendarEvent,
@@ -18,7 +18,10 @@ import {
 import AppTour from "@/components/tour/AppTour.vue";
 import DiceBearAvatar from "@/components/ui/DiceBearAvatar.vue";
 import { studentVerification } from "@/auth/studentVerification";
+import { useSubmissionWindow } from "@/modules/submissionWindow";
 const activityTab = ref("Time spent");
+const { windowState, loadingWindow, loadWindow } = useSubmissionWindow();
+onMounted(loadWindow);
 const days = [
   ["Mon", 6],
   ["Tue", 4.5],
@@ -31,17 +34,17 @@ const days = [
 const progress = [
   {
     name: "Required Documents",
-    meta: "Course History and COR required",
+    meta: "School ID, Course History, and Grade Slip",
     value: 0,
     tone: "bg-primary",
     to: "/student/documents",
   },
   {
     name: "TES Application",
-    meta: "Upload required documents",
+    meta: "Complete requirement vault",
     value: 0,
     tone: "bg-gold",
-    to: "/student/upload",
+    to: "/student/documents",
   },
 ];
 const schedule = [
@@ -75,7 +78,7 @@ const schedule = [
 <template>
   <div class="student-dashboard mx-auto max-w-[1280px] space-y-4">
     <section
-      v-if="!studentVerification.verified"
+      v-if="false && !studentVerification.verified"
       class="rounded-2xl border bg-surface p-6 shadow-sm"
     >
       <div class="grid gap-5 lg:grid-cols-[1fr_340px]">
@@ -131,9 +134,15 @@ const schedule = [
       <section class="rounded-xl border border-info/30 bg-info-soft p-3">
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p class="text-sm font-semibold text-info">Identity verified</p>
+            <p class="text-sm font-semibold text-info">
+              {{ windowState?.open ? "Submission window open" : "Submission vault locked" }}
+            </p>
             <p class="mt-0.5 text-xs text-text-muted">
-              Next: change your temporary password and upload COR to strengthen validation.
+              {{
+                loadingWindow
+                  ? "Checking your batch submission window..."
+                  : windowState?.message || "Your batch submission window is not available."
+              }}
             </p>
           </div>
           <div class="flex gap-2">
@@ -144,10 +153,13 @@ const schedule = [
               Change password
             </RouterLink>
             <RouterLink
-              :to="{ path: '/student/upload', query: { type: 'COR' } }"
-              class="rounded-md bg-primary px-3 py-2 text-xs font-medium text-white"
+              to="/student/documents"
+              :class="[
+                'rounded-md px-3 py-2 text-xs font-medium',
+                windowState?.open ? 'bg-primary text-white' : 'border bg-surface text-text-muted',
+              ]"
             >
-              Upload COR
+              {{ windowState?.open ? "Open vault" : "View vault" }}
             </RouterLink>
           </div>
         </div>
@@ -171,9 +183,9 @@ const schedule = [
           v-for="(card, cardIndex) in [
             {
               label: 'Requirements completed',
-              value: '0 / 2',
+              value: '0 / 4',
               icon: IconFileCheck,
-              foot: 'Course History and COR required',
+              foot: 'Vault requirements required',
             },
             { label: 'Applications', value: '1', icon: IconSchool, foot: 'Documents pending' },
             { label: 'Upcoming events', value: '4', icon: IconCalendarEvent, foot: 'Next: May 15' },
