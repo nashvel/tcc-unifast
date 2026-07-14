@@ -8,6 +8,17 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
+/vendor
+/public/build
+/public/hot
+/storage/*.key
+/storage/framework/cache/data/*
+/storage/framework/sessions/*
+/storage/framework/views/*
+/storage/logs/*
+/.phpunit.cache
+/.phpunit.result.cache
+.env
 dist
 dist-ssr
 .output
