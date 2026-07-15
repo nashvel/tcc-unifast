@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import { useRoute } from "vue-router";
+import { useI18n } from "vue-i18n";
 import {
   IconArrowLeft,
   IconCheck,
@@ -12,8 +13,11 @@ import {
 } from "@tabler/icons-vue";
 import AppDialog from "@/components/dialogs/AppDialog.vue";
 import AppTour from "@/components/tour/AppTour.vue";
+import { translateKnownText } from "@/i18n/knownText";
+import { withLang } from "@/i18n/routeLang";
 
 const route = useRoute();
+const { t } = useI18n();
 const search = ref("");
 const roleFilter = ref("All roles");
 const statusFilter = ref("All statuses");
@@ -112,24 +116,24 @@ const allowed = (role: string, permission: string) =>
   <div v-if="!isMatrix">
     <header class="mb-4 flex flex-wrap items-start justify-between gap-3" data-tour="page-header">
       <div>
-        <h1 class="text-2xl font-semibold tracking-tight">Users & Access</h1>
-        <p class="mt-1 text-sm text-text-muted">Manage staff accounts, roles, and permissions.</p>
+        <h1 class="text-2xl font-semibold tracking-tight">{{ t("users.title") }}</h1>
+        <p class="mt-1 text-sm text-text-muted">{{ t("users.description") }}</p>
       </div>
       <div class="flex gap-2">
         <AppTour />
         <button
           class="inline-flex h-9 items-center gap-1.5 rounded-md border bg-surface px-3 text-xs"
         >
-          <IconDownload :size="14" />Export</button
+          <IconDownload :size="14" />{{ t("common.export") }}</button
         ><RouterLink
-          to="/app/users/permissions"
+          :to="withLang('/app/users/permissions', route.query.lang)"
           class="inline-flex h-9 items-center rounded-md border bg-surface px-3 text-xs"
-          >Permission matrix</RouterLink
+          >{{ t("users.permissionMatrix") }}</RouterLink
         ><button
           class="inline-flex h-9 items-center gap-1.5 rounded-md bg-primary px-3 text-xs font-medium text-white"
           @click="userDialog = true"
         >
-          <IconPlus :size="14" />New user
+          <IconPlus :size="14" />{{ t("users.newUser") }}
         </button>
       </div>
     </header>
@@ -140,19 +144,19 @@ const allowed = (role: string, permission: string) =>
           class="absolute left-3 top-1/2 -translate-y-1/2 text-text-soft"
         /><input
           v-model="search"
-          placeholder="Search by name, username, or email"
+          :placeholder="t('users.searchPlaceholder')"
           class="h-9 w-full rounded-md border pl-9 pr-3 text-xs"
         />
       </div>
       <select v-model="roleFilter" class="h-9 rounded-md border bg-surface px-3 text-xs">
-        <option>All roles</option>
-        <option>Admin</option>
-        <option>Head</option>
-        <option>Staff</option></select
+        <option value="All roles">{{ t("users.allRoles") }}</option>
+        <option value="Admin">{{ t("roles.admin") }}</option>
+        <option value="Head">{{ t("roles.head") }}</option>
+        <option value="Staff">{{ t("roles.staff") }}</option></select
       ><select v-model="statusFilter" class="h-9 rounded-md border bg-surface px-3 text-xs">
-        <option>All statuses</option>
-        <option>Active</option>
-        <option>Disabled</option>
+        <option value="All statuses">{{ t("users.allStatuses") }}</option>
+        <option value="Active">{{ t("status.active") }}</option>
+        <option value="Disabled">{{ t("status.disabled") }}</option>
       </select>
     </section>
     <div class="overflow-x-auto rounded-lg border bg-surface" data-tour="page-content">
@@ -161,13 +165,13 @@ const allowed = (role: string, permission: string) =>
           <tr>
             <th
               v-for="heading in [
-                'Username',
-                'Full Name',
-                'Email',
-                'Role',
-                'MFA',
-                'Status',
-                'Last login',
+                t('users.username'),
+                t('users.fullName'),
+                t('common.email'),
+                t('users.role'),
+                t('users.mfa'),
+                t('users.status'),
+                t('users.lastLogin'),
                 '',
               ]"
               :key="heading"
@@ -184,7 +188,7 @@ const allowed = (role: string, permission: string) =>
             <td class="px-3 py-3 text-text-muted">{{ user[2] }}</td>
             <td class="px-3 py-3">
               <span class="rounded-full bg-primary-soft px-2 py-0.5 text-primary">{{
-                user[3]
+                translateKnownText(t, String(user[3]))
               }}</span>
             </td>
             <td class="px-3 py-3">
@@ -193,7 +197,7 @@ const allowed = (role: string, permission: string) =>
                   'rounded-full px-2 py-0.5',
                   user[4] ? 'bg-success-soft text-success' : 'bg-warning-soft text-warning',
                 ]"
-                >{{ user[4] ? "Enabled" : "Off" }}</span
+                >{{ user[4] ? t("status.enabled") : t("status.off") }}</span
               >
             </td>
             <td class="px-3 py-3">
@@ -202,7 +206,7 @@ const allowed = (role: string, permission: string) =>
                   'rounded-full px-2 py-0.5',
                   user[5] ? 'bg-success-soft text-success' : 'bg-danger-soft text-danger',
                 ]"
-                >{{ user[5] ? "Active" : "Disabled" }}</span
+                >{{ user[5] ? t("status.active") : t("status.disabled") }}</span
               >
             </td>
             <td class="whitespace-nowrap px-3 py-3 text-text-muted">{{ user[6] }}</td>
@@ -214,13 +218,13 @@ const allowed = (role: string, permission: string) =>
                   class="inline-flex items-center gap-1 text-primary"
                   @click="confirmAccount('Reset password', String(user[1]))"
                 >
-                  <IconKey :size="12" />Reset
+                  <IconKey :size="12" />{{ t("users.reset") }}
                 </button>
                 <button
                   class="text-left text-text-muted"
                   @click="confirmAccount(user[5] ? 'Deactivate' : 'Activate', String(user[1]))"
                 >
-                  {{ user[5] ? "Deactivate" : "Activate" }}
+                  {{ user[5] ? t("users.deactivate") : t("users.activate") }}
                 </button>
               </div>
             </td>
@@ -228,99 +232,98 @@ const allowed = (role: string, permission: string) =>
         </tbody>
       </table>
       <footer class="flex justify-between border-t px-3 py-2.5 text-xs text-text-muted">
-        <span>Showing {{ filtered.length }} staff users</span><span>Page 1 of 1</span>
+        <span>{{ t("users.showingStaffUsers", { count: filtered.length }) }}</span><span>{{ t("pagination.pageOf", { page: 1, pages: 1 }) }}</span>
       </footer>
     </div>
     <AppDialog
       v-model="userDialog"
-      title="Create staff user"
-      description="Add an account and assign its initial role and access."
+      :title="t('users.createStaffUser')"
+      :description="t('users.createStaffUserDescription')"
       size="lg"
       ><div class="grid gap-4 sm:grid-cols-2">
         <label class="text-xs font-medium"
-          >Full name<input
+          >{{ t("users.fullName") }}<input
             class="mt-1.5 h-10 w-full rounded-md border px-3 text-sm"
-            placeholder="Full name" /></label
+            :placeholder="t('users.fullName')" /></label
         ><label class="text-xs font-medium"
-          >Username<input
+          >{{ t("users.username") }}<input
             class="mt-1.5 h-10 w-full rounded-md border px-3 text-sm"
-            placeholder="username" /></label
+            :placeholder="t('users.usernamePlaceholder')" /></label
         ><label class="text-xs font-medium"
-          >Email<input
+          >{{ t("common.email") }}<input
             type="email"
             class="mt-1.5 h-10 w-full rounded-md border px-3 text-sm"
             placeholder="name@unifast.gov.ph" /></label
         ><label class="text-xs font-medium"
-          >Role<select class="mt-1.5 h-10 w-full rounded-md border bg-surface px-3 text-sm">
-            <option>Staff</option>
-            <option>Head</option>
-            <option>Admin</option>
+          >{{ t("users.role") }}<select class="mt-1.5 h-10 w-full rounded-md border bg-surface px-3 text-sm">
+            <option>{{ t("roles.staff") }}</option>
+            <option>{{ t("roles.head") }}</option>
+            <option>{{ t("roles.admin") }}</option>
           </select></label
         ><label class="flex items-center gap-2 text-xs sm:col-span-2"
-          ><input type="checkbox" checked />Require password change and MFA enrollment on first
-          sign-in</label
+          ><input type="checkbox" checked />{{ t("users.requirePasswordMfa") }}</label
         >
       </div>
       <template #footer="{ close }"
-        ><button class="rounded-md border px-4 py-2 text-xs" @click="close">Cancel</button
+        ><button class="rounded-md border px-4 py-2 text-xs" @click="close">{{ t("common.cancel") }}</button
         ><button class="rounded-md bg-primary px-4 py-2 text-xs text-white" @click="close">
-          Create user
+          {{ t("users.createUser") }}
         </button></template
       ></AppDialog
     >
     <AppDialog
       v-model="accountDialog"
-      :title="`${accountAction} account`"
-      :description="`${accountAction} for ${accountName}. This mock action does not persist.`"
+      :title="t('users.accountActionTitle', { action: translateKnownText(t, accountAction) })"
+      :description="t('users.accountActionDescription', { action: translateKnownText(t, accountAction), name: accountName })"
       size="sm"
       ><label v-if="accountAction === 'Reset password'" class="text-xs font-medium"
-        >Reset method<select class="mt-1.5 h-10 w-full rounded-md border bg-surface px-3 text-sm">
-          <option>Send password reset email</option>
-          <option>Generate temporary password</option>
-          <option>Force reset at next login</option>
+        >{{ t("users.resetMethod") }}<select class="mt-1.5 h-10 w-full rounded-md border bg-surface px-3 text-sm">
+          <option>{{ t("users.sendPasswordResetEmail") }}</option>
+          <option>{{ t("users.generateTemporaryPassword") }}</option>
+          <option>{{ t("users.forceResetAtNextLogin") }}</option>
         </select></label
       >
       <p v-else class="text-sm text-text-muted">
-        Confirm that you want to {{ accountAction.toLowerCase() }} this user account.
+        {{ t("users.confirmAccountAction", { action: translateKnownText(t, accountAction.toLowerCase()) }) }}
       </p>
       <template #footer="{ close }"
-        ><button class="rounded-md border px-4 py-2 text-xs" @click="close">Cancel</button
+        ><button class="rounded-md border px-4 py-2 text-xs" @click="close">{{ t("common.cancel") }}</button
         ><button class="rounded-md bg-primary px-4 py-2 text-xs text-white" @click="close">
-          Confirm
+          {{ t("common.confirm") }}
         </button></template
       ></AppDialog
     >
   </div>
   <div v-else>
     <RouterLink
-      to="/app/users"
+      :to="withLang('/app/users', route.query.lang)"
       class="mb-3 inline-flex items-center gap-1 text-xs text-text-muted hover:text-text"
-      ><IconArrowLeft :size="13" />Back</RouterLink
+      ><IconArrowLeft :size="13" />{{ t("common.back") }}</RouterLink
     >
     <header class="mb-4 flex flex-wrap items-start justify-between gap-3" data-tour="page-header">
       <div>
-        <h1 class="text-2xl font-semibold tracking-tight">Permission Matrix</h1>
-        <p class="mt-1 text-sm text-text-muted">Module-level permissions per role.</p>
+        <h1 class="text-2xl font-semibold tracking-tight">{{ t("users.permissionMatrix") }}</h1>
+        <p class="mt-1 text-sm text-text-muted">{{ t("users.permissionMatrixDescription") }}</p>
       </div>
       <AppTour />
     </header>
     <section v-for="group in permissionGroups" :key="group.module" class="mb-4">
       <p class="mb-1.5 text-2xs font-medium uppercase tracking-wide text-text-muted">
-        {{ group.module }}
+        {{ translateKnownText(t, group.module) }}
       </p>
       <div class="overflow-hidden rounded-lg border bg-surface">
         <table class="w-full text-left text-xs">
           <thead class="bg-surface-muted text-2xs uppercase text-text-muted">
             <tr>
-              <th class="px-3 py-2.5">Permission</th>
+              <th class="px-3 py-2.5">{{ t("users.permission") }}</th>
               <th v-for="role in ['Admin', 'Head', 'Staff']" :key="role" class="px-3 py-2.5">
-                {{ role }}
+                {{ translateKnownText(t, role) }}
               </th>
             </tr>
           </thead>
           <tbody class="divide-y">
             <tr v-for="permission in group.permissions" :key="permission">
-              <td class="px-3 py-3 capitalize">{{ permission }}</td>
+              <td class="px-3 py-3 capitalize">{{ translateKnownText(t, permission) }}</td>
               <td v-for="role in ['Admin', 'Head', 'Staff']" :key="role" class="px-3 py-3">
                 <IconCheck v-if="allowed(role, permission)" :size="14" class="text-success" /><IconX
                   v-else

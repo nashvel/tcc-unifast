@@ -1,0 +1,415 @@
+{
+  "app": {
+    "name": "UniFAST TES",
+    "college": "Tagoloan Community College",
+    "studentPortal": "Portal sa Estudyante",
+    "granteeManagement": "Pagdumala sa Grantee"
+  },
+  "language": {
+    "select": "Pilia ang pinulongan"
+  },
+  "common": {
+    "back": "Balik",
+    "cancel": "Kanselahon",
+    "continue": "Padayon",
+    "dashboard": "Dashboard",
+    "details": "Mga detalye",
+    "email": "Email",
+    "loading": "Nag-load...",
+    "login": "Pag-login",
+    "logout": "Pag-logout",
+    "password": "Password",
+    "profile": "Profile",
+    "save": "I-save",
+    "search": "Pangita",
+    "settings": "Mga Setting",
+    "signIn": "Sign in",
+    "signOut": "Sign out",
+    "export": "I-export",
+    "confirm": "Kumpirmaha",
+    "welcome": "Maayong Pag-abot",
+    "hello": "Kumusta {name}"
+  },
+  "nav": {
+    "academicRecords": "Mga Academic Record",
+    "administration": "Administrasyon",
+    "announcements": "Mga Pahibalo",
+    "appearance": "Panagway",
+    "auditLog": "Audit Log",
+    "auditTrail": "Audit Trail",
+    "batches": "Mga Batch",
+    "communication": "Komunikasyon",
+    "documentValidation": "Pag-validate sa Dokumento",
+    "documents": "Mga Dokumento",
+    "eligibility": "Eligibility",
+    "fileManager": "File Manager",
+    "files": "Mga File",
+    "grantees": "Mga Grantee",
+    "logs": "Mga Log",
+    "masterlist": "Masterlist",
+    "monitoringReports": "Monitoring ug Reports",
+    "new": "Bag-o",
+    "openMenu": "Ablihi ang menu",
+    "operations": "Operasyon",
+    "permissions": "Mga Permission",
+    "preview": "Preview",
+    "reports": "Mga Report",
+    "requiredDocuments": "Kinahanglan nga mga Dokumento",
+    "security": "Seguridad",
+    "securityFindings": "Mga Nakita sa Seguridad",
+    "securityMemory": "Security Memory",
+    "styleGuide": "Style Guide",
+    "support": "Suporta",
+    "supportTickets": "Mga Support Ticket",
+    "uploadDocuments": "Pag-upload sa Dokumento",
+    "users": "Mga User ug Access",
+    "usersRoles": "Mga User ug Role",
+    "validation": "Validation",
+    "verifyIdentity": "I-verify ang Identidad",
+    "breadcrumb": "Breadcrumb",
+    "homeBreadcrumb": "{label} (home)",
+    "generate": "Paghimo",
+    "edit": "I-edit"
+  },
+  "shell": {
+    "searchJump": "Pangita o adto sa...",
+    "monitorMode": "Monitor mode",
+    "notifications": "Mga Notification",
+    "markAllRead": "Markahi tanan nga nabasa",
+    "documentsValidated": "Na-validate ang mga dokumento",
+    "documentsReady": "12 ka rekord andam na para sa eligibility review.",
+    "batchClosingSoon": "Hapit na mosira ang batch",
+    "batchClosingDetail": "Mosira ang TES Semester 2 sulod sa lima ka adlaw.",
+    "systemAdministrator": "System Administrator",
+    "student": "estudyante"
+  },
+  "auth": {
+    "heroTitle": "Mas sayon, mas paspas, ug mas klaro nga serbisyo sa scholarship.",
+    "heroDescription": "Usa ka workspace para sa grantees, dokumento, eligibility, releases, ug academic monitoring.",
+    "loginTitle": "Sign in sa imong account",
+    "forgotTitle": "I-reset ang imong password",
+    "activateTitle": "I-activate ang imong account",
+    "loginDescription": "Gamita ang seeded account o pagpili og demo role sa ubos.",
+    "emailDescription": "Isulod ang institutional email aron makapadayon.",
+    "emailPasswordRequired": "Isulod ang email ug password.",
+    "signInFailed": "Napakyas ang sign in.",
+    "signingIn": "Nag-sign in...",
+    "forgotPassword": "Nakalimot sa password?",
+    "activateAccount": "I-activate ang imong account",
+    "backToSignIn": "Balik sa sign in",
+    "demoAccounts": "Seeded demo accounts - password: password",
+    "administrator": "Administrator",
+    "officeHead": "Office Head",
+    "staff": "UniFAST Staff",
+    "student": "Estudyante",
+    "layoutTitle": "Tertiary Education Subsidy - Pagdumala sa Grantee ug Pag-validate sa Dokumento",
+    "layoutDescription": "I-validate ang submissions, subaya ang academic records, susiha ang eligibility, ug pakig-uban sa TES grantees sa usa ka workspace.",
+    "layoutBulletMasterlist": "Sentralisadong masterlist ug batch management",
+    "layoutBulletOcr": "OCR-assisted document validation",
+    "layoutBulletEligibility": "Rules-based eligibility evaluation",
+    "layoutBulletAudit": "Kompletong audit trail ug role-based access",
+    "checkEmailTitle": "Tan-awa ang imong email",
+    "resetSent": "Kung rehistrado ang {email}, nagpadala kami og password reset instructions.",
+    "forgotPasswordTitle": "Nakalimot sa password",
+    "forgotPasswordDescription": "Isulod ang imong email ug magpadala kami og reset link.",
+    "sendResetLink": "Ipadala ang reset link",
+    "lockedTitle": "Naka-lock o inactive ang account",
+    "lockedDescription": "Temporaryong gi-disable ang imong account. Kontaka ang UniFAST Office o TES coordinator sa eskwelahan para sa tabang.",
+    "activatedTitle": "Na-activate ang account",
+    "activatedDescription": "Active na ang imong student account. Sign in sunod, dayon i-upload ang student ID ug kompletoha ang live face verification aron ma-unlock ang dashboard ug document uploads.",
+    "goToSignIn": "Adto sa sign in",
+    "activationLabel": "Account Activation",
+    "activateGranteeTitle": "I-activate ang imong grantee account",
+    "activateGranteeDescription": "Gamita ang one-time link ug temporary password gikan sa invitation email.",
+    "checkingActivation": "Gisusi ang activation link...",
+    "temporaryPassword": "Temporary password",
+    "newPassword": "Bag-ong password",
+    "confirmPassword": "Kumpirmaha ang password",
+    "activationKycNotice": "Human sa activation, kompletoha ang KYC profile. Kinahanglan motakdo ang imong ngalan, student ID, ug program sa CHED masterlist.",
+    "activating": "Gi-activate...",
+    "activateAndContinue": "I-activate ug padayon sa KYC",
+    "openActivationLink": "Ablihi ang one-time activation link gikan sa imong email.",
+    "invalidActivationLink": "Invalid ang activation link.",
+    "activationFailed": "Napakyas ang activation."
+  },
+  "pages": {
+    "academicRecords": { "title": "Mga Academic Record" },
+    "announcements": {
+      "title": "Mga Pahibalo",
+      "description": "Mga update gikan sa UniFAST Office."
+    },
+    "appearance": {
+      "title": "Panagway",
+      "description": "Pilia kung unsa ang hitsura sa UniFAST TES workspace sa kini nga device."
+    },
+    "auditTrail": { "title": "Audit Trail" },
+    "batches": {
+      "title": "Mga Batch",
+      "description": "Dumala ang TES submission windows sumala sa academic period."
+    },
+    "createAnnouncement": { "title": "Paghimo og Pahibalo" },
+    "createStaffUser": { "title": "Paghimo og staff user" },
+    "documentValidation": { "title": "Document Validation Queue" },
+    "editAnnouncement": { "title": "I-edit ang Pahibalo" },
+    "eligibilityStatus": { "title": "Eligibility Status" },
+    "files": {
+      "title": "File Manager",
+      "description": "Tan-awa ug ihan-ay ang uploaded scholarship files."
+    },
+    "generateReport": { "title": "Paghimo og Report" },
+    "grantees": {
+      "title": "Mga Grantee",
+      "description": "Pangita, filter, ug dumala ang TES grantee records."
+    },
+    "kyc": { "title": "KYC Profile Validation" },
+    "masterlist": { "title": "Masterlist Import" },
+    "newSupportTicket": { "title": "Bag-ong support ticket" },
+    "notificationLogs": { "title": "Notification Logs" },
+    "notifications": { "title": "Mga Notification" },
+    "profile": { "title": "Akong Profile" },
+    "reports": {
+      "title": "Mga Report",
+      "description": "Paghimo, preview, ug export sa operational reports."
+    },
+    "reportPreview": { "title": "Report Preview" },
+    "requirementVault": { "title": "Requirement Vault" },
+    "securityFindings": { "title": "Mga Nakita sa Seguridad" },
+    "securityMemory": { "title": "Security Memory" },
+    "settings": {
+      "title": "Mga Setting",
+      "description": "Dumala ang imong profile, password, ug sign-in activity."
+    },
+    "submissionStatus": { "title": "Submission Status" },
+    "styleGuide": { "title": "UI Style Guide" },
+    "supportInbox": { "title": "Support Inbox" },
+    "uploadDocument": { "title": "Pag-upload sa Dokumento" }
+  },
+  "tour": {
+    "label": "Tour",
+    "show": "Ipakita ang tour para ani nga pahina",
+    "skip": "Laktawi",
+    "next": "Sunod",
+    "done": "Human",
+    "stepCount": "{current} sa {total}",
+    "axl": {
+      "checkFirst": "Tan-awon una nato kini nga bahin.",
+      "important": "Importante kini nga area.",
+      "lookHere": "Tan-awa dinhi, gamit kini.",
+      "rightSpot": "Sakto, naa ka sa hustong dapit.",
+      "action": "Dinhi mahitabo ang aksyon.",
+      "quickTip": "Tip: hinumdumi kini nga seksyon."
+    }
+  },
+  "dialog": {
+    "close": "Sirad-i ang dialog"
+  },
+  "roles": {
+    "admin": "Admin",
+    "head": "Head",
+    "staff": "Staff"
+  },
+  "status": {
+    "active": "Active",
+    "disabled": "Disabled",
+    "enabled": "Enabled",
+    "off": "Off"
+  },
+  "pagination": {
+    "pageOf": "Pahina {page} sa {pages}"
+  },
+  "users": {
+    "title": "Mga User ug Access",
+    "description": "Dumala ang staff accounts, roles, ug permissions.",
+    "permissionMatrix": "Permission matrix",
+    "permissionMatrixDescription": "Module-level permissions kada role.",
+    "newUser": "Bag-ong user",
+    "searchPlaceholder": "Pangita pinaagi sa ngalan, username, o email",
+    "allRoles": "Tanang roles",
+    "allStatuses": "Tanang statuses",
+    "username": "Username",
+    "usernamePlaceholder": "username",
+    "fullName": "Tibuok ngalan",
+    "role": "Role",
+    "mfa": "MFA",
+    "status": "Status",
+    "lastLogin": "Kataposang login",
+    "reset": "I-reset",
+    "resetPassword": "I-reset ang password",
+    "activate": "I-activate",
+    "deactivate": "I-deactivate",
+    "activateLower": "i-activate",
+    "deactivateLower": "i-deactivate",
+    "showingStaffUsers": "Gipakita ang {count} staff users",
+    "createStaffUser": "Paghimo og staff user",
+    "createStaffUserDescription": "Pagdugang og account ug itakda ang initial role ug access.",
+    "requirePasswordMfa": "Kinahanglan ang password change ug MFA enrollment sa unang sign-in",
+    "createUser": "Paghimo og user",
+    "accountActionTitle": "{action} account",
+    "accountActionDescription": "{action} para kang {name}. Dili mo-persist kini nga mock action.",
+    "resetMethod": "Reset method",
+    "sendPasswordResetEmail": "Magpadala og password reset email",
+    "generateTemporaryPassword": "Paghimo og temporary password",
+    "forceResetAtNextLogin": "Pugsa ang reset sa sunod login",
+    "confirmAccountAction": "Kumpirmaha nga gusto nimo nga {action} kini nga user account.",
+    "permission": "Permission",
+    "permissions": {
+      "viewMasterlist": "tan-awon ang masterlist",
+      "manageBatches": "dumala ang batches",
+      "manageGrantees": "dumala ang grantees",
+      "validateDocuments": "i-validate ang dokumento",
+      "reviewAcademics": "susiha ang academics",
+      "runEligibility": "padagana ang eligibility",
+      "publishAnnouncements": "mag-publish og announcements",
+      "generateReports": "paghimo og reports",
+      "manageSupport": "dumala ang support",
+      "viewAuditTrail": "tan-awon ang audit trail",
+      "manageUsers": "dumala ang users",
+      "changeSettings": "usba ang settings"
+    }
+  },
+  "appearance": {
+    "theme": "Theme",
+    "light": "Light",
+    "dark": "Dark",
+    "interfaceDensity": "Interface density",
+    "compact": "Compact",
+    "comfortable": "Comfortable",
+    "spacious": "Spacious",
+    "preferencesSaved": "Na-save ang preferences.",
+    "savePreferences": "I-save ang preferences"
+  },
+  "dashboard": {
+    "admin": {
+      "chartAria": "Submitted ug validated records sa miaging pito ka adlaw",
+      "manageAnnouncements": "Dumala ang mga pahibalo",
+      "variants": {
+        "operations": "Operasyon",
+        "analytics": "Analytics",
+        "compact": "Compact"
+      },
+      "metrics": {
+        "totalGrantees": "Total nga grantees",
+        "autoApprovalRate": "Auto-approval rate",
+        "avgValidation": "Average validation",
+        "activeBatches": "Active batches"
+      },
+      "status": {
+        "active": "Active",
+        "pending": "Pending",
+        "validated": "Validated",
+        "atRisk": "At risk",
+        "eligible": "Eligible"
+      },
+      "pipeline": {
+        "intake": "Intake",
+        "validation": "Validation",
+        "eligibility": "Eligibility",
+        "batching": "Batching",
+        "release": "Release"
+      },
+      "actions": {
+        "reviewSubmissions": "Susiha ang Submissions",
+        "runEligibility": "Padagana ang Eligibility",
+        "manageBatches": "Dumala ang Batches",
+        "newAnnouncement": "Bag-ong Pahibalo"
+      }
+    },
+    "student": {
+      "changePassword": "Ilisi ang password",
+      "welcome": "Maayong pag-abot, {name}",
+      "headingPrefix": "Ang imong",
+      "headingHighlight": "UniFAST journey sa usa ka tan-aw",
+      "activity": "Scholarship activity",
+      "weekly": "Matag semana",
+      "monthly": "Matag bulan",
+      "applicationProgress": "Progress sa aplikasyon",
+      "item": "Item",
+      "status": "Status",
+      "progressLabel": "Progress",
+      "viewAllEvents": "Tan-awa ang tanang events",
+      "locked": {
+        "limitedAccess": "Limitado nga access",
+        "title": "Activated na ang imong account, pero kinahanglan pa ang identity verification.",
+        "description": "I-upload ang student ID ug kompletoha ang live face match. Kung mopasar, ma-unlock ang dashboard, required documents, upload menu, announcements, ug student services.",
+        "checklist": "Student unlock checklist",
+        "uploadId": "I-upload ang student ID.",
+        "faceMatch": "Pasara ang live face match.",
+        "courseHistory": "I-upload ang Course History.",
+        "cor": "I-upload ang COR para mas lig-on ang validation."
+      },
+      "window": {
+        "open": "Abli ang submission window",
+        "locked": "Naka-lock ang submission vault",
+        "checking": "Gisusi ang batch submission window...",
+        "unavailable": "Dili available ang batch submission window.",
+        "openVault": "Ablihi ang vault",
+        "viewVault": "Tan-awa ang vault"
+      },
+      "summary": {
+        "requirementsCompleted": "Requirements completed",
+        "vaultRequired": "Kinahanglan ang vault requirements",
+        "applications": "Mga Aplikasyon",
+        "documentsPending": "Naay pending nga dokumento",
+        "upcomingEvents": "Umaabot nga events",
+        "nextMay15": "Sunod: May 15",
+        "announcements": "Mga Pahibalo",
+        "unread": "3 wala pa mabasa"
+      },
+      "tabs": {
+        "time": "Oras nga gigamit",
+        "requirements": "Requirements",
+        "applications": "Mga Aplikasyon",
+        "announcements": "Mga Pahibalo"
+      },
+      "days": {
+        "mon": "Lun",
+        "tue": "Mar",
+        "wed": "Miy",
+        "thu": "Huw",
+        "fri": "Biy",
+        "sat": "Sab",
+        "sun": "Dom"
+      },
+      "progress": {
+        "requiredDocuments": "Kinahanglan nga mga Dokumento",
+        "requiredDocumentsMeta": "School ID, Course History, ug Grade Slip",
+        "tesApplication": "TES Application",
+        "tesApplicationMeta": "Kompletoha ang requirement vault"
+      },
+      "schedule": {
+        "title": "Schedule",
+        "date": "15 Mayo, 2026",
+        "orientation": "Scholarship orientation",
+        "orientationMeta": "AVR - 8:00-10:00 AM",
+        "documentDeadline": "Deadline sa document review",
+        "documentDeadlineMeta": "Isumite ang nahibilin nga requirement",
+        "consultation": "Eligibility consultation",
+        "consultationMeta": "Student Services Office",
+        "literacy": "TES financial literacy session",
+        "literacyMeta": "Online meeting"
+      }
+    }
+  },
+  "seo": {
+    "login": {
+      "title": "Sign in - UniFAST TES",
+      "description": "Sign in sa UniFAST TES grantee management portal."
+    },
+    "forgot": {
+      "title": "Reset password - UniFAST TES",
+      "description": "I-reset ang password sa imong UniFAST TES portal."
+    },
+    "activate": {
+      "title": "Activate account - UniFAST TES",
+      "description": "I-activate ang imong UniFAST TES portal account."
+    },
+    "adminDashboard": {
+      "title": "Admin Dashboard - UniFAST TES",
+      "description": "Dumala ang TES grantees, dokumento, batch, report, ug eligibility."
+    },
+    "studentDashboard": {
+      "title": "Student Dashboard - UniFAST TES",
+      "description": "Subaya ang TES requirements, dokumento, pahibalo, ug account status."
+    }
+  }
+}
