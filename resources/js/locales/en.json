@@ -1,0 +1,415 @@
+{
+  "app": {
+    "name": "UniFAST TES",
+    "college": "Tagoloan Community College",
+    "studentPortal": "Student Portal",
+    "granteeManagement": "Grantee Management"
+  },
+  "language": {
+    "select": "Select language"
+  },
+  "common": {
+    "back": "Back",
+    "cancel": "Cancel",
+    "continue": "Continue",
+    "dashboard": "Dashboard",
+    "details": "Details",
+    "email": "Email",
+    "loading": "Loading...",
+    "login": "Login",
+    "logout": "Logout",
+    "password": "Password",
+    "profile": "Profile",
+    "save": "Save",
+    "search": "Search",
+    "settings": "Settings",
+    "signIn": "Sign in",
+    "signOut": "Sign out",
+    "export": "Export",
+    "confirm": "Confirm",
+    "welcome": "Welcome",
+    "hello": "Hello {name}"
+  },
+  "nav": {
+    "academicRecords": "Academic Records",
+    "administration": "Administration",
+    "announcements": "Announcements",
+    "appearance": "Appearance",
+    "auditLog": "Audit Log",
+    "auditTrail": "Audit Trail",
+    "batches": "Batches",
+    "communication": "Communication",
+    "documentValidation": "Document Validation",
+    "documents": "Documents",
+    "eligibility": "Eligibility",
+    "fileManager": "File Manager",
+    "files": "Files",
+    "grantees": "Grantees",
+    "logs": "Logs",
+    "masterlist": "Masterlist",
+    "monitoringReports": "Monitoring & Reports",
+    "new": "New",
+    "openMenu": "Open menu",
+    "operations": "Operations",
+    "permissions": "Permissions",
+    "preview": "Preview",
+    "reports": "Reports",
+    "requiredDocuments": "Required Documents",
+    "security": "Security",
+    "securityFindings": "Security Findings",
+    "securityMemory": "Security Memory",
+    "styleGuide": "Style Guide",
+    "support": "Support",
+    "supportTickets": "Support Tickets",
+    "uploadDocuments": "Upload Documents",
+    "users": "Users & Access",
+    "usersRoles": "Users & Roles",
+    "validation": "Validation",
+    "verifyIdentity": "Verify Identity",
+    "breadcrumb": "Breadcrumb",
+    "homeBreadcrumb": "{label} (home)",
+    "generate": "Generate",
+    "edit": "Edit"
+  },
+  "shell": {
+    "searchJump": "Search or jump to...",
+    "monitorMode": "Monitor mode",
+    "notifications": "Notifications",
+    "markAllRead": "Mark all read",
+    "documentsValidated": "Documents validated",
+    "documentsReady": "12 records are ready for eligibility review.",
+    "batchClosingSoon": "Batch closing soon",
+    "batchClosingDetail": "TES Semester 2 closes in five days.",
+    "systemAdministrator": "System Administrator",
+    "student": "student"
+  },
+  "auth": {
+    "heroTitle": "Making scholarship services simpler, faster, and more transparent.",
+    "heroDescription": "A unified workspace for grantees, documents, eligibility, releases, and academic monitoring.",
+    "loginTitle": "Sign in to your account",
+    "forgotTitle": "Reset your password",
+    "activateTitle": "Activate your account",
+    "loginDescription": "Use a seeded account or choose a demo role below.",
+    "emailDescription": "Enter your institutional email to continue.",
+    "emailPasswordRequired": "Enter email and password.",
+    "signInFailed": "Sign in failed.",
+    "signingIn": "Signing in...",
+    "forgotPassword": "Forgot password?",
+    "activateAccount": "Activate your account",
+    "backToSignIn": "Back to sign in",
+    "demoAccounts": "Seeded demo accounts - password: password",
+    "administrator": "Administrator",
+    "officeHead": "Office Head",
+    "staff": "UniFAST Staff",
+    "student": "Student",
+    "layoutTitle": "Tertiary Education Subsidy - Grantee Management & Document Validation",
+    "layoutDescription": "Validate submissions, track academic records, evaluate eligibility, and communicate with TES grantees from a single workspace.",
+    "layoutBulletMasterlist": "Centralized masterlist & batch management",
+    "layoutBulletOcr": "OCR-assisted document validation",
+    "layoutBulletEligibility": "Rules-based eligibility evaluation",
+    "layoutBulletAudit": "Full audit trail and role-based access",
+    "checkEmailTitle": "Check your email",
+    "resetSent": "If {email} is registered, we've sent password reset instructions.",
+    "forgotPasswordTitle": "Forgot password",
+    "forgotPasswordDescription": "Enter your email and we'll send you a reset link.",
+    "sendResetLink": "Send reset link",
+    "lockedTitle": "Account locked or inactive",
+    "lockedDescription": "Your account has been temporarily disabled. Please contact the UniFAST Office or your school's TES coordinator for assistance.",
+    "activatedTitle": "Account activated",
+    "activatedDescription": "Your student account is now active. Sign in next, then upload your student ID and complete live face verification before the dashboard and document uploads unlock.",
+    "goToSignIn": "Go to sign in",
+    "activationLabel": "Account Activation",
+    "activateGranteeTitle": "Activate your grantee account",
+    "activateGranteeDescription": "Use the one-time link and temporary password from your invitation email.",
+    "checkingActivation": "Checking activation link...",
+    "temporaryPassword": "Temporary password",
+    "newPassword": "New password",
+    "confirmPassword": "Confirm password",
+    "activationKycNotice": "After activation, complete the KYC profile. Your submitted name, student ID, and program must match the CHED masterlist.",
+    "activating": "Activating...",
+    "activateAndContinue": "Activate and continue to KYC",
+    "openActivationLink": "Open the one-time activation link from your email.",
+    "invalidActivationLink": "Invalid activation link.",
+    "activationFailed": "Activation failed."
+  },
+  "pages": {
+    "academicRecords": { "title": "Academic Records" },
+    "announcements": {
+      "title": "Announcements",
+      "description": "Updates from the UniFAST Office."
+    },
+    "appearance": {
+      "title": "Appearance",
+      "description": "Choose how the UniFAST TES workspace looks on this device."
+    },
+    "auditTrail": { "title": "Audit Trail" },
+    "batches": {
+      "title": "Batches",
+      "description": "Manage TES submission windows by academic period."
+    },
+    "createAnnouncement": { "title": "Create Announcement" },
+    "createStaffUser": { "title": "Create staff user" },
+    "documentValidation": { "title": "Document Validation Queue" },
+    "editAnnouncement": { "title": "Edit Announcement" },
+    "eligibilityStatus": { "title": "Eligibility Status" },
+    "files": {
+      "title": "File Manager",
+      "description": "Browse and organize uploaded scholarship files."
+    },
+    "generateReport": { "title": "Generate Report" },
+    "grantees": {
+      "title": "Grantees",
+      "description": "Search, filter, and manage TES grantee records."
+    },
+    "kyc": { "title": "KYC Profile Validation" },
+    "masterlist": { "title": "Masterlist Import" },
+    "newSupportTicket": { "title": "New support ticket" },
+    "notificationLogs": { "title": "Notification Logs" },
+    "notifications": { "title": "Notifications" },
+    "profile": { "title": "My Profile" },
+    "reports": {
+      "title": "Reports",
+      "description": "Generate, preview, and export operational reports."
+    },
+    "reportPreview": { "title": "Report Preview" },
+    "requirementVault": { "title": "Requirement Vault" },
+    "securityFindings": { "title": "Security Findings" },
+    "securityMemory": { "title": "Security Memory" },
+    "settings": {
+      "title": "Settings",
+      "description": "Manage your profile, password, and sign-in activity."
+    },
+    "submissionStatus": { "title": "Submission Status" },
+    "styleGuide": { "title": "UI Style Guide" },
+    "supportInbox": { "title": "Support Inbox" },
+    "uploadDocument": { "title": "Upload Document" }
+  },
+  "tour": {
+    "label": "Tour",
+    "show": "Show tour for this page",
+    "skip": "Skip",
+    "next": "Next",
+    "done": "Done",
+    "stepCount": "{current} of {total}",
+    "axl": {
+      "checkFirst": "Let's check this part first.",
+      "important": "This area is important.",
+      "lookHere": "Look here, this is useful.",
+      "rightSpot": "Nice, you're on the right spot.",
+      "action": "This is where the action happens.",
+      "quickTip": "Quick tip: remember this section."
+    }
+  },
+  "dialog": {
+    "close": "Close dialog"
+  },
+  "roles": {
+    "admin": "Admin",
+    "head": "Head",
+    "staff": "Staff"
+  },
+  "status": {
+    "active": "Active",
+    "disabled": "Disabled",
+    "enabled": "Enabled",
+    "off": "Off"
+  },
+  "pagination": {
+    "pageOf": "Page {page} of {pages}"
+  },
+  "users": {
+    "title": "Users & Access",
+    "description": "Manage staff accounts, roles, and permissions.",
+    "permissionMatrix": "Permission matrix",
+    "permissionMatrixDescription": "Module-level permissions per role.",
+    "newUser": "New user",
+    "searchPlaceholder": "Search by name, username, or email",
+    "allRoles": "All roles",
+    "allStatuses": "All statuses",
+    "username": "Username",
+    "usernamePlaceholder": "username",
+    "fullName": "Full name",
+    "role": "Role",
+    "mfa": "MFA",
+    "status": "Status",
+    "lastLogin": "Last login",
+    "reset": "Reset",
+    "resetPassword": "Reset password",
+    "activate": "Activate",
+    "deactivate": "Deactivate",
+    "activateLower": "activate",
+    "deactivateLower": "deactivate",
+    "showingStaffUsers": "Showing {count} staff users",
+    "createStaffUser": "Create staff user",
+    "createStaffUserDescription": "Add an account and assign its initial role and access.",
+    "requirePasswordMfa": "Require password change and MFA enrollment on first sign-in",
+    "createUser": "Create user",
+    "accountActionTitle": "{action} account",
+    "accountActionDescription": "{action} for {name}. This mock action does not persist.",
+    "resetMethod": "Reset method",
+    "sendPasswordResetEmail": "Send password reset email",
+    "generateTemporaryPassword": "Generate temporary password",
+    "forceResetAtNextLogin": "Force reset at next login",
+    "confirmAccountAction": "Confirm that you want to {action} this user account.",
+    "permission": "Permission",
+    "permissions": {
+      "viewMasterlist": "view masterlist",
+      "manageBatches": "manage batches",
+      "manageGrantees": "manage grantees",
+      "validateDocuments": "validate documents",
+      "reviewAcademics": "review academics",
+      "runEligibility": "run eligibility",
+      "publishAnnouncements": "publish announcements",
+      "generateReports": "generate reports",
+      "manageSupport": "manage support",
+      "viewAuditTrail": "view audit trail",
+      "manageUsers": "manage users",
+      "changeSettings": "change settings"
+    }
+  },
+  "appearance": {
+    "theme": "Theme",
+    "light": "Light",
+    "dark": "Dark",
+    "interfaceDensity": "Interface density",
+    "compact": "Compact",
+    "comfortable": "Comfortable",
+    "spacious": "Spacious",
+    "preferencesSaved": "Preferences saved.",
+    "savePreferences": "Save preferences"
+  },
+  "dashboard": {
+    "admin": {
+      "chartAria": "Submitted and validated records over the last seven days",
+      "manageAnnouncements": "Manage announcements",
+      "variants": {
+        "operations": "Operations",
+        "analytics": "Analytics",
+        "compact": "Compact"
+      },
+      "metrics": {
+        "totalGrantees": "Total grantees",
+        "autoApprovalRate": "Auto-approval rate",
+        "avgValidation": "Avg validation",
+        "activeBatches": "Active batches"
+      },
+      "status": {
+        "active": "Active",
+        "pending": "Pending",
+        "validated": "Validated",
+        "atRisk": "At risk",
+        "eligible": "Eligible"
+      },
+      "pipeline": {
+        "intake": "Intake",
+        "validation": "Validation",
+        "eligibility": "Eligibility",
+        "batching": "Batching",
+        "release": "Release"
+      },
+      "actions": {
+        "reviewSubmissions": "Review Submissions",
+        "runEligibility": "Run Eligibility",
+        "manageBatches": "Manage Batches",
+        "newAnnouncement": "New Announcement"
+      }
+    },
+    "student": {
+      "changePassword": "Change password",
+      "welcome": "Welcome, {name}",
+      "headingPrefix": "Your",
+      "headingHighlight": "UniFAST journey at a glance",
+      "activity": "Scholarship activity",
+      "weekly": "Weekly",
+      "monthly": "Monthly",
+      "applicationProgress": "Application progress",
+      "item": "Item",
+      "status": "Status",
+      "progressLabel": "Progress",
+      "viewAllEvents": "View all events",
+      "locked": {
+        "limitedAccess": "Limited access",
+        "title": "Your account is activated, but identity verification is still required.",
+        "description": "Upload your student ID and complete the live face match. Once it passes, the dashboard, required documents, upload menu, announcements, and student services will unlock.",
+        "checklist": "Student unlock checklist",
+        "uploadId": "Upload student ID.",
+        "faceMatch": "Pass live face match.",
+        "courseHistory": "Upload Course History.",
+        "cor": "Upload COR for stronger validation."
+      },
+      "window": {
+        "open": "Submission window open",
+        "locked": "Submission vault locked",
+        "checking": "Checking your batch submission window...",
+        "unavailable": "Your batch submission window is not available.",
+        "openVault": "Open vault",
+        "viewVault": "View vault"
+      },
+      "summary": {
+        "requirementsCompleted": "Requirements completed",
+        "vaultRequired": "Vault requirements required",
+        "applications": "Applications",
+        "documentsPending": "Documents pending",
+        "upcomingEvents": "Upcoming events",
+        "nextMay15": "Next: May 15",
+        "announcements": "Announcements",
+        "unread": "3 unread"
+      },
+      "tabs": {
+        "time": "Time spent",
+        "requirements": "Requirements",
+        "applications": "Applications",
+        "announcements": "Announcements"
+      },
+      "days": {
+        "mon": "Mon",
+        "tue": "Tue",
+        "wed": "Wed",
+        "thu": "Thu",
+        "fri": "Fri",
+        "sat": "Sat",
+        "sun": "Sun"
+      },
+      "progress": {
+        "requiredDocuments": "Required Documents",
+        "requiredDocumentsMeta": "School ID, Course History, and Grade Slip",
+        "tesApplication": "TES Application",
+        "tesApplicationMeta": "Complete requirement vault"
+      },
+      "schedule": {
+        "title": "Schedule",
+        "date": "15 May, 2026",
+        "orientation": "Scholarship orientation",
+        "orientationMeta": "AVR - 8:00-10:00 AM",
+        "documentDeadline": "Document review deadline",
+        "documentDeadlineMeta": "Submit remaining requirement",
+        "consultation": "Eligibility consultation",
+        "consultationMeta": "Student Services Office",
+        "literacy": "TES financial literacy session",
+        "literacyMeta": "Online meeting"
+      }
+    }
+  },
+  "seo": {
+    "login": {
+      "title": "Sign in - UniFAST TES",
+      "description": "Sign in to the UniFAST TES grantee management portal."
+    },
+    "forgot": {
+      "title": "Reset password - UniFAST TES",
+      "description": "Reset your UniFAST TES portal password."
+    },
+    "activate": {
+      "title": "Activate account - UniFAST TES",
+      "description": "Activate your UniFAST TES portal account."
+    },
+    "adminDashboard": {
+      "title": "Admin Dashboard - UniFAST TES",
+      "description": "Manage TES grantees, documents, batches, reports, and eligibility."
+    },
+    "studentDashboard": {
+      "title": "Student Dashboard - UniFAST TES",
+      "description": "Track TES requirements, documents, announcements, and account status."
+    }
+  }
+}

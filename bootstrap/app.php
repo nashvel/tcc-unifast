@@ -14,6 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias(['role' => \App\Http\Middleware\RequireRole::class]);
+        $middleware->web(append: [\App\Http\Middleware\SetLocaleFromUrl::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
