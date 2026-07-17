@@ -6,7 +6,8 @@
     "granteeManagement": "Pamamahala ng Grantee"
   },
   "language": {
-    "select": "Pumili ng wika"
+    "select": "Pumili ng wika",
+    "changeTo": "Palitan ang wika sa {language}"
   },
   "common": {
     "back": "Bumalik",

@@ -30,11 +30,11 @@
     <title>{{ $seo['title'] }}</title>
     <link rel="icon" href="/favicon.ico">
     <script>
-        window.__APP_LOCALE__ = @json([
+        window.__APP_LOCALE__ = {{ Illuminate\Support\Js::from([
             'currentLanguage' => $locale,
             'availableLanguages' => $availableLocales,
             'fallbackLanguage' => $fallbackLocale,
-        ]);
+        ]) }};
     </script>
     @vite(['resources/css/app.css', 'resources/js/app.ts'])
 </head>

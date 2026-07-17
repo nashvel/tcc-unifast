@@ -6,7 +6,8 @@
     "granteeManagement": "Grantee Management"
   },
   "language": {
-    "select": "Select language"
+    "select": "Select language",
+    "changeTo": "Switch language to {language}"
   },
   "common": {
     "back": "Back",
