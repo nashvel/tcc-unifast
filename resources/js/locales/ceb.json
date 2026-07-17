@@ -6,7 +6,8 @@
     "granteeManagement": "Pagdumala sa Grantee"
   },
   "language": {
-    "select": "Pilia ang pinulongan"
+    "select": "Pilia ang pinulongan",
+    "changeTo": "Ilisi ang pinulongan ngadto sa {language}"
   },
   "common": {
     "back": "Balik",

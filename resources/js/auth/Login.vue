@@ -127,8 +127,12 @@ function demoAccountLabel(role: string) {
     </section>
 
     <main
-      class="flex h-screen items-center justify-center overflow-hidden bg-white p-5 sm:p-6 lg:h-[80vh]"
+      class="relative flex h-screen items-center justify-center overflow-hidden bg-white p-5 sm:p-6 lg:h-[80vh]"
     >
+      <div class="absolute right-6 top-6 hidden lg:block">
+        <LanguageSwitcher />
+      </div>
+
       <div class="w-full max-w-[31rem]">
         <div class="mb-6 flex items-center gap-3 lg:hidden">
           <span
