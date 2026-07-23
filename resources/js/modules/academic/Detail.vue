@@ -11,6 +11,9 @@ import {
 } from "@tabler/icons-vue";
 import PageHeader from "@/components/ui/PageHeader.vue";
 import DataTable from "@/components/tables/DataTable.vue";
+import CardSkeleton from "@/components/ui/CardSkeleton.vue";
+import EmptyState from "@/components/ui/EmptyState.vue";
+import StatGridSkeleton from "@/components/ui/StatGridSkeleton.vue";
 
 type CourseRemark = "Passed" | "Failed" | "Dropped";
 type AcademicCourse = {
@@ -48,7 +51,9 @@ const record = ref<AcademicRecord | null>(null);
 const loading = ref(true);
 const error = ref("");
 
-onMounted(async () => {
+async function load() {
+  loading.value = true;
+  error.value = "";
   try {
     const response = await fetch(`/api/academic-records/${route.params.id}`, {
       headers: { Accept: "application/json" },
@@ -61,7 +66,9 @@ onMounted(async () => {
   } finally {
     loading.value = false;
   }
-});
+}
+
+onMounted(load);
 
 const totalUnitsTaken = computed(() =>
   record.value?.semesters.reduce((total, semester) => total + semester.units_taken, 0) ?? 0,
@@ -105,12 +112,17 @@ function remarkIcon(remark: CourseRemark) {
       "
     />
 
-    <p v-if="loading" class="rounded-lg border bg-surface p-4 text-sm text-text-muted">
-      Loading academic record...
-    </p>
-    <p v-else-if="error" class="rounded-md border border-danger/30 bg-danger-soft p-3 text-xs text-danger">
-      {{ error }}
-    </p>
+    <div v-if="loading" class="space-y-4">
+      <StatGridSkeleton :count="5" />
+      <CardSkeleton :lines="6" />
+    </div>
+    <EmptyState
+      v-else-if="error"
+      variant="error"
+      title="Couldn't load academic record"
+      :hint="error"
+      @retry="load()"
+    />
 
     <template v-else-if="record">
     <section class="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">

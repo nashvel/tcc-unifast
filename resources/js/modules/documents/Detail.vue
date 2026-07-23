@@ -1,9 +1,16 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { computed, ref } from "vue";
 import { useRoute } from "vue-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/vue-query";
 import { IconArrowLeft, IconFile, IconScan, IconShieldExclamation } from "@tabler/icons-vue";
 import PageHeader from "@/components/ui/PageHeader.vue";
-import { csrfToken } from "@/auth/session";
+import CardSkeleton from "@/components/ui/CardSkeleton.vue";
+import EmptyState from "@/components/ui/EmptyState.vue";
+import { apiFetch } from "@/lib/api";
+import { queryKeys } from "@/lib/queryClient";
+import { toast } from "@/composables/useToast";
+import { scheduleUndo } from "@/composables/useUndo";
+
 type Submission = {
   id: number;
   student_name: string;
@@ -34,48 +41,85 @@ type Submission = {
   metadata_payload: Record<string, unknown> | null;
   review_notes: string | null;
 };
+
 const route = useRoute();
-const item = ref<Submission | null>(null);
+const queryClient = useQueryClient();
 const notes = ref("");
-const busy = ref(false);
-const message = ref("");
-async function load() {
-  const r = await fetch(`/api/document-submissions/${route.params.id}`);
-  item.value = (await r.json()).data;
-  notes.value = item.value?.review_notes || "";
-}
-async function decide(decision: string) {
-  busy.value = true;
-  message.value = "";
-  try {
-    const r = await fetch(`/api/document-submissions/${route.params.id}/review`, {
+const pendingDecision = ref<string | null>(null);
+
+const detailQuery = useQuery({
+  queryKey: computed(() => queryKeys.document(String(route.params.id))),
+  queryFn: async () => {
+    const payload = await apiFetch<{ data: Submission }>(
+      `/api/document-submissions/${route.params.id}`,
+    );
+    notes.value = payload.data.review_notes || "";
+    return payload.data;
+  },
+});
+
+const item = computed(() => detailQuery.data.value ?? null);
+
+const reviewMutation = useMutation({
+  mutationFn: (decision: string) =>
+    apiFetch<{ data: Submission }>(`/api/document-submissions/${route.params.id}/review`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-CSRF-TOKEN": csrfToken(),
-        Accept: "application/json",
-      },
       body: JSON.stringify({ decision, notes: notes.value }),
-    });
-    const p = await r.json();
-    if (!r.ok) throw new Error(p.message || "Decision failed.");
-    item.value = p.data;
-    message.value = `Submission marked ${decision}.`;
-  } catch (e) {
-    message.value = e instanceof Error ? e.message : "Decision failed.";
-  } finally {
-    busy.value = false;
-  }
+    }),
+  onSuccess: (payload) => {
+    queryClient.setQueryData(queryKeys.document(String(route.params.id)), payload.data);
+    void queryClient.invalidateQueries({ queryKey: ["document-submissions"] });
+    toast.success(`Submission marked ${payload.data.status.replaceAll("_", " ")}`);
+  },
+  onError: (error) => {
+    toast.error(error instanceof Error ? error.message : "Decision failed.");
+  },
+});
+
+async function decide(decision: string) {
+  if (!item.value || pendingDecision.value) return;
+  const previous = { ...item.value };
+  const label =
+    decision === "approved" ? "Approve" : decision === "rejected" ? "Reject" : "Return";
+
+  pendingDecision.value = decision;
+  await scheduleUndo(`document-decide-${item.value.id}`, {
+    message: `${label} scheduled`,
+    description: "Undo within 5 seconds to cancel this decision.",
+    optimistic: () => {
+      queryClient.setQueryData(queryKeys.document(String(route.params.id)), {
+        ...previous,
+        status: decision,
+        review_notes: notes.value,
+      });
+      return () => {
+        queryClient.setQueryData(queryKeys.document(String(route.params.id)), previous);
+      };
+    },
+    commit: async () => {
+      const payload = await reviewMutation.mutateAsync(decision);
+      return payload.data;
+    },
+    onUndo: () => {
+      toast.info("Decision cancelled");
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : "Decision failed.");
+    },
+  });
+  pendingDecision.value = null;
 }
-onMounted(load);
 </script>
+
 <template>
   <div v-if="item">
     <RouterLink
       to="/app/documents"
       class="mb-3 inline-flex items-center gap-1 text-xs text-text-muted"
-      ><IconArrowLeft :size="14" />Validation queue</RouterLink
-    ><PageHeader
+    >
+      <IconArrowLeft :size="14" />Validation queue
+    </RouterLink>
+    <PageHeader
       :title="item.document_type"
       :description="`From ${item.student_name} (${item.student_id})`"
     />
@@ -93,7 +137,8 @@ onMounted(load);
               v-if="item.mime_type === 'application/pdf'"
               :src="item.file_url"
               class="h-[34rem] w-full rounded-md border"
-            /><img
+            />
+            <img
               v-else
               :src="item.file_url"
               :alt="item.original_name"
@@ -120,7 +165,8 @@ onMounted(load);
           </p>
           <pre
             class="mt-3 max-h-72 overflow-auto whitespace-pre-wrap rounded bg-surface-muted p-3 text-xs"
-            >{{ item.extracted_text || "No readable text detected." }}</pre>
+            >{{ item.extracted_text || "No readable text detected." }}</pre
+          >
         </article>
         <article class="rounded-lg border bg-surface p-4">
           <h2 class="flex items-center gap-2 text-sm font-semibold">
@@ -151,7 +197,10 @@ onMounted(load);
             <p v-if="item.identity_check.confidence_score !== null">
               Confidence: {{ item.identity_check.confidence_score.toFixed(1) }}%
             </p>
-            <p>Challenges: {{ item.identity_check.challenge_sequence.join(", ").replaceAll("_", " ") }}</p>
+            <p>
+              Challenges:
+              {{ item.identity_check.challenge_sequence.join(", ").replaceAll("_", " ") }}
+            </p>
             <p v-if="item.identity_check.manual_review_required" class="text-warning">
               Manual review required
             </p>
@@ -166,32 +215,54 @@ onMounted(load);
           />
           <div class="mt-3 grid grid-cols-3 gap-2">
             <button
-              :disabled="busy"
+              :disabled="Boolean(pendingDecision)"
               class="rounded-md border px-2 py-2 text-xs"
               @click="decide('resubmission')"
             >
-              Return</button
-            ><button
-              :disabled="busy"
+              Return
+            </button>
+            <button
+              :disabled="Boolean(pendingDecision)"
               class="rounded-md border border-danger px-2 py-2 text-xs text-danger"
               @click="decide('rejected')"
             >
-              Reject</button
-            ><button
-              :disabled="busy"
+              Reject
+            </button>
+            <button
+              :disabled="Boolean(pendingDecision)"
               class="rounded-md bg-primary px-2 py-2 text-xs text-white"
               @click="decide('approved')"
             >
               Approve
             </button>
           </div>
-          <p v-if="message" class="mt-3 text-xs text-primary">{{ message }}</p>
           <p class="mt-2 text-xs text-text-muted">
             Current status: {{ item.status.replaceAll("_", " ") }}
+            <span v-if="pendingDecision" class="text-warning"> · pending commit…</span>
           </p>
         </article>
       </div>
     </section>
   </div>
-  <p v-else class="p-8 text-sm text-text-muted">Loading submission…</p>
+  <div v-else-if="detailQuery.isLoading.value" class="space-y-4">
+    <CardSkeleton :lines="2" />
+    <div class="grid gap-4 xl:grid-cols-[1.4fr_1fr]">
+      <CardSkeleton :lines="8" />
+      <div class="space-y-4">
+        <CardSkeleton :lines="4" />
+        <CardSkeleton :lines="4" />
+      </div>
+    </div>
+  </div>
+  <EmptyState
+    v-else-if="detailQuery.isError.value"
+    variant="error"
+    title="Couldn't load submission"
+    :hint="
+      detailQuery.error.value instanceof Error
+        ? detailQuery.error.value.message
+        : 'Unable to load submission.'
+    "
+    @retry="detailQuery.refetch()"
+  />
 </template>

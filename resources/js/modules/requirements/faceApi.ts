@@ -1,7 +1,15 @@
-import * as faceapi from "face-api.js";
+type FaceApiModule = typeof import("face-api.js");
 
 const modelUrl = "/models/face-api";
+let faceapiPromise: Promise<FaceApiModule> | null = null;
 let loading: Promise<void> | null = null;
+
+async function faceApi(): Promise<FaceApiModule> {
+  if (!faceapiPromise) {
+    faceapiPromise = import("face-api.js");
+  }
+  return faceapiPromise;
+}
 
 export type FaceDescriptorResult = {
   descriptor: number[];
@@ -12,11 +20,14 @@ export type Challenge = "blink" | "turn_left" | "turn_right";
 
 export async function loadFaceModels() {
   if (!loading) {
-    loading = Promise.all([
-      faceapi.nets.tinyFaceDetector.loadFromUri(modelUrl),
-      faceapi.nets.faceLandmark68Net.loadFromUri(modelUrl),
-      faceapi.nets.faceRecognitionNet.loadFromUri(modelUrl),
-    ]).then(() => undefined);
+    loading = (async () => {
+      const api = await faceApi();
+      await Promise.all([
+        api.nets.tinyFaceDetector.loadFromUri(modelUrl),
+        api.nets.faceLandmark68Net.loadFromUri(modelUrl),
+        api.nets.faceRecognitionNet.loadFromUri(modelUrl),
+      ]);
+    })();
   }
 
   return loading;
@@ -24,9 +35,10 @@ export async function loadFaceModels() {
 
 export async function descriptorFromImage(file: File): Promise<FaceDescriptorResult> {
   await loadFaceModels();
-  const image = await faceapi.bufferToImage(file);
-  const result = await faceapi
-    .detectSingleFace(image, new faceapi.TinyFaceDetectorOptions({ inputSize: 416 }))
+  const api = await faceApi();
+  const image = await api.bufferToImage(file);
+  const result = await api
+    .detectSingleFace(image, new api.TinyFaceDetectorOptions({ inputSize: 416 }))
     .withFaceLandmarks()
     .withFaceDescriptor();
 
@@ -42,8 +54,9 @@ export async function descriptorFromImage(file: File): Promise<FaceDescriptorRes
 
 export async function descriptorFromVideo(video: HTMLVideoElement): Promise<FaceDescriptorResult> {
   await loadFaceModels();
-  const result = await faceapi
-    .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 416 }))
+  const api = await faceApi();
+  const result = await api
+    .detectSingleFace(video, new api.TinyFaceDetectorOptions({ inputSize: 416 }))
     .withFaceLandmarks()
     .withFaceDescriptor();
 
@@ -59,8 +72,9 @@ export async function descriptorFromVideo(video: HTMLVideoElement): Promise<Face
 
 export async function detectChallenge(video: HTMLVideoElement, challenge: Challenge): Promise<boolean> {
   await loadFaceModels();
-  const result = await faceapi
-    .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 224 }))
+  const api = await faceApi();
+  const result = await api
+    .detectSingleFace(video, new api.TinyFaceDetectorOptions({ inputSize: 224 }))
     .withFaceLandmarks();
 
   if (!result) return false;
@@ -94,16 +108,16 @@ export function euclideanDistance(first: number[], second: number[]) {
   return Math.sqrt(total);
 }
 
-function eyeAspectRatio(points: faceapi.Point[]) {
+function eyeAspectRatio(points: { x: number; y: number }[]) {
   const vertical = distance(points[1], points[5]) + distance(points[2], points[4]);
   const horizontal = 2 * distance(points[0], points[3]);
   return horizontal === 0 ? 1 : vertical / horizontal;
 }
 
-function distance(first: faceapi.Point, second: faceapi.Point) {
+function distance(first: { x: number; y: number }, second: { x: number; y: number }) {
   return Math.hypot(first.x - second.x, first.y - second.y);
 }
 
-function averageX(points: faceapi.Point[]) {
+function averageX(points: { x: number; y: number }[]) {
   return points.reduce((sum, point) => sum + point.x, 0) / points.length;
 }

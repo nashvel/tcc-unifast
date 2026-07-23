@@ -1,8 +1,14 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, ref, watch } from "vue";
+import { keepPreviousData, useQuery } from "@tanstack/vue-query";
 import { IconEye, IconSearch } from "@tabler/icons-vue";
 import PageHeader from "@/components/ui/PageHeader.vue";
 import DataTable from "@/components/tables/DataTable.vue";
+import TablePagination from "@/components/tables/TablePagination.vue";
+import TableStates from "@/components/ui/TableStates.vue";
+import { apiFetch, buildQuery, type PaginatedResponse } from "@/lib/api";
+import { queryKeys } from "@/lib/queryClient";
+import { useOnline } from "@/composables/useOnline";
 
 type CourseRemark = "Passed" | "Failed" | "Dropped";
 type AcademicRecord = {
@@ -19,34 +25,42 @@ type AcademicRecord = {
 };
 
 const query = ref("");
+const debouncedSearch = ref("");
 const remarkFilter = ref<"All" | CourseRemark>("All");
-const records = ref<AcademicRecord[]>([]);
-const loading = ref(true);
-const error = ref("");
+const page = ref(1);
+const { online } = useOnline();
 
-onMounted(async () => {
-  try {
-    const response = await fetch("/api/academic-records", { headers: { Accept: "application/json" } });
-    const payload = await response.json();
-    if (!response.ok) throw new Error(payload.message || "Unable to load academic records.");
-    records.value = payload.data || [];
-  } catch (exception) {
-    error.value = exception instanceof Error ? exception.message : "Unable to load academic records.";
-  } finally {
-    loading.value = false;
-  }
+let searchTimer: ReturnType<typeof setTimeout> | undefined;
+watch(query, (value) => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => {
+    debouncedSearch.value = value;
+    page.value = 1;
+  }, 250);
+});
+
+const recordsQuery = useQuery({
+  queryKey: computed(() =>
+    queryKeys.academic({ page: page.value, search: debouncedSearch.value }),
+  ),
+  queryFn: () =>
+    apiFetch<PaginatedResponse<AcademicRecord>>(
+      `/api/academic-records${buildQuery({
+        page: page.value,
+        per_page: 15,
+        search: debouncedSearch.value,
+      })}`,
+    ),
+  placeholderData: keepPreviousData,
 });
 
 const filtered = computed(() =>
-  records.value.filter((record) => {
-    const matchesQuery = `${record.student_number ?? ""} ${record.student_id} ${record.name} ${record.program}`
-      .toLowerCase()
-      .includes(query.value.toLowerCase());
-    const matchesRemark =
-      remarkFilter.value === "All" || remarkCount(record, remarkFilter.value) > 0;
-    return matchesQuery && matchesRemark;
+  (recordsQuery.data.value?.data ?? []).filter((record) => {
+    if (remarkFilter.value === "All") return true;
+    return remarkCount(record, remarkFilter.value) > 0;
   }),
 );
+const meta = computed(() => recordsQuery.data.value?.meta);
 
 function remarkCount(record: AcademicRecord, remark: CourseRemark) {
   return record.remarks[remark.toLowerCase() as "passed" | "failed" | "dropped"] ?? 0;
@@ -83,10 +97,6 @@ function remarkClass(remark: CourseRemark) {
       </select>
     </div>
 
-    <p v-if="error" class="mb-3 rounded-md border border-danger/30 bg-danger-soft p-3 text-xs text-danger">
-      {{ error }}
-    </p>
-
     <DataTable
       :headings="[
         'Student #',
@@ -98,47 +108,70 @@ function remarkClass(remark: CourseRemark) {
         '',
       ]"
     >
-      <tr v-if="loading">
-        <td colspan="7" class="px-3 py-8 text-center text-text-muted">Loading academic records...</td>
-      </tr>
-      <tr v-for="record in filtered" :key="record.id">
-        <td class="px-3 py-3 font-mono">{{ record.student_number || record.student_id }}</td>
-        <td class="px-3 py-3">
-          <p class="font-medium">{{ record.name }}</p>
-          <p class="mt-0.5 text-micro text-text-muted">{{ record.year_level || "Year level not set" }}</p>
-        </td>
-        <td class="px-3 py-3 text-text-muted">{{ record.program }}</td>
-        <td class="px-3 py-3 font-semibold tabular-nums">{{ record.latest_gwa || "-" }}</td>
-        <td class="px-3 py-3">
-          <div class="flex flex-wrap gap-1.5">
-            <span
-              v-for="remark in (['Passed', 'Failed', 'Dropped'] as CourseRemark[])"
-              :key="remark"
-              class="rounded-full px-2 py-0.5 text-micro"
-              :class="remarkClass(remark)"
+      <TableStates
+        v-if="
+          recordsQuery.isLoading.value ||
+          recordsQuery.isError.value ||
+          (!online && !filtered.length) ||
+          (!recordsQuery.isLoading.value && !filtered.length)
+        "
+        :col-span="7"
+        :is-loading="recordsQuery.isLoading.value"
+        :is-fetching="recordsQuery.isFetching.value"
+        :is-error="recordsQuery.isError.value"
+        :error="recordsQuery.error.value"
+        :is-offline="!online && !filtered.length"
+        :is-empty="!recordsQuery.isLoading.value && !recordsQuery.isError.value && !filtered.length"
+        empty-title="No academic records found"
+        empty-hint="Try a different search or remark filter."
+        @retry="recordsQuery.refetch()"
+      />
+      <template v-else>
+        <tr v-for="record in filtered" :key="record.id">
+          <td class="px-3 py-3 font-mono">{{ record.student_number || record.student_id }}</td>
+          <td class="px-3 py-3">
+            <p class="font-medium">{{ record.name }}</p>
+            <p class="mt-0.5 text-micro text-text-muted">
+              {{ record.year_level || "Year level not set" }}
+            </p>
+          </td>
+          <td class="px-3 py-3 text-text-muted">{{ record.program }}</td>
+          <td class="px-3 py-3 font-semibold tabular-nums">{{ record.latest_gwa || "-" }}</td>
+          <td class="px-3 py-3">
+            <div class="flex flex-wrap gap-1.5">
+              <span
+                v-for="remark in ['Passed', 'Failed', 'Dropped'] as CourseRemark[]"
+                :key="remark"
+                class="rounded-full px-2 py-0.5 text-micro"
+                :class="remarkClass(remark)"
+              >
+                {{ remarkCount(record, remark) }} {{ remark }}
+              </span>
+            </div>
+          </td>
+          <td class="px-3 py-3">
+            <p class="font-semibold tabular-nums">{{ record.approved_submissions }}</p>
+            <p class="mt-0.5 text-micro text-text-muted">
+              only approved count / {{ record.total_submissions }} total
+            </p>
+          </td>
+          <td class="px-3 py-3 text-right">
+            <RouterLink
+              :to="`/app/academic/${record.id}`"
+              class="inline-flex items-center gap-1 text-primary"
             >
-              {{ remarkCount(record, remark) }} {{ remark }}
-            </span>
-          </div>
-        </td>
-        <td class="px-3 py-3">
-          <p class="font-semibold tabular-nums">{{ record.approved_submissions }}</p>
-          <p class="mt-0.5 text-micro text-text-muted">
-            only approved count / {{ record.total_submissions }} total
-          </p>
-        </td>
-        <td class="px-3 py-3 text-right">
-          <RouterLink
-            :to="`/app/academic/${record.id}`"
-            class="inline-flex items-center gap-1 text-primary"
-          >
-            <IconEye :size="14" /> View history
-          </RouterLink>
-        </td>
-      </tr>
-      <tr v-if="!loading && !filtered.length">
-        <td colspan="7" class="px-3 py-8 text-center text-text-muted">No academic records found.</td>
-      </tr>
+              <IconEye :size="14" /> View history
+            </RouterLink>
+          </td>
+        </tr>
+      </template>
+      <template v-if="meta" #footer>
+        <TablePagination
+          :meta="meta"
+          :busy="recordsQuery.isFetching.value"
+          @update:page="page = $event"
+        />
+      </template>
     </DataTable>
   </div>
 </template>

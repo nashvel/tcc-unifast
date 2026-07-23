@@ -1,9 +1,14 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from "vue";
+import { computed, ref, watch } from "vue";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/vue-query";
 import { IconCalendarDue, IconPlus, IconUsers } from "@tabler/icons-vue";
 import AppDialog from "@/components/dialogs/AppDialog.vue";
 import PageHeader from "@/components/ui/PageHeader.vue";
-import { csrfToken } from "@/auth/session";
+import CardSkeleton from "@/components/ui/CardSkeleton.vue";
+import EmptyState from "@/components/ui/EmptyState.vue";
+import { apiFetch, type PaginatedResponse } from "@/lib/api";
+import { queryKeys } from "@/lib/queryClient";
+import { toast } from "@/composables/useToast";
 
 type Batch = {
   id: number;
@@ -17,63 +22,70 @@ type Batch = {
 };
 
 const batchDialog = ref(false);
-const batches = ref<Batch[]>([]);
-const loading = ref(true);
-const busy = ref(false);
-const error = ref("");
-const form = reactive({
+const page = ref(1);
+const form = ref({
   name: "",
   academic_year: "AY 2026-2027",
   semester: "1st Semester",
   submission_deadline: "",
 });
+const queryClient = useQueryClient();
 
+const batchesQuery = useQuery({
+  queryKey: computed(() => [...queryKeys.batches, { page: page.value }]),
+  queryFn: () =>
+    apiFetch<PaginatedResponse<Batch>>(`/api/batches?page=${page.value}&per_page=24`),
+  placeholderData: keepPreviousData,
+});
+
+const batches = computed(() => batchesQuery.data.value?.data ?? []);
+const meta = computed(() => batchesQuery.data.value?.meta);
 const activeBatch = computed(() => batches.value.find((batch) => batch.window_status === "active"));
 
-onMounted(loadBatches);
-
-async function loadBatches() {
-  loading.value = true;
-  error.value = "";
-  try {
-    const response = await fetch("/api/batches", { headers: { Accept: "application/json" } });
-    const payload = await response.json();
-    if (!response.ok) throw new Error(payload.message || "Unable to load batches.");
-    batches.value = payload.data || [];
-  } catch (exception) {
-    error.value = exception instanceof Error ? exception.message : "Unable to load batches.";
-  } finally {
-    loading.value = false;
-  }
-}
-
-async function createBatch(close: () => void) {
-  busy.value = true;
-  error.value = "";
-  try {
-    const response = await fetch("/api/batches", {
+const createMutation = useMutation({
+  mutationFn: () =>
+    apiFetch<{ data: Batch }>("/api/batches", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-CSRF-TOKEN": csrfToken(),
-        Accept: "application/json",
+      body: JSON.stringify(form.value),
+    }),
+  onSuccess: (payload) => {
+    queryClient.setQueryData<PaginatedResponse<Batch>>(
+      [...queryKeys.batches, { page: 1 }],
+      (current) => {
+        if (!current) {
+          return {
+            data: [payload.data],
+            meta: {
+              current_page: 1,
+              last_page: 1,
+              per_page: 24,
+              total: 1,
+              from: 1,
+              to: 1,
+            },
+          };
+        }
+        return { ...current, data: [payload.data, ...current.data] };
       },
-      body: JSON.stringify(form),
-    });
-    const payload = await response.json();
-    if (!response.ok) {
-      const validation = payload.errors ? Object.values(payload.errors).flat().join(" ") : "";
-      throw new Error(validation || payload.message || "Unable to create batch.");
-    }
-    batches.value.unshift(payload.data);
-    form.name = "";
-    close();
-  } catch (exception) {
-    error.value = exception instanceof Error ? exception.message : "Unable to create batch.";
-  } finally {
-    busy.value = false;
-  }
-}
+    );
+    void queryClient.invalidateQueries({ queryKey: queryKeys.batches });
+    form.value = {
+      name: "",
+      academic_year: "AY 2026-2027",
+      semester: "1st Semester",
+      submission_deadline: "",
+    };
+    batchDialog.value = false;
+    toast.success("Batch created");
+  },
+  onError: (error) => {
+    toast.error(error instanceof Error ? error.message : "Unable to create batch.");
+  },
+});
+
+watch(batchDialog, (open) => {
+  if (!open) createMutation.reset();
+});
 
 function statusClass(status: Batch["window_status"]) {
   if (status === "active") return "bg-success-soft text-success";
@@ -99,49 +111,97 @@ function statusClass(status: Batch["window_status"]) {
     <section v-if="activeBatch" class="mb-4 rounded-lg border border-success/30 bg-success-soft p-4">
       <p class="text-sm font-semibold text-success">Active submission window</p>
       <p class="mt-1 text-xs text-text-muted">
-        {{ activeBatch.name }} closes {{ activeBatch.submission_deadline ? new Date(activeBatch.submission_deadline).toLocaleString() : "without a deadline" }}.
+        {{ activeBatch.name }} closes
+        {{
+          activeBatch.submission_deadline
+            ? new Date(activeBatch.submission_deadline).toLocaleString()
+            : "without a deadline"
+        }}.
       </p>
     </section>
-    <p v-if="error" class="mb-4 rounded-md border border-danger/30 bg-danger-soft p-3 text-xs text-danger">
-      {{ error }}
-    </p>
 
     <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-      <article v-if="loading" class="rounded-lg border bg-surface p-5 text-sm text-text-muted">
-        Loading batches...
-      </article>
-      <RouterLink
-        v-for="batch in batches"
-        :key="batch.id"
-        :to="`/app/batches/${batch.id}`"
-        class="rounded-lg border bg-surface p-5 transition hover:border-primary/40 hover:shadow-sm"
-      >
-        <div class="flex items-start justify-between">
-          <span class="grid size-10 place-items-center rounded-md bg-primary-soft text-primary">
-            <IconUsers :size="19" />
-          </span>
-          <span :class="['rounded-full px-2 py-1 text-micro font-semibold', statusClass(batch.window_status)]">
-            {{ batch.window_status }}
-          </span>
-        </div>
-        <h2 class="mt-5 text-sm font-semibold">{{ batch.name }}</h2>
-        <p class="mt-1 text-xs text-text-muted">{{ batch.academic_year }} - {{ batch.semester }}</p>
-        <p class="mt-3 flex items-center gap-1 text-xs text-text-muted">
-          <IconCalendarDue :size="14" />
-          {{ batch.submission_deadline ? new Date(batch.submission_deadline).toLocaleString() : "No deadline set" }}
-        </p>
-        <div class="mt-4 flex justify-between text-xs text-text-muted">
-          <span>{{ batch.grantees_count.toLocaleString() }} grantees</span>
-          <span>{{ batch.is_active ? "Toggle on" : "Toggle off" }}</span>
-        </div>
-      </RouterLink>
-      <article
-        v-if="!loading && !batches.length"
-        class="rounded-lg border bg-surface p-5 text-sm text-text-muted"
-      >
-        No batches yet.
-      </article>
+      <template v-if="batchesQuery.isLoading.value">
+        <CardSkeleton v-for="i in 6" :key="i" :lines="4" />
+      </template>
+      <EmptyState
+        v-else-if="batchesQuery.isError.value"
+        variant="error"
+        title="Couldn't load batches"
+        :hint="
+          batchesQuery.error.value instanceof Error
+            ? batchesQuery.error.value.message
+            : 'Unable to load batches.'
+        "
+        @retry="batchesQuery.refetch()"
+      />
+      <template v-else>
+        <RouterLink
+          v-for="batch in batches"
+          :key="batch.id"
+          :to="`/app/batches/${batch.id}`"
+          class="rounded-lg border bg-surface p-5 transition hover:border-primary/40 hover:shadow-sm"
+        >
+          <div class="flex items-start justify-between">
+            <span class="grid size-10 place-items-center rounded-md bg-primary-soft text-primary">
+              <IconUsers :size="19" />
+            </span>
+            <span
+              :class="[
+                'rounded-full px-2 py-1 text-micro font-semibold',
+                statusClass(batch.window_status),
+              ]"
+            >
+              {{ batch.window_status }}
+            </span>
+          </div>
+          <h2 class="mt-5 text-sm font-semibold">{{ batch.name }}</h2>
+          <p class="mt-1 text-xs text-text-muted">
+            {{ batch.academic_year }} - {{ batch.semester }}
+          </p>
+          <p class="mt-3 flex items-center gap-1 text-xs text-text-muted">
+            <IconCalendarDue :size="14" />
+            {{
+              batch.submission_deadline
+                ? new Date(batch.submission_deadline).toLocaleString()
+                : "No deadline set"
+            }}
+          </p>
+          <div class="mt-4 flex justify-between text-xs text-text-muted">
+            <span>{{ batch.grantees_count.toLocaleString() }} grantees</span>
+            <span>{{ batch.is_active ? "Toggle on" : "Toggle off" }}</span>
+          </div>
+        </RouterLink>
+        <EmptyState
+          v-if="!batches.length"
+          title="No batches yet"
+          hint="Create a TES batch to open a submission window."
+        />
+      </template>
     </section>
+
+    <div
+      v-if="meta && meta.last_page > 1"
+      class="mt-4 flex items-center justify-between text-xs text-text-muted"
+    >
+      <span>Page {{ meta.current_page }} of {{ meta.last_page }}</span>
+      <div class="flex gap-2">
+        <button
+          class="rounded-md border px-2 py-1 disabled:opacity-40"
+          :disabled="meta.current_page <= 1"
+          @click="page = meta.current_page - 1"
+        >
+          Prev
+        </button>
+        <button
+          class="rounded-md border px-2 py-1 disabled:opacity-40"
+          :disabled="meta.current_page >= meta.last_page"
+          @click="page = meta.current_page + 1"
+        >
+          Next
+        </button>
+      </div>
+    </div>
 
     <AppDialog
       v-model="batchDialog"
@@ -160,11 +220,17 @@ function statusClass(status: Batch["window_status"]) {
         </label>
         <label class="text-xs font-medium">
           Academic year
-          <input v-model="form.academic_year" class="mt-1.5 h-10 w-full rounded-md border px-3 text-sm" />
+          <input
+            v-model="form.academic_year"
+            class="mt-1.5 h-10 w-full rounded-md border px-3 text-sm"
+          />
         </label>
         <label class="text-xs font-medium">
           Semester
-          <select v-model="form.semester" class="mt-1.5 h-10 w-full rounded-md border bg-surface px-3 text-sm">
+          <select
+            v-model="form.semester"
+            class="mt-1.5 h-10 w-full rounded-md border bg-surface px-3 text-sm"
+          >
             <option>1st Semester</option>
             <option>2nd Semester</option>
             <option>Summer</option>
@@ -183,10 +249,10 @@ function statusClass(status: Batch["window_status"]) {
         <button class="rounded-md border px-4 py-2 text-xs" @click="close">Cancel</button>
         <button
           class="rounded-md bg-primary px-4 py-2 text-xs text-white disabled:opacity-60"
-          :disabled="busy"
-          @click="createBatch(close)"
+          :disabled="createMutation.isPending.value"
+          @click="createMutation.mutate()"
         >
-          {{ busy ? "Creating..." : "Create batch" }}
+          {{ createMutation.isPending.value ? "Creating..." : "Create batch" }}
         </button>
       </template>
     </AppDialog>

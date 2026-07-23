@@ -13,14 +13,14 @@ import {
 } from "@tabler/icons-vue";
 import AppDialog from "@/components/dialogs/AppDialog.vue";
 import PageHeader from "@/components/ui/PageHeader.vue";
+import CardSkeleton from "@/components/ui/CardSkeleton.vue";
 import { csrfToken } from "@/auth/session";
-import {
-  descriptorFromImage,
-  descriptorFromVideo,
-  detectChallenge,
-  euclideanDistance,
-  type Challenge,
-} from "@/modules/requirements/faceApi";
+import { toast } from "@/composables/useToast";
+import type { Challenge } from "@/modules/requirements/faceApi";
+
+async function faceApi() {
+  return import("@/modules/requirements/faceApi");
+}
 
 type VaultDocument = {
   id: number;
@@ -158,6 +158,7 @@ async function uploadId() {
   error.value = "";
   success.value = "";
   try {
+    const { descriptorFromImage } = await faceApi();
     const face = await descriptorFromImage(idFront.value);
     const body = new FormData();
     body.append("id_front", idFront.value);
@@ -176,11 +177,13 @@ async function uploadId() {
     success.value = payload.data.identity_review_required
       ? "School ID uploaded. Face quality is low, so staff will review it manually."
       : "School ID uploaded. Course History and Grade Slip are now unlocked.";
+    toast.success(success.value);
   } catch (exception) {
     error.value =
       exception instanceof Error
         ? exception.message
         : "School ID upload failed. Confirm the face-api.js model files are available.";
+    toast.error(error.value);
   } finally {
     busy.value = "";
   }
@@ -208,8 +211,10 @@ async function uploadDocument(slotKey: "course_history" | "grade_slip", file: Fi
     if (!response.ok) throw new Error(payloadMessage(payload, "Upload failed."));
     slots.value[slotKey] = payload.data;
     success.value = `${payload.data.document_type} uploaded.`;
+    toast.success(success.value);
   } catch (exception) {
     error.value = exception instanceof Error ? exception.message : "Upload failed.";
+    toast.error(error.value);
   } finally {
     busy.value = "";
   }
@@ -257,6 +262,7 @@ async function checkCurrentChallenge() {
   challengeMessage.value = "";
   try {
     const challenge = challengeSequence.value[challengeIndex.value];
+    const { detectChallenge } = await faceApi();
     const passed = await detectChallenge(video.value, challenge);
     if (!passed) {
       challengeMessage.value = `Face movement not detected yet. Try ${challengeLabels[challenge].toLowerCase()} again.`;
@@ -282,6 +288,7 @@ async function finishIdentityCheck() {
   const reference = slots.value.school_id?.face_descriptor;
   if (!reference?.length) throw new Error("The stored School ID reference face is missing.");
 
+  const { descriptorFromVideo, euclideanDistance } = await faceApi();
   const live = await descriptorFromVideo(video.value);
   const distance = euclideanDistance(reference, live.descriptor);
   const matched = distance < 0.5;
@@ -344,18 +351,19 @@ function shuffle(items: Challenge[]) {
       description="Submit your School ID, Course History, Grade Slip, and final identity check."
     />
 
+    <CardSkeleton v-if="loading" :lines="4" class-name="rounded-2xl p-6" />
     <section
-      v-if="loading || !windowOpen"
+      v-else-if="!windowOpen"
       class="rounded-2xl border bg-surface p-6 shadow-sm"
     >
       <span class="inline-flex items-center gap-2 rounded-full bg-warning-soft px-3 py-1 text-xs font-semibold text-warning">
         <IconLock :size="14" /> Locked vault
       </span>
       <h2 class="mt-4 text-2xl font-semibold tracking-tight">
-        {{ loading ? "Checking your batch..." : "Submission window is closed" }}
+        Submission window is closed
       </h2>
       <p class="mt-2 max-w-2xl text-sm text-text-muted">
-        {{ loading ? "Please wait while the system checks your active batch." : windowMessage }}
+        {{ windowMessage }}
       </p>
     </section>
 

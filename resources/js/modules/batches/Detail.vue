@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { computed, ref } from "vue";
 import { useRoute } from "vue-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/vue-query";
 import {
   IconArrowLeft,
   IconCalendarDue,
@@ -13,7 +14,12 @@ import {
 import PageHeader from "@/components/ui/PageHeader.vue";
 import DataTable from "@/components/tables/DataTable.vue";
 import AppDialog from "@/components/dialogs/AppDialog.vue";
-import { csrfToken } from "@/auth/session";
+import CardSkeleton from "@/components/ui/CardSkeleton.vue";
+import EmptyState from "@/components/ui/EmptyState.vue";
+import { apiFetch } from "@/lib/api";
+import { queryKeys } from "@/lib/queryClient";
+import { toast } from "@/composables/useToast";
+import { scheduleUndo } from "@/composables/useUndo";
 
 type Grantee = {
   id: number;
@@ -38,67 +44,93 @@ type Batch = {
 };
 
 const route = useRoute();
-const batch = ref<Batch | null>(null);
-const loading = ref(true);
-const busy = ref("");
-const error = ref("");
-const mailResult = ref("");
+const queryClient = useQueryClient();
 const extendDialog = ref(false);
 const newDeadline = ref("");
+const mailResult = ref("");
+const pendingAction = ref("");
 
-onMounted(loadBatch);
+const batchQuery = useQuery({
+  queryKey: computed(() => queryKeys.batch(String(route.params.id))),
+  queryFn: async () => {
+    const payload = await apiFetch<{ data: Batch }>(`/api/batches/${route.params.id}`);
+    return payload.data;
+  },
+});
 
-async function loadBatch() {
-  loading.value = true;
-  error.value = "";
-  try {
-    const response = await fetch(`/api/batches/${route.params.id}`, {
-      headers: { Accept: "application/json" },
-    });
-    const payload = await response.json();
-    if (!response.ok) throw new Error(payload.message || "Unable to load batch.");
-    batch.value = payload.data;
-  } catch (exception) {
-    error.value = exception instanceof Error ? exception.message : "Unable to load batch.";
-  } finally {
-    loading.value = false;
-  }
-}
+const batch = computed(() => batchQuery.data.value ?? null);
 
-async function action(path: string, label: string, body?: Record<string, string>) {
-  if (!batch.value) return;
-  busy.value = label;
-  error.value = "";
-  mailResult.value = "";
-  try {
-    const response = await fetch(`/api/batches/${batch.value.id}/${path}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-CSRF-TOKEN": csrfToken(),
-        Accept: "application/json",
+const actionMutation = useMutation({
+  mutationFn: ({ path, body }: { path: string; body?: Record<string, string> }) =>
+    apiFetch<{ data: Partial<Batch>; mail?: { sent: number; failed: unknown[] } }>(
+      `/api/batches/${route.params.id}/${path}`,
+      {
+        method: "POST",
+        body: body ? JSON.stringify(body) : undefined,
       },
-      body: body ? JSON.stringify(body) : undefined,
-    });
-    const payload = await response.json();
-    if (!response.ok) {
-      const validation = payload.errors ? Object.values(payload.errors).flat().join(" ") : "";
-      throw new Error(validation || payload.message || "Batch action failed.");
-    }
-    batch.value = { ...batch.value, ...payload.data };
+    ),
+  onSuccess: (payload) => {
+    queryClient.setQueryData(queryKeys.batch(String(route.params.id)), (current: Batch | undefined) =>
+      current ? { ...current, ...payload.data } : current,
+    );
+    void queryClient.invalidateQueries({ queryKey: queryKeys.batches });
     mailResult.value = payload.mail
       ? `${payload.mail.sent} email notifications sent, ${payload.mail.failed.length} failed.`
       : "";
-  } catch (exception) {
-    error.value = exception instanceof Error ? exception.message : "Batch action failed.";
+  },
+});
+
+async function runAction(path: string, label: string, body?: Record<string, string>) {
+  if (!batch.value || pendingAction.value) return;
+
+  const destructive = path === "deactivate";
+  if (destructive) {
+    const previous = { ...batch.value };
+    pendingAction.value = label;
+    await scheduleUndo(`batch-${path}-${batch.value.id}`, {
+      message: "Closing submission window…",
+      description: "Undo within 5 seconds to keep the window open.",
+      optimistic: () => {
+        queryClient.setQueryData(queryKeys.batch(String(route.params.id)), {
+          ...previous,
+          is_active: false,
+          window_status: "closed" as const,
+        });
+        return () => {
+          queryClient.setQueryData(queryKeys.batch(String(route.params.id)), previous);
+        };
+      },
+      commit: async () => {
+        const payload = await actionMutation.mutateAsync({ path, body });
+        toast.success("Submission window closed");
+        return payload;
+      },
+      onUndo: () => toast.info("Window close cancelled"),
+    });
+    pendingAction.value = "";
+    return;
+  }
+
+  pendingAction.value = label;
+  try {
+    await actionMutation.mutateAsync({ path, body });
+    toast.success(
+      path === "activate"
+        ? "Submission window activated"
+        : path === "extend-deadline"
+          ? "Deadline extended"
+          : "Batch updated",
+    );
+  } catch (error) {
+    toast.error(error instanceof Error ? error.message : "Batch action failed.");
   } finally {
-    busy.value = "";
+    pendingAction.value = "";
   }
 }
 
 async function extend(close: () => void) {
-  await action("extend-deadline", "extend", { submission_deadline: newDeadline.value });
-  if (!error.value) close();
+  await runAction("extend-deadline", "extend", { submission_deadline: newDeadline.value });
+  if (!actionMutation.isError.value) close();
 }
 
 function statusClass(status: Batch["window_status"]) {
@@ -120,22 +152,24 @@ function statusClass(status: Batch["window_status"]) {
 
     <PageHeader
       :title="batch?.name || 'Batch'"
-      :description="batch ? `${batch.academic_year} - ${batch.semester}` : 'Loading batch'"
+      :description="
+        batch ? `${batch.academic_year} - ${batch.semester}` : 'Loading batch details'
+      "
     >
       <template v-if="batch" #actions>
         <button
           v-if="batch.window_status !== 'active'"
           class="inline-flex h-9 items-center gap-1.5 rounded-md bg-primary px-3 text-xs text-white disabled:opacity-60"
-          :disabled="Boolean(busy)"
-          @click="action('activate', 'activate')"
+          :disabled="Boolean(pendingAction)"
+          @click="runAction('activate', 'activate')"
         >
           <IconPower :size="14" />Activate window
         </button>
         <button
           v-else
           class="inline-flex h-9 items-center gap-1.5 rounded-md border px-3 text-xs disabled:opacity-60"
-          :disabled="Boolean(busy)"
-          @click="action('deactivate', 'deactivate')"
+          :disabled="Boolean(pendingAction)"
+          @click="runAction('deactivate', 'deactivate')"
         >
           <IconLock :size="14" />Close window
         </button>
@@ -151,12 +185,24 @@ function statusClass(status: Batch["window_status"]) {
       </template>
     </PageHeader>
 
-    <p v-if="loading" class="rounded-lg border bg-surface p-4 text-sm text-text-muted">
-      Loading batch...
-    </p>
-    <p v-if="error" class="mb-4 rounded-md border border-danger/30 bg-danger-soft p-3 text-xs text-danger">
-      {{ error }}
-    </p>
+    <div v-if="batchQuery.isLoading.value" class="space-y-4">
+      <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <CardSkeleton v-for="i in 4" :key="i" :lines="2" />
+      </div>
+      <CardSkeleton :lines="6" />
+    </div>
+    <EmptyState
+      v-else-if="batchQuery.isError.value"
+      variant="error"
+      title="Couldn't load batch"
+      :hint="
+        batchQuery.error.value instanceof Error
+          ? batchQuery.error.value.message
+          : 'Unable to load batch.'
+      "
+      @retry="batchQuery.refetch()"
+    />
+
     <p v-if="mailResult" class="mb-4 rounded-md border bg-surface-muted p-3 text-xs text-text-muted">
       <IconMail :size="14" class="mr-1 inline text-primary" />{{ mailResult }}
     </p>
@@ -165,7 +211,12 @@ function statusClass(status: Batch["window_status"]) {
       <section class="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <article class="rounded-lg border bg-surface p-4">
           <p class="text-xs text-text-muted">Window status</p>
-          <p :class="['mt-1 w-fit rounded-full px-2 py-1 text-xs font-semibold', statusClass(batch.window_status)]">
+          <p
+            :class="[
+              'mt-1 w-fit rounded-full px-2 py-1 text-xs font-semibold',
+              statusClass(batch.window_status),
+            ]"
+          >
             {{ batch.window_status }}
           </p>
         </article>
@@ -178,14 +229,16 @@ function statusClass(status: Batch["window_status"]) {
             <IconCalendarDue :size="14" />Submission deadline
           </p>
           <p class="mt-1 text-sm font-semibold">
-            {{ batch.submission_deadline ? new Date(batch.submission_deadline).toLocaleString() : "No deadline set" }}
+            {{
+              batch.submission_deadline
+                ? new Date(batch.submission_deadline).toLocaleString()
+                : "No deadline set"
+            }}
           </p>
         </article>
       </section>
 
-      <DataTable
-        :headings="['Student ID', 'Student name', 'Email', 'Program', 'Account', 'Grantee']"
-      >
+      <DataTable :headings="['Student ID', 'Student name', 'Email', 'Program', 'Account', 'Grantee']">
         <tr v-for="member in batch.grantees" :key="member.id">
           <td class="px-3 py-3 font-mono">{{ member.student_id }}</td>
           <td class="px-3 py-3 font-medium">{{ member.full_name }}</td>
@@ -229,10 +282,10 @@ function statusClass(status: Batch["window_status"]) {
         <button class="rounded-md border px-4 py-2 text-xs" @click="close">Cancel</button>
         <button
           class="rounded-md bg-primary px-4 py-2 text-xs text-white disabled:opacity-60"
-          :disabled="busy === 'extend'"
+          :disabled="pendingAction === 'extend'"
           @click="extend(close)"
         >
-          {{ busy === "extend" ? "Saving..." : "Extend deadline" }}
+          {{ pendingAction === "extend" ? "Saving..." : "Extend deadline" }}
         </button>
       </template>
     </AppDialog>

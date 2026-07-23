@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Events\NotificationCreated;
 use App\Models\Batch;
 use App\Models\BatchNotification;
 use App\Models\Grantee;
@@ -59,13 +60,15 @@ class BatchWindowService
                 continue;
             }
 
-            BatchNotification::create([
+            $notification = BatchNotification::create([
                 'batch_id' => $batch->id,
                 'user_id' => $grantee->user->id,
                 'type' => $type,
                 'title' => $title,
                 'body' => $body,
             ]);
+
+            event(new NotificationCreated($notification));
 
             try {
                 Mail::raw($body, fn ($message) => $message

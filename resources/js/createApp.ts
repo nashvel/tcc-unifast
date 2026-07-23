@@ -4,10 +4,13 @@ import {
   createRouter,
   createWebHistory,
   type Router,
+  type RouteLocationNormalized,
   type RouteRecordRaw,
 } from "vue-router";
+import { VueQueryPlugin } from "@tanstack/vue-query";
 import App from "./App.vue";
 import { authSession, loadAuthUser } from "@/auth/session";
+import { queryClient } from "@/lib/queryClient";
 
 const appChildren: RouteRecordRaw[] = [
   { path: "", component: () => import("@/modules/dashboard/AdminDashboard.vue") },
@@ -59,6 +62,18 @@ const studentChildren: RouteRecordRaw[] = [
   { path: "settings", component: () => import("@/modules/settings/StudentSettings.vue") },
 ];
 
+function scrollBehavior(
+  to: RouteLocationNormalized,
+  from: RouteLocationNormalized,
+  savedPosition: { left: number; top: number } | null,
+) {
+  if (savedPosition) return savedPosition;
+  if (to.hash) return { el: to.hash, behavior: "smooth" as const };
+  // Same-path query/hash-only changes keep scroll (filters, pagination).
+  if (to.path === from.path) return false;
+  return { top: 0 };
+}
+
 function createAppRouter(ssr: boolean): Router {
   const router = createRouter({
     history: ssr ? createMemoryHistory() : createWebHistory(),
@@ -78,7 +93,7 @@ function createAppRouter(ssr: boolean): Router {
       },
       { path: "/:pathMatch(.*)*", redirect: "/login" },
     ],
-    scrollBehavior: () => ({ top: 0 }),
+    scrollBehavior,
   });
 
   router.beforeEach(async (to) => {
@@ -110,6 +125,7 @@ export function createTccApp(ssr = false): { app: VueApp; router: Router } {
   const router = createAppRouter(ssr);
 
   app.use(router);
+  app.use(VueQueryPlugin, { queryClient });
 
   return { app, router };
 }

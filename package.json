@@ -13,13 +13,17 @@
   "dependencies": {
     "@tabler/icons-vue": "^3.44.0",
     "@tailwindcss/vite": "^4.2.1",
+    "@tanstack/vue-query": "^5.101.4",
     "@vitejs/plugin-vue": "^6.0.1",
     "face-api.js": "^0.22.2",
+    "laravel-echo": "^2.4.0",
     "laravel-vite-plugin": "^2.0.0",
     "lucide-vue-next": "^0.468.0",
+    "pusher-js": "^8.6.0",
     "tailwindcss": "^4.2.1",
     "vue": "^3.5.13",
-    "vue-router": "^4.5.0"
+    "vue-router": "^4.5.0",
+    "vue-sonner": "^2.0.9"
   },
   "devDependencies": {
     "concurrently": "^10.0.3",
