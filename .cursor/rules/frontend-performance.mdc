@@ -1,0 +1,14 @@
+---
+description: Apply frontend-performance skill for UI, React, CSS, pages, and components
+globs: "**/*.{tsx,ts,jsx,js,css,scss,vue,html}"
+alwaysApply: false
+---
+
+# Frontend Performance Skill
+
+When doing frontend-related work (UI, React/Vue components, pages, layouts, CSS, forms, tables, dashboards, routes, or client performance/UX), you MUST:
+
+1. Read and follow the `frontend-performance` skill at:
+   `C:\Users\BRANDON\.cursor\skills\frontend-performance\SKILL.md`
+2. Apply its objectives as relevant to the current task (no full-page reloads, skeleton loaders, optimistic UI, undo patterns, caching, real-time over polling, standardized UI states, and performance audits).
+3. Prefer incremental, scoped changes that match the existing design system unless the user asks for a broader refactor.

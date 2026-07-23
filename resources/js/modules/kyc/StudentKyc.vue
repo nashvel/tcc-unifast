@@ -3,7 +3,9 @@ import { onMounted, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 import { IconAlertTriangle, IconCheck, IconId, IconSchool, IconUser } from "@tabler/icons-vue";
 import PageHeader from "@/components/ui/PageHeader.vue";
+import CardSkeleton from "@/components/ui/CardSkeleton.vue";
 import { authSession, csrfToken } from "@/auth/session";
+import { toast } from "@/composables/useToast";
 
 type KycResponse = {
   status: string;
@@ -85,8 +87,10 @@ async function submit() {
       ? { ...authSession.user, account_status: payload.data.account_status, kyc_status: payload.data.status }
       : null;
     await router.push("/student");
+    toast.success("KYC profile submitted");
   } catch (exception) {
     error.value = exception instanceof Error ? exception.message : "Unable to submit KYC profile.";
+    toast.error(error.value);
   } finally {
     busy.value = false;
   }
@@ -100,8 +104,9 @@ async function submit() {
       description="Complete your profile. Your name, student ID, and program must match the CHED masterlist."
     />
 
-    <div v-if="loading" class="rounded-lg border bg-surface p-4 text-sm text-text-muted">
-      Loading profile...
+    <div v-if="loading" class="space-y-4">
+      <CardSkeleton :lines="3" />
+      <CardSkeleton :lines="6" />
     </div>
 
     <form v-else class="space-y-4" @submit.prevent="submit">

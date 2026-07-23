@@ -4,21 +4,39 @@ namespace App\Http\Controllers;
 
 use App\Models\Batch;
 use App\Services\BatchWindowService;
+use App\Support\PaginatedJson;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class BatchController extends Controller
 {
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $batches = Batch::query()
-            ->withCount('grantees')
-            ->latest()
-            ->get()
-            ->map(fn (Batch $batch) => $this->present($batch));
+        $perPage = min(max((int) $request->integer('per_page', 24), 1), 100);
+        $search = trim((string) $request->query('search', ''));
 
-        return response()->json(['data' => $batches]);
+        $query = Batch::query()->withCount('grantees')->latest();
+
+        if ($search !== '') {
+            $query->where(function ($builder) use ($search): void {
+                $builder
+                    ->where('name', 'like', "%{$search}%")
+                    ->orWhere('academic_year', 'like', "%{$search}%")
+                    ->orWhere('semester', 'like', "%{$search}%");
+            });
+        }
+
+        if ($status = $request->query('window_status')) {
+            if ($status !== 'all') {
+                $query->where('window_status', $status);
+            }
+        }
+
+        $paginator = $query->paginate($perPage);
+        $rows = collect($paginator->items())->map(fn (Batch $batch) => $this->present($batch));
+
+        return PaginatedJson::from($paginator, $rows->values());
     }
 
     public function store(Request $request): JsonResponse

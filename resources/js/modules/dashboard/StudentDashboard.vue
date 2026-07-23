@@ -19,9 +19,16 @@ import AppTour from "@/components/tour/AppTour.vue";
 import DiceBearAvatar from "@/components/ui/DiceBearAvatar.vue";
 import { studentVerification } from "@/auth/studentVerification";
 import { useSubmissionWindow } from "@/modules/submissionWindow";
+import { useNotificationChannel } from "@/composables/useEcho";
+import { toast } from "@/composables/useToast";
+
 const activityTab = ref("Time spent");
 const { windowState, loadingWindow, loadWindow } = useSubmissionWindow();
 onMounted(loadWindow);
+
+useNotificationChannel((payload) => {
+  toast.info(payload.title, { description: payload.body });
+});
 const days = [
   ["Mon", 6],
   ["Tue", 4.5],

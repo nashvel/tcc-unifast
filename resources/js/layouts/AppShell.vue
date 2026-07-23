@@ -21,8 +21,12 @@ import {
 import logo from "@/assets/system-logo.png";
 import AppBreadcrumbs from "@/components/navigation/AppBreadcrumbs.vue";
 import DiceBearAvatar from "@/components/ui/DiceBearAvatar.vue";
+import OfflineBanner from "@/components/ui/OfflineBanner.vue";
 import { authSession, csrfToken } from "@/auth/session";
 import { studentVerification } from "@/auth/studentVerification";
+import { ensureEcho } from "@/composables/useEcho";
+
+ensureEcho();
 
 const route = useRoute();
 const router = useRouter();
@@ -71,6 +75,7 @@ if (dark.value && typeof document !== "undefined") document.documentElement.clas
 
 <template>
   <div class="min-h-screen bg-bg">
+    <OfflineBanner />
     <div v-if="mobile" class="fixed inset-0 z-40 bg-black/30 lg:hidden" @click="mobile = false" />
     <aside
       :class="[
