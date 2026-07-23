@@ -89,16 +89,16 @@ export const findings = [
   [
     "Warning",
     "All authenticated users can read any avatar",
-    "Supabase (Lovable scanner)",
+    "Mock posture scanner",
     "Fixed",
     "Jun 21, 2026",
   ],
   [
     "Warning",
     "Ambiguous INSERT path on user_roles",
-    "Supabase (Lovable scanner)",
+    "Mock posture scanner",
     "Fixed",
     "Jun 21, 2026",
   ],
-  ["Warning", "Leaked Password Protection disabled", "Supabase platform", "Fixed", "Jun 21, 2026"],
+  ["Warning", "Leaked Password Protection disabled", "Platform checks", "Fixed", "Jun 21, 2026"],
 ];

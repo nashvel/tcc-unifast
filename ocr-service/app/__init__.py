@@ -1,0 +1,2 @@
+"""Standalone OCR prototype package."""
+

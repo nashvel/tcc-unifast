@@ -1,10 +1,22 @@
 <script setup lang="ts">
 import { ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { IconCheck, IconMoon, IconSun } from "@tabler/icons-vue";
 import PageHeader from "@/components/ui/PageHeader.vue";
+
+const { t } = useI18n();
 const theme = ref("light");
 const density = ref("comfortable");
 const saved = ref(false);
+const themeOptions = [
+  { id: "light", labelKey: "appearance.light", icon: IconSun },
+  { id: "dark", labelKey: "appearance.dark", icon: IconMoon },
+];
+const densityOptions = [
+  ["compact", "appearance.compact"],
+  ["comfortable", "appearance.comfortable"],
+  ["spacious", "appearance.spacious"],
+] as const;
 </script>
 <template>
   <div>
@@ -14,24 +26,21 @@ const saved = ref(false);
     />
     <section class="max-w-3xl space-y-4">
       <article class="rounded-lg border bg-surface p-5">
-        <h2 class="text-sm font-semibold">Theme</h2>
+        <h2 class="text-sm font-semibold">{{ t("appearance.theme") }}</h2>
         <div class="mt-4 grid grid-cols-2 gap-3">
           <button
-            v-for="t in [
-              { id: 'light', label: 'Light', icon: IconSun },
-              { id: 'dark', label: 'Dark', icon: IconMoon },
-            ]"
-            :key="t.id"
+            v-for="option in themeOptions"
+            :key="option.id"
             :class="[
               'relative rounded-lg border p-4 text-left',
-              theme === t.id ? 'border-primary ring-1 ring-primary' : '',
+              theme === option.id ? 'border-primary ring-1 ring-primary' : '',
             ]"
-            @click="theme = t.id"
+            @click="theme = option.id"
           >
-            <component :is="t.icon" :size="20" />
-            <p class="mt-3 text-sm font-medium">{{ t.label }}</p>
+            <component :is="option.icon" :size="20" />
+            <p class="mt-3 text-sm font-medium">{{ t(option.labelKey) }}</p>
             <IconCheck
-              v-if="theme === t.id"
+              v-if="theme === option.id"
               :size="16"
               class="absolute right-3 top-3 text-primary"
             />
@@ -39,25 +48,25 @@ const saved = ref(false);
         </div>
       </article>
       <article class="rounded-lg border bg-surface p-5">
-        <h2 class="text-sm font-semibold">Interface density</h2>
+        <h2 class="text-sm font-semibold">{{ t("appearance.interfaceDensity") }}</h2>
         <div class="mt-4 flex gap-2">
           <button
-            v-for="d in ['compact', 'comfortable', 'spacious']"
-            :key="d"
+            v-for="d in densityOptions"
+            :key="d[0]"
             :class="[
               'rounded-md border px-3 py-2 text-xs capitalize',
-              density === d ? 'bg-primary text-white' : '',
+              density === d[0] ? 'bg-primary text-white' : '',
             ]"
-            @click="density = d"
+            @click="density = d[0]"
           >
-            {{ d }}
+            {{ t(d[1]) }}
           </button>
         </div>
       </article>
       <div class="flex items-center justify-end gap-3">
-        <span v-if="saved" class="text-xs text-success">Preferences saved.</span
+        <span v-if="saved" class="text-xs text-success">{{ t("appearance.preferencesSaved") }}</span
         ><button class="rounded-md bg-primary px-4 py-2 text-xs text-white" @click="saved = true">
-          Save preferences
+          {{ t("appearance.savePreferences") }}
         </button>
       </div>
     </section>

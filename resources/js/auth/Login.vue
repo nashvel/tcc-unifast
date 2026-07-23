@@ -1,13 +1,17 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import { useI18n } from "vue-i18n";
 import { ArrowRight, Lock, Mail, UserRound } from "lucide-vue-next";
 import logo from "@/assets/system-logo.png";
 import studentsCutout from "@/assets/auth/tcc-students-cutout.png";
 import { authSession, csrfToken } from "@/auth/session";
+import LanguageSwitcher from "@/components/LanguageSwitcher.vue";
+import { withLang } from "@/i18n/routeLang";
 
 const route = useRoute();
 const router = useRouter();
+const { t } = useI18n();
 const email = ref("");
 const password = ref("");
 const error = ref("");
@@ -26,7 +30,7 @@ const demoAccounts: Record<string, string> = {
 
 async function submit() {
   if (mode === "login" && (!email.value || !password.value)) {
-    error.value = "Enter email and password.";
+    error.value = t("auth.emailPasswordRequired");
     return;
   }
 
@@ -43,12 +47,12 @@ async function submit() {
       body: JSON.stringify({ email: email.value, password: password.value }),
     });
     const payload = await response.json();
-    if (!response.ok) throw new Error(payload.message || "Sign in failed.");
+    if (!response.ok) throw new Error(payload.message || t("auth.signInFailed"));
     authSession.user = payload.user;
     authSession.loaded = true;
-    await router.push(payload.user.role === "student" ? "/student" : "/app");
+    await router.push(withLang(payload.user.role === "student" ? "/student" : "/app", route.query.lang));
   } catch (exception) {
-    error.value = exception instanceof Error ? exception.message : "Sign in failed.";
+    error.value = exception instanceof Error ? exception.message : t("auth.signInFailed");
   } finally {
     busy.value = false;
   }
@@ -58,6 +62,16 @@ async function quickLogin(label: string) {
   email.value = demoAccounts[label];
   password.value = "password";
   await submit();
+}
+
+function demoAccountLabel(role: string) {
+  const labels: Record<string, string> = {
+    Administrator: t("auth.administrator"),
+    "Office Head": t("auth.officeHead"),
+    "UniFAST Staff": t("auth.staff"),
+    Student: t("auth.student"),
+  };
+  return labels[role] ?? role;
 }
 </script>
 
@@ -89,21 +103,20 @@ async function quickLogin(label: string) {
         </div>
         <div>
           <p class="text-base font-semibold">UniFAST TES</p>
-          <p class="text-xs text-white/65">Grantee Management</p>
+          <p class="text-xs text-white/65">{{ t("app.granteeManagement") }}</p>
         </div>
       </div>
       <div class="relative z-10 mt-16 max-w-xl xl:mt-20">
         <p class="text-xs font-semibold uppercase tracking-[0.2em] text-[#f2bd4c]">
-          Tagoloan Community College
+          {{ t("app.college") }}
         </p>
         <h1
           class="mt-4 max-w-[31rem] text-3xl font-semibold leading-[1.14] tracking-tight xl:text-4xl"
         >
-          Making scholarship services simpler, faster, and more transparent.
+          {{ t("auth.heroTitle") }}
         </h1>
         <p class="mt-4 max-w-md text-sm leading-6 text-white/82">
-          A unified workspace for grantees, documents, eligibility, releases, and academic
-          monitoring.
+          {{ t("auth.heroDescription") }}
         </p>
       </div>
       <img
@@ -114,8 +127,12 @@ async function quickLogin(label: string) {
     </section>
 
     <main
-      class="flex h-screen items-center justify-center overflow-hidden bg-white p-5 sm:p-6 lg:h-[80vh]"
+      class="relative flex h-screen items-center justify-center overflow-hidden bg-white p-5 sm:p-6 lg:h-[80vh]"
     >
+      <div class="absolute right-6 top-6 hidden lg:block">
+        <LanguageSwitcher />
+      </div>
+
       <div class="w-full max-w-[31rem]">
         <div class="mb-6 flex items-center gap-3 lg:hidden">
           <span
@@ -124,31 +141,32 @@ async function quickLogin(label: string) {
             <img :src="logo" class="h-full w-full object-contain" alt="UniFAST TES" />
           </span>
           <div>
-            <p class="font-semibold">UniFAST TES</p>
-            <p class="text-xs text-text-muted">Tagoloan Community College</p>
+            <p class="font-semibold">{{ t("app.name") }}</p>
+            <p class="text-xs text-text-muted">{{ t("app.college") }}</p>
           </div>
+          <div class="ml-auto"><LanguageSwitcher /></div>
         </div>
 
         <h2 class="text-xl font-semibold tracking-tight text-text">
           {{
             mode === "forgot"
-              ? "Reset your password"
+              ? t("auth.forgotTitle")
               : mode === "activate"
-                ? "Activate your account"
-                : "Sign in to your account"
+                ? t("auth.activateTitle")
+                : t("auth.loginTitle")
           }}
         </h2>
         <p class="mt-1 text-sm text-text-muted">
           {{
             mode === "login"
-              ? "Use a seeded account or choose a demo role below."
-              : "Enter your institutional email to continue."
+              ? t("auth.loginDescription")
+              : t("auth.emailDescription")
           }}
         </p>
 
         <form class="mt-5 space-y-3.5" @submit.prevent="submit">
           <label class="block">
-            <span class="mb-1.5 block text-xs font-medium">Email <b class="text-danger">*</b></span>
+            <span class="mb-1.5 block text-xs font-medium">{{ t("common.email") }} <b class="text-danger">*</b></span>
             <div class="relative">
               <Mail :size="17" class="absolute left-3 top-1/2 -translate-y-1/2 text-text-soft" />
               <input
@@ -161,14 +179,14 @@ async function quickLogin(label: string) {
           </label>
           <label v-if="mode === 'login'" class="block">
             <span class="mb-1.5 block text-xs font-medium"
-              >Password <b class="text-danger">*</b></span
+              >{{ t("common.password") }} <b class="text-danger">*</b></span
             >
             <div class="relative">
               <Lock :size="17" class="absolute left-3 top-1/2 -translate-y-1/2 text-text-soft" />
               <input
                 v-model="password"
                 type="password"
-                placeholder="Password"
+                :placeholder="t('common.password')"
                 class="h-10 w-full rounded-md border bg-[#f1f5fb] pl-10 pr-3 text-sm shadow-inner shadow-slate-200/40"
               />
             </div>
@@ -178,22 +196,22 @@ async function quickLogin(label: string) {
             :disabled="busy"
             class="flex h-10 w-full items-center justify-center gap-2 rounded-md bg-primary text-sm font-semibold text-white shadow-sm hover:bg-primary-hover disabled:opacity-60"
           >
-            {{ busy ? "Signing in..." : mode === "login" ? "Sign in" : "Continue" }}
+            {{ busy ? t("auth.signingIn") : mode === "login" ? t("common.signIn") : t("common.continue") }}
             <ArrowRight :size="15" />
           </button>
         </form>
 
         <div v-if="mode === 'login'" class="mt-4 flex justify-between text-xs text-primary">
-          <RouterLink to="/forgot-password">Forgot password?</RouterLink>
-          <RouterLink to="/activate">Activate your account</RouterLink>
+          <RouterLink :to="withLang('/forgot-password', route.query.lang)">{{ t("auth.forgotPassword") }}</RouterLink>
+          <RouterLink :to="withLang('/activate', route.query.lang)">{{ t("auth.activateAccount") }}</RouterLink>
         </div>
         <div v-else class="mt-4 text-xs">
-          <RouterLink to="/login" class="text-primary">Back to sign in</RouterLink>
+          <RouterLink :to="withLang('/login', route.query.lang)" class="text-primary">{{ t("auth.backToSignIn") }}</RouterLink>
         </div>
 
         <div v-if="mode === 'login'" class="mt-6 border-t pt-4">
           <p class="mb-2.5 text-2xs font-semibold uppercase tracking-wider text-text-soft">
-            Seeded demo accounts - password: password
+            {{ t("auth.demoAccounts") }}
           </p>
           <div class="grid grid-cols-2 gap-2">
             <button
@@ -204,7 +222,7 @@ async function quickLogin(label: string) {
               @click="quickLogin(role)"
             >
               <UserRound :size="17" class="text-text-muted" />
-              <span class="text-xs font-medium">{{ role }}</span>
+              <span class="text-xs font-medium">{{ demoAccountLabel(role) }}</span>
             </button>
           </div>
         </div>

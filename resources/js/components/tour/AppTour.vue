@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
+import { useI18n } from "vue-i18n";
 import { IconHelpCircle, IconX } from "@tabler/icons-vue";
 import axlGuide from "@/assets/student/axl-guide.png";
 import { resolveTour } from "./tour-registry";
@@ -19,6 +20,7 @@ const props = withDefaults(
 );
 
 const route = useRoute();
+const { t } = useI18n();
 const active = ref(false);
 const index = ref(0);
 const targetRect = ref<DOMRect | null>(null);
@@ -30,14 +32,14 @@ const tour = computed(() => resolveTour(route.path));
 const step = computed(() => tour.value?.steps[index.value] ?? null);
 const stepCount = computed(() => tour.value?.steps.length ?? 0);
 const axlMessages = [
-  "Let's check this part first.",
-  "This area is important.",
-  "Look here, this is useful.",
-  "Nice, you're on the right spot.",
-  "This is where the action happens.",
-  "Quick tip: remember this section.",
+  "tour.axl.checkFirst",
+  "tour.axl.important",
+  "tour.axl.lookHere",
+  "tour.axl.rightSpot",
+  "tour.axl.action",
+  "tour.axl.quickTip",
 ];
-const axlMessage = computed(() => axlMessages[index.value % axlMessages.length]);
+const axlMessage = computed(() => t(axlMessages[index.value % axlMessages.length]));
 const zoom = computed(() =>
   typeof window !== "undefined" && window.innerWidth >= 1024 ? 1.25 : 1,
 );
@@ -191,13 +193,13 @@ onBeforeUnmount(() => {
         : 'inline-flex h-8 items-center gap-1.5 rounded-md border bg-surface px-2.5 text-xs font-medium text-text-muted hover:bg-surface-muted hover:text-text',
       props.class,
     ]"
-    aria-label="Show tour for this page"
-    title="Show tour for this page"
+    :aria-label="t('tour.show')"
+    :title="t('tour.show')"
     @click="start"
   >
     <slot>
       <IconHelpCircle :size="15" />
-      <span class="hidden sm:inline">{{ label }}</span>
+      <span class="hidden sm:inline">{{ label === "Tour" ? t("tour.label") : label }}</span>
     </slot>
   </button>
 
@@ -224,26 +226,28 @@ onBeforeUnmount(() => {
             </button>
           </div>
           <footer class="mt-4 flex items-center justify-between gap-3 border-t pt-3">
-            <span class="text-micro text-text-soft"> {{ index + 1 }} of {{ stepCount }} </span>
+            <span class="text-micro text-text-soft">
+              {{ t("tour.stepCount", { current: index + 1, total: stepCount }) }}
+            </span>
             <div class="flex gap-2">
               <button
                 class="h-8 rounded-md px-2.5 text-xs text-text-muted hover:bg-surface-muted"
                 @click="close"
               >
-                Skip
+                {{ t("tour.skip") }}
               </button>
               <button
                 class="h-8 rounded-md border px-2.5 text-xs disabled:opacity-40"
                 :disabled="index === 0"
                 @click="back"
               >
-                Back
+                {{ t("common.back") }}
               </button>
               <button
                 class="h-8 rounded-md bg-primary px-3 text-xs font-medium text-white"
                 @click="next"
               >
-                {{ index === stepCount - 1 ? "Done" : "Next" }}
+                {{ index === stepCount - 1 ? t("tour.done") : t("tour.next") }}
               </button>
             </div>
           </footer>

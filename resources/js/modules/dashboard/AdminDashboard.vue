@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { ref } from "vue";
+import { useRoute } from "vue-router";
+import { useI18n } from "vue-i18n";
 import {
   ArrowUpRight,
   ChartBar,
@@ -12,8 +14,12 @@ import {
   Megaphone,
 } from "lucide-vue-next";
 import AppTour from "@/components/tour/AppTour.vue";
+import { translateKnownText } from "@/i18n/knownText";
+import { withLang } from "@/i18n/routeLang";
 
 type DashboardVariant = "operations" | "analytics" | "compact";
+const route = useRoute();
+const { t } = useI18n();
 const saved =
   typeof localStorage !== "undefined"
     ? (localStorage.getItem("unifast.dashboard.variant") as DashboardVariant | null)
@@ -156,7 +162,7 @@ function areaPath(values: number[]) {
             @click="choose(option[0] as DashboardVariant)"
           >
             <component :is="option[2]" :size="14" /><span class="hidden sm:inline">{{
-              option[1]
+              translateKnownText(t, option[1] as string)
             }}</span>
           </button>
         </div>
@@ -170,7 +176,7 @@ function areaPath(values: number[]) {
       >
         <article v-for="kpi in kpis" :key="kpi.label" class="rounded-xl border bg-surface p-4">
           <div class="flex items-start justify-between">
-            <p class="text-xs text-text-muted">{{ kpi.label }}</p>
+            <p class="text-xs text-text-muted">{{ translateKnownText(t, kpi.label) }}</p>
             <span
               class="inline-flex items-center gap-0.5 rounded-full bg-success-soft px-1.5 py-0.5 text-2xs font-semibold text-success"
               ><ArrowUpRight :size="11" />{{ kpi.delta }}</span
@@ -208,7 +214,7 @@ function areaPath(values: number[]) {
             viewBox="0 0 760 220"
             preserveAspectRatio="none"
             role="img"
-            aria-label="Submitted and validated records over the last seven days"
+            :aria-label="t('dashboard.admin.chartAria')"
           >
             <defs>
               <linearGradient id="dashboard-primary-area" x1="0" y1="0" x2="0" y2="1">
@@ -283,7 +289,7 @@ function areaPath(values: number[]) {
         <article class="rounded-xl border bg-surface p-5">
           <div class="flex justify-between">
             <h2 class="text-lg font-semibold">Grantee status</h2>
-            <RouterLink to="/app/grantees" class="text-xs text-primary">Details</RouterLink>
+            <RouterLink :to="withLang('/app/grantees', route.query.lang)" class="text-xs text-primary">{{ t("common.details") }}</RouterLink>
           </div>
           <div
             class="relative mx-auto mt-5 grid h-40 w-40 place-items-center rounded-full"
@@ -306,7 +312,7 @@ function areaPath(values: number[]) {
           <ul class="mt-4 grid grid-cols-2 gap-2">
             <li v-for="item in status" :key="item.label" class="flex justify-between text-xs">
               <span class="flex items-center gap-2"
-                ><i :class="['h-2 w-2 rounded-sm', item.color]" />{{ item.label }}</span
+                ><i :class="['h-2 w-2 rounded-sm', item.color]" />{{ translateKnownText(t, item.label) }}</span
               ><span class="text-text-muted">{{ item.value.toLocaleString() }}</span>
             </li>
           </ul>
@@ -354,7 +360,7 @@ function areaPath(values: number[]) {
                   index === 1 ? 'font-semibold text-primary' : 'text-text-muted',
                 ]"
               >
-                {{ step }}
+                {{ translateKnownText(t, step) }}
               </p>
             </li>
           </ol>
@@ -372,7 +378,7 @@ function areaPath(values: number[]) {
               :key="action[0] as string"
             >
               <RouterLink
-                :to="action[1] as string"
+                :to="withLang(action[1] as string, route.query.lang)"
                 class="flex items-center gap-3 rounded-md px-2 py-2 text-sm transition-colors hover:bg-surface-muted"
               >
                 <span
@@ -380,7 +386,7 @@ function areaPath(values: number[]) {
                 >
                   <component :is="action[2]" :size="16" />
                 </span>
-                {{ action[0] }}
+                {{ translateKnownText(t, action[0] as string) }}
               </RouterLink>
             </li>
           </ul>
@@ -400,7 +406,9 @@ function areaPath(values: number[]) {
           :key="item[0]"
           :class="`rounded-xl border border-l-4 border-l-${item[2]} bg-surface p-5`"
         >
-          <p class="text-xs uppercase tracking-wide text-text-muted">{{ item[0] }}</p>
+          <p class="text-xs uppercase tracking-wide text-text-muted">
+            {{ translateKnownText(t, item[0] as string) }}
+          </p>
           <p class="mt-2 text-3xl font-semibold">{{ item[1] }}</p>
         </article>
       </section>
@@ -539,7 +547,7 @@ function areaPath(values: number[]) {
               class="flex items-center justify-between text-xs"
             >
               <span class="inline-flex items-center gap-2"
-                ><i :class="['h-2 w-2 rounded-sm', item.color]" />{{ item.label }}</span
+                ><i :class="['h-2 w-2 rounded-sm', item.color]" />{{ translateKnownText(t, item.label) }}</span
               ><span class="tabular-nums text-text-muted">{{ item.value.toLocaleString() }}</span>
             </li>
           </ul>
@@ -601,7 +609,7 @@ function areaPath(values: number[]) {
           <h2 class="text-sm font-semibold uppercase text-text-muted">Metrics</h2>
           <dl class="mt-3 divide-y">
             <div v-for="row in compactRows" :key="row[0]" class="flex justify-between py-2.5">
-              <dt class="text-sm">{{ row[0] }}</dt>
+              <dt class="text-sm">{{ translateKnownText(t, row[0]) }}</dt>
               <dd class="text-sm font-semibold tabular-nums">{{ row[1] }}</dd>
             </div>
           </dl>
@@ -628,7 +636,7 @@ function areaPath(values: number[]) {
           <ul class="mt-3 space-y-3">
             <li v-for="item in status" :key="item.label">
               <div class="flex justify-between text-xs">
-                <span>{{ item.label }}</span
+                <span>{{ translateKnownText(t, item.label) }}</span
                 ><span class="text-text-muted"
                   >{{ item.value.toLocaleString() }} · {{ item.percent }}%</span
                 >
