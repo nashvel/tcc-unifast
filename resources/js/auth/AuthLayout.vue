@@ -1,35 +1,41 @@
 <script setup lang="ts">
 import { IconShieldCheck } from "@tabler/icons-vue";
+import { useI18n } from "vue-i18n";
+import LanguageSwitcher from "@/components/LanguageSwitcher.vue";
+
+const { t } = useI18n();
 </script>
 
 <template>
   <div class="flex min-h-screen bg-bg">
     <aside class="hidden flex-1 flex-col justify-between border-r bg-surface p-10 lg:flex">
-      <div class="flex items-center gap-2">
-        <span class="grid h-8 w-8 place-items-center rounded-md bg-primary text-white">
-          <IconShieldCheck :size="18" />
-        </span>
-        <div class="leading-tight">
-          <p class="text-sm font-semibold">UniFAST TES</p>
-          <p class="text-xs text-text-muted">Grantee Management</p>
+      <div class="flex items-center justify-between gap-4">
+        <div class="flex items-center gap-2">
+          <span class="grid h-8 w-8 place-items-center rounded-md bg-primary text-white">
+            <IconShieldCheck :size="18" />
+          </span>
+          <div class="leading-tight">
+            <p class="text-sm font-semibold">{{ t("app.name") }}</p>
+            <p class="text-xs text-text-muted">{{ t("app.granteeManagement") }}</p>
+          </div>
         </div>
+        <LanguageSwitcher />
       </div>
       <div>
         <h2 class="max-w-md text-2xl font-semibold leading-tight tracking-tight">
-          Tertiary Education Subsidy — Grantee Management &amp; Document Validation
+          {{ t("auth.layoutTitle") }}
         </h2>
         <p class="mt-3 max-w-md text-sm text-text-muted">
-          Validate submissions, track academic records, evaluate eligibility, and communicate with
-          TES grantees from a single workspace.
+          {{ t("auth.layoutDescription") }}
         </p>
         <ul class="mt-6 space-y-2 text-xs text-text-muted">
-          <li>• Centralized masterlist &amp; batch management</li>
-          <li>• OCR-assisted document validation</li>
-          <li>• Rules-based eligibility evaluation</li>
-          <li>• Full audit trail and role-based access</li>
+          <li>• {{ t("auth.layoutBulletMasterlist") }}</li>
+          <li>• {{ t("auth.layoutBulletOcr") }}</li>
+          <li>• {{ t("auth.layoutBulletEligibility") }}</li>
+          <li>• {{ t("auth.layoutBulletAudit") }}</li>
         </ul>
       </div>
-      <p class="text-micro text-text-soft">© 2026 Commission on Higher Education — UniFAST</p>
+      <p class="text-micro text-text-soft">© 2026 Commission on Higher Education - UniFAST</p>
     </aside>
     <main class="flex flex-1 items-center justify-center p-6">
       <div class="w-full max-w-sm"><slot /></div>

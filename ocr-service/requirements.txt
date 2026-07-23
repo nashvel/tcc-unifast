@@ -1,0 +1,12 @@
+fastapi
+uvicorn
+python-multipart
+pytesseract
+opencv-python-headless
+Pillow
+PyMuPDF
+numpy
+pydantic-settings
+pytest
+httpx
+

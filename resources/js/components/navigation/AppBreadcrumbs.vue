@@ -1,44 +1,49 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useRoute } from "vue-router";
+import { useI18n } from "vue-i18n";
 import { ChevronRight, Home } from "lucide-vue-next";
+import { withLang } from "@/i18n/routeLang";
 
 const route = useRoute();
-const labels: Record<string, string> = {
-  app: "Dashboard",
-  grantees: "Grantees",
-  masterlist: "Masterlist",
-  eligibility: "Eligibility",
-  documents: "Documents",
-  batches: "Batches",
-  announcements: "Announcements",
-  academic: "Academic Records",
-  reports: "Reports",
-  files: "File Manager",
-  support: "Support",
-  users: "Users & Access",
-  audit: "Audit Log",
-  security: "Security",
-  appearance: "Appearance",
-  settings: "Settings",
-  "style-guide": "Style Guide",
-  new: "New",
-  logs: "Logs",
-  permissions: "Permissions",
-  preview: "Preview",
-  generate: "Generate",
-  edit: "Edit",
+const { t } = useI18n();
+
+const labelKeys: Record<string, string> = {
+  app: "common.dashboard",
+  grantees: "nav.grantees",
+  masterlist: "nav.masterlist",
+  eligibility: "nav.eligibility",
+  documents: "nav.documents",
+  batches: "nav.batches",
+  announcements: "nav.announcements",
+  academic: "nav.academicRecords",
+  reports: "nav.reports",
+  files: "nav.fileManager",
+  support: "nav.support",
+  users: "nav.users",
+  audit: "nav.auditLog",
+  security: "nav.security",
+  appearance: "nav.appearance",
+  settings: "common.settings",
+  "style-guide": "nav.styleGuide",
+  new: "nav.new",
+  logs: "nav.logs",
+  permissions: "nav.permissions",
+  preview: "nav.preview",
+  generate: "nav.generate",
+  edit: "nav.edit",
 };
 
 const crumbs = computed(() => {
   const segments = route.path.split("/").filter(Boolean);
   return segments.map((segment, index) => {
     const isIdentifier = /^\d+$/.test(segment) || /^[0-9a-f-]{8,}$/i.test(segment);
+    const fallback = segment
+      .replaceAll("-", " ")
+      .replace(/\b\w/g, (character) => character.toUpperCase());
+
     return {
-      label: isIdentifier
-        ? "Detail"
-        : (labels[segment] ??
-          segment.replaceAll("-", " ").replace(/\b\w/g, (character) => character.toUpperCase())),
+      label: isIdentifier ? t("common.details") : t(labelKeys[segment] ?? "", fallback),
       href: `/${segments.slice(0, index + 1).join("/")}`,
     };
   });
@@ -48,14 +53,14 @@ const crumbs = computed(() => {
 <template>
   <nav
     v-if="crumbs.length"
-    aria-label="Breadcrumb"
+    :aria-label="t('nav.breadcrumb')"
     class="mb-4 inline-flex max-w-full items-center overflow-hidden rounded-full border border-border/60 bg-surface/60 px-2.5 py-1 text-xs text-text-muted shadow-sm backdrop-blur-sm"
   >
     <ol class="flex min-w-0 items-center gap-0.5">
       <li class="flex shrink-0 items-center">
         <RouterLink
-          :to="crumbs[0].href"
-          :aria-label="`${crumbs[0].label} (home)`"
+          :to="withLang(crumbs[0].href, route.query.lang)"
+          :aria-label="t('nav.homeBreadcrumb', { label: crumbs[0].label })"
           class="flex h-6 w-6 items-center justify-center rounded-full hover:bg-surface-muted hover:text-text"
         >
           <Home :size="13" />
@@ -76,7 +81,7 @@ const crumbs = computed(() => {
         </span>
         <RouterLink
           v-else
-          :to="crumb.href"
+          :to="withLang(crumb.href, route.query.lang)"
           class="max-w-40 truncate rounded-full px-2 py-0.5 hover:bg-surface-muted hover:text-text"
         >
           {{ crumb.label }}

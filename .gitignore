@@ -20,6 +20,7 @@ node_modules
 /.phpunit.result.cache
 .env
 python/.venv/
+.tools/
 dist
 dist-ssr
 .output

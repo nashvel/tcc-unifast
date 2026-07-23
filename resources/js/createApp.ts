@@ -11,6 +11,9 @@ import { VueQueryPlugin } from "@tanstack/vue-query";
 import App from "./App.vue";
 import { authSession, loadAuthUser } from "@/auth/session";
 import { queryClient } from "@/lib/queryClient";
+import { i18n } from "@/i18n";
+import { installLanguageRouting, withLang } from "@/i18n/routeLang";
+import { installSeoUpdates } from "@/i18n/seo";
 
 const appChildren: RouteRecordRaw[] = [
   { path: "", component: () => import("@/modules/dashboard/AdminDashboard.vue") },
@@ -50,10 +53,10 @@ const studentChildren: RouteRecordRaw[] = [
   { path: "", component: () => import("@/modules/dashboard/StudentDashboard.vue") },
   { path: "kyc", component: () => import("@/modules/kyc/StudentKyc.vue") },
   { path: "verify", component: () => import("@/modules/verification/StudentVerification.vue") },
-  { path: "submissions", redirect: "/student/documents" },
+  { path: "submissions", redirect: (to) => withLang("/student/documents", to.query.lang) },
   { path: "profile", component: () => import("@/modules/profile/Index.vue") },
   { path: "documents", component: () => import("@/modules/documents/StudentDocuments.vue") },
-  { path: "upload", redirect: "/student/documents" },
+  { path: "upload", redirect: (to) => withLang("/student/documents", to.query.lang) },
   { path: "announcements", component: () => import("@/modules/announcements/StudentIndex.vue") },
   {
     path: "notifications",
@@ -78,7 +81,7 @@ function createAppRouter(ssr: boolean): Router {
   const router = createRouter({
     history: ssr ? createMemoryHistory() : createWebHistory(),
     routes: [
-      { path: "/", redirect: "/login" },
+      { path: "/", redirect: (to) => withLang("/login", to.query.lang) },
       { path: "/login", component: () => import("@/auth/Login.vue") },
       { path: "/forgot-password", component: () => import("@/auth/ForgotPassword.vue") },
       { path: "/activate", component: () => import("@/auth/Activate.vue") },
@@ -91,10 +94,12 @@ function createAppRouter(ssr: boolean): Router {
         component: () => import("@/layouts/AppShell.vue"),
         children: studentChildren,
       },
-      { path: "/:pathMatch(.*)*", redirect: "/login" },
+      { path: "/:pathMatch(.*)*", redirect: (to) => withLang("/login", to.query.lang) },
     ],
     scrollBehavior,
   });
+
+  installLanguageRouting(router);
 
   router.beforeEach(async (to) => {
     if (import.meta.env.SSR) return true;
@@ -102,20 +107,22 @@ function createAppRouter(ssr: boolean): Router {
     const protectedArea = to.path.startsWith("/app") || to.path.startsWith("/student");
     if (!protectedArea && to.path !== "/login") return true;
     const user = authSession.loaded ? authSession.user : await loadAuthUser();
-    if (!user) return protectedArea ? "/login" : true;
-    if (to.path === "/login") return user.role === "student" ? "/student" : "/app";
-    if (user.role === "student" && to.path.startsWith("/app")) return "/student";
-    if (user.role !== "student" && to.path.startsWith("/student")) return "/app";
+    if (!user) return protectedArea ? withLang("/login", to.query.lang) : true;
+    if (to.path === "/login") return withLang(user.role === "student" ? "/student" : "/app", to.query.lang);
+    if (user.role === "student" && to.path.startsWith("/app")) return withLang("/student", to.query.lang);
+    if (user.role !== "student" && to.path.startsWith("/student")) return withLang("/app", to.query.lang);
     if (
       user.role === "student" &&
       to.path.startsWith("/student") &&
       ["unverified", "pending_kyc", "blocked"].includes(user.account_status ?? "") &&
       !["/student/kyc", "/student/settings"].includes(to.path)
     ) {
-      return "/student/kyc";
+      return withLang("/student/kyc", to.query.lang);
     }
     return true;
   });
+
+  installSeoUpdates(router);
 
   return router;
 }
@@ -126,6 +133,7 @@ export function createTccApp(ssr = false): { app: VueApp; router: Router } {
 
   app.use(router);
   app.use(VueQueryPlugin, { queryClient });
+  app.use(i18n);
 
   return { app, router };
 }

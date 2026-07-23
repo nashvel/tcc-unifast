@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted } from "vue";
+import { useI18n } from "vue-i18n";
 import { IconX } from "@tabler/icons-vue";
 
 withDefaults(
@@ -12,6 +13,7 @@ withDefaults(
   { size: "md", closeable: true },
 );
 const open = defineModel<boolean>({ required: true });
+const { t } = useI18n();
 const widths = { sm: "max-w-sm", md: "max-w-lg", lg: "max-w-2xl", xl: "max-w-4xl" };
 function close() {
   open.value = false;
@@ -51,7 +53,7 @@ onBeforeUnmount(() => document.removeEventListener("keydown", onKeydown));
             <button
               v-if="closeable"
               class="rounded-md p-1.5 text-text-muted hover:bg-surface-muted"
-              aria-label="Close dialog"
+              :aria-label="t('dialog.close')"
               @click="close"
             >
               <IconX :size="17" />

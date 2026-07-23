@@ -1,6 +1,12 @@
 <script setup lang="ts">
+import { useRoute } from "vue-router";
+import { useI18n } from "vue-i18n";
 import { IconCheck } from "@tabler/icons-vue";
 import AuthLayout from "./AuthLayout.vue";
+import { withLang } from "@/i18n/routeLang";
+
+const route = useRoute();
+const { t } = useI18n();
 </script>
 
 <template>
@@ -11,16 +17,15 @@ import AuthLayout from "./AuthLayout.vue";
       >
         <IconCheck :size="22" />
       </span>
-      <h1 class="text-xl font-semibold">Account activated</h1>
+      <h1 class="text-xl font-semibold">{{ t("auth.activatedTitle") }}</h1>
       <p class="mt-1 text-sm text-text-muted">
-        Your student account is now active. Sign in next, then upload your student ID and complete
-        live face verification before the dashboard and document uploads unlock.
+        {{ t("auth.activatedDescription") }}
       </p>
       <RouterLink
-        to="/login"
+        :to="withLang('/login', route.query.lang)"
         class="mt-5 inline-block text-sm font-medium text-primary hover:underline"
       >
-        Go to sign in →
+        {{ t("auth.goToSignIn") }} →
       </RouterLink>
     </div>
   </AuthLayout>
