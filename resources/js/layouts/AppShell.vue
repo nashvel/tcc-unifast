@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
+import { useQuery, useQueryClient } from "@tanstack/vue-query";
 import {
   IconBell,
   IconChevronDown,
@@ -25,15 +26,26 @@ import LanguageSwitcher from "@/components/LanguageSwitcher.vue";
 import DiceBearAvatar from "@/components/ui/DiceBearAvatar.vue";
 import OfflineBanner from "@/components/ui/OfflineBanner.vue";
 import { authSession, csrfToken } from "@/auth/session";
-import { studentVerification } from "@/auth/studentVerification";
-import { ensureEcho } from "@/composables/useEcho";
+import { ensureEcho, useNotificationChannel } from "@/composables/useEcho";
 import { withLang } from "@/i18n/routeLang";
+import { apiFetch, type PaginatedResponse } from "@/lib/api";
+import { queryKeys } from "@/lib/queryClient";
 
 ensureEcho();
+
+type ShellNotification = {
+  id: number;
+  title: string;
+  body: string;
+  type: string;
+  read: boolean;
+  time: string | null;
+};
 
 const route = useRoute();
 const router = useRouter();
 const { t } = useI18n();
+const queryClient = useQueryClient();
 const mobile = ref(false);
 const profile = ref(false);
 const notifications = ref(false);
@@ -41,10 +53,55 @@ const dark = ref(typeof localStorage !== "undefined" && localStorage.getItem("th
 const isStudent = computed(() => route.path.startsWith("/student"));
 const role = computed(() => authSession.user?.role ?? "student");
 const user = computed(() => authSession.user);
+const kycComplete = computed(() => authSession.user?.account_status === "active");
+const staffNotifyEnabled = computed(
+  () => !isStudent.value && ["admin", "head", "staff"].includes(String(role.value)),
+);
+
+const staffNotificationsQuery = useQuery({
+  queryKey: queryKeys.notifications,
+  enabled: staffNotifyEnabled,
+  queryFn: () => apiFetch<PaginatedResponse<ShellNotification>>("/api/notifications?per_page=20"),
+});
+
+const staffItems = computed(() => staffNotificationsQuery.data.value?.data ?? []);
+const unreadCount = computed(() => staffItems.value.filter((item) => !item.read).length);
+
+useNotificationChannel((payload) => {
+  if (!staffNotifyEnabled.value) return;
+  queryClient.setQueryData<PaginatedResponse<ShellNotification>>(queryKeys.notifications, (current) => {
+    const nextItem: ShellNotification = {
+      id: payload.id,
+      title: payload.title,
+      body: payload.body,
+      type: payload.type,
+      read: payload.read,
+      time: payload.time,
+    };
+    if (!current) {
+      return {
+        data: [nextItem],
+        meta: { current_page: 1, last_page: 1, per_page: 20, total: 1, from: 1, to: 1 },
+      };
+    }
+    return { ...current, data: [nextItem, ...current.data.filter((row) => row.id !== nextItem.id)] };
+  });
+});
+
+watch(notifications, (open) => {
+  if (open && staffNotifyEnabled.value) void staffNotificationsQuery.refetch();
+});
+
+async function markAllStaffRead() {
+  await apiFetch("/api/notifications/read-all", { method: "POST" });
+  queryClient.setQueryData<PaginatedResponse<ShellNotification>>(queryKeys.notifications, (current) => {
+    if (!current) return current;
+    return { ...current, data: current.data.map((row) => ({ ...row, read: true })) };
+  });
+}
 
 const sections = computed(() => {
-  if (isStudent.value)
-    return studentVerification.verified ? studentNavigation : lockedStudentNavigation;
+  if (isStudent.value) return kycComplete.value ? studentNavigation : lockedStudentNavigation;
   if (role.value === "admin") return adminNavigation;
   if (role.value === "head") return staffNavigation;
   return staffNavigation;
@@ -175,8 +232,9 @@ if (dark.value && typeof document !== "undefined") document.documentElement.clas
             "
           >
             <IconBell :size="18" /><span
+              v-if="staffNotifyEnabled && unreadCount > 0"
               class="absolute right-1 top-1 grid h-4 min-w-4 place-items-center rounded-full bg-danger px-1 text-2xs text-white"
-              >3</span
+              >{{ unreadCount > 9 ? "9+" : unreadCount }}</span
             >
           </button>
           <div
@@ -185,9 +243,26 @@ if (dark.value && typeof document !== "undefined") document.documentElement.clas
           >
             <div class="flex h-10 items-center justify-between border-b px-3">
               <p class="text-sm font-semibold">{{ t("shell.notifications") }}</p>
-              <button class="text-xs text-primary">{{ t("shell.markAllRead") }}</button>
+              <button
+                v-if="staffNotifyEnabled && unreadCount > 0"
+                class="text-xs text-primary"
+                @click="markAllStaffRead"
+              >
+                {{ t("shell.markAllRead") }}
+              </button>
             </div>
-            <div class="space-y-3 p-3 text-xs">
+            <div v-if="staffNotifyEnabled" class="max-h-72 space-y-3 overflow-y-auto p-3 text-xs">
+              <p v-if="staffNotificationsQuery.isLoading.value" class="text-text-muted">Loading…</p>
+              <p v-else-if="staffItems.length === 0" class="text-text-muted">No notifications yet.</p>
+              <div v-for="item in staffItems" :key="item.id" :class="item.read ? 'opacity-70' : ''">
+                <p>
+                  <b>{{ item.title }}</b
+                  ><br /><span class="text-text-muted">{{ item.body }}</span>
+                </p>
+                <p v-if="item.time" class="mt-0.5 text-2xs text-text-soft">{{ item.time }}</p>
+              </div>
+            </div>
+            <div v-else class="space-y-3 p-3 text-xs">
               <p>
                 <b>{{ t("shell.documentsValidated") }}</b
                 ><br /><span class="text-text-muted">{{ t("shell.documentsReady") }}</span>

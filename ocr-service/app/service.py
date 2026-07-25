@@ -7,7 +7,7 @@ from app.metadata_checker import extract_metadata
 from app.ocr_engine import ocr_image_array
 from app.pdf_parser import parse_pdf_bytes, validate_pdf_upload
 from app.qr_detector import detect_qr_code
-from app.schemas import ImageOcrResponse, PdfOcrResponse
+from app.schemas import ImageOcrResponse, PdfMetadataInfo, PdfOcrResponse
 
 
 def process_image_upload(content: bytes, mime_type: str, settings: Settings) -> ImageOcrResponse:
@@ -29,4 +29,5 @@ def process_pdf_upload(content: bytes, mime_type: str, settings: Settings) -> Pd
     if len(content) > settings.max_pdf_size_bytes:
         raise OcrServiceError(FILE_TOO_LARGE, "PDF uploads are limited to 20 MB.")
     validate_pdf_upload(content, mime_type)
-    return PdfOcrResponse(result=parse_pdf_bytes(content, settings))
+    result, metadata = parse_pdf_bytes(content, settings)
+    return PdfOcrResponse(result=result, pdf_metadata=PdfMetadataInfo(**metadata))

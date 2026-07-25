@@ -21,4 +21,6 @@ export const queryKeys = {
   notifications: ["notifications"] as const,
   grantees: (params?: unknown) => ["grantees", params] as const,
   grantee: (id: string | number) => ["grantees", String(id)] as const,
+  eligibility: (params?: unknown) => ["eligibility", params] as const,
+  eligibilityDetail: (id: string | number) => ["eligibility", String(id)] as const,
 };

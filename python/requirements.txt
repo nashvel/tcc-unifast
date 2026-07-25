@@ -1,3 +1,9 @@
 # Install: python -m venv .venv && .venv\Scripts\pip install -r requirements.txt
-# (from this python/ folder). Import name is `fitz`.
+# (from this python/ folder). Import name for PyMuPDF is `fitz`.
+#
+# Windows / pyzbar: wheels usually include libzbar-64.dll. If decode fails with
+# DLL load errors, install the Microsoft Visual C++ Redistributable and ensure
+# zlib is available, then: .venv\Scripts\pip install --force-reinstall pyzbar
 pymupdf>=1.24.0
+Pillow>=10.0.0
+pyzbar>=0.1.9

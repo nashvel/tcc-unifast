@@ -24,6 +24,8 @@ const appChildren: RouteRecordRaw[] = [
   { path: "reports", component: () => import("@/modules/reports/Index.vue") },
   { path: "reports/generate", component: () => import("@/modules/reports/Generate.vue") },
   { path: "reports/preview", component: () => import("@/modules/reports/Preview.vue") },
+  { path: "billing", component: () => import("@/modules/billing/Index.vue") },
+  { path: "distribution", component: () => import("@/modules/distribution/Index.vue") },
   { path: "support", component: () => import("@/modules/support/Index.vue") },
   { path: "support/new", component: () => import("@/modules/support/Create.vue") },
   { path: "support/:id", component: () => import("@/modules/support/Detail.vue") },
@@ -36,6 +38,7 @@ const appChildren: RouteRecordRaw[] = [
   { path: "appearance", component: () => import("@/modules/appearance/Index.vue") },
   { path: "style-guide", component: () => import("@/modules/style-guide/Index.vue") },
   { path: "masterlist", component: () => import("@/modules/masterlist/Index.vue") },
+  { path: "onboarding", component: () => import("@/modules/onboarding/Index.vue") },
   { path: "grantees", component: () => import("@/modules/grantees/Index.vue") },
   { path: "grantees/:id", component: () => import("@/modules/grantees/Detail.vue") },
   { path: "batches", component: () => import("@/modules/batches/Index.vue") },
@@ -52,6 +55,9 @@ const appChildren: RouteRecordRaw[] = [
 const studentChildren: RouteRecordRaw[] = [
   { path: "", component: () => import("@/modules/dashboard/StudentDashboard.vue") },
   { path: "kyc", component: () => import("@/modules/kyc/StudentKyc.vue") },
+  { path: "onboarding", component: () => import("@/modules/identity/OnboardingIndex.vue") },
+  { path: "onboarding/id-scan", component: () => import("@/modules/identity/OnboardingIdScan.vue") },
+  { path: "onboarding/liveness", component: () => import("@/modules/identity/OnboardingLiveness.vue") },
   { path: "verify", component: () => import("@/modules/verification/StudentVerification.vue") },
   { path: "submissions", redirect: (to) => withLang("/student/documents", to.query.lang) },
   { path: "profile", component: () => import("@/modules/profile/Index.vue") },
@@ -118,6 +124,15 @@ function createAppRouter(ssr: boolean): Router {
       !["/student/kyc", "/student/settings"].includes(to.path)
     ) {
       return withLang("/student/kyc", to.query.lang);
+    }
+    if (
+      user.role === "student" &&
+      to.path.startsWith("/student") &&
+      user.account_status === "pending_identity" &&
+      !to.path.startsWith("/student/onboarding") &&
+      !["/student/kyc", "/student/settings"].includes(to.path)
+    ) {
+      return withLang("/student/onboarding", to.query.lang);
     }
     return true;
   });

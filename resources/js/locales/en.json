@@ -39,7 +39,9 @@
     "auditLog": "Audit Log",
     "auditTrail": "Audit Trail",
     "batches": "Batches",
+    "billing": "Billing / Call-for-Billing",
     "communication": "Communication",
+    "distributionReport": "Distribution Report",
     "documentValidation": "Document Validation",
     "documents": "Documents",
     "eligibility": "Eligibility",
@@ -48,6 +50,7 @@
     "grantees": "Grantees",
     "logs": "Logs",
     "masterlist": "Masterlist",
+    "onboardingCenter": "Onboarding Center",
     "monitoringReports": "Monitoring & Reports",
     "new": "New",
     "openMenu": "Open menu",
@@ -152,7 +155,7 @@
     "createStaffUser": { "title": "Create staff user" },
     "documentValidation": { "title": "Document Validation Queue" },
     "editAnnouncement": { "title": "Edit Announcement" },
-    "eligibilityStatus": { "title": "Eligibility Status" },
+    "eligibilityStatus": { "title": "Submission eligibility" },
     "files": {
       "title": "File Manager",
       "description": "Browse and organize uploaded scholarship files."
@@ -373,7 +376,7 @@
       },
       "progress": {
         "requiredDocuments": "Required Documents",
-        "requiredDocumentsMeta": "School ID, Course History, and Grade Slip",
+        "requiredDocumentsMeta": "School ID, Course History, Grade Slip, and 3 Specimen Signatures",
         "tesApplication": "TES Application",
         "tesApplicationMeta": "Complete requirement vault"
       },

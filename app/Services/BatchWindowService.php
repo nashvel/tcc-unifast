@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Events\NotificationCreated;
+use App\Mail\BatchOpenedMail;
 use App\Models\Batch;
 use App\Models\BatchNotification;
 use App\Models\Grantee;
@@ -71,9 +72,9 @@ class BatchWindowService
             event(new NotificationCreated($notification));
 
             try {
-                Mail::raw($body, fn ($message) => $message
-                    ->to($grantee->email, $grantee->full_name)
-                    ->subject($title));
+                Mail::to($grantee->email, $grantee->full_name)->send(
+                    new BatchOpenedMail($batch, $grantee, $title, $body),
+                );
                 $sent++;
             } catch (\Throwable $exception) {
                 report($exception);

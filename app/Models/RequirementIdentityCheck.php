@@ -14,8 +14,10 @@ class RequirementIdentityCheck extends Model
         return [
             'challenge_sequence' => 'array',
             'distance' => 'float',
+            'distances' => 'array',
             'confidence_score' => 'float',
             'manual_review_required' => 'boolean',
+            'liveness_confirmed' => 'boolean',
             'consent_accepted_at' => 'datetime',
             'checked_at' => 'datetime',
         ];

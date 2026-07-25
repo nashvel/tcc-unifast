@@ -28,6 +28,7 @@ const form = reactive({
   full_name: "",
   student_id: "",
   program: "",
+  year_level: "",
   birthdate: "",
   contact: "",
   address: "",
@@ -47,6 +48,7 @@ async function loadKyc() {
     form.full_name = payload.data.profile?.full_name || payload.data.reference.full_name || "";
     form.student_id = payload.data.profile?.student_id || payload.data.reference.student_id || "";
     form.program = payload.data.profile?.program || payload.data.reference.program || "";
+    form.year_level = payload.data.profile?.year_level || payload.data.reference.year_level || "";
     form.birthdate = payload.data.profile?.birthdate || "";
     form.contact = payload.data.profile?.contact || "";
     form.address = payload.data.profile?.address || "";
@@ -86,8 +88,8 @@ async function submit() {
     authSession.user = authSession.user
       ? { ...authSession.user, account_status: payload.data.account_status, kyc_status: payload.data.status }
       : null;
-    await router.push("/student");
-    toast.success("KYC profile submitted");
+    await router.push("/student/onboarding/id-scan");
+    toast.success("KYC validated — continue with School ID scan");
   } catch (exception) {
     error.value = exception instanceof Error ? exception.message : "Unable to submit KYC profile.";
     toast.error(error.value);
@@ -101,7 +103,7 @@ async function submit() {
   <div>
     <PageHeader
       title="KYC Profile Validation"
-      description="Complete your profile. Your name, student ID, and program must match the CHED masterlist."
+      description="Complete your profile. Name, student ID, program, and year level must match the CHED masterlist."
     />
 
     <div v-if="loading" class="space-y-4">
@@ -183,6 +185,13 @@ async function submit() {
               <input v-model="form.program" class="h-9 w-full rounded-md border px-3 text-sm" />
               <p v-if="mismatches.program" class="mt-1 text-xs text-danger">
                 {{ mismatches.program }}
+              </p>
+            </label>
+            <label class="block">
+              <span class="mb-1.5 block text-xs font-medium">Year level *</span>
+              <input v-model="form.year_level" class="h-9 w-full rounded-md border px-3 text-sm" />
+              <p v-if="mismatches.year_level" class="mt-1 text-xs text-danger">
+                {{ mismatches.year_level }}
               </p>
             </label>
             <label class="block">
