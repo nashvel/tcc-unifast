@@ -35,6 +35,13 @@ const appChildren: RouteRecordRaw[] = [
   { path: "appearance", component: () => import("@/modules/appearance/Index.vue") },
   { path: "style-guide", component: () => import("@/modules/style-guide/Index.vue") },
   { path: "masterlist", component: () => import("@/modules/masterlist/Index.vue") },
+  // Developer routes
+  { path: "developer/rbac", component: () => import("@/modules/developer/Rbac.vue") },
+  { path: "developer/api-docs", component: () => import("@/modules/developer/ApiDocs.vue") },
+  { path: "developer/flow-chart", component: () => import("@/modules/developer/FlowChart.vue") },
+  { path: "developer/support", component: () => import("@/modules/developer/Support.vue") },
+  { path: "developer/audit", component: () => import("@/modules/developer/Audit.vue") },
+  { path: "developer/collaborators", component: () => import("@/modules/developer/Collaborators.vue") },
   { path: "grantees", component: () => import("@/modules/grantees/Index.vue") },
   { path: "grantees/:id", component: () => import("@/modules/grantees/Detail.vue") },
   { path: "batches", component: () => import("@/modules/batches/Index.vue") },
