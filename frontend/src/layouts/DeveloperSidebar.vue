@@ -12,6 +12,7 @@ import {
   IconUsers,
   IconLifebuoy,
   IconGitBranch,
+  IconDatabase,
   IconSettings,
   IconUserCog,
   IconHistory,
@@ -39,6 +40,7 @@ const sections = ref<{ title?: string; items: NavItem[] }[]>([
       { label: "RBAC & Permissions", path: "/app/developer/rbac", icon: IconShield },
       { label: "API Documentation", path: "/app/developer/api-docs", icon: IconCode },
       { label: "System Flow Charts", path: "/app/developer/flow-chart", icon: IconGitBranch },
+      { label: "Database", path: "/app/developer/database", icon: IconDatabase },
     ],
   },
   {
