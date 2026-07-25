@@ -1,6 +1,9 @@
 import { getAuthToken } from "@/auth/session";
 import { API_BASE } from "@/config";
+import { handleMockRequest } from "@/mock/handlers";
 import type { ListQuery } from "./types";
+
+const useMock = import.meta.env.VITE_USE_MOCK === "true" || !API_BASE;
 
 export class ApiError extends Error {
   status: number;
@@ -29,6 +32,22 @@ export async function apiFetch<T>(
   url: string,
   init: RequestInit = {},
 ): Promise<T> {
+  // Mock mode: intercept and return mock data
+  if (useMock) {
+    const method = (init.method || "GET").toUpperCase();
+    const path = url.startsWith("http") ? new URL(url).pathname : url;
+    const mockResponse = handleMockRequest(method, path.split("?")[0]);
+    if (mockResponse) {
+      if (mockResponse.status >= 400) {
+        throw new ApiError("Mock error", mockResponse.status);
+      }
+      return mockResponse.body as T;
+    }
+    // If no mock handler, return empty response for non-critical endpoints
+    console.warn(`[mock] No handler for ${method} ${path}`);
+    return {} as T;
+  }
+
   const fullUrl = url.startsWith("http") ? url : apiUrl(url);
   const headers = new Headers(init.headers);
   if (!headers.has("Accept")) headers.set("Accept", "application/json");
