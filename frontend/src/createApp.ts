@@ -15,7 +15,7 @@ import { installLanguageRouting, withLang } from "@/i18n/routeLang";
 import { installSeoUpdates } from "@/i18n/seo";
 
 const appChildren: RouteRecordRaw[] = [
-  { path: "", component: () => import("@/modules/dashboard/AdminDashboard.vue") },
+  { path: "", component: () => import("@/modules/dashboard/Index.vue") },
   { path: "announcements", component: () => import("@/modules/announcements/Index.vue") },
   { path: "announcements/new", component: () => import("@/modules/announcements/Create.vue") },
   { path: "announcements/logs", component: () => import("@/modules/announcements/Logs.vue") },
