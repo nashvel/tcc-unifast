@@ -11,6 +11,8 @@ import {
   type SupportedLanguage,
 } from "@/i18n";
 
+const props = defineProps<{ dark?: boolean }>();
+
 const route = useRoute();
 const router = useRouter();
 const { t } = useI18n();
@@ -63,40 +65,57 @@ onBeforeUnmount(() => {
   <div ref="root" class="relative inline-flex">
     <button
       type="button"
-      class="inline-flex h-9 items-center gap-2 rounded-md border bg-surface px-3 text-xs font-medium text-text shadow-sm transition hover:bg-surface-muted focus:outline-none focus:ring-2 focus:ring-primary/40"
+      :class="[
+        'inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium transition focus:outline-none',
+        dark
+          ? 'border border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:bg-[var(--surface-muted)]'
+          : 'border bg-surface px-3 text-text shadow-sm hover:bg-surface-muted focus:ring-2 focus:ring-primary/40',
+      ]"
       :aria-label="t('language.select')"
       :aria-expanded="open"
       aria-haspopup="menu"
       @click.stop="open = !open"
     >
-      <IconLanguage :size="16" class="text-text-muted" />
+      <IconLanguage :size="14" :class="dark ? 'text-[var(--text-soft)]' : 'text-text-muted'" />
       <span class="hidden sm:inline">{{ currentLanguageLabel }}</span>
       <span class="sm:hidden">{{ currentLanguage.toUpperCase() }}</span>
       <IconChevronDown
-        :size="14"
-        class="text-text-muted transition-transform"
-        :class="{ 'rotate-180': open }"
+        :size="12"
+        :class="['transition-transform', dark ? 'text-[var(--text-soft)]' : 'text-text-muted', { 'rotate-180': open }]"
       />
     </button>
 
     <div
       v-if="open"
-      class="absolute right-0 top-full z-50 mt-2 w-44 overflow-hidden rounded-lg border bg-surface py-1 shadow-xl"
+      :class="[
+        'absolute right-0 top-full z-50 mt-1 w-40 overflow-hidden rounded-lg border py-1 shadow-xl',
+        dark
+          ? 'border-[var(--border)] bg-[var(--surface)]'
+          : 'border bg-surface',
+      ]"
       role="menu"
     >
       <button
         v-for="lang in supportedLanguages"
         :key="lang"
         type="button"
-        class="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm transition hover:bg-surface-muted focus:bg-surface-muted focus:outline-none"
-        :class="lang === currentLanguage ? 'font-semibold text-primary' : 'text-text'"
+        :class="[
+          'flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm transition focus:outline-none',
+          dark
+            ? lang === currentLanguage
+              ? 'font-semibold text-[var(--primary)]'
+              : 'text-[var(--text)] hover:bg-[var(--surface-muted)]'
+            : lang === currentLanguage
+              ? 'font-semibold text-primary'
+              : 'text-text hover:bg-surface-muted',
+        ]"
         role="menuitemradio"
         :aria-checked="lang === currentLanguage"
         :aria-label="t('language.changeTo', { language: languageLabels[lang] })"
         @click="changeLanguage(lang)"
       >
         <span>{{ languageLabels[lang] }}</span>
-        <IconCheck v-if="lang === currentLanguage" :size="16" />
+        <IconCheck v-if="lang === currentLanguage" :size="14" />
       </button>
     </div>
   </div>
