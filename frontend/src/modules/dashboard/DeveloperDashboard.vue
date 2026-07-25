@@ -21,8 +21,8 @@ import {
   Terminal,
   Wifi,
   Zap,
+  Users,
 } from "lucide-vue-next";
-import PageHeader from "@/components/ui/PageHeader.vue";
 
 const route = useRoute();
 
@@ -58,15 +58,13 @@ const errorLog = ref([
 ]);
 
 const quickActions = ref([
-  { label: "RBAC Settings", path: "/app/developer/rbac", icon: Shield, color: "bg-purple-100 text-purple-600" },
-  { label: "API Docs", path: "/app/developer/api-docs", icon: Code, color: "bg-blue-100 text-blue-600" },
-  { label: "Flow Charts", path: "/app/developer/flow-chart", icon: GitBranch, color: "bg-green-100 text-green-600" },
-  { label: "Support", path: "/app/developer/support", icon: AlertTriangle, color: "bg-orange-100 text-orange-600" },
-  { label: "Collaborators", path: "/app/developer/collaborators", icon: Users, color: "bg-cyan-100 text-cyan-600" },
-  { label: "Audit Trail", path: "/app/developer/audit", icon: Terminal, color: "bg-red-100 text-red-600" },
+  { label: "RBAC Settings", path: "/app/developer/rbac", icon: Shield, color: "from-violet-500/20 to-violet-500/5 text-violet-400" },
+  { label: "API Docs", path: "/app/developer/api-docs", icon: Code, color: "from-blue-500/20 to-blue-500/5 text-blue-400" },
+  { label: "Flow Charts", path: "/app/developer/flow-chart", icon: GitBranch, color: "from-emerald-500/20 to-emerald-500/5 text-emerald-400" },
+  { label: "Support", path: "/app/developer/support", icon: AlertTriangle, color: "from-orange-500/20 to-orange-500/5 text-orange-400" },
+  { label: "Collaborators", path: "/app/developer/collaborators", icon: Users, color: "from-cyan-500/20 to-cyan-500/5 text-cyan-400" },
+  { label: "Audit Trail", path: "/app/developer/audit", icon: Terminal, color: "from-rose-500/20 to-rose-500/5 text-rose-400" },
 ]);
-
-import { Users } from "lucide-vue-next";
 
 const uptime = computed(() => {
   const hours = 720;
@@ -75,37 +73,43 @@ const uptime = computed(() => {
 });
 
 const statusColor: Record<string, string> = {
-  healthy: "text-success",
-  degraded: "text-warning",
-  down: "text-danger",
+  healthy: "text-emerald-400",
+  degraded: "text-amber-400",
+  down: "text-red-400",
+};
+
+const statusDot: Record<string, string> = {
+  healthy: "bg-emerald-400",
+  degraded: "bg-amber-400",
+  down: "bg-red-400",
 };
 
 const methodColors: Record<string, string> = {
-  GET: "bg-green-100 text-green-700",
-  POST: "bg-blue-100 text-blue-700",
-  PUT: "bg-yellow-100 text-yellow-700",
-  DELETE: "bg-red-100 text-red-700",
+  GET: "bg-emerald-500/20 text-emerald-400",
+  POST: "bg-blue-500/20 text-blue-400",
+  PUT: "bg-amber-500/20 text-amber-400",
+  DELETE: "bg-red-500/20 text-red-400",
 };
 
 const levelColors: Record<string, string> = {
-  error: "bg-danger-soft text-danger",
-  warn: "bg-warning-soft text-warning",
-  info: "bg-info-soft text-info",
+  error: "bg-red-500/20 text-red-400",
+  warn: "bg-amber-500/20 text-amber-400",
+  info: "bg-blue-500/20 text-blue-400",
 };
 </script>
 
 <template>
   <div class="space-y-6">
-    <PageHeader
-      title="Developer Dashboard"
-      description="System health, API performance, and deployment status."
-    >
-      <template #actions>
-        <button class="inline-flex h-9 items-center gap-1.5 rounded-md border px-3 text-xs">
-          <RefreshCw :size="14" /> Refresh
-        </button>
-      </template>
-    </PageHeader>
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-lg font-bold text-white">Developer Dashboard</h1>
+        <p class="mt-0.5 text-xs text-slate-400">System health, API performance, and deployment status.</p>
+      </div>
+      <button class="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[#1e293b] bg-white/5 px-3 text-xs text-slate-300 hover:bg-white/10">
+        <RefreshCw :size="14" /> Refresh
+      </button>
+    </div>
 
     <!-- Quick Actions -->
     <section class="grid grid-cols-3 gap-2 sm:grid-cols-6">
@@ -113,41 +117,46 @@ const levelColors: Record<string, string> = {
         v-for="action in quickActions"
         :key="action.path"
         :to="action.path"
-        class="flex flex-col items-center gap-2 rounded-lg border bg-surface p-3 text-center transition hover:shadow-sm"
+        class="group flex flex-col items-center gap-2.5 rounded-xl border border-[#1e293b] bg-[#0f172a] p-4 text-center transition-all hover:border-[#334155] hover:bg-[#1e293b]"
       >
-        <span :class="['grid size-10 place-items-center rounded-lg', action.color]">
+        <span :class="['grid size-10 place-items-center rounded-lg bg-gradient-to-b', action.color]">
           <component :is="action.icon" :size="18" />
         </span>
-        <span class="text-2xs font-medium text-text-muted">{{ action.label }}</span>
+        <span class="text-2xs font-medium text-slate-400 group-hover:text-slate-200">{{ action.label }}</span>
       </RouterLink>
     </section>
 
     <!-- System Health -->
     <section>
-      <h2 class="mb-3 text-sm font-semibold">System Health</h2>
+      <h2 class="mb-3 text-sm font-semibold text-white">System Health</h2>
       <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <div
           v-for="service in systemHealth"
           :key="service.name"
-          class="rounded-lg border bg-surface p-4"
+          class="rounded-xl border border-[#1e293b] bg-[#0f172a] p-4"
         >
           <div class="flex items-center justify-between">
-            <div class="flex items-center gap-2">
-              <component :is="service.icon" :size="16" class="text-text-muted" />
-              <span class="text-xs font-medium">{{ service.name }}</span>
+            <div class="flex items-center gap-2.5">
+              <div class="grid size-8 place-items-center rounded-lg bg-white/5">
+                <component :is="service.icon" :size="14" class="text-slate-400" />
+              </div>
+              <span class="text-xs font-medium text-slate-200">{{ service.name }}</span>
             </div>
-            <span :class="['text-2xs font-semibold', statusColor[service.status]]">
-              {{ service.status }}
-            </span>
+            <div class="flex items-center gap-1.5">
+              <span :class="['size-1.5 rounded-full', statusDot[service.status]]" />
+              <span :class="['text-2xs font-medium', statusColor[service.status]]">
+                {{ service.status }}
+              </span>
+            </div>
           </div>
-          <div class="mt-3 grid grid-cols-2 gap-2 text-2xs text-text-muted">
+          <div class="mt-3 grid grid-cols-2 gap-2 text-2xs">
             <div>
-              <p class="text-text-soft">Latency</p>
-              <p class="font-medium text-text">{{ service.latency }}</p>
+              <p class="text-slate-500">Latency</p>
+              <p class="font-medium text-slate-200">{{ service.latency }}</p>
             </div>
             <div>
-              <p class="text-text-soft">Uptime</p>
-              <p class="font-medium text-text">{{ service.uptime }}</p>
+              <p class="text-slate-500">Uptime</p>
+              <p class="font-medium text-slate-200">{{ service.uptime }}</p>
             </div>
           </div>
         </div>
@@ -157,40 +166,40 @@ const levelColors: Record<string, string> = {
     <!-- API Performance -->
     <section>
       <div class="mb-3 flex items-center justify-between">
-        <h2 class="text-sm font-semibold">API Performance</h2>
-        <span class="text-2xs text-text-muted">Last 24 hours</span>
+        <h2 class="text-sm font-semibold text-white">API Performance</h2>
+        <span class="text-2xs text-slate-500">Last 24 hours</span>
       </div>
-      <div class="overflow-x-auto rounded-lg border bg-surface">
+      <div class="overflow-x-auto rounded-xl border border-[#1e293b] bg-[#0f172a]">
         <table class="w-full text-xs">
           <thead>
-            <tr class="border-b bg-surface-muted text-left text-text-muted">
-              <th class="px-3 py-2 font-medium">Endpoint</th>
-              <th class="px-3 py-2 font-medium">P50</th>
-              <th class="px-3 py-2 font-medium">P95</th>
-              <th class="px-3 py-2 font-medium">P99</th>
-              <th class="px-3 py-2 font-medium">Calls</th>
-              <th class="px-3 py-2 font-medium">Errors</th>
+            <tr class="border-b border-[#1e293b] text-left">
+              <th class="px-3 py-2.5 font-medium text-slate-500">Endpoint</th>
+              <th class="px-3 py-2.5 font-medium text-slate-500">P50</th>
+              <th class="px-3 py-2.5 font-medium text-slate-500">P95</th>
+              <th class="px-3 py-2.5 font-medium text-slate-500">P99</th>
+              <th class="px-3 py-2.5 font-medium text-slate-500">Calls</th>
+              <th class="px-3 py-2.5 font-medium text-slate-500">Errors</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="api in apiMetrics" :key="api.endpoint" class="border-b last:border-0 hover:bg-surface-muted/50">
-              <td class="px-3 py-2">
+            <tr v-for="api in apiMetrics" :key="api.endpoint" class="border-b border-[#1e293b]/50 last:border-0 hover:bg-white/[0.02]">
+              <td class="px-3 py-2.5">
                 <div class="flex items-center gap-2">
                   <span :class="['rounded px-1.5 py-0.5 text-2xs font-bold', methodColors[api.method]]">
                     {{ api.method }}
                   </span>
-                  <code class="text-2xs font-mono">{{ api.endpoint }}</code>
+                  <code class="text-2xs font-mono text-slate-300">{{ api.endpoint }}</code>
                 </div>
               </td>
-              <td class="px-3 py-2 font-mono text-2xs">{{ api.p50 }}</td>
-              <td class="px-3 py-2 font-mono text-2xs">{{ api.p95 }}</td>
-              <td class="px-3 py-2 font-mono text-2xs">{{ api.p99 }}</td>
-              <td class="px-3 py-2 text-2xs">{{ api.calls }}</td>
-              <td class="px-3 py-2">
+              <td class="px-3 py-2.5 font-mono text-2xs text-slate-300">{{ api.p50 }}</td>
+              <td class="px-3 py-2.5 font-mono text-2xs text-slate-300">{{ api.p95 }}</td>
+              <td class="px-3 py-2.5 font-mono text-2xs text-slate-300">{{ api.p99 }}</td>
+              <td class="px-3 py-2.5 text-2xs text-slate-400">{{ api.calls }}</td>
+              <td class="px-3 py-2.5">
                 <span
                   :class="[
                     'text-2xs font-medium',
-                    parseFloat(api.errors) > 1 ? 'text-danger' : parseFloat(api.errors) > 0.1 ? 'text-warning' : 'text-success',
+                    parseFloat(api.errors) > 1 ? 'text-red-400' : parseFloat(api.errors) > 0.1 ? 'text-amber-400' : 'text-emerald-400',
                   ]"
                 >
                   {{ api.errors }}
@@ -205,33 +214,33 @@ const levelColors: Record<string, string> = {
     <div class="grid gap-4 lg:grid-cols-2">
       <!-- Recent Deployments -->
       <section>
-        <h2 class="mb-3 text-sm font-semibold">Recent Deployments</h2>
+        <h2 class="mb-3 text-sm font-semibold text-white">Recent Deployments</h2>
         <div class="space-y-2">
           <div
             v-for="deploy in recentDeployments"
             :key="deploy.version"
-            class="flex items-center gap-3 rounded-lg border bg-surface p-3"
+            class="flex items-center gap-3 rounded-xl border border-[#1e293b] bg-[#0f172a] p-3.5"
           >
             <span
               :class="[
-                'grid size-8 place-items-center rounded-full',
-                deploy.status === 'success' ? 'bg-success-soft' : 'bg-danger-soft',
+                'grid size-8 place-items-center rounded-lg',
+                deploy.status === 'success' ? 'bg-emerald-500/10' : 'bg-red-500/10',
               ]"
             >
-              <Check v-if="deploy.status === 'success'" :size="14" class="text-success" />
-              <AlertTriangle v-else :size="14" class="text-danger" />
+              <Check v-if="deploy.status === 'success'" :size="14" class="text-emerald-400" />
+              <AlertTriangle v-else :size="14" class="text-red-400" />
             </span>
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2">
-                <span class="text-xs font-semibold">{{ deploy.version }}</span>
-                <code class="text-2xs text-text-muted">{{ deploy.commit }}</code>
+                <span class="text-xs font-semibold text-white">{{ deploy.version }}</span>
+                <code class="text-2xs text-slate-500">{{ deploy.commit }}</code>
               </div>
-              <p class="text-2xs text-text-muted">{{ deploy.author }} · {{ deploy.time }}</p>
+              <p class="text-2xs text-slate-400">{{ deploy.author }} · {{ deploy.time }}</p>
             </div>
             <span
               :class="[
                 'rounded-full px-2 py-0.5 text-2xs font-semibold',
-                deploy.status === 'success' ? 'bg-success-soft text-success' : 'bg-danger-soft text-danger',
+                deploy.status === 'success' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400',
               ]"
             >
               {{ deploy.status }}
@@ -242,61 +251,61 @@ const levelColors: Record<string, string> = {
 
       <!-- Error Log -->
       <section>
-        <h2 class="mb-3 text-sm font-semibold">Recent Errors</h2>
+        <h2 class="mb-3 text-sm font-semibold text-white">Recent Errors</h2>
         <div class="space-y-2">
           <div
             v-for="(error, idx) in errorLog"
             :key="idx"
-            class="rounded-lg border bg-surface p-3"
+            class="rounded-xl border border-[#1e293b] bg-[#0f172a] p-3.5"
           >
             <div class="flex items-center gap-2">
               <span :class="['rounded-full px-2 py-0.5 text-2xs font-semibold', levelColors[error.level]]">
                 {{ error.level }}
               </span>
-              <span class="text-2xs text-text-muted">{{ error.time }}</span>
-              <span class="text-2xs text-text-muted">· {{ error.service }}</span>
+              <span class="text-2xs text-slate-500">{{ error.time }}</span>
+              <span class="text-2xs text-slate-500">· {{ error.service }}</span>
             </div>
-            <p class="mt-1 text-xs text-text">{{ error.message }}</p>
+            <p class="mt-1.5 text-xs text-slate-300">{{ error.message }}</p>
           </div>
         </div>
       </section>
     </div>
 
     <!-- System Info -->
-    <section class="rounded-lg border bg-surface p-4">
-      <h2 class="mb-3 text-sm font-semibold">System Information</h2>
+    <section class="rounded-xl border border-[#1e293b] bg-[#0f172a] p-5">
+      <h2 class="mb-4 text-sm font-semibold text-white">System Information</h2>
       <div class="grid gap-4 text-xs sm:grid-cols-2 lg:grid-cols-4">
         <div>
-          <p class="text-text-muted">Framework</p>
-          <p class="mt-0.5 font-medium">Laravel 13.19 + Vue 3.5</p>
+          <p class="text-slate-500">Framework</p>
+          <p class="mt-0.5 font-medium text-slate-200">Laravel 13.19 + Vue 3.5</p>
         </div>
         <div>
-          <p class="text-text-muted">Node Version</p>
-          <p class="mt-0.5 font-medium">Node.js 20 LTS</p>
+          <p class="text-slate-500">Node Version</p>
+          <p class="mt-0.5 font-medium text-slate-200">Node.js 20 LTS</p>
         </div>
         <div>
-          <p class="text-text-muted">Database</p>
-          <p class="mt-0.5 font-medium">SQLite (dev) / MySQL (prod)</p>
+          <p class="text-slate-500">Database</p>
+          <p class="mt-0.5 font-medium text-slate-200">SQLite (dev) / MySQL (prod)</p>
         </div>
         <div>
-          <p class="text-text-muted">30-Day Uptime</p>
-          <p class="mt-0.5 font-medium text-success">{{ uptime }}%</p>
+          <p class="text-slate-500">30-Day Uptime</p>
+          <p class="mt-0.5 font-medium text-emerald-400">{{ uptime }}%</p>
         </div>
         <div>
-          <p class="text-text-muted">Auth Method</p>
-          <p class="mt-0.5 font-medium">Laravel Sanctum Tokens</p>
+          <p class="text-slate-500">Auth Method</p>
+          <p class="mt-0.5 font-medium text-slate-200">Laravel Sanctum Tokens</p>
         </div>
         <div>
-          <p class="text-text-muted">Frontend Build</p>
-          <p class="mt-0.5 font-medium">Vite 7.3 + TypeScript</p>
+          <p class="text-slate-500">Frontend Build</p>
+          <p class="mt-0.5 font-medium text-slate-200">Vite 7.3 + TypeScript</p>
         </div>
         <div>
-          <p class="text-text-muted">Cache Driver</p>
-          <p class="mt-0.5 font-medium">File / Redis (prod)</p>
+          <p class="text-slate-500">Cache Driver</p>
+          <p class="mt-0.5 font-medium text-slate-200">File / Redis (prod)</p>
         </div>
         <div>
-          <p class="text-text-muted">Queue Driver</p>
-          <p class="mt-0.5 font-medium">Sync / Database (prod)</p>
+          <p class="text-slate-500">Queue Driver</p>
+          <p class="mt-0.5 font-medium text-slate-200">Sync / Database (prod)</p>
         </div>
       </div>
     </section>
