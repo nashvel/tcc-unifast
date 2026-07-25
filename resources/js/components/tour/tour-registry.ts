@@ -143,18 +143,18 @@ export const TOURS: Record<string, Tour> = {
     steps: [
       {
         target: H,
-        title: "Eligibility status",
-        body: "Monitor checklist results and notify students who need to update requirements.",
+        title: "Submission eligibility",
+        body: "Review grantee batch submissions and Settings retention rules, then notify when records need updates.",
       },
       {
         target: '[data-tour="eligibility-filters"]',
-        title: "Status counts",
-        body: "See how many students are eligible, need updates, or require notices.",
+        title: "Batch and status filters",
+        body: "Narrow the list by activation batch and submission eligibility status.",
       },
       {
         target: '[data-tour="eligibility-table"]',
-        title: "Notify students",
-        body: "Open a record or send a notice when a student has missing or failed requirements.",
+        title: "Notify grantees",
+        body: "Open a record or send a notice when a grantee has incomplete submissions or failed retention.",
       },
     ],
   },

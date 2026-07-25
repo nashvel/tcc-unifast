@@ -49,6 +49,7 @@ const extendDialog = ref(false);
 const newDeadline = ref("");
 const mailResult = ref("");
 const pendingAction = ref("");
+const resending = ref(false);
 
 const batchQuery = useQuery({
   queryKey: computed(() => queryKeys.batch(String(route.params.id))),
@@ -139,6 +140,23 @@ function statusClass(status: Batch["window_status"]) {
   if (status === "closed") return "bg-warning-soft text-warning";
   return "bg-surface-muted text-text-muted";
 }
+
+async function resendInvites() {
+  if (!batch.value || resending.value) return;
+  resending.value = true;
+  try {
+    const payload = await apiFetch<{ sent: number; failed: unknown[] }>(
+      `/api/batches/${route.params.id}/activation-notifications`,
+      { method: "POST", body: JSON.stringify({}) },
+    );
+    mailResult.value = `${payload.sent} activation invite(s) resent, ${payload.failed.length} failed.`;
+    toast.success("Activation invites resent");
+  } catch (error) {
+    toast.error(error instanceof Error ? error.message : "Unable to resend invites.");
+  } finally {
+    resending.value = false;
+  }
+}
 </script>
 
 <template>
@@ -181,6 +199,13 @@ function statusClass(status: Batch["window_status"]) {
           "
         >
           <IconRefresh :size="14" />Extend deadline
+        </button>
+        <button
+          class="inline-flex h-9 items-center gap-1.5 rounded-md border px-3 text-xs disabled:opacity-60"
+          :disabled="resending"
+          @click="resendInvites"
+        >
+          <IconMail :size="14" />{{ resending ? "Sending..." : "Resend invites" }}
         </button>
       </template>
     </PageHeader>
@@ -256,10 +281,18 @@ function statusClass(status: Batch["window_status"]) {
 
       <section class="mt-4 rounded-lg border bg-surface p-4">
         <h2 class="flex items-center gap-2 text-sm font-semibold">
-          <IconUserPlus :size="16" /> Add grantees through Masterlist Import
+          <IconUserPlus :size="16" /> Add grantees
         </h2>
         <p class="mt-1 text-xs text-text-muted">
-          Grantees are assigned to a batch when the CHED masterlist import is confirmed.
+          First-time import and activation:
+          <RouterLink class="text-primary hover:underline" to="/app/onboarding">
+            Onboarding Center
+          </RouterLink>
+          . To review stored records or upload an updated masterlist, use
+          <RouterLink class="text-primary hover:underline" to="/app/masterlist">
+            Masterlist
+          </RouterLink>
+          .
         </p>
       </section>
     </template>

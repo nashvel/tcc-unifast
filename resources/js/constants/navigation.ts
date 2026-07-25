@@ -5,11 +5,13 @@ import {
   IconDashboard,
   IconFileCheck,
   IconFileImport,
+  IconFileInvoice,
   IconFolder,
   IconFolders,
   IconHistory,
   IconLifebuoy,
   IconReportAnalytics,
+  IconReportMoney,
   IconSchool,
   IconSettings,
   IconShieldCheck,
@@ -18,6 +20,7 @@ import {
   IconUserCircle,
   IconUserCog,
   IconUsersGroup,
+  IconUserPlus,
 } from "@tabler/icons-vue";
 
 export type NavigationSection = {
@@ -32,6 +35,8 @@ export const adminNavigation: NavigationSection[] = [
     items: [
       { labelKey: "nav.announcements", path: "/app/announcements", icon: IconSpeakerphone },
       { labelKey: "nav.monitoringReports", path: "/app/reports", icon: IconReportAnalytics },
+      { labelKey: "nav.billing", path: "/app/billing", icon: IconFileInvoice },
+      { labelKey: "nav.distributionReport", path: "/app/distribution", icon: IconReportMoney },
       { labelKey: "nav.supportTickets", path: "/app/support", icon: IconLifebuoy },
     ],
   },
@@ -52,6 +57,7 @@ export const staffNavigation: NavigationSection[] = [
   {
     labelKey: "nav.operations",
     items: [
+      { labelKey: "nav.onboardingCenter", path: "/app/onboarding", icon: IconUserPlus },
       { labelKey: "nav.masterlist", path: "/app/masterlist", icon: IconFileImport },
       { labelKey: "nav.batches", path: "/app/batches", icon: IconFolders },
       { labelKey: "nav.grantees", path: "/app/grantees", icon: IconUsersGroup },
@@ -71,6 +77,8 @@ export const staffNavigation: NavigationSection[] = [
     items: [
       { labelKey: "nav.announcements", path: "/app/announcements", icon: IconSpeakerphone },
       { labelKey: "nav.reports", path: "/app/reports", icon: IconReportAnalytics },
+      { labelKey: "nav.billing", path: "/app/billing", icon: IconFileInvoice },
+      { labelKey: "nav.distributionReport", path: "/app/distribution", icon: IconReportMoney },
       { labelKey: "nav.supportTickets", path: "/app/support", icon: IconLifebuoy },
     ],
   },

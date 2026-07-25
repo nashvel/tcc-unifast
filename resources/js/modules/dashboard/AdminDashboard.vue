@@ -9,6 +9,7 @@ import {
   Check,
   CircleCheck,
   FileCheck2,
+  FileSpreadsheet,
   LayoutDashboard,
   LayoutGrid,
   Megaphone,
@@ -372,6 +373,7 @@ function areaPath(values: number[]) {
               v-for="action in [
                 ['Review Submissions', '/app/documents', FileCheck2],
                 ['Run Eligibility', '/app/eligibility', CircleCheck],
+                ['Call for Billing', '/app/billing', FileSpreadsheet],
                 ['Manage Batches', '/app/batches', ChartBar],
                 ['New Announcement', '/app/announcements/new', Megaphone],
               ]"

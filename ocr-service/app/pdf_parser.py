@@ -7,6 +7,7 @@ import fitz
 from app.config import Settings
 from app.errors import ENCRYPTED_PDF, INVALID_PDF, TOO_MANY_PDF_PAGES, OcrServiceError
 from app.ocr_engine import ocr_image_array, render_pixmap_to_bgr
+from app.pdf_metadata import extract_pdf_metadata
 from app.schemas import PdfPageResult, PdfResult
 from app.text_cleaner import clean_text
 
@@ -29,8 +30,8 @@ def has_useful_text(text: str) -> bool:
     return len(alphanumeric) >= 10
 
 
-def parse_pdf_bytes(content: bytes, settings: Settings) -> PdfResult:
-    """Extract embedded text or OCR rendered pages in page order."""
+def parse_pdf_bytes(content: bytes, settings: Settings) -> tuple[PdfResult, dict]:
+    """Extract embedded text or OCR rendered pages in page order, plus PDF metadata."""
     start = time.perf_counter()
     validate_pdf_upload(content)
     try:
@@ -47,6 +48,7 @@ def parse_pdf_bytes(content: bytes, settings: Settings) -> PdfResult:
                 f"PDF exceeds the {settings.max_pdf_pages}-page prototype limit.",
             )
 
+        metadata = extract_pdf_metadata(document)
         pages: list[PdfPageResult] = []
         combined: list[str] = []
         for page_index in range(document.page_count):
@@ -79,11 +81,12 @@ def parse_pdf_bytes(content: bytes, settings: Settings) -> PdfResult:
             )
             combined.append(ocr.cleaned_text)
 
-        return PdfResult(
+        result = PdfResult(
             page_count=document.page_count,
             pages=pages,
             combined_text="\n\n".join(part for part in combined if part),
             processing_time_ms=round((time.perf_counter() - start) * 1000),
         )
+        return result, metadata
     finally:
         document.close()

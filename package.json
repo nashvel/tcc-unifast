@@ -16,6 +16,7 @@
     "@tanstack/vue-query": "^5.101.4",
     "@vitejs/plugin-vue": "^6.0.1",
     "face-api.js": "^0.22.2",
+    "jsqr": "^1.4.0",
     "laravel-echo": "^2.4.0",
     "laravel-vite-plugin": "^2.0.0",
     "lucide-vue-next": "^0.468.0",

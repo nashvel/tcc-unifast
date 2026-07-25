@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\GranteeActivationInviteMail;
 use App\Models\ActivationToken;
 use App\Models\Grantee;
 use Illuminate\Http\JsonResponse;
@@ -25,7 +26,6 @@ class BatchActivationNotificationController extends Controller
             ->whereHas('user', fn ($query) => $query->where('account_status', 'unverified'))
             ->get();
 
-        $subject = $validated['subject'] ?? 'Activate your TCC UniFAST TES student portal account';
         $intro = $validated['message'] ?? 'Your student portal account has been created from the TES masterlist.';
         $sent = 0;
         $failed = [];
@@ -48,19 +48,14 @@ class BatchActivationNotificationController extends Controller
                 'expires_at' => now()->addDays(7),
             ]);
 
-            $body = implode("\n\n", [
-                "Hello {$student->full_name},",
-                $intro,
-                "Temporary password: {$temporaryPassword}",
-                'Activation link: '.url('/activate/'.$plainToken),
-                'After activation, please change your password and complete your KYC profile.',
-                'Do not share this temporary password with anyone.',
-            ]);
-
             try {
-                Mail::raw($body, fn ($message) => $message
-                    ->to($student->email, $student->full_name)
-                    ->subject($subject));
+                Mail::to($student->email, $student->full_name)->send(new GranteeActivationInviteMail(
+                    $student->user,
+                    $temporaryPassword,
+                    url('/activate/'.$plainToken),
+                    $intro,
+                    $validated['subject'] ?? null,
+                ));
                 $sent++;
             } catch (\Throwable $exception) {
                 report($exception);
