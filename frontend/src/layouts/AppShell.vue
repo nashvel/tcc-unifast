@@ -23,6 +23,7 @@ import {
 import logo from "@/assets/system-logo.png";
 import AppBreadcrumbs from "@/components/navigation/AppBreadcrumbs.vue";
 import LanguageSwitcher from "@/components/LanguageSwitcher.vue";
+import DeveloperSidebar from "./DeveloperSidebar.vue";
 import DiceBearAvatar from "@/components/ui/DiceBearAvatar.vue";
 import OfflineBanner from "@/components/ui/OfflineBanner.vue";
 import { authSession } from "@/auth/session";
@@ -105,51 +106,15 @@ if (isDeveloper.value && typeof document !== "undefined") {
     <OfflineBanner />
     <div v-if="mobile" class="fixed inset-0 z-40 bg-black/30 lg:hidden" @click="mobile = false" />
 
-    <!-- Developer Sidebar: BeastInsights-style -->
+    <!-- Developer Sidebar -->
     <aside
       v-if="isDeveloper"
       :class="[
-        'fixed inset-y-0 left-0 z-50 flex w-56 shrink-0 flex-col border-r border-[var(--border)] bg-[var(--sidebar-bg)] transition-transform lg:translate-x-0',
+        'fixed inset-y-0 left-0 z-50 transition-transform lg:translate-x-0',
         mobile ? 'translate-x-0' : '-translate-x-full',
       ]"
     >
-      <div class="flex h-14 shrink-0 items-center gap-2.5 px-4">
-        <div class="flex size-7 items-center justify-center rounded-lg bg-[var(--primary)]">
-          <span class="text-xs font-bold text-white">T</span>
-        </div>
-        <span class="text-sm font-semibold text-[var(--sidebar-text)]">TCC UniFAST</span>
-      </div>
-
-      <nav class="flex-1 overflow-y-auto py-2 px-2">
-        <div v-for="(section, sectionIndex) in sections" :key="sectionIndex" class="mb-4">
-          <p
-            v-if="section.labelKey"
-            class="mb-1.5 px-2 text-2xs font-medium uppercase tracking-wider text-[var(--sidebar-text-muted)]"
-          >
-            {{ t(section.labelKey) }}
-          </p>
-          <ul class="space-y-0.5">
-            <li v-for="item in section.items" :key="item.path">
-              <button
-                class="flex h-8 w-full items-center gap-2.5 rounded-md px-2.5 text-left text-sm transition-colors"
-                :class="
-                  isActive(item.path)
-                    ? 'bg-[var(--surface-muted)] font-medium text-[var(--sidebar-text)]'
-                    : 'text-[var(--sidebar-text-muted)] hover:bg-[var(--surface-muted)] hover:text-[var(--sidebar-text)]'
-                "
-                @click="go(item.path)"
-              >
-                <component
-                  :is="item.icon"
-                  :size="15"
-                  :class="isActive(item.path) ? 'text-[var(--primary)]' : 'text-[var(--sidebar-text-muted)]'"
-                />
-                <span class="truncate">{{ t(item.labelKey) }}</span>
-              </button>
-            </li>
-          </ul>
-        </div>
-      </nav>
+      <DeveloperSidebar @logout="signOut" />
     </aside>
 
     <!-- Standard Sidebar for other roles -->
