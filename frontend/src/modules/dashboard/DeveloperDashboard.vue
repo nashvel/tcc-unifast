@@ -1,30 +1,19 @@
 <script setup lang="ts">
-import { computed, ref, onMounted } from "vue";
-import { useRoute } from "vue-router";
+import { computed, ref } from "vue";
 import {
-  Activity,
   AlertTriangle,
-  ArrowUpRight,
   Check,
-  Clock,
   Code,
   Cpu,
   Database,
   GitBranch,
-  Globe,
   HardDrive,
-  Layers,
-  Lock,
   RefreshCw,
   Server,
   Shield,
   Terminal,
-  Wifi,
-  Zap,
   Users,
 } from "lucide-vue-next";
-
-const route = useRoute();
 
 const systemHealth = ref([
   { name: "API Server", status: "healthy", latency: "45ms", uptime: "99.98%", icon: Server },
@@ -58,12 +47,12 @@ const errorLog = ref([
 ]);
 
 const quickActions = ref([
-  { label: "RBAC Settings", path: "/app/developer/rbac", icon: Shield, color: "from-violet-500/20 to-violet-500/5 text-violet-400" },
-  { label: "API Docs", path: "/app/developer/api-docs", icon: Code, color: "from-blue-500/20 to-blue-500/5 text-blue-400" },
-  { label: "Flow Charts", path: "/app/developer/flow-chart", icon: GitBranch, color: "from-emerald-500/20 to-emerald-500/5 text-emerald-400" },
-  { label: "Support", path: "/app/developer/support", icon: AlertTriangle, color: "from-orange-500/20 to-orange-500/5 text-orange-400" },
-  { label: "Collaborators", path: "/app/developer/collaborators", icon: Users, color: "from-cyan-500/20 to-cyan-500/5 text-cyan-400" },
-  { label: "Audit Trail", path: "/app/developer/audit", icon: Terminal, color: "from-rose-500/20 to-rose-500/5 text-rose-400" },
+  { label: "RBAC", path: "/app/developer/rbac", icon: Shield },
+  { label: "API Docs", path: "/app/developer/api-docs", icon: Code },
+  { label: "Flow Charts", path: "/app/developer/flow-chart", icon: GitBranch },
+  { label: "Support", path: "/app/developer/support", icon: AlertTriangle },
+  { label: "Team", path: "/app/developer/collaborators", icon: Users },
+  { label: "Audit", path: "/app/developer/audit", icon: Terminal },
 ]);
 
 const uptime = computed(() => {
@@ -71,43 +60,15 @@ const uptime = computed(() => {
   const downtime = 0.14;
   return ((hours - downtime) / hours * 100).toFixed(3);
 });
-
-const statusColor: Record<string, string> = {
-  healthy: "text-emerald-400",
-  degraded: "text-amber-400",
-  down: "text-red-400",
-};
-
-const statusDot: Record<string, string> = {
-  healthy: "bg-emerald-400",
-  degraded: "bg-amber-400",
-  down: "bg-red-400",
-};
-
-const methodColors: Record<string, string> = {
-  GET: "bg-emerald-500/20 text-emerald-400",
-  POST: "bg-blue-500/20 text-blue-400",
-  PUT: "bg-amber-500/20 text-amber-400",
-  DELETE: "bg-red-500/20 text-red-400",
-};
-
-const levelColors: Record<string, string> = {
-  error: "bg-red-500/20 text-red-400",
-  warn: "bg-amber-500/20 text-amber-400",
-  info: "bg-blue-500/20 text-blue-400",
-};
 </script>
 
 <template>
-  <div class="space-y-6">
+  <div class="space-y-5">
     <!-- Header -->
     <div class="flex items-center justify-between">
-      <div>
-        <h1 class="text-lg font-bold text-white">Developer Dashboard</h1>
-        <p class="mt-0.5 text-xs text-slate-400">System health, API performance, and deployment status.</p>
-      </div>
-      <button class="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[#1e293b] bg-white/5 px-3 text-xs text-slate-300 hover:bg-white/10">
-        <RefreshCw :size="14" /> Refresh
+      <h1 class="text-lg font-semibold text-[var(--text)]">Dashboard</h1>
+      <button class="inline-flex h-8 items-center gap-1.5 rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 text-xs text-[var(--text-muted)] hover:bg-[var(--surface-muted)]">
+        <RefreshCw :size="13" /> Refresh
       </button>
     </div>
 
@@ -117,195 +78,137 @@ const levelColors: Record<string, string> = {
         v-for="action in quickActions"
         :key="action.path"
         :to="action.path"
-        class="group flex flex-col items-center gap-2.5 rounded-xl border border-[#1e293b] bg-[#0f172a] p-4 text-center transition-all hover:border-[#334155] hover:bg-[#1e293b]"
+        class="flex flex-col items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-3 text-center transition-colors hover:bg-[var(--surface-muted)]"
       >
-        <span :class="['grid size-10 place-items-center rounded-lg bg-gradient-to-b', action.color]">
-          <component :is="action.icon" :size="18" />
+        <span class="grid size-9 place-items-center rounded-lg bg-[var(--surface-muted)]">
+          <component :is="action.icon" :size="16" class="text-[var(--text-muted)]" />
         </span>
-        <span class="text-2xs font-medium text-slate-400 group-hover:text-slate-200">{{ action.label }}</span>
+        <span class="text-2xs text-[var(--text-muted)]">{{ action.label }}</span>
       </RouterLink>
     </section>
 
-    <!-- System Health -->
-    <section>
-      <h2 class="mb-3 text-sm font-semibold text-white">System Health</h2>
-      <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <div
-          v-for="service in systemHealth"
-          :key="service.name"
-          class="rounded-xl border border-[#1e293b] bg-[#0f172a] p-4"
-        >
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-2.5">
-              <div class="grid size-8 place-items-center rounded-lg bg-white/5">
-                <component :is="service.icon" :size="14" class="text-slate-400" />
-              </div>
-              <span class="text-xs font-medium text-slate-200">{{ service.name }}</span>
-            </div>
-            <div class="flex items-center gap-1.5">
-              <span :class="['size-1.5 rounded-full', statusDot[service.status]]" />
-              <span :class="['text-2xs font-medium', statusColor[service.status]]">
-                {{ service.status }}
-              </span>
-            </div>
-          </div>
-          <div class="mt-3 grid grid-cols-2 gap-2 text-2xs">
-            <div>
-              <p class="text-slate-500">Latency</p>
-              <p class="font-medium text-slate-200">{{ service.latency }}</p>
-            </div>
-            <div>
-              <p class="text-slate-500">Uptime</p>
-              <p class="font-medium text-slate-200">{{ service.uptime }}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- API Performance -->
-    <section>
-      <div class="mb-3 flex items-center justify-between">
-        <h2 class="text-sm font-semibold text-white">API Performance</h2>
-        <span class="text-2xs text-slate-500">Last 24 hours</span>
-      </div>
-      <div class="overflow-x-auto rounded-xl border border-[#1e293b] bg-[#0f172a]">
-        <table class="w-full text-xs">
-          <thead>
-            <tr class="border-b border-[#1e293b] text-left">
-              <th class="px-3 py-2.5 font-medium text-slate-500">Endpoint</th>
-              <th class="px-3 py-2.5 font-medium text-slate-500">P50</th>
-              <th class="px-3 py-2.5 font-medium text-slate-500">P95</th>
-              <th class="px-3 py-2.5 font-medium text-slate-500">P99</th>
-              <th class="px-3 py-2.5 font-medium text-slate-500">Calls</th>
-              <th class="px-3 py-2.5 font-medium text-slate-500">Errors</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="api in apiMetrics" :key="api.endpoint" class="border-b border-[#1e293b]/50 last:border-0 hover:bg-white/[0.02]">
-              <td class="px-3 py-2.5">
-                <div class="flex items-center gap-2">
-                  <span :class="['rounded px-1.5 py-0.5 text-2xs font-bold', methodColors[api.method]]">
-                    {{ api.method }}
-                  </span>
-                  <code class="text-2xs font-mono text-slate-300">{{ api.endpoint }}</code>
-                </div>
-              </td>
-              <td class="px-3 py-2.5 font-mono text-2xs text-slate-300">{{ api.p50 }}</td>
-              <td class="px-3 py-2.5 font-mono text-2xs text-slate-300">{{ api.p95 }}</td>
-              <td class="px-3 py-2.5 font-mono text-2xs text-slate-300">{{ api.p99 }}</td>
-              <td class="px-3 py-2.5 text-2xs text-slate-400">{{ api.calls }}</td>
-              <td class="px-3 py-2.5">
-                <span
-                  :class="[
-                    'text-2xs font-medium',
-                    parseFloat(api.errors) > 1 ? 'text-red-400' : parseFloat(api.errors) > 0.1 ? 'text-amber-400' : 'text-emerald-400',
-                  ]"
-                >
-                  {{ api.errors }}
-                </span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
-
-    <div class="grid gap-4 lg:grid-cols-2">
-      <!-- Recent Deployments -->
-      <section>
-        <h2 class="mb-3 text-sm font-semibold text-white">Recent Deployments</h2>
-        <div class="space-y-2">
-          <div
-            v-for="deploy in recentDeployments"
-            :key="deploy.version"
-            class="flex items-center gap-3 rounded-xl border border-[#1e293b] bg-[#0f172a] p-3.5"
+    <!-- KPI Cards -->
+    <section class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div
+        v-for="service in systemHealth"
+        :key="service.name"
+        class="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-4"
+      >
+        <div class="flex items-center justify-between">
+          <span class="text-xs text-[var(--text-muted)]">{{ service.name }}</span>
+          <span
+            :class="[
+              'rounded-full px-2 py-0.5 text-2xs font-medium',
+              service.status === 'healthy' ? 'bg-[var(--success-soft)] text-[var(--success)]' : 'bg-[var(--warning-soft)] text-[var(--warning)]',
+            ]"
           >
-            <span
-              :class="[
-                'grid size-8 place-items-center rounded-lg',
-                deploy.status === 'success' ? 'bg-emerald-500/10' : 'bg-red-500/10',
-              ]"
-            >
-              <Check v-if="deploy.status === 'success'" :size="14" class="text-emerald-400" />
-              <AlertTriangle v-else :size="14" class="text-red-400" />
-            </span>
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center gap-2">
-                <span class="text-xs font-semibold text-white">{{ deploy.version }}</span>
-                <code class="text-2xs text-slate-500">{{ deploy.commit }}</code>
-              </div>
-              <p class="text-2xs text-slate-400">{{ deploy.author }} · {{ deploy.time }}</p>
-            </div>
-            <span
-              :class="[
-                'rounded-full px-2 py-0.5 text-2xs font-semibold',
-                deploy.status === 'success' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400',
-              ]"
-            >
-              {{ deploy.status }}
-            </span>
-          </div>
+            {{ service.status }}
+          </span>
+        </div>
+        <p class="mt-2 text-xl font-semibold text-[var(--text)]">{{ service.latency }}</p>
+        <p class="mt-0.5 text-2xs text-[var(--text-soft)]">Uptime: {{ service.uptime }}</p>
+      </div>
+    </section>
+
+    <div class="grid gap-4 lg:grid-cols-[1fr_300px]">
+      <!-- API Performance Table -->
+      <section>
+        <h2 class="mb-3 text-sm font-semibold text-[var(--text)]">API Performance</h2>
+        <div class="overflow-x-auto rounded-lg border border-[var(--border)] bg-[var(--surface)]">
+          <table class="w-full text-xs">
+            <thead>
+              <tr class="border-b border-[var(--border)] text-left">
+                <th class="px-3 py-2.5 font-medium text-[var(--text-muted)]">Endpoint</th>
+                <th class="px-3 py-2.5 font-medium text-[var(--text-muted)]">P50</th>
+                <th class="px-3 py-2.5 font-medium text-[var(--text-muted)]">P95</th>
+                <th class="px-3 py-2.5 font-medium text-[var(--text-muted)]">Calls</th>
+                <th class="px-3 py-2.5 font-medium text-[var(--text-muted)]">Errors</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="api in apiMetrics" :key="api.endpoint" class="border-b border-[var(--border)]/50 last:border-0 hover:bg-[var(--surface-muted)]/50">
+                <td class="px-3 py-2.5">
+                  <div class="flex items-center gap-2">
+                    <span
+                      :class="[
+                        'rounded px-1.5 py-0.5 text-2xs font-bold',
+                        api.method === 'GET' ? 'bg-[var(--success-soft)] text-[var(--success)]' : 'bg-[var(--info-soft)] text-[var(--info)]',
+                      ]"
+                    >
+                      {{ api.method }}
+                    </span>
+                    <code class="text-2xs text-[var(--text)]">{{ api.endpoint }}</code>
+                  </div>
+                </td>
+                <td class="px-3 py-2.5 font-mono text-2xs text-[var(--text)]">{{ api.p50 }}</td>
+                <td class="px-3 py-2.5 font-mono text-2xs text-[var(--text)]">{{ api.p95 }}</td>
+                <td class="px-3 py-2.5 text-2xs text-[var(--text-muted)]">{{ api.calls }}</td>
+                <td class="px-3 py-2.5">
+                  <span
+                    :class="[
+                      'text-2xs font-medium',
+                      parseFloat(api.errors) > 1 ? 'text-[var(--danger)]' : parseFloat(api.errors) > 0.1 ? 'text-[var(--warning)]' : 'text-[var(--success)]',
+                    ]"
+                  >
+                    {{ api.errors }}
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </section>
 
-      <!-- Error Log -->
-      <section>
-        <h2 class="mb-3 text-sm font-semibold text-white">Recent Errors</h2>
-        <div class="space-y-2">
-          <div
-            v-for="(error, idx) in errorLog"
-            :key="idx"
-            class="rounded-xl border border-[#1e293b] bg-[#0f172a] p-3.5"
-          >
-            <div class="flex items-center gap-2">
-              <span :class="['rounded-full px-2 py-0.5 text-2xs font-semibold', levelColors[error.level]]">
-                {{ error.level }}
-              </span>
-              <span class="text-2xs text-slate-500">{{ error.time }}</span>
-              <span class="text-2xs text-slate-500">· {{ error.service }}</span>
+      <!-- System Summary -->
+      <section class="space-y-4">
+        <div class="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-4">
+          <h3 class="mb-3 text-xs font-semibold text-[var(--text)]">System</h3>
+          <div class="space-y-2 text-xs">
+            <div class="flex justify-between"><span class="text-[var(--text-muted)]">Framework</span><span class="text-[var(--text)]">Laravel 13 + Vue 3</span></div>
+            <div class="flex justify-between"><span class="text-[var(--text-muted)]">Auth</span><span class="text-[var(--text)]">Sanctum Tokens</span></div>
+            <div class="flex justify-between"><span class="text-[var(--text-muted)]">Database</span><span class="text-[var(--text)]">SQLite / MySQL</span></div>
+            <div class="flex justify-between"><span class="text-[var(--text-muted)]">Uptime</span><span class="text-[var(--success)]">{{ uptime }}%</span></div>
+          </div>
+        </div>
+
+        <div class="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-4">
+          <h3 class="mb-3 text-xs font-semibold text-[var(--text)]">Deployments</h3>
+          <div class="space-y-2">
+            <div v-for="deploy in recentDeployments" :key="deploy.version" class="flex items-center gap-2 text-xs">
+              <span
+                :class="[
+                  'size-1.5 rounded-full',
+                  deploy.status === 'success' ? 'bg-[var(--success)]' : 'bg-[var(--danger)]',
+                ]"
+              />
+              <span class="font-medium text-[var(--text)]">{{ deploy.version }}</span>
+              <span class="text-[var(--text-soft)]">{{ deploy.time }}</span>
             </div>
-            <p class="mt-1.5 text-xs text-slate-300">{{ error.message }}</p>
           </div>
         </div>
       </section>
     </div>
 
-    <!-- System Info -->
-    <section class="rounded-xl border border-[#1e293b] bg-[#0f172a] p-5">
-      <h2 class="mb-4 text-sm font-semibold text-white">System Information</h2>
-      <div class="grid gap-4 text-xs sm:grid-cols-2 lg:grid-cols-4">
-        <div>
-          <p class="text-slate-500">Framework</p>
-          <p class="mt-0.5 font-medium text-slate-200">Laravel 13.19 + Vue 3.5</p>
-        </div>
-        <div>
-          <p class="text-slate-500">Node Version</p>
-          <p class="mt-0.5 font-medium text-slate-200">Node.js 20 LTS</p>
-        </div>
-        <div>
-          <p class="text-slate-500">Database</p>
-          <p class="mt-0.5 font-medium text-slate-200">SQLite (dev) / MySQL (prod)</p>
-        </div>
-        <div>
-          <p class="text-slate-500">30-Day Uptime</p>
-          <p class="mt-0.5 font-medium text-emerald-400">{{ uptime }}%</p>
-        </div>
-        <div>
-          <p class="text-slate-500">Auth Method</p>
-          <p class="mt-0.5 font-medium text-slate-200">Laravel Sanctum Tokens</p>
-        </div>
-        <div>
-          <p class="text-slate-500">Frontend Build</p>
-          <p class="mt-0.5 font-medium text-slate-200">Vite 7.3 + TypeScript</p>
-        </div>
-        <div>
-          <p class="text-slate-500">Cache Driver</p>
-          <p class="mt-0.5 font-medium text-slate-200">File / Redis (prod)</p>
-        </div>
-        <div>
-          <p class="text-slate-500">Queue Driver</p>
-          <p class="mt-0.5 font-medium text-slate-200">Sync / Database (prod)</p>
+    <!-- Error Log -->
+    <section>
+      <h2 class="mb-3 text-sm font-semibold text-[var(--text)]">Recent Errors</h2>
+      <div class="space-y-2">
+        <div
+          v-for="(error, idx) in errorLog"
+          :key="idx"
+          class="flex items-center gap-3 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-3"
+        >
+          <span
+            :class="[
+              'rounded-full px-2 py-0.5 text-2xs font-medium',
+              error.level === 'error' ? 'bg-[var(--danger-soft)] text-[var(--danger)]' : error.level === 'warn' ? 'bg-[var(--warning-soft)] text-[var(--warning)]' : 'bg-[var(--info-soft)] text-[var(--info)]',
+            ]"
+          >
+            {{ error.level }}
+          </span>
+          <span class="text-2xs text-[var(--text-soft)]">{{ error.time }}</span>
+          <span class="flex-1 text-xs text-[var(--text)]">{{ error.message }}</span>
+          <span class="text-2xs text-[var(--text-soft)]">{{ error.service }}</span>
         </div>
       </div>
     </section>
