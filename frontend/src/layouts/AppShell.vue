@@ -101,7 +101,7 @@ if (isDeveloper.value && typeof document !== "undefined") {
 </script>
 
 <template>
-  <div :class="['min-h-screen', isDeveloper ? 'bg-[#0a0e17]' : 'bg-bg']">
+  <div :class="['min-h-screen', isDeveloper ? 'bg-[var(--bg)]' : 'bg-bg']">
     <OfflineBanner />
     <div v-if="mobile" class="fixed inset-0 z-40 bg-black/30 lg:hidden" @click="mobile = false" />
 
