@@ -215,7 +215,7 @@ if (isDeveloper.value && typeof document !== "undefined") {
 
         <div class="flex-1" />
 
-        <LanguageSwitcher />
+        <LanguageSwitcher :dark="isDeveloper" />
 
         <!-- Theme toggle hidden for developers (forced dark) -->
         <button
