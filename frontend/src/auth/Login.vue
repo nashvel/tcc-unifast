@@ -23,8 +23,8 @@ const mode = route.path.includes("forgot")
     ? "activate"
     : "login";
 const demoAccounts: Record<string, string> = {
-  Administrator: "admin@unifast.gov.ph",
-  "Office Head": "head@unifast.gov.ph",
+  Developer: "admin@unifast.gov.ph",
+  Administrator: "head@unifast.gov.ph",
   "UniFAST Staff": "staff@unifast.gov.ph",
   Student: "student@tcc.edu.ph",
 };
@@ -57,8 +57,8 @@ async function quickLogin(label: string) {
 
 function demoAccountLabel(role: string) {
   const labels: Record<string, string> = {
+    Developer: t("auth.developer"),
     Administrator: t("auth.administrator"),
-    "Office Head": t("auth.officeHead"),
     "UniFAST Staff": t("auth.staff"),
     Student: t("auth.student"),
   };
@@ -206,7 +206,7 @@ function demoAccountLabel(role: string) {
           </p>
           <div class="grid grid-cols-2 gap-2">
             <button
-              v-for="role in ['Administrator', 'Office Head', 'UniFAST Staff', 'Student']"
+              v-for="role in ['Developer', 'Administrator', 'UniFAST Staff', 'Student']"
               :key="role"
               type="button"
               class="flex h-10 items-center gap-2.5 rounded-md border bg-white px-3 text-left hover:bg-surface-muted"

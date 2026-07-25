@@ -70,7 +70,7 @@ const act = (message: string) => (feedback.value = message);
           <div class="flex flex-wrap gap-2">
             <select v-model="assignee" class="h-9 rounded-md border bg-surface px-3 text-xs">
               <option>TES Support</option>
-              <option>System Administrator</option>
+              <option>System Developer</option>
               <option>UniFAST Staff</option>
               <option>Security Team</option>
               <option>Unassigned</option></select

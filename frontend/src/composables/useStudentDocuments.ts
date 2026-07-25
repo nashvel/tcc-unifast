@@ -24,6 +24,10 @@ export function useRequirementVault() {
     return Math.round((complete / 4) * 100);
   });
 
+  function canOpenIdentity(precheck: Record<string, boolean>, consent: boolean) {
+    return allDocumentsUploaded.value && Object.values(precheck).every(Boolean) && consent;
+  }
+
   async function loadVault() {
     loading.value = true;
     error.value = "";
@@ -141,6 +145,7 @@ export function useRequirementVault() {
     schoolIdUploaded,
     allDocumentsUploaded,
     canConfirm,
+    canOpenIdentity,
     progress,
     loadVault,
     uploadId,

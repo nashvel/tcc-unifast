@@ -15,9 +15,9 @@ import {
 type MockResponse = { status: number; body: unknown };
 type MockHandler = (body?: string) => MockResponse;
 
-const roleFromEmail: Record<string, { role: "admin" | "head" | "staff" | "student"; name: string }> = {
-  "admin@unifast.gov.ph": { role: "admin", name: "System Administrator" },
-  "head@unifast.gov.ph": { role: "head", name: "Office Head" },
+const roleFromEmail: Record<string, { role: "developer" | "admin" | "staff" | "student"; name: string }> = {
+  "admin@unifast.gov.ph": { role: "developer", name: "System Developer" },
+  "head@unifast.gov.ph": { role: "admin", name: "Office Administrator" },
   "staff@unifast.gov.ph": { role: "staff", name: "UniFAST Staff" },
   "student@tcc.edu.ph": { role: "student", name: "Maria Clara Dela Cruz" },
 };

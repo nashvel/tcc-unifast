@@ -47,8 +47,8 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::post('/student/identity/face-verify', StudentFaceVerificationController::class)->middleware('throttle:10,1');
     });
 
-    // Admin/Head/Staff routes
-    Route::middleware('role:admin,head,staff')->group(function (): void {
+    // Developer/Admin/Staff routes
+    Route::middleware('role:developer,admin,staff')->group(function (): void {
         Route::get('/grantees', [GranteeController::class, 'index']);
         Route::get('/grantees/{grantee}', [GranteeController::class, 'show']);
         Route::post('/students/{student}/id-sample', AdminStudentIdSampleController::class)->middleware('throttle:20,1');
@@ -64,8 +64,8 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('/audit-logs', [AuditEventController::class, 'index']);
     });
 
-    // Admin/Head only routes
-    Route::middleware('role:admin,head')->group(function (): void {
+    // Developer/Admin only routes
+    Route::middleware('role:developer,admin')->group(function (): void {
         Route::post('/batches', [BatchController::class, 'store'])->middleware('throttle:20,1');
         Route::patch('/batches/{batch}', [BatchController::class, 'update'])->middleware('throttle:20,1');
         Route::post('/batches/{batch}/activate', [BatchController::class, 'activate'])->middleware('throttle:10,1');
@@ -74,8 +74,8 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::post('/masterlist/imports/{import}/confirm', [MasterlistImportController::class, 'confirm'])->middleware('throttle:10,1');
     });
 
-    // Document submission review (admin/head/staff)
-    Route::post('/document-submissions/{submission}/review', [DocumentSubmissionController::class, 'review'])->middleware('role:admin,head,staff');
+    // Document submission review (developer/admin/staff)
+    Route::post('/document-submissions/{submission}/review', [DocumentSubmissionController::class, 'review'])->middleware('role:developer,admin,staff');
 
     // Audit events (any authenticated user)
     Route::post('/audit-events', [AuditEventController::class, 'store'])->middleware('throttle:240,1');

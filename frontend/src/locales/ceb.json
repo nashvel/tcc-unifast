@@ -81,6 +81,7 @@
     "documentsReady": "12 ka rekord andam na para sa eligibility review.",
     "batchClosingSoon": "Hapit na mosira ang batch",
     "batchClosingDetail": "Mosira ang TES Semester 2 sulod sa lima ka adlaw.",
+    "systemDeveloper": "System Developer",
     "systemAdministrator": "System Administrator",
     "student": "estudyante"
   },
@@ -99,8 +100,8 @@
     "activateAccount": "I-activate ang imong account",
     "backToSignIn": "Balik sa sign in",
     "demoAccounts": "Seeded demo accounts - password: password",
+    "developer": "Developer",
     "administrator": "Administrator",
-    "officeHead": "Office Head",
     "staff": "UniFAST Staff",
     "student": "Estudyante",
     "layoutTitle": "Tertiary Education Subsidy - Pagdumala sa Grantee ug Pag-validate sa Dokumento",
@@ -205,8 +206,8 @@
     "close": "Sirad-i ang dialog"
   },
   "roles": {
+    "developer": "Developer",
     "admin": "Admin",
-    "head": "Head",
     "staff": "Staff"
   },
   "status": {

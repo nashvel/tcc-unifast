@@ -1,5 +1,5 @@
 import { apiFetch } from "./client";
-import { setAuthToken } from "@/auth/session";
+import { setAuthToken, clearAuthToken } from "@/auth/session";
 import type { AuthUser } from "@/auth/session";
 
 export async function fetchCurrentUser(): Promise<AuthUser | null> {
@@ -24,7 +24,6 @@ export async function logout(): Promise<void> {
   try {
     await apiFetch("/api/auth/logout", { method: "POST" });
   } finally {
-    const { clearAuthToken } = await import("@/auth/session");
     clearAuthToken();
   }
 }

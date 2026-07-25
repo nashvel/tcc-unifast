@@ -21,7 +21,7 @@ const section = ref<Section>("general");
 const dark = ref(
   typeof document !== "undefined" && document.documentElement.classList.contains("dark"),
 );
-const fullName = ref("System Administrator");
+const fullName = ref("System Developer");
 const nav = [
   ["general", "General", "Profile & avatar", IconUser],
   ["organization", "Organization", "Office & validation rules", IconBuilding],

@@ -81,6 +81,7 @@
     "documentsReady": "12 rekord ang handa na para sa eligibility review.",
     "batchClosingSoon": "Malapit nang magsara ang batch",
     "batchClosingDetail": "Magsasara ang TES Semester 2 sa loob ng limang araw.",
+    "systemDeveloper": "System Developer",
     "systemAdministrator": "System Administrator",
     "student": "mag-aaral"
   },
@@ -99,8 +100,8 @@
     "activateAccount": "I-activate ang iyong account",
     "backToSignIn": "Bumalik sa sign in",
     "demoAccounts": "Seeded demo accounts - password: password",
+    "developer": "Developer",
     "administrator": "Administrator",
-    "officeHead": "Office Head",
     "staff": "UniFAST Staff",
     "student": "Mag-aaral",
     "layoutTitle": "Tertiary Education Subsidy - Pamamahala ng Grantee at Pag-validate ng Dokumento",
@@ -205,8 +206,8 @@
     "close": "Isara ang dialog"
   },
   "roles": {
+    "developer": "Developer",
     "admin": "Admin",
-    "head": "Head",
     "staff": "Staff"
   },
   "status": {

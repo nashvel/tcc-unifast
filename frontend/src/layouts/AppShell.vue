@@ -46,8 +46,8 @@ const user = computed(() => authSession.user);
 const sections = computed(() => {
   if (isStudent.value)
     return studentVerification.verified ? studentNavigation : lockedStudentNavigation;
-  if (role.value === "admin") return adminNavigation;
-  if (role.value === "head") return staffNavigation;
+  if (role.value === "developer") return adminNavigation;
+  if (role.value === "admin") return staffNavigation;
   return staffNavigation;
 });
 
@@ -207,12 +207,12 @@ if (dark.value && typeof document !== "undefined") document.documentElement.clas
           >
             <DiceBearAvatar
               :seed="isStudent ? 'student@tcc.edu.ph' : 'admin@unifast.gov.ph'"
-              :alt="isStudent ? 'Maria Santos' : t('shell.systemAdministrator')"
+              :alt="isStudent ? 'Maria Santos' : t('shell.systemDeveloper')"
               :size="28"
             />
             <span class="hidden text-left leading-tight sm:block"
               ><span class="block text-xs font-medium">{{
-                user?.name ?? (isStudent ? "Maria Santos" : t("shell.systemAdministrator"))
+                user?.name ?? (isStudent ? "Maria Santos" : t("shell.systemDeveloper"))
               }}</span
               ><span class="block text-2xs capitalize text-text-muted">{{
                 isStudent ? t("shell.student") : role
