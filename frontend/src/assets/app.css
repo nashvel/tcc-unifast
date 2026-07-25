@@ -63,28 +63,28 @@
 
 /* Developer Console Dark Theme */
 .dev-dark {
-  --bg: #0a0a0a;
-  --surface: #111111;
-  --surface-muted: #1a1a1a;
-  --border: #222222;
+  --bg: #0d0d0d;
+  --surface: #161616;
+  --surface-muted: #1e1e1e;
+  --border: #262626;
   --border-strong: #333333;
-  --text: #e5e5e5;
-  --text-muted: #737373;
-  --text-soft: #525252;
+  --text: #fafafa;
+  --text-muted: #a3a3a3;
+  --text-soft: #737373;
   --primary: #a78bfa;
   --primary-hover: #8b5cf6;
   --primary-soft: rgba(167, 139, 250, 0.1);
-  --success: #34d399;
-  --success-soft: rgba(52, 211, 153, 0.1);
-  --warning: #fbbf24;
-  --warning-soft: rgba(251, 191, 36, 0.1);
-  --danger: #f87171;
-  --danger-soft: rgba(248, 113, 113, 0.1);
-  --info: #60a5fa;
-  --info-soft: rgba(96, 165, 250, 0.1);
-  --sidebar-bg: #0f0f0f;
+  --success: #22c55e;
+  --success-soft: rgba(34, 197, 94, 0.1);
+  --warning: #eab308;
+  --warning-soft: rgba(234, 179, 8, 0.1);
+  --danger: #ef4444;
+  --danger-soft: rgba(239, 68, 68, 0.1);
+  --info: #3b82f6;
+  --info-soft: rgba(59, 130, 246, 0.1);
+  --sidebar-bg: #0d0d0d;
   --sidebar-active: #1a1a1a;
-  --sidebar-text: #e5e5e5;
+  --sidebar-text: #fafafa;
   --sidebar-text-muted: #737373;
 }
 @theme inline {

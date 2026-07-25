@@ -23,12 +23,12 @@ const systemHealth = ref([
 ]);
 
 const apiMetrics = ref([
-  { endpoint: "/api/auth/login", method: "POST", p50: "120ms", p95: "340ms", p99: "890ms", calls: "12.4k", errors: "0.02%" },
-  { endpoint: "/api/batches", method: "GET", p50: "45ms", p95: "120ms", p99: "250ms", calls: "8.2k", errors: "0.01%" },
-  { endpoint: "/api/document-submissions", method: "GET", p50: "89ms", p95: "210ms", p99: "450ms", calls: "15.6k", errors: "0.03%" },
-  { endpoint: "/api/student/requirement-vault", method: "POST", p50: "230ms", p95: "1.2s", p99: "3.4s", calls: "4.8k", errors: "1.2%" },
-  { endpoint: "/api/grantees", method: "GET", p50: "67ms", p95: "180ms", p99: "320ms", calls: "6.1k", errors: "0.01%" },
-  { endpoint: "/api/masterlist/imports/preview", method: "POST", p50: "1.8s", p95: "4.2s", p99: "8.1s", calls: "1.2k", errors: "2.1%" },
+  { endpoint: "/api/auth/login", method: "POST", p50: "120ms", p95: "340ms", calls: "12.4k", errors: "0.02%" },
+  { endpoint: "/api/batches", method: "GET", p50: "45ms", p95: "120ms", calls: "8.2k", errors: "0.01%" },
+  { endpoint: "/api/document-submissions", method: "GET", p50: "89ms", p95: "210ms", calls: "15.6k", errors: "0.03%" },
+  { endpoint: "/api/student/requirement-vault", method: "POST", p50: "230ms", p95: "1.2s", calls: "4.8k", errors: "1.2%" },
+  { endpoint: "/api/grantees", method: "GET", p50: "67ms", p95: "180ms", calls: "6.1k", errors: "0.01%" },
+  { endpoint: "/api/masterlist/imports/preview", method: "POST", p50: "1.8s", p95: "4.2s", calls: "1.2k", errors: "2.1%" },
 ]);
 
 const recentDeployments = ref([
@@ -78,7 +78,7 @@ const uptime = computed(() => {
         v-for="action in quickActions"
         :key="action.path"
         :to="action.path"
-        class="flex flex-col items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-3 text-center transition-colors hover:bg-[var(--surface-muted)]"
+        class="flex flex-col items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-4 text-center transition-colors hover:bg-[var(--surface-muted)]"
       >
         <span class="grid size-9 place-items-center rounded-lg bg-[var(--surface-muted)]">
           <component :is="action.icon" :size="16" class="text-[var(--text-muted)]" />
@@ -87,7 +87,7 @@ const uptime = computed(() => {
       </RouterLink>
     </section>
 
-    <!-- KPI Cards -->
+    <!-- System Health Cards -->
     <section class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
       <div
         v-for="service in systemHealth"
@@ -110,7 +110,7 @@ const uptime = computed(() => {
       </div>
     </section>
 
-    <div class="grid gap-4 lg:grid-cols-[1fr_300px]">
+    <div class="grid gap-4 lg:grid-cols-[1fr_280px]">
       <!-- API Performance Table -->
       <section>
         <h2 class="mb-3 text-sm font-semibold text-[var(--text)]">API Performance</h2>
@@ -159,11 +159,11 @@ const uptime = computed(() => {
         </div>
       </section>
 
-      <!-- System Summary -->
+      <!-- System & Deployments -->
       <section class="space-y-4">
         <div class="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-4">
           <h3 class="mb-3 text-xs font-semibold text-[var(--text)]">System</h3>
-          <div class="space-y-2 text-xs">
+          <div class="space-y-2.5 text-xs">
             <div class="flex justify-between"><span class="text-[var(--text-muted)]">Framework</span><span class="text-[var(--text)]">Laravel 13 + Vue 3</span></div>
             <div class="flex justify-between"><span class="text-[var(--text-muted)]">Auth</span><span class="text-[var(--text)]">Sanctum Tokens</span></div>
             <div class="flex justify-between"><span class="text-[var(--text-muted)]">Database</span><span class="text-[var(--text)]">SQLite / MySQL</span></div>

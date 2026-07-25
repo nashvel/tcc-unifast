@@ -103,7 +103,7 @@ if (isDeveloper.value && typeof document !== "undefined") {
     <OfflineBanner />
     <div v-if="mobile" class="fixed inset-0 z-40 bg-black/30 lg:hidden" @click="mobile = false" />
 
-    <!-- Developer Sidebar: Terminal-style dark UI -->
+    <!-- Developer Sidebar: BeastInsights-style -->
     <aside
       v-if="isDeveloper"
       :class="[
@@ -111,18 +111,18 @@ if (isDeveloper.value && typeof document !== "undefined") {
         mobile ? 'translate-x-0' : '-translate-x-full',
       ]"
     >
-      <div class="flex h-14 shrink-0 items-center gap-2.5 border-b border-[var(--border)] px-4">
+      <div class="flex h-14 shrink-0 items-center gap-2.5 px-4">
         <div class="flex size-7 items-center justify-center rounded-lg bg-[var(--primary)]">
           <span class="text-xs font-bold text-white">T</span>
         </div>
-        <span class="text-sm font-semibold text-[var(--text)]">TCC UniFAST</span>
+        <span class="text-sm font-semibold text-[var(--sidebar-text)]">TCC UniFAST</span>
       </div>
 
-      <nav class="flex-1 overflow-y-auto py-3 px-2">
-        <div v-for="(section, sectionIndex) in sections" :key="sectionIndex" class="mb-5">
+      <nav class="flex-1 overflow-y-auto py-2 px-2">
+        <div v-for="(section, sectionIndex) in sections" :key="sectionIndex" class="mb-4">
           <p
             v-if="section.labelKey"
-            class="mb-2 px-2 text-2xs font-medium uppercase tracking-wider text-[var(--text-soft)]"
+            class="mb-1.5 px-2 text-2xs font-medium uppercase tracking-wider text-[var(--sidebar-text-muted)]"
           >
             {{ t(section.labelKey) }}
           </p>
@@ -132,15 +132,15 @@ if (isDeveloper.value && typeof document !== "undefined") {
                 class="flex h-8 w-full items-center gap-2.5 rounded-md px-2.5 text-left text-sm transition-colors"
                 :class="
                   isActive(item.path)
-                    ? 'bg-[var(--surface-muted)] font-medium text-[var(--text)]'
-                    : 'text-[var(--text-muted)] hover:bg-[var(--surface-muted)] hover:text-[var(--text)]'
+                    ? 'bg-[var(--surface-muted)] font-medium text-[var(--sidebar-text)]'
+                    : 'text-[var(--sidebar-text-muted)] hover:bg-[var(--surface-muted)] hover:text-[var(--sidebar-text)]'
                 "
                 @click="go(item.path)"
               >
                 <component
                   :is="item.icon"
-                  :size="16"
-                  :class="isActive(item.path) ? 'text-[var(--primary)]' : 'text-[var(--text-soft)]'"
+                  :size="15"
+                  :class="isActive(item.path) ? 'text-[var(--primary)]' : 'text-[var(--sidebar-text-muted)]'"
                 />
                 <span class="truncate">{{ t(item.labelKey) }}</span>
               </button>
