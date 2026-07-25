@@ -84,12 +84,18 @@ async function signOut() {
 watch(isDeveloper, (val) => {
   if (val && typeof document !== "undefined") {
     dark.value = true;
-    document.documentElement.classList.add("dark");
+    document.documentElement.classList.add("dev-dark");
     localStorage.setItem("theme", "dark");
+  } else if (typeof document !== "undefined") {
+    document.documentElement.classList.remove("dev-dark");
   }
 }, { immediate: true });
 
-if (dark.value && typeof document !== "undefined") document.documentElement.classList.add("dark");
+if (isDeveloper.value && typeof document !== "undefined") {
+  document.documentElement.classList.add("dev-dark");
+} else if (dark.value && typeof document !== "undefined") {
+  document.documentElement.classList.add("dark");
+}
 </script>
 
 <template>
@@ -101,61 +107,47 @@ if (dark.value && typeof document !== "undefined") document.documentElement.clas
     <aside
       v-if="isDeveloper"
       :class="[
-        'fixed inset-y-0 left-0 z-50 flex w-64 shrink-0 flex-col border-r border-[#1e293b] bg-[#0f172a] transition-transform lg:translate-x-0',
+        'fixed inset-y-0 left-0 z-50 flex w-56 shrink-0 flex-col border-r border-[var(--border)] bg-[var(--sidebar-bg)] transition-transform lg:translate-x-0',
         mobile ? 'translate-x-0' : '-translate-x-full',
       ]"
     >
-      <div class="flex h-14 shrink-0 items-center gap-2.5 border-b border-[#1e293b] px-4">
-        <div class="flex size-8 items-center justify-center rounded-md bg-gradient-to-br from-violet-500 to-indigo-600">
-          <IconCommand :size="16" class="text-white" />
+      <div class="flex h-14 shrink-0 items-center gap-2.5 border-b border-[var(--border)] px-4">
+        <div class="flex size-7 items-center justify-center rounded-lg bg-[var(--primary)]">
+          <span class="text-xs font-bold text-white">T</span>
         </div>
-        <div class="min-w-0 leading-tight">
-          <p class="truncate text-sm font-semibold text-white">TCC UniFAST</p>
-          <p class="truncate text-2xs text-slate-400">Developer Console</p>
-        </div>
+        <span class="text-sm font-semibold text-[var(--text)]">TCC UniFAST</span>
       </div>
 
-      <nav class="flex-1 overflow-y-auto py-3">
-        <div v-for="(section, sectionIndex) in sections" :key="sectionIndex" class="mb-4 px-3">
+      <nav class="flex-1 overflow-y-auto py-3 px-2">
+        <div v-for="(section, sectionIndex) in sections" :key="sectionIndex" class="mb-5">
           <p
             v-if="section.labelKey"
-            class="mb-2 px-2 text-2xs font-semibold uppercase tracking-wider text-slate-500"
+            class="mb-2 px-2 text-2xs font-medium uppercase tracking-wider text-[var(--text-soft)]"
           >
             {{ t(section.labelKey) }}
           </p>
           <ul class="space-y-0.5">
             <li v-for="item in section.items" :key="item.path">
               <button
-                class="flex h-9 w-full items-center gap-2.5 rounded-lg px-2.5 text-left text-sm transition-all"
+                class="flex h-8 w-full items-center gap-2.5 rounded-md px-2.5 text-left text-sm transition-colors"
                 :class="
                   isActive(item.path)
-                    ? 'bg-violet-500/15 font-medium text-violet-400 shadow-[inset_0_0_0_1px_rgba(139,92,246,0.2)]'
-                    : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'
+                    ? 'bg-[var(--surface-muted)] font-medium text-[var(--text)]'
+                    : 'text-[var(--text-muted)] hover:bg-[var(--surface-muted)] hover:text-[var(--text)]'
                 "
                 @click="go(item.path)"
               >
                 <component
                   :is="item.icon"
                   :size="16"
-                  :class="isActive(item.path) ? 'text-violet-400' : 'text-slate-500'"
+                  :class="isActive(item.path) ? 'text-[var(--primary)]' : 'text-[var(--text-soft)]'"
                 />
                 <span class="truncate">{{ t(item.labelKey) }}</span>
-                <span
-                  v-if="isActive(item.path)"
-                  class="ml-auto size-1.5 rounded-full bg-violet-400"
-                />
               </button>
             </li>
           </ul>
         </div>
       </nav>
-
-      <div class="border-t border-[#1e293b] p-3">
-        <div class="flex items-center gap-2 rounded-lg bg-white/5 px-3 py-2">
-          <div class="size-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span class="text-2xs text-slate-400">System Online</span>
-        </div>
-      </div>
     </aside>
 
     <!-- Standard Sidebar for other roles -->
@@ -215,17 +207,17 @@ if (dark.value && typeof document !== "undefined") document.documentElement.clas
     </aside>
 
     <!-- Header -->
-    <div :class="['min-h-screen', isDeveloper ? 'lg:pl-64' : 'lg:pl-60']">
+    <div :class="['min-h-screen', isDeveloper ? 'lg:pl-56' : 'lg:pl-60']">
       <header
         :class="[
-          'sticky top-0 z-30 flex h-14 items-center gap-2 border-b px-3',
+          'sticky top-0 z-30 flex h-14 items-center gap-2 border-b px-4',
           isDeveloper
-            ? 'border-[#1e293b] bg-[#0f172a]/80 backdrop-blur-sm'
+            ? 'border-[var(--border)] bg-[var(--bg)]'
             : 'bg-surface',
         ]"
       >
         <button
-          :class="['rounded-md p-1.5 lg:hidden', isDeveloper ? 'hover:bg-white/10 text-slate-400' : 'hover:bg-surface-muted']"
+          :class="['rounded-md p-1.5 lg:hidden', isDeveloper ? 'hover:bg-[var(--surface-muted)] text-[var(--text-muted)]' : 'hover:bg-surface-muted']"
           :aria-label="t('nav.openMenu')"
           @click="mobile = true"
         >
@@ -237,7 +229,7 @@ if (dark.value && typeof document !== "undefined") document.documentElement.clas
           :class="[
             'flex h-9 max-w-md flex-1 items-center gap-2 rounded-md border px-2.5 text-left text-sm',
             isDeveloper
-              ? 'border-[#1e293b] bg-white/5 text-slate-400 hover:bg-white/10'
+              ? 'border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:bg-[var(--surface-muted)]'
               : 'border bg-surface text-text-muted hover:bg-surface-muted',
           ]"
         >
@@ -247,7 +239,7 @@ if (dark.value && typeof document !== "undefined") document.documentElement.clas
             :class="[
               'hidden items-center gap-0.5 rounded border px-1 py-0.5 text-2xs sm:inline-flex',
               isDeveloper
-                ? 'border-[#1e293b] text-slate-500'
+                ? 'border-[var(--border)] text-[var(--text-soft)]'
                 : 'border bg-surface text-text-soft',
             ]"
             ><IconCommand :size="10" /> K</kbd
@@ -269,7 +261,7 @@ if (dark.value && typeof document !== "undefined") document.documentElement.clas
 
         <div class="relative">
           <button
-            :class="['relative rounded-md p-2', isDeveloper ? 'hover:bg-white/10 text-slate-400' : 'hover:bg-surface-muted']"
+            :class="['relative rounded-md p-2', isDeveloper ? 'hover:bg-[var(--surface-muted)] text-[var(--text-muted)]' : 'hover:bg-surface-muted']"
             :aria-label="t('shell.notifications')"
             @click="notifications = !notifications; profile = false;"
           >
@@ -283,20 +275,20 @@ if (dark.value && typeof document !== "undefined") document.documentElement.clas
             :class="[
               'absolute right-0 mt-1 w-80 rounded-lg border shadow-xl',
               isDeveloper
-                ? 'border-[#1e293b] bg-[#1e293b]'
+                ? 'border-[var(--border)] bg-[var(--surface)]'
                 : 'border bg-surface',
             ]"
           >
-            <div :class="['flex h-10 items-center justify-between border-b px-3', isDeveloper ? 'border-[#1e293b]' : '']">
-              <p :class="['text-sm font-semibold', isDeveloper ? 'text-white' : '']">{{ t("shell.notifications") }}</p>
-              <button :class="['text-xs', isDeveloper ? 'text-violet-400' : 'text-primary']">{{ t("shell.markAllRead") }}</button>
+            <div :class="['flex h-10 items-center justify-between border-b px-3', isDeveloper ? 'border-[var(--border)]' : '']">
+              <p :class="['text-sm font-semibold', isDeveloper ? 'text-[var(--text)]' : '']">{{ t("shell.notifications") }}</p>
+              <button :class="['text-xs', isDeveloper ? 'text-[var(--primary)]' : 'text-primary']">{{ t("shell.markAllRead") }}</button>
             </div>
-            <div :class="['space-y-3 p-3 text-xs', isDeveloper ? 'text-slate-300' : '']">
+            <div :class="['space-y-3 p-3 text-xs', isDeveloper ? 'text-[var(--text-muted)]' : '']">
               <p>
-                <b>{{ t("shell.documentsValidated") }}</b><br /><span :class="isDeveloper ? 'text-slate-400' : 'text-text-muted'">{{ t("shell.documentsReady") }}</span>
+                <b>{{ t("shell.documentsValidated") }}</b><br /><span :class="isDeveloper ? 'text-[var(--text-soft)]' : 'text-text-muted'">{{ t("shell.documentsReady") }}</span>
               </p>
               <p>
-                <b>{{ t("shell.batchClosingSoon") }}</b><br /><span :class="isDeveloper ? 'text-slate-400' : 'text-text-muted'">{{ t("shell.batchClosingDetail") }}</span>
+                <b>{{ t("shell.batchClosingSoon") }}</b><br /><span :class="isDeveloper ? 'text-[var(--text-soft)]' : 'text-text-muted'">{{ t("shell.batchClosingDetail") }}</span>
               </p>
             </div>
           </div>
@@ -304,7 +296,7 @@ if (dark.value && typeof document !== "undefined") document.documentElement.clas
 
         <div class="relative">
           <button
-            :class="['flex items-center gap-2 rounded-md py-1 pl-1 pr-2', isDeveloper ? 'hover:bg-white/10' : 'hover:bg-surface-muted']"
+            :class="['flex items-center gap-2 rounded-md py-1 pl-1 pr-2', isDeveloper ? 'hover:bg-[var(--surface-muted)]' : 'hover:bg-surface-muted']"
             @click="profile = !profile; notifications = false;"
           >
             <DiceBearAvatar
@@ -313,37 +305,37 @@ if (dark.value && typeof document !== "undefined") document.documentElement.clas
               :size="28"
             />
             <span class="hidden text-left leading-tight sm:block"
-              ><span :class="['block text-xs font-medium', isDeveloper ? 'text-white' : '']">{{
+              ><span :class="['block text-xs font-medium', isDeveloper ? 'text-[var(--text)]' : '']">{{
                 user?.name ?? (isStudent ? "Maria Santos" : t("shell.systemDeveloper"))
               }}</span
-              ><span :class="['block text-2xs capitalize', isDeveloper ? 'text-slate-400' : 'text-text-muted']">{{
+              ><span :class="['block text-2xs capitalize', isDeveloper ? 'text-[var(--text-muted)]' : 'text-text-muted']">{{
                 isStudent ? t("shell.student") : role
               }}</span></span
-            ><IconChevronDown :size="14" :class="isDeveloper ? 'text-slate-400' : 'text-text-muted'" />
+            ><IconChevronDown :size="14" :class="isDeveloper ? 'text-[var(--text-soft)]' : 'text-text-muted'" />
           </button>
           <div
             v-if="profile"
             :class="[
               'absolute right-0 mt-1 w-56 rounded-lg border p-1 shadow-xl',
               isDeveloper
-                ? 'border-[#1e293b] bg-[#1e293b]'
+                ? 'border-[var(--border)] bg-[var(--surface)]'
                 : 'border bg-surface',
             ]"
           >
-            <div :class="['border-b px-2.5 py-2', isDeveloper ? 'border-[#1e293b]' : '']">
-              <p :class="['text-sm font-medium', isDeveloper ? 'text-white' : '']">
+            <div :class="['border-b px-2.5 py-2', isDeveloper ? 'border-[var(--border)]' : '']">
+              <p :class="['text-sm font-medium', isDeveloper ? 'text-[var(--text)]' : '']">
                 {{ user?.name ?? (isStudent ? "Maria Santos" : t("shell.systemDeveloper")) }}
               </p>
-              <p :class="['text-xs', isDeveloper ? 'text-slate-400' : 'text-text-muted']">
+              <p :class="['text-xs', isDeveloper ? 'text-[var(--text-muted)]' : 'text-text-muted']">
                 {{ user?.email ?? (isStudent ? "student@tcc.edu.ph" : "admin@unifast.gov.ph") }}
               </p>
             </div>
             <button
-              :class="['flex w-full items-center gap-2 rounded px-2.5 py-1.5 text-sm', isDeveloper ? 'text-slate-300 hover:bg-white/10' : 'hover:bg-surface-muted']"
+              :class="['flex w-full items-center gap-2 rounded px-2.5 py-1.5 text-sm', isDeveloper ? 'text-[var(--text)] hover:bg-[var(--surface-muted)]' : 'hover:bg-surface-muted']"
             >
               <IconUserCircle :size="15" /> {{ t("common.profile") }}</button
             ><button
-              :class="['flex w-full items-center gap-2 rounded px-2.5 py-1.5 text-sm text-danger', isDeveloper ? 'hover:bg-white/10' : 'hover:bg-surface-muted']"
+              :class="['flex w-full items-center gap-2 rounded px-2.5 py-1.5 text-sm text-danger', isDeveloper ? 'hover:bg-[var(--surface-muted)]' : 'hover:bg-surface-muted']"
               @click="signOut"
             >
               <IconLogout :size="15" /> {{ t("common.signOut") }}
