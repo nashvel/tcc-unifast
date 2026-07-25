@@ -9,6 +9,7 @@ use App\Http\Controllers\ActivationController;
 use App\Http\Controllers\AcademicRecordController;
 use App\Http\Controllers\BatchActivationNotificationController;
 use App\Http\Controllers\BatchController;
+use App\Http\Controllers\DatabaseController;
 use App\Http\Controllers\DocumentSubmissionController;
 use App\Http\Controllers\GranteeController;
 use App\Http\Controllers\MasterlistImportController;
@@ -88,6 +89,13 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::delete('/rbac/users/{user}/roles/{role}', [RbacController::class, 'removeUserRole']);
         Route::put('/rbac/users/{user}/roles', [RbacController::class, 'syncUserRoles']);
         Route::post('/rbac/check-permission', [RbacController::class, 'checkPermission']);
+
+        // Database viewer routes
+        Route::get('/database/tables', [DatabaseController::class, 'tables']);
+        Route::get('/database/stats', [DatabaseController::class, 'stats']);
+        Route::get('/database/tables/{table}', [DatabaseController::class, 'table']);
+        Route::get('/database/tables/{table}/rows', [DatabaseController::class, 'rows']);
+        Route::post('/database/query', [DatabaseController::class, 'query']);
     });
 
     // Document submission review (developer/admin/staff)

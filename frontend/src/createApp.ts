@@ -39,6 +39,7 @@ const appChildren: RouteRecordRaw[] = [
   { path: "developer/rbac", component: () => import("@/modules/developer/Rbac.vue") },
   { path: "developer/api-docs", component: () => import("@/modules/developer/ApiDocs.vue") },
   { path: "developer/flow-chart", component: () => import("@/modules/developer/FlowChart.vue") },
+  { path: "developer/database", component: () => import("@/modules/developer/Database.vue") },
   { path: "developer/support", component: () => import("@/modules/developer/Support.vue") },
   { path: "developer/audit", component: () => import("@/modules/developer/Audit.vue") },
   { path: "developer/collaborators", component: () => import("@/modules/developer/Collaborators.vue") },
