@@ -12,6 +12,7 @@ use App\Http\Controllers\BatchController;
 use App\Http\Controllers\DocumentSubmissionController;
 use App\Http\Controllers\GranteeController;
 use App\Http\Controllers\MasterlistImportController;
+use App\Http\Controllers\RbacController;
 use App\Http\Controllers\RequirementVaultController;
 use App\Http\Controllers\StudentDocumentOcrController;
 use App\Http\Controllers\StudentFaceVerificationController;
@@ -72,6 +73,21 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::post('/batches/{batch}/deactivate', [BatchController::class, 'deactivate'])->middleware('throttle:10,1');
         Route::post('/batches/{batch}/extend-deadline', [BatchController::class, 'extendDeadline'])->middleware('throttle:10,1');
         Route::post('/masterlist/imports/{import}/confirm', [MasterlistImportController::class, 'confirm'])->middleware('throttle:10,1');
+
+        // RBAC routes
+        Route::get('/rbac/roles', [RbacController::class, 'index']);
+        Route::post('/rbac/roles', [RbacController::class, 'store']);
+        Route::get('/rbac/roles/{role}', [RbacController::class, 'show']);
+        Route::put('/rbac/roles/{role}', [RbacController::class, 'update']);
+        Route::delete('/rbac/roles/{role}', [RbacController::class, 'destroy']);
+        Route::get('/rbac/permissions', [RbacController::class, 'permissions']);
+        Route::post('/rbac/permissions', [RbacController::class, 'storePermission']);
+        Route::delete('/rbac/permissions/{permission}', [RbacController::class, 'destroyPermission']);
+        Route::get('/rbac/users/{user}/roles', [RbacController::class, 'userRoles']);
+        Route::post('/rbac/users/{user}/roles', [RbacController::class, 'assignUserRole']);
+        Route::delete('/rbac/users/{user}/roles/{role}', [RbacController::class, 'removeUserRole']);
+        Route::put('/rbac/users/{user}/roles', [RbacController::class, 'syncUserRoles']);
+        Route::post('/rbac/check-permission', [RbacController::class, 'checkPermission']);
     });
 
     // Document submission review (developer/admin/staff)
