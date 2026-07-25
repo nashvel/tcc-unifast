@@ -1,3 +1,4 @@
+import "./assets/app.css";
 import { createTccApp } from "./createApp";
 import { installAuditLogger } from "@/services/audit";
 
