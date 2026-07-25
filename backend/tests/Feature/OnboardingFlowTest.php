@@ -17,7 +17,7 @@ class OnboardingFlowTest extends TestCase
 
     public function test_masterlist_preview_flags_invalid_and_duplicate_rows(): void
     {
-        $admin = User::factory()->create(['role' => 'head', 'account_status' => 'active']);
+        $admin = User::factory()->create(['role' => 'admin', 'account_status' => 'active']);
         $file = UploadedFile::fake()->createWithContent('ched.csv', implode("\n", [
             'student_id,full_name,email,program,year_level,student_number',
             'STU-1,Maria Santos,maria@example.test,BSIT,1,2026-0001',
@@ -41,7 +41,7 @@ class OnboardingFlowTest extends TestCase
     public function test_confirm_import_creates_unverified_accounts_and_activation_tokens(): void
     {
         Mail::fake();
-        $admin = User::factory()->create(['role' => 'head', 'account_status' => 'active']);
+        $admin = User::factory()->create(['role' => 'admin', 'account_status' => 'active']);
         $file = UploadedFile::fake()->createWithContent('ched.csv', implode("\n", [
             'student_id,full_name,email,program,year_level,student_number',
             'STU-1,Maria Santos,maria@example.test,BSIT,1,2026-0001',

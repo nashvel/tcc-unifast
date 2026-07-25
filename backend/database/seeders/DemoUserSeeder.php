@@ -11,8 +11,8 @@ class DemoUserSeeder extends Seeder
     public function run(): void
     {
         foreach ([
-            ['System Administrator', 'admin@unifast.gov.ph', 'admin', null],
-            ['Office Head', 'head@unifast.gov.ph', 'head', null],
+            ['System Developer', 'admin@unifast.gov.ph', 'developer', null],
+            ['Office Administrator', 'head@unifast.gov.ph', 'admin', null],
             ['UniFAST Staff', 'staff@unifast.gov.ph', 'staff', null],
             ['Maria Angela Santos', 'student@tcc.edu.ph', 'student', '2024-00182'],
         ] as [$name, $email, $role, $studentId]) {

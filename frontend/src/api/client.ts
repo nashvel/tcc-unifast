@@ -1,6 +1,5 @@
 import { getAuthToken } from "@/auth/session";
 import { API_BASE } from "@/config";
-import { handleMockRequest } from "@/mock/handlers";
 import type { ListQuery } from "./types";
 
 const useMock = import.meta.env.VITE_USE_MOCK === "true" || !API_BASE;
@@ -28,23 +27,28 @@ export function apiUrl(path: string): string {
   return `${API_BASE}${path}`;
 }
 
+let mockHandler: typeof import("@/mock/handlers").handleMockRequest | null = null;
+
 export async function apiFetch<T>(
   url: string,
   init: RequestInit = {},
 ): Promise<T> {
-  // Mock mode: intercept and return mock data
+  // Mock mode: lazy-load mock handlers and intercept
   if (useMock) {
+    if (!mockHandler) {
+      const mod = await import("@/mock/handlers");
+      mockHandler = mod.handleMockRequest;
+    }
     const method = (init.method || "GET").toUpperCase();
     const path = url.startsWith("http") ? new URL(url).pathname : url;
     const body = typeof init.body === "string" ? init.body : undefined;
-    const mockResponse = handleMockRequest(method, path.split("?")[0], body);
+    const mockResponse = mockHandler(method, path.split("?")[0], body);
     if (mockResponse) {
       if (mockResponse.status >= 400) {
         throw new ApiError("Mock error", mockResponse.status);
       }
       return mockResponse.body as T;
     }
-    // If no mock handler, return empty response for non-critical endpoints
     console.warn(`[mock] No handler for ${method} ${path}`);
     return {} as T;
   }

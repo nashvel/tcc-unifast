@@ -58,8 +58,8 @@ export const tickets = [
 export const auditLogs = [
   [
     "Jul 11, 2026 9:42 AM",
-    "System Administrator",
-    "Admin",
+    "System Developer",
+    "Developer",
     "Viewed report",
     "Reports",
     "Office performance",

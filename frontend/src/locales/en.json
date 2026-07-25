@@ -81,6 +81,7 @@
     "documentsReady": "12 records are ready for eligibility review.",
     "batchClosingSoon": "Batch closing soon",
     "batchClosingDetail": "TES Semester 2 closes in five days.",
+    "systemDeveloper": "System Developer",
     "systemAdministrator": "System Administrator",
     "student": "student"
   },
@@ -99,6 +100,7 @@
     "activateAccount": "Activate your account",
     "backToSignIn": "Back to sign in",
     "demoAccounts": "Seeded demo accounts - password: password",
+    "developer": "Developer",
     "administrator": "Administrator",
     "officeHead": "Office Head",
     "staff": "UniFAST Staff",
@@ -205,8 +207,8 @@
     "close": "Close dialog"
   },
   "roles": {
+    "developer": "Developer",
     "admin": "Admin",
-    "head": "Head",
     "staff": "Staff"
   },
   "status": {
