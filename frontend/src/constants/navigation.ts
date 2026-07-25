@@ -2,6 +2,7 @@ import type { Component } from "vue";
 import {
   IconBell,
   IconChecklist,
+  IconCode,
   IconDashboard,
   IconFileCheck,
   IconFileImport,
@@ -14,6 +15,7 @@ import {
   IconSettings,
   IconShieldCheck,
   IconSpeakerphone,
+  IconTerminal,
   IconUpload,
   IconUserCircle,
   IconUserCog,
@@ -43,6 +45,33 @@ export const adminNavigation: NavigationSection[] = [
       { labelKey: "nav.securityMemory", path: "/app/security/memory", icon: IconShieldCheck },
       { labelKey: "nav.usersRoles", path: "/app/users", icon: IconUserCog },
       { labelKey: "common.settings", path: "/app/settings", icon: IconSettings },
+    ],
+  },
+];
+
+export const developerNavigation: NavigationSection[] = [
+  { items: [{ labelKey: "common.dashboard", path: "/app", icon: IconDashboard }] },
+  {
+    labelKey: "nav.developer.system",
+    items: [
+      { labelKey: "nav.developer.rbac", path: "/app/developer/rbac", icon: IconShieldCheck },
+      { labelKey: "nav.developer.apiDocs", path: "/app/developer/api-docs", icon: IconCode },
+      { labelKey: "nav.developer.flowChart", path: "/app/developer/flow-chart", icon: IconTerminal },
+    ],
+  },
+  {
+    labelKey: "nav.developer.operations",
+    items: [
+      { labelKey: "nav.developer.supportTickets", path: "/app/developer/support", icon: IconLifebuoy },
+      { labelKey: "nav.developer.auditTrail", path: "/app/developer/audit", icon: IconHistory },
+      { labelKey: "nav.developer.collaborators", path: "/app/developer/collaborators", icon: IconUsersGroup },
+    ],
+  },
+  {
+    labelKey: "nav.administration",
+    items: [
+      { labelKey: "nav.usersRoles", path: "/app/developer/users", icon: IconUserCog },
+      { labelKey: "common.settings", path: "/app/developer/settings", icon: IconSettings },
     ],
   },
 ];

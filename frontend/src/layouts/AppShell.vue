@@ -15,6 +15,7 @@ import {
 } from "@tabler/icons-vue";
 import {
   adminNavigation,
+  developerNavigation,
   lockedStudentNavigation,
   staffNavigation,
   studentNavigation,
@@ -46,7 +47,7 @@ const user = computed(() => authSession.user);
 const sections = computed(() => {
   if (isStudent.value)
     return studentVerification.verified ? studentNavigation : lockedStudentNavigation;
-  if (role.value === "developer") return adminNavigation;
+  if (role.value === "developer") return developerNavigation;
   if (role.value === "admin") return staffNavigation;
   return staffNavigation;
 });

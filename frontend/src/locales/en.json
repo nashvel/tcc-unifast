@@ -70,7 +70,17 @@
     "breadcrumb": "Breadcrumb",
     "homeBreadcrumb": "{label} (home)",
     "generate": "Generate",
-    "edit": "Edit"
+    "edit": "Edit",
+    "developer": {
+      "system": "System",
+      "rbac": "RBAC & Permissions",
+      "apiDocs": "API Documentation",
+      "flowChart": "System Flow Charts",
+      "operations": "Operations",
+      "supportTickets": "Support Tickets",
+      "auditTrail": "Developer Audit",
+      "collaborators": "Collaborators"
+    }
   },
   "shell": {
     "searchJump": "Search or jump to...",
