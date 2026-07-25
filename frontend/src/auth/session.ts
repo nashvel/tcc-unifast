@@ -35,7 +35,8 @@ export function clearAuthToken() {
 export const csrfToken = getAuthToken;
 
 export async function loadAuthUser() {
-  if (!getAuthToken()) {
+  const useMock = import.meta.env.VITE_USE_MOCK === "true" || !import.meta.env.VITE_API_BASE_URL;
+  if (!useMock && !getAuthToken()) {
     authSession.loaded = true;
     return null;
   }
