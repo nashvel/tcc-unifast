@@ -36,7 +36,8 @@ export async function apiFetch<T>(
   if (useMock) {
     const method = (init.method || "GET").toUpperCase();
     const path = url.startsWith("http") ? new URL(url).pathname : url;
-    const mockResponse = handleMockRequest(method, path.split("?")[0]);
+    const body = typeof init.body === "string" ? init.body : undefined;
+    const mockResponse = handleMockRequest(method, path.split("?")[0], body);
     if (mockResponse) {
       if (mockResponse.status >= 400) {
         throw new ApiError("Mock error", mockResponse.status);

@@ -1,5 +1,4 @@
 import {
-  mockUser,
   mockBatches,
   mockBatchDetail,
   mockGrantees,
@@ -14,14 +13,35 @@ import {
 } from "./data";
 
 type MockResponse = { status: number; body: unknown };
+type MockHandler = (body?: string) => MockResponse;
 
-const handlers: Record<string, () => MockResponse> = {
+const roleFromEmail: Record<string, { role: "admin" | "head" | "staff" | "student"; name: string }> = {
+  "admin@unifast.gov.ph": { role: "admin", name: "System Administrator" },
+  "head@unifast.gov.ph": { role: "head", name: "Office Head" },
+  "staff@unifast.gov.ph": { role: "staff", name: "UniFAST Staff" },
+  "student@tcc.edu.ph": { role: "student", name: "Maria Clara Dela Cruz" },
+};
+
+function makeUser(email: string) {
+  const match = roleFromEmail[email] || roleFromEmail["admin@unifast.gov.ph"];
+  return {
+    id: 1,
+    name: match.name,
+    email,
+    role: match.role,
+    student_id: match.role === "student" ? "2024-001" : null,
+    account_status: "active" as const,
+  };
+}
+
+const handlers: Record<string, MockHandler> = {
   // Auth
-  "GET /api/auth/me": () => ({ status: 200, body: { user: mockUser } }),
-  "POST /api/auth/login": () => ({
-    status: 200,
-    body: { user: mockUser, token: "mock-token-12345" },
-  }),
+  "GET /api/auth/me": () => ({ status: 200, body: { user: makeUser("admin@unifast.gov.ph") } }),
+  "POST /api/auth/login": (body) => {
+    const parsed = body ? JSON.parse(body) : {};
+    const user = makeUser(parsed.email || "admin@unifast.gov.ph");
+    return { status: 200, body: { user, token: "mock-token-12345" } };
+  },
   "POST /api/auth/logout": () => ({ status: 200, body: { message: "Signed out." } }),
 
   // Batches
@@ -102,17 +122,17 @@ const handlers: Record<string, () => MockResponse> = {
   }),
 };
 
-export function handleMockRequest(method: string, path: string): MockResponse | null {
+export function handleMockRequest(method: string, path: string, body?: string): MockResponse | null {
   const key = `${method} ${path}`;
   const handler = handlers[key];
-  if (handler) return handler();
+  if (handler) return handler(body);
 
   // Fallback for parameterized routes
-  if (path.match(/^\/api\/batches\/\d+/)) return handlers["GET /api/batches/1"]();
-  if (path.match(/^\/api\/grantees\/\d+/)) return handlers["GET /api/grantees/1"]();
-  if (path.match(/^\/api\/academic-records\/\d+/)) return handlers["GET /api/academic-records/1"]();
-  if (path.match(/^\/api\/document-submissions\/\d+\/review/)) return handlers["POST /api/document-submissions/1/review"]();
-  if (path.match(/^\/api\/document-submissions\/\d+/)) return handlers["GET /api/document-submissions/1"]();
+  if (path.match(/^\/api\/batches\/\d+/)) return handlers["GET /api/batches/1"]?.();
+  if (path.match(/^\/api\/grantees\/\d+/)) return handlers["GET /api/grantees/1"]?.();
+  if (path.match(/^\/api\/academic-records\/\d+/)) return handlers["GET /api/academic-records/1"]?.();
+  if (path.match(/^\/api\/document-submissions\/\d+\/review/)) return handlers["POST /api/document-submissions/1/review"]?.();
+  if (path.match(/^\/api\/document-submissions\/\d+/)) return handlers["GET /api/document-submissions/1"]?.();
 
   return null;
 }
