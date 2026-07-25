@@ -85,6 +85,7 @@ watch(isDeveloper, (val) => {
   if (val && typeof document !== "undefined") {
     dark.value = true;
     document.documentElement.classList.add("dev-dark");
+    document.documentElement.classList.remove("dark");
     localStorage.setItem("theme", "dark");
   } else if (typeof document !== "undefined") {
     document.documentElement.classList.remove("dev-dark");
@@ -93,6 +94,7 @@ watch(isDeveloper, (val) => {
 
 if (isDeveloper.value && typeof document !== "undefined") {
   document.documentElement.classList.add("dev-dark");
+  document.documentElement.classList.remove("dark");
 } else if (dark.value && typeof document !== "undefined") {
   document.documentElement.classList.add("dark");
 }

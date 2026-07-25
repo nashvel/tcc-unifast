@@ -61,16 +61,9 @@
   --accent-gold-soft: #2a2113;
 }
 
-/* Developer Console Dark Theme */
-.dev-dark {
-  --bg: #0d0d0d;
-  --surface: #161616;
-  --surface-muted: #1e1e1e;
-  --border: #262626;
-  --border-strong: #333333;
-  --text: #fafafa;
-  --text-muted: #a3a3a3;
-  --text-soft: #737373;
+/* Developer Console Dark Theme - overrides .dark */
+html.dev-dark,
+html.dev-dark * {
   --primary: #a78bfa;
   --primary-hover: #8b5cf6;
   --primary-soft: rgba(167, 139, 250, 0.1);
@@ -82,6 +75,14 @@
   --danger-soft: rgba(239, 68, 68, 0.1);
   --info: #3b82f6;
   --info-soft: rgba(59, 130, 246, 0.1);
+  --bg: #0d0d0d;
+  --surface: #161616;
+  --surface-muted: #1e1e1e;
+  --border: #262626;
+  --border-strong: #333333;
+  --text: #fafafa;
+  --text-muted: #a3a3a3;
+  --text-soft: #737373;
   --sidebar-bg: #0d0d0d;
   --sidebar-active: #1a1a1a;
   --sidebar-text: #fafafa;
