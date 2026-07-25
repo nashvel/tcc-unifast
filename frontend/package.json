@@ -1,0 +1,36 @@
+{
+  "name": "tcc-unifast-frontend",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "vue-tsc --noEmit",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@tabler/icons-vue": "^3.44.0",
+    "@tailwindcss/vite": "^4.2.1",
+    "@tanstack/vue-query": "^5.101.4",
+    "@vitejs/plugin-vue": "^6.0.1",
+"face-api.js": "^0.22.2",
+    "jsqr": "^1.4.0",
+    "laravel-echo": "^2.4.0",
+    "lucide-vue-next": "^0.468.0",
+    "pusher-js": "^8.6.0",
+    "tailwindcss": "^4.2.1",
+    "vue": "^3.5.13",
+    "vue-i18n": "^11.4.6",
+    "vue-router": "^4.5.0",
+    "vue-sonner": "^2.0.9"
+  },
+  "overrides": {
+    "node-fetch": "^2.7.0"
+  },
+  "devDependencies": {
+    "prettier": "^3.9.5",
+    "typescript": "^5.8.3",
+    "vite": "^7.0.0",
+    "vue-tsc": "^3.3.8"
+  }
+}
