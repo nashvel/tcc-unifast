@@ -13,12 +13,14 @@ use App\Http\Controllers\DatabaseController;
 use App\Http\Controllers\DistributionReportController;
 use App\Http\Controllers\DocumentSubmissionController;
 use App\Http\Controllers\EligibilityController;
+use App\Http\Controllers\FaqController;
 use App\Http\Controllers\GranteeController;
 use App\Http\Controllers\IdentityOnboardingController;
 use App\Http\Controllers\MasterlistImportController;
 use App\Http\Controllers\PolicySettingsController;
 use App\Http\Controllers\RbacController;
 use App\Http\Controllers\RequirementVaultController;
+use App\Http\Controllers\TermController;
 use App\Http\Controllers\StudentDocumentOcrController;
 use App\Http\Controllers\StudentFaceVerificationController;
 use App\Http\Controllers\StudentKycController;
@@ -32,6 +34,10 @@ use Illuminate\Support\Facades\Route;
 Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:20,1');
 Route::get('/activation/{token}', [ActivationController::class, 'show'])->middleware('throttle:20,1');
 Route::post('/activation/{token}', [ActivationController::class, 'activate'])->middleware('throttle:10,1');
+
+// Public content (for login page)
+Route::get('/terms/active', [TermController::class, 'active']);
+Route::get('/faqs', [FaqController::class, 'index']);
 
 // Authenticated routes (Sanctum token required)
 Route::middleware('auth:sanctum')->group(function (): void {
@@ -134,6 +140,21 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('/database/tables/{table}', [DatabaseController::class, 'table']);
         Route::get('/database/tables/{table}/rows', [DatabaseController::class, 'rows']);
         Route::post('/database/query', [DatabaseController::class, 'query']);
+
+        // Terms & Conditions management
+        Route::get('/terms', [TermController::class, 'index']);
+        Route::post('/terms', [TermController::class, 'store']);
+        Route::get('/terms/{term}', [TermController::class, 'show']);
+        Route::put('/terms/{term}', [TermController::class, 'update']);
+        Route::delete('/terms/{term}', [TermController::class, 'destroy']);
+
+        // FAQ management
+        Route::get('/faqs/all', [FaqController::class, 'all']);
+        Route::post('/faqs', [FaqController::class, 'store']);
+        Route::get('/faqs/{faq}', [FaqController::class, 'show']);
+        Route::put('/faqs/{faq}', [FaqController::class, 'update']);
+        Route::delete('/faqs/{faq}', [FaqController::class, 'destroy']);
+        Route::post('/faqs/reorder', [FaqController::class, 'reorder']);
     });
 
     // Document submission review (developer/admin/staff)

@@ -42,6 +42,8 @@ const sections = ref<{ title?: string; items: NavItem[] }[]>([
       { label: "API Documentation", path: "/app/developer/api-docs", icon: IconCode },
       { label: "System Flow Charts", path: "/app/developer/flow-chart", icon: IconGitBranch },
       { label: "Database", path: "/app/developer/database", icon: IconDatabase },
+      { label: "Terms & Conditions", path: "/app/developer/terms", icon: IconShield },
+      { label: "FAQs", path: "/app/developer/faqs", icon: IconCode },
     ],
   },
   {
