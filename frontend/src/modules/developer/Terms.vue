@@ -100,33 +100,28 @@ onMounted(loadTerms);
       </template>
     </PageHeader>
 
-    <div class="space-y-3">
-      <div v-for="term in terms" :key="term.id" class="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-4">
-        <div class="flex items-start justify-between">
-          <div>
-            <div class="flex items-center gap-2">
-              <h3 class="text-sm font-semibold text-[var(--text)]">{{ term.title }}</h3>
-              <span class="rounded-full bg-[var(--surface-muted)] px-2 py-0.5 text-2xs text-[var(--text-muted)]">v{{ term.version }}</span>
-              <span :class="['rounded-full px-2 py-0.5 text-2xs font-medium', term.is_active ? 'bg-[var(--success-soft)] text-[var(--success)]' : 'bg-[var(--surface-muted)] text-[var(--text-muted)]']">
-                {{ term.is_active ? "Active" : "Inactive" }}
-              </span>
-            </div>
-            <div class="mt-2 max-h-32 overflow-auto text-xs text-[var(--text-muted)] prose prose-invert" v-html="term.content" />
-          </div>
-          <div class="flex gap-1">
-            <button class="rounded p-1.5 hover:bg-[var(--surface-muted)]" @click="toggleActive(term)">
-              <IconCheck v-if="term.is_active" :size="14" class="text-[var(--success)]" />
-              <IconX v-else :size="14" class="text-[var(--text-soft)]" />
-            </button>
-            <button class="rounded p-1.5 hover:bg-[var(--surface-muted)]" @click="openEdit(term)">
-              <IconEdit :size="14" class="text-[var(--text-muted)]" />
-            </button>
-            <button class="rounded p-1.5 hover:bg-[var(--surface-muted)]" @click="deleteTerm(term.id)">
-              <IconTrash :size="14" class="text-[var(--danger)]" />
-            </button>
-          </div>
+    <div class="space-y-2">
+      <div v-for="term in terms" :key="term.id" class="flex items-center justify-between rounded-lg border border-[var(--border)] bg-[var(--surface)] px-4 py-3">
+        <div class="flex items-center gap-3">
+          <h3 class="text-sm font-medium text-[var(--text)]">{{ term.title }}</h3>
+          <span class="rounded bg-[var(--surface-muted)] px-1.5 py-0.5 font-mono text-2xs text-[var(--text-muted)]">v{{ term.version }}</span>
+          <span :class="['rounded-full px-2 py-0.5 text-2xs font-medium', term.is_active ? 'bg-[var(--success-soft)] text-[var(--success)]' : 'bg-[var(--surface-muted)] text-[var(--text-muted)]']">
+            {{ term.is_active ? "Active" : "Inactive" }}
+          </span>
+          <span class="text-2xs text-[var(--text-soft)]">Updated {{ new Date(term.updated_at).toLocaleDateString() }}</span>
         </div>
-        <p class="mt-2 text-2xs text-[var(--text-soft)]">Updated: {{ new Date(term.updated_at).toLocaleString() }}</p>
+        <div class="flex gap-1">
+          <button class="rounded p-1.5 hover:bg-[var(--surface-muted)]" @click="toggleActive(term)">
+            <IconCheck v-if="term.is_active" :size="14" class="text-[var(--success)]" />
+            <IconX v-else :size="14" class="text-[var(--text-soft)]" />
+          </button>
+          <button class="rounded p-1.5 hover:bg-[var(--surface-muted)]" @click="openEdit(term)">
+            <IconEdit :size="14" class="text-[var(--text-muted)]" />
+          </button>
+          <button class="rounded p-1.5 hover:bg-[var(--surface-muted)]" @click="deleteTerm(term.id)">
+            <IconTrash :size="14" class="text-[var(--danger)]" />
+          </button>
+        </div>
       </div>
     </div>
 
