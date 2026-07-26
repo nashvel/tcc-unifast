@@ -1,4 +1,6 @@
 import {
+  mockUsers,
+  roleFromEmail,
   mockBatches,
   mockBatchDetail,
   mockGrantees,
@@ -10,17 +12,17 @@ import {
   mockAuditLogs,
   mockNotifications,
   mockSubmissionWindow,
-} from "./data";
+  mockVault,
+  mockTables,
+  mockDbStats,
+  mockUserTable,
+  mockUserRows,
+  mockTerms,
+  mockFaqs,
+} from "../../vercel/mocks";
 
 type MockResponse = { status: number; body: unknown };
 type MockHandler = (body?: string) => MockResponse;
-
-const roleFromEmail: Record<string, { role: "developer" | "admin" | "staff" | "student"; name: string }> = {
-  "admin@unifast.gov.ph": { role: "developer", name: "System Developer" },
-  "head@unifast.gov.ph": { role: "admin", name: "Office Administrator" },
-  "staff@unifast.gov.ph": { role: "staff", name: "UniFAST Staff" },
-  "student@tcc.edu.ph": { role: "student", name: "Maria Clara Dela Cruz" },
-};
 
 function makeUser(email: string) {
   const match = roleFromEmail[email] || roleFromEmail["admin@unifast.gov.ph"];
@@ -81,11 +83,36 @@ const handlers: Record<string, MockHandler> = {
   }),
 
   // Audit
-  "GET /api/audit-logs": () => ({
-    status: 200,
-    body: { data: mockAuditLogs },
-  }),
+  "GET /api/audit-logs": () => ({ status: 200, body: { data: mockAuditLogs } }),
   "POST /api/audit-events": () => ({ status: 200, body: { ok: true } }),
+
+  // Terms & Conditions
+  "GET /api/terms/active": () => ({ status: 200, body: { data: mockTerms } }),
+
+  // FAQ
+  "GET /api/faqs": () => ({ status: 200, body: { data: mockFaqs } }),
+  "GET /api/faqs/all": () => ({ status: 200, body: { data: mockFaqs } }),
+
+  // Database
+  "GET /api/database/tables": () => ({ status: 200, body: { data: mockTables } }),
+  "GET /api/database/stats": () => ({ status: 200, body: { data: mockDbStats } }),
+  "GET /api/database/tables/users": () => ({ status: 200, body: { data: mockUserTable } }),
+  "GET /api/database/tables/users/rows": () => ({
+    status: 200,
+    body: { data: mockUserRows, meta: { current_page: 1, per_page: 25, total: 4, last_page: 1 } },
+  }),
+  "POST /api/database/query": (body) => {
+    const parsed = body ? JSON.parse(body) : {};
+    const sql = (parsed.sql || "").toLowerCase();
+    if (!sql.startsWith("select")) return { status: 403, body: { message: "Only SELECT queries allowed." } };
+    return {
+      status: 200,
+      body: {
+        data: mockUserRows.slice(0, 2),
+        meta: { count: 2, elapsed_ms: 1.23 },
+      },
+    };
+  },
 
   // Student
   "GET /api/student/kyc": () => ({
@@ -107,15 +134,7 @@ const handlers: Record<string, MockHandler> = {
     status: 200,
     body: { data: mockSubmissionWindow },
   }),
-  "GET /api/student/requirement-vault": () => ({
-    status: 200,
-    body: {
-      window: { open: true, message: "Submission window is open" },
-      grantee: { submission_status: "not_submitted", submitted_at: null },
-      slots: {},
-      identity_check: null,
-    },
-  }),
+  "GET /api/student/requirement-vault": () => ({ status: 200, body: mockVault }),
   "GET /api/student/notifications": () => ({
     status: 200,
     body: { data: mockNotifications, meta: { current_page: 1, last_page: 1, per_page: 50, total: mockNotifications.length, from: 1, to: mockNotifications.length } },
@@ -133,6 +152,10 @@ export function handleMockRequest(method: string, path: string, body?: string): 
   if (path.match(/^\/api\/academic-records\/\d+/)) return handlers["GET /api/academic-records/1"]?.();
   if (path.match(/^\/api\/document-submissions\/\d+\/review/)) return handlers["POST /api/document-submissions/1/review"]?.();
   if (path.match(/^\/api\/document-submissions\/\d+/)) return handlers["GET /api/document-submissions/1"]?.();
+  if (path.match(/^\/api\/database\/tables\/\w+\/rows/)) return handlers["GET /api/database/tables/users/rows"]?.();
+  if (path.match(/^\/api\/database\/tables\/\w+/)) return handlers["GET /api/database/tables/users"]?.();
+  if (path.match(/^\/api\/terms\/\d+/)) return handlers["GET /api/terms/active"]?.();
+  if (path.match(/^\/api\/faqs\/\d+/)) return handlers["GET /api/faqs/all"]?.();
 
   return null;
 }
