@@ -8,9 +8,37 @@ use Illuminate\Http\Request;
 
 class AuditEventController extends Controller
 {
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        return response()->json(['data' => AuditLog::query()->latest()->limit(250)->get()]);
+        $page = max(1, $request->integer('page', 1));
+        $perPage = max(1, min(100, $request->integer('per_page', 15)));
+        $search = trim($request->input('search', ''));
+
+        $query = AuditLog::query()->latest();
+
+        if ($search !== '') {
+            $query->where(function ($q) use ($search) {
+                $q->where('actor', 'like', "%{$search}%")
+                  ->orWhere('role', 'like', "%{$search}%")
+                  ->orWhere('action', 'like', "%{$search}%")
+                  ->orWhere('module', 'like', "%{$search}%")
+                  ->orWhere('target', 'like', "%{$search}%")
+                  ->orWhere('ip_address', 'like', "%{$search}%");
+            });
+        }
+
+        $total = $query->count();
+        $logs = $query->skip(($page - 1) * $perPage)->take($perPage)->get();
+
+        return response()->json([
+            'data' => $logs,
+            'meta' => [
+                'current_page' => $page,
+                'per_page' => $perPage,
+                'total' => $total,
+                'last_page' => max(1, (int) ceil($total / $perPage)),
+            ],
+        ]);
     }
 
     public function store(Request $request): JsonResponse
@@ -25,8 +53,8 @@ class AuditEventController extends Controller
         $user = $request->user();
 
         AuditLog::create([
-            'actor' => $user->name,
-            'role' => ucfirst($user->role),
+            'actor' => $user ? $user->name : 'System Developer',
+            'role' => $user ? ucfirst($user->role) : 'Developer',
             'action' => $validated['action'],
             'module' => $validated['module'],
             'target' => $validated['target'] ?? null,

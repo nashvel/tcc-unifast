@@ -1,4 +1,4 @@
-export { apiFetch, buildQuery, ApiError } from "./client";
+export { apiFetch, buildQuery, ApiError, isMockMode } from "./client";
 export { queryKeys } from "./queryKeys";
 export * from "./types";
 export * from "./auth";

@@ -10,6 +10,7 @@ use App\Http\Controllers\AuthCaptchaController;
 use App\Http\Controllers\BatchActivationNotificationController;
 use App\Http\Controllers\BatchController;
 use App\Http\Controllers\BillingReportController;
+use App\Http\Controllers\CollaboratorController;
 use App\Http\Controllers\DatabaseController;
 use App\Http\Controllers\DistributionReportController;
 use App\Http\Controllers\DocumentSubmissionController;
@@ -21,6 +22,8 @@ use App\Http\Controllers\MasterlistImportController;
 use App\Http\Controllers\PolicySettingsController;
 use App\Http\Controllers\RbacController;
 use App\Http\Controllers\RequirementVaultController;
+use App\Http\Controllers\SupportTicketController;
+use App\Http\Controllers\SystemHealthController;
 use App\Http\Controllers\TermController;
 use App\Http\Controllers\StudentDocumentOcrController;
 use App\Http\Controllers\StudentFaceVerificationController;
@@ -165,6 +168,19 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::put('/faqs/{faq}', [FaqController::class, 'update']);
         Route::delete('/faqs/{faq}', [FaqController::class, 'destroy']);
         Route::post('/faqs/reorder', [FaqController::class, 'reorder']);
+
+        // Support tickets management
+        Route::get('/support-tickets', [SupportTicketController::class, 'index']);
+        Route::post('/support-tickets', [SupportTicketController::class, 'store']);
+        Route::patch('/support-tickets/{supportTicket}', [SupportTicketController::class, 'update']);
+
+        // Collaborators management
+        Route::get('/collaborators', [CollaboratorController::class, 'index']);
+        Route::post('/collaborators/invite', [CollaboratorController::class, 'invite']);
+        Route::delete('/collaborators/{user}', [CollaboratorController::class, 'destroy']);
+
+        // System health telemetry
+        Route::get('/system/health', [SystemHealthController::class, 'show']);
     });
 
     // Document submission review (developer/admin/staff)
