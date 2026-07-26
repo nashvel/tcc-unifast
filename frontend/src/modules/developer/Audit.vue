@@ -37,7 +37,7 @@ const filteredLogs = computed(() =>
 );
 
 const actionColors: Record<string, string> = {
-  config_change: "bg-purple-100 text-purple-700",
+  config_change: "bg-white/10 text-white",
   rbac_change: "bg-blue-100 text-blue-700",
   api_deploy: "bg-green-100 text-green-700",
   bug_fix: "bg-orange-100 text-orange-700",
