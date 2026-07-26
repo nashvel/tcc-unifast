@@ -90,6 +90,7 @@ const handlers: Record<string, MockHandler> = {
   "POST /api/audit-events": () => ({ status: 200, body: { ok: true } }),
 
   // Terms & Conditions
+  "GET /api/terms": () => ({ status: 200, body: { data: [mockTerms] } }),
   "GET /api/terms/active": () => ({ status: 200, body: { data: mockTerms } }),
 
   // FAQ
