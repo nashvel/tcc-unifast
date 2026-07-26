@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
-import { ArrowRight, Lock, Mail, UserRound } from "lucide-vue-next";
+import { ArrowRight, Lock, Mail, RefreshCw, UserRound } from "lucide-vue-next";
 import logo from "@/assets/system-logo.png";
 import studentsCutout from "@/assets/auth/tcc-students-cutout.png";
 import { authSession } from "@/auth/session";
-import { login } from "@/api/auth";
+import { fetchLoginCaptcha, login } from "@/api/auth";
 import LanguageSwitcher from "@/components/LanguageSwitcher.vue";
 import { withLang } from "@/i18n/routeLang";
 
@@ -15,6 +15,9 @@ const router = useRouter();
 const { t } = useI18n();
 const email = ref("");
 const password = ref("");
+const captcha = ref("");
+const captchaImageUrl = ref("");
+const captchaLoading = ref(false);
 const error = ref("");
 const busy = ref(false);
 const mode = route.path.includes("forgot")
@@ -29,6 +32,20 @@ const demoAccounts: Record<string, string> = {
   Student: "student@tcc.edu.ph",
 };
 
+async function loadCaptcha() {
+  if (mode !== "login") return;
+
+  captchaLoading.value = true;
+  try {
+    captchaImageUrl.value = await fetchLoginCaptcha();
+    captcha.value = "";
+  } catch {
+    error.value = "Unable to load the security verification image.";
+  } finally {
+    captchaLoading.value = false;
+  }
+}
+
 async function submit() {
   if (mode === "login" && (!email.value || !password.value)) {
     error.value = t("auth.emailPasswordRequired");
@@ -38,12 +55,13 @@ async function submit() {
   busy.value = true;
   error.value = "";
   try {
-    const user = await login(email.value, password.value);
+    const user = await login(email.value, password.value, captcha.value);
     authSession.user = user;
     authSession.loaded = true;
     await router.push(withLang(user.role === "student" ? "/student" : "/app", route.query.lang));
   } catch (exception) {
     error.value = exception instanceof Error ? exception.message : t("auth.signInFailed");
+    await loadCaptcha();
   } finally {
     busy.value = false;
   }
@@ -64,6 +82,8 @@ function demoAccountLabel(role: string) {
   };
   return labels[role] ?? role;
 }
+
+onMounted(loadCaptcha);
 </script>
 
 <template>
@@ -182,6 +202,46 @@ function demoAccountLabel(role: string) {
               />
             </div>
           </label>
+          <div v-if="mode === 'login'" class="space-y-1.5">
+            <span class="block text-xs font-medium text-slate-700">
+              Security Verification
+            </span>
+            <div class="flex items-center gap-2">
+              <div
+                class="relative flex h-10 min-w-0 flex-1 select-none items-center justify-center overflow-hidden rounded-md border bg-[#f1f5fb] px-4 shadow-inner shadow-slate-200/40"
+              >
+                <span v-if="captchaLoading" class="text-xs font-medium text-text-soft">Loading...</span>
+                <img
+                  v-else-if="captchaImageUrl"
+                  :src="captchaImageUrl"
+                  alt="Security verification code"
+                  class="h-full w-full object-cover"
+                />
+              </div>
+              <button
+                type="button"
+                class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md border bg-white text-primary hover:bg-surface-muted"
+                aria-label="Refresh CAPTCHA"
+                title="Refresh CAPTCHA"
+                :disabled="captchaLoading || busy"
+                @click="loadCaptcha"
+              >
+                <RefreshCw :size="15" />
+              </button>
+            </div>
+            <label class="block">
+              <span class="mb-1.5 block text-xs font-medium">Enter CAPTCHA</span>
+              <input
+                v-model="captcha"
+                type="text"
+                inputmode="text"
+                autocomplete="off"
+                placeholder="Type the code shown"
+                class="h-10 w-full rounded-md border bg-[#f1f5fb] px-3 text-sm shadow-inner shadow-slate-200/40"
+              />
+            </label>
+            <p class="sr-only text-xs text-danger" aria-live="polite">CAPTCHA error message</p>
+          </div>
           <p v-if="error" class="text-xs text-danger">{{ error }}</p>
           <button
             :disabled="busy"
@@ -200,8 +260,8 @@ function demoAccountLabel(role: string) {
           <RouterLink :to="withLang('/login', route.query.lang)" class="text-primary">{{ t("auth.backToSignIn") }}</RouterLink>
         </div>
 
-        <div v-if="mode === 'login'" class="mt-6 border-t pt-4">
-          <p class="mb-2.5 text-2xs font-semibold uppercase tracking-wider text-text-soft">
+        <div v-if="mode === 'login'" class="mt-5 border-t pt-3">
+          <p class="mb-2 text-2xs font-semibold uppercase tracking-wider text-text-soft">
             {{ t("auth.demoAccounts") }}
           </p>
           <div class="grid grid-cols-2 gap-2">
@@ -209,11 +269,11 @@ function demoAccountLabel(role: string) {
               v-for="role in ['Administrator', 'Office Head', 'UniFAST Staff', 'Student']"
               :key="role"
               type="button"
-              class="flex h-10 items-center gap-2.5 rounded-md border bg-white px-3 text-left hover:bg-surface-muted"
+              class="flex h-8 min-w-0 items-center gap-2 rounded-md border bg-white px-2.5 text-left hover:bg-surface-muted"
               @click="quickLogin(role)"
             >
-              <UserRound :size="17" class="text-text-muted" />
-              <span class="text-xs font-medium">{{ demoAccountLabel(role) }}</span>
+              <UserRound :size="14" class="shrink-0 text-text-muted" />
+              <span class="truncate text-[11px] font-medium">{{ demoAccountLabel(role) }}</span>
             </button>
           </div>
         </div>
