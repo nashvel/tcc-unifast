@@ -139,7 +139,6 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('/database/stats', [DatabaseController::class, 'stats']);
         Route::get('/database/tables/{table}', [DatabaseController::class, 'table']);
         Route::get('/database/tables/{table}/rows', [DatabaseController::class, 'rows']);
-        Route::post('/database/query', [DatabaseController::class, 'query']);
 
         // Terms & Conditions management
         Route::get('/terms', [TermController::class, 'index']);

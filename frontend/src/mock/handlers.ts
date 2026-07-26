@@ -101,18 +101,6 @@ const handlers: Record<string, MockHandler> = {
     status: 200,
     body: { data: mockUserRows, meta: { current_page: 1, per_page: 25, total: 4, last_page: 1 } },
   }),
-  "POST /api/database/query": (body) => {
-    const parsed = body ? JSON.parse(body) : {};
-    const sql = (parsed.sql || "").toLowerCase();
-    if (!sql.startsWith("select")) return { status: 403, body: { message: "Only SELECT queries allowed." } };
-    return {
-      status: 200,
-      body: {
-        data: mockUserRows.slice(0, 2),
-        meta: { count: 2, elapsed_ms: 1.23 },
-      },
-    };
-  },
 
   // Student
   "GET /api/student/kyc": () => ({
