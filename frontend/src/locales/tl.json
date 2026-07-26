@@ -39,7 +39,9 @@
     "auditLog": "Audit Log",
     "auditTrail": "Audit Trail",
     "batches": "Mga Batch",
+    "billing": "Billing / Call-for-Billing",
     "communication": "Komunikasyon",
+    "distributionReport": "Ulat sa Distribusyon",
     "documentValidation": "Pag-validate ng Dokumento",
     "documents": "Mga Dokumento",
     "eligibility": "Pagiging Kwalipikado",
@@ -48,6 +50,7 @@
     "grantees": "Mga Grantee",
     "logs": "Mga Log",
     "masterlist": "Masterlist",
+    "onboardingCenter": "Onboarding Center",
     "monitoringReports": "Monitoring at Reports",
     "new": "Bago",
     "openMenu": "Buksan ang menu",
@@ -81,6 +84,7 @@
     "documentsReady": "12 rekord ang handa na para sa eligibility review.",
     "batchClosingSoon": "Malapit nang magsara ang batch",
     "batchClosingDetail": "Magsasara ang TES Semester 2 sa loob ng limang araw.",
+    "systemDeveloper": "System Developer",
     "systemAdministrator": "System Administrator",
     "student": "mag-aaral"
   },
@@ -104,8 +108,8 @@
     "activateAccount": "I-activate ang iyong account",
     "backToSignIn": "Bumalik sa sign in",
     "demoAccounts": "Seeded demo accounts - password: password",
+    "developer": "Developer",
     "administrator": "Administrator",
-    "officeHead": "Office Head",
     "staff": "UniFAST Staff",
     "student": "Mag-aaral",
     "layoutTitle": "Tertiary Education Subsidy - Pamamahala ng Grantee at Pag-validate ng Dokumento",
@@ -157,7 +161,7 @@
     "createStaffUser": { "title": "Gumawa ng staff user" },
     "documentValidation": { "title": "Document Validation Queue" },
     "editAnnouncement": { "title": "I-edit ang Anunsyo" },
-    "eligibilityStatus": { "title": "Eligibility Status" },
+    "eligibilityStatus": { "title": "Submission eligibility" },
     "files": {
       "title": "File Manager",
       "description": "Tingnan at ayusin ang uploaded scholarship files."
@@ -210,8 +214,8 @@
     "close": "Isara ang dialog"
   },
   "roles": {
+    "developer": "Developer",
     "admin": "Admin",
-    "head": "Head",
     "staff": "Staff"
   },
   "status": {
@@ -378,7 +382,7 @@
       },
       "progress": {
         "requiredDocuments": "Mga Kinakailangang Dokumento",
-        "requiredDocumentsMeta": "School ID, Course History, at Grade Slip",
+        "requiredDocumentsMeta": "School ID, Course History, Grade Slip, at 3 Specimen Signatures",
         "tesApplication": "TES Application",
         "tesApplicationMeta": "Kumpletuhin ang requirement vault"
       },
@@ -410,8 +414,12 @@
       "description": "I-activate ang iyong UniFAST TES portal account."
     },
     "adminDashboard": {
-      "title": "Admin Dashboard - UniFAST TES",
+      "title": "Developer Dashboard - UniFAST TES",
       "description": "Pamahalaan ang TES grantees, dokumento, batch, ulat, at eligibility."
+    },
+    "developerDashboard": {
+      "title": "Developer Dashboard - UniFAST TES",
+      "description": "Kalusogan ng sistema, performance ng API, at deployment status."
     },
     "studentDashboard": {
       "title": "Student Dashboard - UniFAST TES",

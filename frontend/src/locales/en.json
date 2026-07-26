@@ -39,7 +39,9 @@
     "auditLog": "Audit Log",
     "auditTrail": "Audit Trail",
     "batches": "Batches",
+    "billing": "Billing / Call-for-Billing",
     "communication": "Communication",
+    "distributionReport": "Distribution Report",
     "documentValidation": "Document Validation",
     "documents": "Documents",
     "eligibility": "Eligibility",
@@ -48,6 +50,7 @@
     "grantees": "Grantees",
     "logs": "Logs",
     "masterlist": "Masterlist",
+    "onboardingCenter": "Onboarding Center",
     "monitoringReports": "Monitoring & Reports",
     "new": "New",
     "openMenu": "Open menu",
@@ -70,7 +73,17 @@
     "breadcrumb": "Breadcrumb",
     "homeBreadcrumb": "{label} (home)",
     "generate": "Generate",
-    "edit": "Edit"
+    "edit": "Edit",
+    "developer": {
+      "system": "System",
+      "rbac": "RBAC & Permissions",
+      "apiDocs": "API Documentation",
+      "flowChart": "System Flow Charts",
+      "operations": "Operations",
+      "supportTickets": "Support Tickets",
+      "auditTrail": "Developer Audit",
+      "collaborators": "Collaborators"
+    }
   },
   "shell": {
     "searchJump": "Search or jump to...",
@@ -81,6 +94,7 @@
     "documentsReady": "12 records are ready for eligibility review.",
     "batchClosingSoon": "Batch closing soon",
     "batchClosingDetail": "TES Semester 2 closes in five days.",
+    "systemDeveloper": "System Developer",
     "systemAdministrator": "System Administrator",
     "student": "student"
   },
@@ -104,6 +118,7 @@
     "activateAccount": "Activate your account",
     "backToSignIn": "Back to sign in",
     "demoAccounts": "Seeded demo accounts - password: password",
+    "developer": "Developer",
     "administrator": "Administrator",
     "officeHead": "Office Head",
     "staff": "UniFAST Staff",
@@ -157,7 +172,7 @@
     "createStaffUser": { "title": "Create staff user" },
     "documentValidation": { "title": "Document Validation Queue" },
     "editAnnouncement": { "title": "Edit Announcement" },
-    "eligibilityStatus": { "title": "Eligibility Status" },
+    "eligibilityStatus": { "title": "Submission eligibility" },
     "files": {
       "title": "File Manager",
       "description": "Browse and organize uploaded scholarship files."
@@ -210,8 +225,8 @@
     "close": "Close dialog"
   },
   "roles": {
+    "developer": "Developer",
     "admin": "Admin",
-    "head": "Head",
     "staff": "Staff"
   },
   "status": {
@@ -378,7 +393,7 @@
       },
       "progress": {
         "requiredDocuments": "Required Documents",
-        "requiredDocumentsMeta": "School ID, Course History, and Grade Slip",
+        "requiredDocumentsMeta": "School ID, Course History, Grade Slip, and 3 Specimen Signatures",
         "tesApplication": "TES Application",
         "tesApplicationMeta": "Complete requirement vault"
       },
@@ -410,8 +425,12 @@
       "description": "Activate your UniFAST TES portal account."
     },
     "adminDashboard": {
-      "title": "Admin Dashboard - UniFAST TES",
+      "title": "Developer Dashboard - UniFAST TES",
       "description": "Manage TES grantees, documents, batches, reports, and eligibility."
+    },
+    "developerDashboard": {
+      "title": "Developer Dashboard - UniFAST TES",
+      "description": "System health, API performance, and deployment status."
     },
     "studentDashboard": {
       "title": "Student Dashboard - UniFAST TES",

@@ -34,6 +34,11 @@ class Batch extends Model
         return $this->hasMany(BatchNotification::class);
     }
 
+    public function billingReports(): HasMany
+    {
+        return $this->hasMany(BillingReport::class);
+    }
+
     public function computedWindowStatus(): string
     {
         if (! $this->is_active) {

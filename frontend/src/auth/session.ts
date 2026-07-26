@@ -5,9 +5,9 @@ export type AuthUser = {
   id: number;
   name: string;
   email: string;
-  role: "admin" | "head" | "staff" | "student";
+  role: "developer" | "admin" | "staff" | "student";
   student_id: string | null;
-  account_status?: "active" | "unverified" | "pending_kyc" | "blocked";
+  account_status?: "active" | "unverified" | "pending_kyc" | "pending_identity" | "blocked";
   kyc_status?: string | null;
 };
 
@@ -35,11 +35,6 @@ export function clearAuthToken() {
 export const csrfToken = getAuthToken;
 
 export async function loadAuthUser() {
-  const useMock = import.meta.env.VITE_USE_MOCK === "true" || !import.meta.env.VITE_API_BASE_URL;
-  if (!useMock && !getAuthToken()) {
-    authSession.loaded = true;
-    return null;
-  }
   authSession.user = await fetchCurrentUser();
   authSession.loaded = true;
   return authSession.user;

@@ -46,6 +46,15 @@ RE_SCHOOL_YEAR = re.compile(
     r"(?:school\s*year|academic\s*year|SY|A\.?Y\.?)\s*[:#]?\s*((?:20\d{2})\s*[-–/]\s*(?:20\d{2}|\d{2}))",
     re.I,
 )
+RE_PROGRAM_HEADER = re.compile(
+    r"\b([A-Z]{2,8}(?:\s?[A-Z0-9]{1,6})?)\s*[—\-–]\s*Year\b",
+    re.I,
+)
+RE_SEMESTER_GPA = re.compile(
+    r"Semester\s*GPA\s*[:#]?\s*([0-9]+(?:\.[0-9]+)?)",
+    re.I,
+)
+RE_GRADE_AFTER_UNITS = re.compile(r"\b([1-6])\s+([1-5](?:\.\d{1,2})?)\b")
 
 
 def extract_text(pdf_path: Path) -> str:
@@ -59,6 +68,29 @@ def extract_text(pdf_path: Path) -> str:
         doc.close()
 
 
+def extract_metadata(pdf_path: Path) -> dict[str, Any]:
+    doc = fitz.open(pdf_path)
+    try:
+        raw = doc.metadata or {}
+        return {
+            "format": raw.get("format") or None,
+            "title": raw.get("title") or None,
+            "author": raw.get("author") or None,
+            "subject": raw.get("subject") or None,
+            "keywords": raw.get("keywords") or None,
+            "creator": raw.get("creator") or None,
+            "producer": raw.get("producer") or None,
+            "creationDate": raw.get("creationDate") or None,
+            "modDate": raw.get("modDate") or None,
+            "encryption": raw.get("encryption") or None,
+            "is_encrypted": bool(doc.is_encrypted),
+            "page_count": doc.page_count,
+            "engine": "pymupdf",
+        }
+    finally:
+        doc.close()
+
+
 def _first(pattern: re.Pattern[str], text: str) -> str | None:
     m = pattern.search(text)
     if not m:
@@ -68,14 +100,18 @@ def _first(pattern: re.Pattern[str], text: str) -> str | None:
 
 def parse_fields(text: str, document_type: str | None = None) -> dict[str, Any]:
     """Return fields aligned with planned ocr_results columns."""
+    grades = [float(m.group(2)) for m in RE_GRADE_AFTER_UNITS.finditer(text)]
+    program = _first(RE_PROGRAM_HEADER, text)
     return {
         "document_type": document_type,
         "extracted_text": text,
         "extracted_name": _first(RE_NAME, text),
         "extracted_student_id": _first(RE_STUDENT_ID, text),
-        "extracted_gwa": _first(RE_GWA, text),
+        "extracted_gwa": _first(RE_GWA, text) or _first(RE_SEMESTER_GPA, text),
         "extracted_semester": _first(RE_SEMESTER, text),
         "extracted_school_year": _first(RE_SCHOOL_YEAR, text),
+        "extracted_program": program,
+        "extracted_grades": grades,
         "page_char_count": len(text),
         "engine": "pymupdf",
     }
@@ -85,13 +121,16 @@ def extract_pdf(pdf_path: Path, document_type: str | None = None) -> dict[str, A
     text = extract_text(pdf_path)
     result = parse_fields(text, document_type=document_type)
     result["source_path"] = str(pdf_path)
-    result["combined_text"] = text  # shape compatible with Laravel OCR pdf result key
+    result["combined_text"] = text  # shape compatible with Laravel PDF pipeline
+    result["pdf_metadata"] = extract_metadata(pdf_path)
+    result["method"] = "pymupdf_text_layer"
+    result["has_useful_text"] = len([c for c in text if c.isalnum()]) >= 10
     return result
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        description="Extract Grade Slip / Course History fields from a PDF via PyMuPDF."
+        description="Extract Grade Slip / Course History fields from a PDF via PyMuPDF (text layer + metadata). Tesseract is not used here."
     )
     parser.add_argument("pdf", type=Path, help="Path to PDF file")
     parser.add_argument(

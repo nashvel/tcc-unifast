@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { onMounted, ref } from "vue";
 import {
   IconBuilding,
   IconCheck,
@@ -9,31 +9,225 @@ import {
   IconLogout,
   IconMoon,
   IconPalette,
+  IconPlus,
   IconShieldCheck,
   IconSun,
   IconUser,
 } from "@tabler/icons-vue";
 import DiceBearAvatar from "@/components/ui/DiceBearAvatar.vue";
 import AppTour from "@/components/tour/AppTour.vue";
+import { apiFetch, ApiError } from "@/api";
+import { toast } from "vue-sonner";
 
 type Section = "general" | "organization" | "appearance" | "security" | "sessions";
+
+type AcademicProgram = {
+  id: number;
+  code: string;
+  name: string;
+  pass_grade: number;
+  pass_grade_display?: string;
+  is_active: boolean;
+};
+
+type PolicySettings = {
+  max_failed_subjects_per_semester: number;
+  auto_approve_risk_threshold: number;
+  default_pass_grade: number;
+  default_pass_grade_display?: string;
+};
+
+type ProgramFormRow = AcademicProgram & { pass_grade_input: string };
+
 const section = ref<Section>("general");
 const dark = ref(
   typeof document !== "undefined" && document.documentElement.classList.contains("dark"),
 );
 const fullName = ref("System Administrator");
+const loadingOrg = ref(false);
+const savingOrg = ref(false);
+const programs = ref<ProgramFormRow[]>([]);
+const policy = ref<PolicySettings>({
+  max_failed_subjects_per_semester: 1,
+  auto_approve_risk_threshold: 20,
+  default_pass_grade: 3.0,
+  default_pass_grade_display: "3.0",
+});
+const defaultPassGradeInput = ref("3.0");
+const newProgram = ref({ code: "", name: "", pass_grade_input: "3.0" });
+const editingId = ref<number | null>(null);
+const showAddRow = ref(false);
+const editDraft = ref({ name: "", pass_grade_input: "3.0" });
+
+function toPassGradeDisplay(value: number | string | null | undefined): string {
+  const n = Number(value);
+  return Number.isFinite(n) ? n.toFixed(1) : "3.0";
+}
+
+function parsePassGrade(value: string): number | null {
+  const n = Number.parseFloat(value);
+  if (!Number.isFinite(n) || n < 1 || n > 5) return null;
+  return Math.round(n * 10) / 10;
+}
+
+function mapProgram(program: AcademicProgram): ProgramFormRow {
+  return {
+    ...program,
+    pass_grade: Number(toPassGradeDisplay(program.pass_grade_display ?? program.pass_grade)),
+    pass_grade_input: toPassGradeDisplay(program.pass_grade_display ?? program.pass_grade),
+  };
+}
+
+function startEdit(program: ProgramFormRow) {
+  editingId.value = program.id;
+  showAddRow.value = false;
+  editDraft.value = {
+    name: program.name,
+    pass_grade_input: program.pass_grade_input,
+  };
+}
+
+function cancelEdit() {
+  editingId.value = null;
+}
+
+async function commitEdit(program: ProgramFormRow) {
+  const passGrade = parsePassGrade(editDraft.value.pass_grade_input);
+  if (!editDraft.value.name.trim()) {
+    toast.error("Full name is required.");
+    return;
+  }
+  if (passGrade === null) {
+    toast.error("Pass grade must be a decimal from 1.0 to 5.0.");
+    return;
+  }
+  try {
+    const res = await apiFetch<{ data: AcademicProgram }>(`/api/academic-programs/${program.id}`, {
+      method: "PATCH",
+      body: JSON.stringify({
+        name: editDraft.value.name.trim(),
+        pass_grade: passGrade,
+        is_active: program.is_active,
+      }),
+    });
+    programs.value = programs.value.map((row) =>
+      row.id === res.data.id ? mapProgram(res.data) : row,
+    );
+    editingId.value = null;
+    toast.success(`Updated ${res.data.code}`);
+  } catch (error) {
+    toast.error(error instanceof ApiError ? error.message : "Unable to update program.");
+  }
+}
+
 const nav = [
   ["general", "General", "Profile & avatar", IconUser],
-  ["organization", "Organization", "Office & validation rules", IconBuilding],
+  ["organization", "Organization", "Programs & pass rules", IconBuilding],
   ["appearance", "Appearance", "Theme & font", IconPalette],
   ["security", "Security", "Password", IconKey],
   ["sessions", "Sessions", "Current device & history", IconHistory],
 ];
+
 function setTheme(value: boolean) {
   dark.value = value;
   if (typeof document !== "undefined") document.documentElement.classList.toggle("dark", value);
   if (typeof localStorage !== "undefined") localStorage.setItem("theme", value ? "dark" : "light");
 }
+
+async function loadOrganization() {
+  loadingOrg.value = true;
+  try {
+    const [programsRes, policyRes] = await Promise.all([
+      apiFetch<{ data: AcademicProgram[] }>("/api/academic-programs"),
+      apiFetch<{ data: PolicySettings }>("/api/policy-settings"),
+    ]);
+    programs.value = programsRes.data.map(mapProgram);
+    policy.value = policyRes.data;
+    defaultPassGradeInput.value = toPassGradeDisplay(
+      policyRes.data.default_pass_grade_display ?? policyRes.data.default_pass_grade,
+    );
+  } catch (error) {
+    toast.error(error instanceof ApiError ? error.message : "Unable to load organization settings.");
+  } finally {
+    loadingOrg.value = false;
+  }
+}
+
+async function savePolicy() {
+  savingOrg.value = true;
+  const defaultPass = parsePassGrade(defaultPassGradeInput.value);
+  if (defaultPass === null) {
+    toast.error("Default pass grade must be a decimal from 1.0 to 5.0.");
+    savingOrg.value = false;
+    return;
+  }
+  try {
+    const res = await apiFetch<{ data: PolicySettings }>("/api/policy-settings", {
+      method: "PUT",
+      body: JSON.stringify({
+        max_failed_subjects_per_semester: Number(policy.value.max_failed_subjects_per_semester),
+        auto_approve_risk_threshold: Number(policy.value.auto_approve_risk_threshold),
+        default_pass_grade: defaultPass,
+      }),
+    });
+    policy.value = res.data;
+    defaultPassGradeInput.value = toPassGradeDisplay(
+      res.data.default_pass_grade_display ?? res.data.default_pass_grade,
+    );
+    toast.success("Validation rules saved");
+  } catch (error) {
+    toast.error(error instanceof ApiError ? error.message : "Unable to save validation rules.");
+  } finally {
+    savingOrg.value = false;
+  }
+}
+
+async function addProgram() {
+  const code = newProgram.value.code.trim();
+  const name = newProgram.value.name.trim();
+  const passGrade = parsePassGrade(newProgram.value.pass_grade_input);
+  if (!code || !name) {
+    toast.error("Program code and name are required.");
+    return;
+  }
+  if (passGrade === null) {
+    toast.error("Pass grade must be a decimal from 1.0 to 5.0.");
+    return;
+  }
+  try {
+    const res = await apiFetch<{ data: AcademicProgram }>("/api/academic-programs", {
+      method: "POST",
+      body: JSON.stringify({
+        code,
+        name,
+        pass_grade: passGrade,
+      }),
+    });
+    programs.value = [...programs.value, mapProgram(res.data)].sort((a, b) =>
+      a.code.localeCompare(b.code),
+    );
+    newProgram.value = { code: "", name: "", pass_grade_input: "3.0" };
+    showAddRow.value = false;
+    toast.success(`Added ${res.data.code}`);
+  } catch (error) {
+    toast.error(error instanceof ApiError ? error.message : "Unable to add program.");
+  }
+}
+
+async function removeProgram(program: ProgramFormRow) {
+  try {
+    await apiFetch<{ ok: boolean }>(`/api/academic-programs/${program.id}`, { method: "DELETE" });
+    programs.value = programs.value.filter((row) => row.id !== program.id);
+    if (editingId.value === program.id) editingId.value = null;
+    toast.success(`Removed ${program.code}`);
+  } catch (error) {
+    toast.error(error instanceof ApiError ? error.message : "Unable to remove program.");
+  }
+}
+
+onMounted(() => {
+  void loadOrganization();
+});
 </script>
 
 <template>
@@ -107,53 +301,196 @@ function setTheme(value: boolean) {
             </form>
           </div>
         </section>
-        <template v-else-if="section === 'organization'"
-          ><div class="grid gap-3 lg:grid-cols-2">
-            <section class="rounded-lg border bg-surface">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">Organization</h2>
-              <div class="space-y-4 p-4">
-                <label
-                  v-for="field in [
-                    ['Office name', 'UniFAST Office'],
-                    ['Region', 'NCR'],
-                    ['Contact email', 'info@unifast.gov.ph'],
-                  ]"
-                  :key="field[0]"
-                  class="block"
-                  ><span class="mb-1.5 block text-xs font-medium">{{ field[0] }}</span
-                  ><input
-                    :value="field[1]"
-                    class="h-9 w-full rounded-md border bg-surface px-3 text-sm"
-                /></label>
+        <template v-else-if="section === 'organization'">
+          <section class="rounded-lg border bg-surface">
+            <h2 class="border-b px-4 py-3 text-sm font-semibold">Validation rules</h2>
+            <div class="grid gap-4 p-4 md:grid-cols-3">
+              <label class="block"
+                ><span class="mb-1.5 block text-xs font-medium">Auto-approve risk threshold</span
+                ><input
+                  v-model.number="policy.auto_approve_risk_threshold"
+                  type="number"
+                  min="0"
+                  max="100"
+                  class="h-9 w-full rounded-md border bg-surface px-3 text-sm"
+              /></label>
+              <label class="block"
+                ><span class="mb-1.5 block text-xs font-medium"
+                  >Max failed subjects per semester</span
+                ><input
+                  v-model.number="policy.max_failed_subjects_per_semester"
+                  type="number"
+                  min="0"
+                  max="20"
+                  class="h-9 w-full rounded-md border px-3 text-sm"
+              /></label>
+              <label class="block"
+                ><span class="mb-1.5 block text-xs font-medium"
+                  >Default pass grade (unknown programs)</span
+                ><input
+                  v-model="defaultPassGradeInput"
+                  type="text"
+                  inputmode="decimal"
+                  placeholder="3.0"
+                  class="h-9 w-full rounded-md border px-3 text-sm"
+                  @blur="defaultPassGradeInput = toPassGradeDisplay(defaultPassGradeInput)"
+              /></label>
+            </div>
+            <div class="flex items-center justify-between gap-3 border-t px-4 py-3">
+              <p class="text-xs text-text-muted">
+                Pass if grade ≤ pass grade; fail if higher. Blank grades ignored.
+              </p>
+              <button
+                class="shrink-0 rounded-md bg-primary px-3 py-2 text-xs text-white disabled:opacity-60"
+                :disabled="savingOrg || loadingOrg"
+                @click="savePolicy"
+              >
+                {{ savingOrg ? "Saving…" : "Save rules" }}
+              </button>
+            </div>
+          </section>
+
+          <section class="rounded-lg border bg-surface">
+            <div class="flex items-center justify-between gap-3 border-b px-4 py-3">
+              <div>
+                <h2 class="text-sm font-semibold">Program list</h2>
+                <p class="mt-0.5 text-xs text-text-muted">
+                  OCR matches Course History headers (e.g. BSIT — Year 1st) to these codes.
+                </p>
               </div>
-            </section>
-            <section class="rounded-lg border bg-surface">
-              <h2 class="border-b px-4 py-3 text-sm font-semibold">Validation rules</h2>
-              <div class="space-y-4 p-4">
-                <label class="block"
-                  ><span class="mb-1.5 block text-xs font-medium">Auto-approve risk threshold</span
-                  ><select class="h-9 w-full rounded-md border bg-surface px-3 text-sm">
-                    <option>20</option>
-                    <option>30</option>
-                  </select></label
-                ><label class="block"
-                  ><span class="mb-1.5 block text-xs font-medium">Retention GWA cap</span
-                  ><input value="2.75" class="h-9 w-full rounded-md border px-3" /></label
-                ><label class="block"
-                  ><span class="mb-1.5 block text-xs font-medium"
-                    >Max failed subjects per semester</span
-                  ><input value="1" type="number" class="h-9 w-full rounded-md border px-3"
-                /></label>
-              </div>
-            </section>
-          </div>
-          <div class="flex justify-end gap-2">
-            <button class="rounded-md border px-3 py-2 text-xs">Cancel</button
-            ><button class="rounded-md bg-primary px-3 py-2 text-xs text-white">
-              Save changes
-            </button>
-          </div></template
-        >
+              <button
+                class="inline-flex items-center gap-1 rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-surface-muted"
+                @click="
+                  showAddRow = !showAddRow;
+                  editingId = null;
+                "
+              >
+                <IconPlus :size="14" />Add program
+              </button>
+            </div>
+
+            <div v-if="loadingOrg" class="px-4 py-6 text-xs text-text-muted">Loading programs…</div>
+            <div v-else class="overflow-x-auto">
+              <table class="w-full min-w-[640px] text-left text-sm">
+                <thead class="border-b bg-surface-muted/60 text-xs uppercase tracking-wide text-text-muted">
+                  <tr>
+                    <th class="px-4 py-2.5 font-medium">Code</th>
+                    <th class="px-4 py-2.5 font-medium">Full Name</th>
+                    <th class="px-4 py-2.5 font-medium">Pass Grade</th>
+                    <th class="px-4 py-2.5 font-medium">Action</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y">
+                  <tr v-if="showAddRow" class="bg-primary-soft/40">
+                    <td class="px-4 py-2">
+                      <input
+                        v-model="newProgram.code"
+                        placeholder="Code"
+                        class="h-8 w-full rounded border bg-surface px-2 text-xs uppercase"
+                      />
+                    </td>
+                    <td class="px-4 py-2">
+                      <input
+                        v-model="newProgram.name"
+                        placeholder="Full name"
+                        class="h-8 w-full rounded border bg-surface px-2 text-xs"
+                      />
+                    </td>
+                    <td class="px-4 py-2">
+                      <input
+                        v-model="newProgram.pass_grade_input"
+                        type="text"
+                        inputmode="decimal"
+                        placeholder="3.0"
+                        class="h-8 w-20 rounded border bg-surface px-2 text-xs"
+                        @blur="
+                          newProgram.pass_grade_input = toPassGradeDisplay(
+                            newProgram.pass_grade_input,
+                          )
+                        "
+                      />
+                    </td>
+                    <td class="px-4 py-2">
+                      <div class="flex items-center gap-2">
+                        <button class="text-xs font-medium text-primary" @click="addProgram">
+                          Save
+                        </button>
+                        <button
+                          class="text-xs text-text-muted"
+                          @click="
+                            showAddRow = false;
+                            newProgram = { code: '', name: '', pass_grade_input: '3.0' };
+                          "
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr v-for="program in programs" :key="program.id">
+                    <template v-if="editingId === program.id">
+                      <td class="px-4 py-2 font-medium">{{ program.code }}</td>
+                      <td class="px-4 py-2">
+                        <input
+                          v-model="editDraft.name"
+                          class="h-8 w-full rounded border px-2 text-xs"
+                        />
+                      </td>
+                      <td class="px-4 py-2">
+                        <input
+                          v-model="editDraft.pass_grade_input"
+                          type="text"
+                          inputmode="decimal"
+                          class="h-8 w-20 rounded border px-2 text-xs"
+                          @blur="
+                            editDraft.pass_grade_input = toPassGradeDisplay(
+                              editDraft.pass_grade_input,
+                            )
+                          "
+                        />
+                      </td>
+                      <td class="px-4 py-2">
+                        <div class="flex items-center gap-2">
+                          <button
+                            class="text-xs font-medium text-primary"
+                            @click="commitEdit(program)"
+                          >
+                            Save
+                          </button>
+                          <button class="text-xs text-text-muted" @click="cancelEdit">Cancel</button>
+                          <button
+                            class="text-xs text-danger"
+                            @click="removeProgram(program)"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </template>
+                    <template v-else>
+                      <td class="px-4 py-2.5 font-medium">{{ program.code }}</td>
+                      <td class="px-4 py-2.5 text-text">{{ program.name }}</td>
+                      <td class="px-4 py-2.5 tabular-nums">{{ program.pass_grade_input }}</td>
+                      <td class="px-4 py-2.5">
+                        <button
+                          class="text-xs font-medium text-primary hover:underline"
+                          @click="startEdit(program)"
+                        >
+                          Edit
+                        </button>
+                      </td>
+                    </template>
+                  </tr>
+                  <tr v-if="programs.length === 0 && !showAddRow">
+                    <td colspan="4" class="px-4 py-6 text-center text-xs text-text-muted">
+                      No programs yet. Add one to set pass grades for OCR.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </template>
         <template v-else-if="section === 'appearance'"
           ><section class="rounded-lg border bg-surface">
             <h2 class="border-b px-4 py-3 text-sm font-semibold">Theme</h2>

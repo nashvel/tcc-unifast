@@ -1,6 +1,5 @@
 import type { Router } from "vue-router";
-import { getAuthToken } from "@/auth/session";
-import { API_BASE } from "@/config";
+import { apiFetch } from "@/api/client";
 
 type AuditPayload = {
   action: string;
@@ -41,17 +40,9 @@ function describeElement(element: HTMLElement) {
 }
 
 function emitAudit(payload: AuditPayload) {
-  const body = JSON.stringify(payload);
-  const token = getAuthToken();
-  fetch(`${API_BASE}/api/audit-events`, {
+  apiFetch("/api/audit-events", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-    body,
-    keepalive: body.length < 60000,
+    body: JSON.stringify(payload),
   }).catch(() => {});
 }
 

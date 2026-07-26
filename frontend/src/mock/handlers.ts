@@ -1,4 +1,6 @@
 import {
+  mockUsers,
+  roleFromEmail,
   mockBatches,
   mockBatchDetail,
   mockGrantees,
@@ -10,17 +12,16 @@ import {
   mockAuditLogs,
   mockNotifications,
   mockSubmissionWindow,
-} from "./data";
+  mockVault,
+  mockTables,
+  mockDbStats,
+  mockUserRows,
+  mockTerms,
+  mockFaqs,
+} from "../../vercel/mocks";
 
 type MockResponse = { status: number; body: unknown };
 type MockHandler = (body?: string) => MockResponse;
-
-const roleFromEmail: Record<string, { role: "admin" | "head" | "staff" | "student"; name: string }> = {
-  "admin@unifast.gov.ph": { role: "admin", name: "System Administrator" },
-  "head@unifast.gov.ph": { role: "head", name: "Office Head" },
-  "staff@unifast.gov.ph": { role: "staff", name: "UniFAST Staff" },
-  "student@tcc.edu.ph": { role: "student", name: "Maria Clara Dela Cruz" },
-};
 
 function makeUser(email: string) {
   const match = roleFromEmail[email] || roleFromEmail["admin@unifast.gov.ph"];
@@ -36,7 +37,11 @@ function makeUser(email: string) {
 
 const handlers: Record<string, MockHandler> = {
   // Auth
-  "GET /api/auth/me": () => ({ status: 200, body: { user: makeUser("admin@unifast.gov.ph") } }),
+  "GET /api/auth/me": () => {
+    const token = typeof localStorage !== "undefined" ? localStorage.getItem("unifast_auth_token") : null;
+    if (!token) return { status: 401, body: { message: "Unauthenticated." } };
+    return { status: 200, body: { user: makeUser("admin@unifast.gov.ph") } };
+  },
   "POST /api/auth/login": (body) => {
     const parsed = body ? JSON.parse(body) : {};
     const user = makeUser(parsed.email || "admin@unifast.gov.ph");
@@ -81,11 +86,20 @@ const handlers: Record<string, MockHandler> = {
   }),
 
   // Audit
-  "GET /api/audit-logs": () => ({
-    status: 200,
-    body: { data: mockAuditLogs },
-  }),
+  "GET /api/audit-logs": () => ({ status: 200, body: { data: mockAuditLogs } }),
   "POST /api/audit-events": () => ({ status: 200, body: { ok: true } }),
+
+  // Terms & Conditions
+  "GET /api/terms": () => ({ status: 200, body: { data: [mockTerms] } }),
+  "GET /api/terms/active": () => ({ status: 200, body: { data: mockTerms } }),
+
+  // FAQ
+  "GET /api/faqs": () => ({ status: 200, body: { data: mockFaqs } }),
+  "GET /api/faqs/all": () => ({ status: 200, body: { data: mockFaqs } }),
+
+  // Database
+  "GET /api/database/tables": () => ({ status: 200, body: { data: mockTables } }),
+  "GET /api/database/stats": () => ({ status: 200, body: { data: mockDbStats } }),
 
   // Student
   "GET /api/student/kyc": () => ({
@@ -107,15 +121,7 @@ const handlers: Record<string, MockHandler> = {
     status: 200,
     body: { data: mockSubmissionWindow },
   }),
-  "GET /api/student/requirement-vault": () => ({
-    status: 200,
-    body: {
-      window: { open: true, message: "Submission window is open" },
-      grantee: { submission_status: "not_submitted", submitted_at: null },
-      slots: {},
-      identity_check: null,
-    },
-  }),
+  "GET /api/student/requirement-vault": () => ({ status: 200, body: mockVault }),
   "GET /api/student/notifications": () => ({
     status: 200,
     body: { data: mockNotifications, meta: { current_page: 1, last_page: 1, per_page: 50, total: mockNotifications.length, from: 1, to: mockNotifications.length } },
@@ -127,12 +133,49 @@ export function handleMockRequest(method: string, path: string, body?: string): 
   const handler = handlers[key];
   if (handler) return handler(body);
 
+  // Database table detail - generate dynamically from mockTables
+  const tableMatch = path.match(/^\/api\/database\/tables\/(\w+)$/);
+  if (tableMatch && method === "GET") {
+    const tableName = tableMatch[1];
+    const tableInfo = mockTables.find((t) => t.name === tableName);
+    if (tableInfo) {
+      return {
+        status: 200,
+        body: {
+          data: {
+            name: tableInfo.name,
+            columns: tableInfo.column_names.map((name, i) => ({
+              name,
+              type: i === 0 ? "bigint" : "varchar",
+              nullable: i > 0 && Math.random() > 0.7,
+              default: i === 0 ? null : null,
+              primary: i === 0,
+            })),
+            indexes: [{ name: "primary", unique: true }],
+            row_count: tableInfo.rows,
+          },
+        },
+      };
+    }
+  }
+
+  // Database table rows
+  const rowsMatch = path.match(/^\/api\/database\/tables\/(\w+)\/rows$/);
+  if (rowsMatch && method === "GET") {
+    return {
+      status: 200,
+      body: { data: mockUserRows, meta: { current_page: 1, per_page: 25, total: 4, last_page: 1 } },
+    };
+  }
+
   // Fallback for parameterized routes
   if (path.match(/^\/api\/batches\/\d+/)) return handlers["GET /api/batches/1"]?.();
   if (path.match(/^\/api\/grantees\/\d+/)) return handlers["GET /api/grantees/1"]?.();
   if (path.match(/^\/api\/academic-records\/\d+/)) return handlers["GET /api/academic-records/1"]?.();
   if (path.match(/^\/api\/document-submissions\/\d+\/review/)) return handlers["POST /api/document-submissions/1/review"]?.();
   if (path.match(/^\/api\/document-submissions\/\d+/)) return handlers["GET /api/document-submissions/1"]?.();
+  if (path.match(/^\/api\/terms\/\d+/)) return handlers["GET /api/terms/active"]?.();
+  if (path.match(/^\/api\/faqs\/\d+/)) return handlers["GET /api/faqs/all"]?.();
 
   return null;
 }

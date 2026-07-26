@@ -215,3 +215,11 @@
  2026-07-26 20:31:12 /api/audit-events .. ~ 3s
  2026-07-26 20:31:17 /api/audit-events .. ~ 509.27ms
  2026-07-26 20:31:19 /api/audit-events .. ~ 615.05ms
+ 2026-07-26 21:34:33 /api/audit-events .. ~ 4s
+ 2026-07-26 21:34:38 /api/audit-events .. ~ 1s
+ 2026-07-26 21:34:40 /api/audit-events .. ~ 507.34ms
+ 2026-07-26 21:34:47 /api/audit-events .. ~ 4s
+ 2026-07-26 21:38:34 /api/audit-events .. ~ 1s
+ 2026-07-26 21:38:36 /api/audit-events .. ~ 515.28ms
+ 2026-07-26 21:38:36 /api/audit-events .. ~ 1s
+ 2026-07-26 21:38:39 /api/audit-events .. ~ 1s

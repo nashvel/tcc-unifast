@@ -11,14 +11,12 @@ export async function emitAuditEvent(payload: {
   target?: string;
   context?: Record<string, unknown>;
 }): Promise<void> {
-  const body = JSON.stringify(payload);
-  await fetch("/api/audit-events", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
-    body,
-    keepalive: body.length < 60000,
-  }).catch(() => {});
+  try {
+    await apiFetch("/api/audit-events", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  } catch {
+    // Audit logging must never break the UI
+  }
 }
