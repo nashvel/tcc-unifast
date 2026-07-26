@@ -3,7 +3,7 @@ import { API_BASE } from "@/config";
 import { handleMockRequest } from "@/mock/handlers";
 import type { ListQuery } from "./types";
 
-const useMock = import.meta.env.VITE_USE_MOCK === "true" || !API_BASE;
+const useMock = import.meta.env.VITE_USE_MOCK === "true";
 
 export class ApiError extends Error {
   status: number;
@@ -61,7 +61,7 @@ export async function apiFetch<T>(
     headers.set("Authorization", `Bearer ${token}`);
   }
 
-  const response = await fetch(fullUrl, { ...init, headers });
+  const response = await fetch(fullUrl, { ...init, credentials: "include", headers });
   const payload = await response.json().catch(() => ({}));
 
   if (!response.ok) {
