@@ -16,10 +16,6 @@ import {
   mockTables,
   mockDbStats,
   mockUserRows,
-  mockTables,
-  mockDbStats,
-  mockUserTable,
-  mockUserRows,
   mockTerms,
   mockFaqs,
 } from "../../vercel/mocks";

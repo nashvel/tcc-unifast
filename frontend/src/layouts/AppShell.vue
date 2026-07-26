@@ -143,22 +143,14 @@ async function signOut() {
 watch(
   isDeveloper,
   (val) => {
-    if (val && typeof document !== "undefined") {
-      dark.value = true;
-      document.documentElement.classList.add("dev-dark");
-      document.documentElement.classList.remove("dark");
-      localStorage.setItem("theme", "dark");
-    } else if (typeof document !== "undefined") {
+    if (!val && typeof document !== "undefined") {
       document.documentElement.classList.remove("dev-dark");
     }
   },
   { immediate: true },
 );
 
-if (isDeveloper.value && typeof document !== "undefined") {
-  document.documentElement.classList.add("dev-dark");
-  document.documentElement.classList.remove("dark");
-} else if (dark.value && typeof document !== "undefined") {
+if (dark.value && typeof document !== "undefined") {
   document.documentElement.classList.add("dark");
 }
 </script>
