@@ -89,7 +89,7 @@ html.dev-dark * {
   --sidebar-bg: #0d0d0d;
   --sidebar-active: #1a1a1a;
   --sidebar-text: #fafafa;
-  --sidebar-text-muted: #737373;
+  --sidebar-text-muted: #d4d4d4;
 }
 html.dev-dark body {
   background-color: #0d0d0d !important;

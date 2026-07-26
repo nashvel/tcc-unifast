@@ -114,8 +114,8 @@ function go(path: string) {
                 class="flex h-8 w-full items-center gap-2.5 rounded-md px-2.5 text-left text-sm transition-colors"
                 :class="
                   isActive(item.path!)
-                    ? 'bg-[var(--surface-muted)] font-medium text-[var(--sidebar-text)]'
-                    : 'text-[var(--sidebar-text-muted)] hover:bg-[var(--surface-muted)] hover:text-[var(--sidebar-text)]'
+                    ? 'bg-[var(--surface-muted)] font-medium text-white'
+                    : 'text-white hover:bg-[var(--surface-muted)]'
                 "
                 @click="go(item.path!)"
               >
@@ -138,8 +138,8 @@ function go(path: string) {
                 class="flex h-8 w-full items-center gap-2.5 rounded-md px-2.5 text-left text-sm transition-colors"
                 :class="
                   isActive(item.path!)
-                    ? 'bg-[var(--surface-muted)] font-medium text-[var(--sidebar-text)]'
-                    : 'text-[var(--sidebar-text-muted)] hover:bg-[var(--surface-muted)] hover:text-[var(--sidebar-text)]'
+                    ? 'bg-[var(--surface-muted)] font-medium text-white'
+                    : 'text-white hover:bg-[var(--surface-muted)]'
                 "
                 @click="go(item.path!)"
               >
