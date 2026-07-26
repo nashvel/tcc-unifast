@@ -1,14 +1,15 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
-import { ArrowRight, Lock, Mail, UserRound } from "lucide-vue-next";
+import { ArrowRight, ChevronDown, ChevronUp, HelpCircle, Lock, Mail, ShieldCheck, UserRound } from "lucide-vue-next";
 import logo from "@/assets/system-logo.png";
 import studentsCutout from "@/assets/auth/tcc-students-cutout.png";
 import { authSession } from "@/auth/session";
 import { login } from "@/api/auth";
 import LanguageSwitcher from "@/components/LanguageSwitcher.vue";
 import { withLang } from "@/i18n/routeLang";
+import { apiFetch } from "@/api/client";
 
 const route = useRoute();
 const router = useRouter();
@@ -22,6 +23,15 @@ const mode = route.path.includes("forgot")
   : route.path.includes("activate")
     ? "activate"
     : "login";
+
+type Term = { id: number; title: string; content: string; version: string };
+type Faq = { id: number; question: string; answer: string; category: string };
+
+const terms = ref<Term | null>(null);
+const faqs = ref<Faq[]>([]);
+const showTerms = ref(false);
+const expandedFaq = ref<number | null>(null);
+
 const demoAccounts: Record<string, string> = {
   Developer: "admin@unifast.gov.ph",
   Administrator: "head@unifast.gov.ph",
@@ -64,6 +74,17 @@ function demoAccountLabel(role: string) {
   };
   return labels[role] ?? role;
 }
+
+onMounted(async () => {
+  try {
+    const [termsRes, faqsRes] = await Promise.all([
+      fetch("/api/terms/active").then((r) => r.json()),
+      fetch("/api/faqs").then((r) => r.json()),
+    ]);
+    terms.value = termsRes.data;
+    faqs.value = faqsRes.data || [];
+  } catch {}
+});
 </script>
 
 <template>
@@ -215,6 +236,37 @@ function demoAccountLabel(role: string) {
               <UserRound :size="17" class="text-text-muted" />
               <span class="text-xs font-medium">{{ demoAccountLabel(role) }}</span>
             </button>
+          </div>
+        </div>
+
+        <!-- Terms & Conditions -->
+        <div v-if="terms && mode === 'login'" class="mt-6 border-t pt-4">
+          <button class="flex w-full items-center gap-2 text-xs font-medium text-text-muted hover:text-text" @click="showTerms = !showTerms">
+            <ShieldCheck :size="14" />
+            <span>{{ terms.title }} (v{{ terms.version }})</span>
+            <component :is="showTerms ? ChevronUp : ChevronDown" :size="14" class="ml-auto" />
+          </button>
+          <div v-if="showTerms" class="mt-3 max-h-48 overflow-y-auto rounded-md border bg-surface p-3 text-xs text-text-muted">
+            <div v-html="terms.content" />
+          </div>
+        </div>
+
+        <!-- FAQ -->
+        <div v-if="faqs.length && mode === 'login'" class="mt-4 border-t pt-4">
+          <button class="flex w-full items-center gap-2 text-xs font-medium text-text-muted hover:text-text mb-3">
+            <HelpCircle :size="14" />
+            <span>Frequently Asked Questions</span>
+          </button>
+          <div class="space-y-2">
+            <div v-for="faq in faqs" :key="faq.id" class="rounded-md border bg-surface">
+              <button class="flex w-full items-center justify-between p-3 text-left text-xs font-medium text-text" @click="expandedFaq = expandedFaq === faq.id ? null : faq.id">
+                <span>{{ faq.question }}</span>
+                <component :is="expandedFaq === faq.id ? ChevronUp : ChevronDown" :size="14" class="shrink-0 text-text-muted" />
+              </button>
+              <div v-if="expandedFaq === faq.id" class="border-t px-3 py-2 text-xs text-text-muted">
+                {{ faq.answer }}
+              </div>
+            </div>
           </div>
         </div>
       </div>
