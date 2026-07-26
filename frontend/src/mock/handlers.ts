@@ -37,7 +37,11 @@ function makeUser(email: string) {
 
 const handlers: Record<string, MockHandler> = {
   // Auth
-  "GET /api/auth/me": () => ({ status: 200, body: { user: makeUser("admin@unifast.gov.ph") } }),
+  "GET /api/auth/me": () => {
+    const token = typeof localStorage !== "undefined" ? localStorage.getItem("unifast_auth_token") : null;
+    if (!token) return { status: 401, body: { message: "Unauthenticated." } };
+    return { status: 200, body: { user: makeUser("admin@unifast.gov.ph") } };
+  },
   "POST /api/auth/login": (body) => {
     const parsed = body ? JSON.parse(body) : {};
     const user = makeUser(parsed.email || "admin@unifast.gov.ph");
