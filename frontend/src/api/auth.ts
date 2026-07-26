@@ -11,10 +11,10 @@ export async function fetchCurrentUser(): Promise<AuthUser | null> {
   }
 }
 
-export async function login(email: string, password: string): Promise<AuthUser> {
+export async function login(email: string, password: string, captcha?: string): Promise<AuthUser> {
   const payload = await apiFetch<{ user: AuthUser; token: string }>("/api/auth/login", {
     method: "POST",
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ email, password, captcha }),
   });
   setAuthToken(payload.token);
   return payload.user;
@@ -26,4 +26,8 @@ export async function logout(): Promise<void> {
   } finally {
     clearAuthToken();
   }
+}
+
+export async function fetchLoginCaptcha(): Promise<{ image: string; key: string }> {
+  return await apiFetch<{ image: string; key: string }>("/api/auth/captcha");
 }

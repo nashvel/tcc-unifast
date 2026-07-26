@@ -83,7 +83,11 @@ export async function apiFetch<T>(
   }
 
   try {
-    const response = await fetch(fullUrl, { ...init, headers });
+    const response = await fetch(fullUrl, { 
+      ...init, 
+      headers,
+      credentials: 'include' // Required for session cookies
+    });
     const payload = await response.json().catch(() => ({}));
 
     if (!response.ok) {
@@ -98,17 +102,8 @@ export async function apiFetch<T>(
 
     return payload as T;
   } catch (error) {
-    // If API fails and we have mock data, fall back to mock
-    if (error instanceof ApiError && error.status >= 400) throw error;
-    console.warn(`[api] Request failed, falling back to mock: ${error}`);
-    await getMockHandler();
-    const method = (init.method || "GET").toUpperCase();
-    const path = url.startsWith("http") ? new URL(url).pathname : url;
-    const body = typeof init.body === "string" ? init.body : undefined;
-    const mockResponse = mockHandler!(method, path.split("?")[0], body);
-    if (mockResponse) {
-      return mockResponse.body as T;
-    }
+    // Re-throw ApiError (HTTP errors with status codes) directly — no mock fallback
+    // when VITE_USE_MOCK=false. This ensures real failures surface to the UI.
     throw error;
   }
 }
