@@ -2,8 +2,10 @@
 
 namespace App\Services;
 
+use App\Imports\MasterlistRowsImport;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
+use Maatwebsite\Excel\Facades\Excel;
 use RuntimeException;
 use SimpleXMLElement;
 use ZipArchive;
@@ -19,9 +21,20 @@ class MasterlistSpreadsheetParser
 
         return match ($extension) {
             'csv' => $this->parseCsv($file->getRealPath()),
-            'xlsx' => $this->parseXlsx($file->getRealPath()),
+            'xlsx', 'xls' => $this->parseWithLaravelExcel($file),
             default => throw new RuntimeException('Upload a CSV or XLSX masterlist file.'),
         };
+    }
+
+    /**
+     * @return list<array<string, string>>
+     */
+    private function parseWithLaravelExcel(UploadedFile $file): array
+    {
+        $import = new MasterlistRowsImport;
+        Excel::import($import, $file);
+
+        return $import->rows;
     }
 
     /**
@@ -39,6 +52,7 @@ class MasterlistSpreadsheetParser
         while (($line = fgetcsv($handle)) !== false) {
             if ($headers === null) {
                 $headers = $this->normalizeHeaders($line);
+
                 continue;
             }
             $rows[] = $this->combineRow($headers, $line);
@@ -49,6 +63,8 @@ class MasterlistSpreadsheetParser
     }
 
     /**
+     * Fallback XLSX reader when Excel facade is unavailable in constrained environments.
+     *
      * @return list<array<string, string>>
      */
     private function parseXlsx(string $path): array
@@ -57,7 +73,7 @@ class MasterlistSpreadsheetParser
             throw new RuntimeException('XLSX parsing requires the PHP zip extension. Upload CSV instead.');
         }
 
-        $zip = new ZipArchive();
+        $zip = new ZipArchive;
         if ($zip->open($path) !== true) {
             throw new RuntimeException('Unable to open the uploaded XLSX file.');
         }
@@ -113,6 +129,7 @@ class MasterlistSpreadsheetParser
         foreach ($xml->si as $item) {
             if (isset($item->t)) {
                 $strings[] = trim((string) $item->t);
+
                 continue;
             }
             $parts = [];
@@ -137,7 +154,7 @@ class MasterlistSpreadsheetParser
     }
 
     /**
-     * @param list<string|null> $headers
+     * @param  list<string|null>  $headers
      * @return list<string>
      */
     private function normalizeHeaders(array $headers): array
@@ -162,8 +179,8 @@ class MasterlistSpreadsheetParser
     }
 
     /**
-     * @param list<string> $headers
-     * @param list<string|null> $line
+     * @param  list<string>  $headers
+     * @param  list<string|null>  $line
      * @return array<string, string>
      */
     private function combineRow(array $headers, array $line): array

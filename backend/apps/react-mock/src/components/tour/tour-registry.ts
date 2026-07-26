@@ -77,9 +77,9 @@ export const TOURS: Record<string, Tour> = {
   "/app/eligibility": {
     title: "Eligibility tour",
     steps: [
-      { target: H, title: "Eligibility engine", body: "Run and review eligibility results against configured program rules." },
-      { target: "[data-tour=\"eligibility-filters\"]", title: "Filter candidates", body: "Search or filter by eligibility outcome and risk to focus on borderline cases." },
-      { target: "[data-tour=\"eligibility-table\"]", title: "Evaluate a grantee", body: "Open Evaluate on any row to view the rules trace and record a decision. Committee sign-off is required before release." },
+      { target: H, title: "Submission eligibility", body: "Review grantee batch submissions against Settings retention rules (max failed subjects)." },
+      { target: "[data-tour=\"eligibility-filters\"]", title: "Batch and status filters", body: "Search or filter by activation batch and submission eligibility status." },
+      { target: "[data-tour=\"eligibility-table\"]", title: "Open a grantee", body: "Open a row to view the submission and retention checklist for the active batch." },
     ],
   },
   "/app/announcements": {

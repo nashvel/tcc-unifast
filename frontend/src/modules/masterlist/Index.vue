@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import {
   IconAlertTriangle,
   IconCheck,
@@ -9,9 +9,41 @@ import {
   IconUpload,
 } from "@tabler/icons-vue";
 import DataTable from "@/components/tables/DataTable.vue";
+import TablePagination from "@/components/tables/TablePagination.vue";
 import PageHeader from "@/components/ui/PageHeader.vue";
 import AppDialog from "@/components/dialogs/AppDialog.vue";
 import { getAuthToken } from "@/auth/session";
+import {
+  apiFetch,
+  buildQuery,
+  type PaginatedResponse,
+  type PaginationMeta,
+} from "@/api";
+
+type Batch = {
+  id: number;
+  name: string;
+  academic_year: string;
+  semester: string;
+  submission_deadline: string | null;
+};
+
+type ImportSummary = {
+  id: number;
+  status: string;
+  original_name: string | null;
+  total_rows: number;
+  valid_rows: number;
+  invalid_rows: number;
+  imported_rows: number;
+  created_at: string | null;
+  batch: {
+    id: number;
+    name: string;
+    academic_year: string;
+    semester: string;
+  } | null;
+};
 
 type ImportRow = {
   id: number;
@@ -26,27 +58,46 @@ type ImportRow = {
   errors: string[];
 };
 
-type ImportPreview = {
+type ImportDetail = {
   id: number;
   status: string;
+  original_name?: string | null;
   total_rows: number;
   valid_rows: number;
   invalid_rows: number;
   imported_rows: number;
   rows: ImportRow[];
+  batch: {
+    id: number;
+    name: string;
+    academic_year?: string;
+    semester?: string;
+    submission_deadline?: string | null;
+  } | null;
 };
 
-const batchName = ref("TES Batch");
-const academicYear = ref("2026-2027");
-const semester = ref("1st Semester");
+const batches = ref<Batch[]>([]);
+const filterBatchId = ref<number | null>(null);
+const uploadBatchId = ref<number | null>(null);
+const imports = ref<ImportSummary[]>([]);
+const importsMeta = ref<PaginationMeta | null>(null);
+const importsPage = ref(1);
+const selectedImportId = ref<number | null>(null);
 const selectedFile = ref<File | null>(null);
-const preview = ref<ImportPreview | null>(null);
+const fileInput = ref<HTMLInputElement | null>(null);
+const preview = ref<ImportDetail | null>(null);
 const query = ref("");
+const loadingList = ref(false);
+const loadingDetail = ref(false);
 const busy = ref(false);
 const confirming = ref(false);
 const error = ref("");
 const confirmDialog = ref(false);
 const mailResult = ref<{ sent: number; failed: { email: string; message: string }[] } | null>(null);
+
+const deadlineBatches = computed(() =>
+  batches.value.filter((batch) => Boolean(batch.submission_deadline)),
+);
 
 const rows = computed(() => {
   const q = query.value.toLowerCase();
@@ -57,14 +108,89 @@ const rows = computed(() => {
   );
 });
 
+onMounted(async () => {
+  try {
+    const payload = await apiFetch<PaginatedResponse<Batch>>("/api/batches?per_page=50");
+    batches.value = payload.data;
+    const firstDeadline = deadlineBatches.value[0]?.id ?? null;
+    uploadBatchId.value = firstDeadline;
+  } catch {
+    batches.value = [];
+  }
+  await loadImports();
+});
+
+watch(filterBatchId, () => {
+  if (importsPage.value !== 1) {
+    importsPage.value = 1;
+  } else {
+    void loadImports();
+  }
+});
+
+watch(importsPage, () => {
+  void loadImports();
+});
+
+async function loadImports() {
+  loadingList.value = true;
+  error.value = "";
+  try {
+    const payload = await apiFetch<PaginatedResponse<ImportSummary>>(
+      `/api/masterlist/imports${buildQuery({
+        page: importsPage.value,
+        per_page: 15,
+        batch_id: filterBatchId.value,
+      })}`,
+    );
+    imports.value = payload.data;
+    importsMeta.value = payload.meta;
+  } catch (exception) {
+    imports.value = [];
+    importsMeta.value = null;
+    error.value = exception instanceof Error ? exception.message : "Unable to load masterlist records.";
+  } finally {
+    loadingList.value = false;
+  }
+}
+
+function openFilePicker() {
+  fileInput.value?.click();
+}
+
+async function selectImport(importId: number) {
+  selectedImportId.value = importId;
+  selectedFile.value = null;
+  mailResult.value = null;
+  loadingDetail.value = true;
+  error.value = "";
+  try {
+    const payload = await apiFetch<{ data: ImportDetail }>(`/api/masterlist/imports/${importId}`);
+    preview.value = payload.data;
+    if (payload.data.batch?.id) {
+      uploadBatchId.value = payload.data.batch.id;
+    }
+  } catch (exception) {
+    preview.value = null;
+    error.value = exception instanceof Error ? exception.message : "Unable to load import detail.";
+  } finally {
+    loadingDetail.value = false;
+  }
+}
+
 function chooseFile(event: Event) {
   const input = event.target as HTMLInputElement;
   selectedFile.value = input.files?.[0] ?? null;
   preview.value = null;
+  selectedImportId.value = null;
   mailResult.value = null;
 }
 
 async function previewImport() {
+  if (!uploadBatchId.value) {
+    error.value = "Select a batch with a submission deadline first.";
+    return;
+  }
   if (!selectedFile.value) {
     error.value = "Choose a CSV or XLSX masterlist file first.";
     return;
@@ -75,9 +201,7 @@ async function previewImport() {
   mailResult.value = null;
   const body = new FormData();
   body.append("file", selectedFile.value);
-  body.append("batch_name", batchName.value);
-  body.append("academic_year", academicYear.value);
-  body.append("semester", semester.value);
+  body.append("batch_id", String(uploadBatchId.value));
 
   try {
     const response = await fetch("/api/masterlist/imports/preview", {
@@ -91,6 +215,8 @@ async function previewImport() {
       throw new Error(validation || payload.message || "Unable to preview import.");
     }
     preview.value = payload.data;
+    selectedImportId.value = payload.data.id;
+    await loadImports();
   } catch (exception) {
     error.value = exception instanceof Error ? exception.message : "Unable to preview import.";
   } finally {
@@ -114,6 +240,8 @@ async function confirmImport(close: () => void) {
     }
     preview.value = payload.data;
     mailResult.value = payload.mail;
+    selectedFile.value = null;
+    await loadImports();
     close();
   } catch (exception) {
     error.value = exception instanceof Error ? exception.message : "Unable to confirm import.";
@@ -121,39 +249,123 @@ async function confirmImport(close: () => void) {
     confirming.value = false;
   }
 }
+
+function formatDate(value: string | null) {
+  if (!value) return "—";
+  return new Date(value).toLocaleString();
+}
 </script>
 
 <template>
   <div>
     <PageHeader
-      title="Masterlist Import"
-      description="Upload the CHED masterlist, preview row errors, then create grantee accounts."
+      title="Masterlist"
+      description="Records uploaded from Onboarding Center appear here. Upload a new file to update."
     />
 
-    <section class="mb-4 grid gap-4 rounded-lg border bg-surface p-4 lg:grid-cols-4">
+    <section class="mb-4 rounded-lg border bg-surface p-4">
+      <div class="mb-3 flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h2 class="text-sm font-semibold">Stored imports</h2>
+          <p class="mt-0.5 text-xs text-text-muted">
+            Click a row to preview rows. New uploads from
+            <RouterLink to="/app/onboarding" class="text-primary hover:underline">Onboarding Center</RouterLink>
+            show up in this list.
+          </p>
+        </div>
+        <label class="block min-w-52">
+          <span class="mb-1.5 block text-xs font-medium">Filter by batch</span>
+          <select v-model="filterBatchId" class="h-9 w-full rounded-md border px-3 text-sm">
+            <option :value="null">All batches</option>
+            <option v-for="batch in batches" :key="batch.id" :value="batch.id">
+              {{ batch.name }} · {{ batch.academic_year }} · {{ batch.semester }}
+            </option>
+          </select>
+        </label>
+      </div>
+
+      <DataTable :headings="['File', 'Batch', 'Status', 'Rows', 'Imported', 'Uploaded']">
+        <tr
+          v-for="item in imports"
+          :key="item.id"
+          :class="[
+            'cursor-pointer hover:bg-primary/5',
+            selectedImportId === item.id ? 'bg-primary/5' : '',
+          ]"
+          @click="selectImport(item.id)"
+        >
+          <td class="px-3 py-3 font-medium">{{ item.original_name || `Import #${item.id}` }}</td>
+          <td class="px-3 py-3 text-text-muted">
+            <template v-if="item.batch">
+              {{ item.batch.name }} · {{ item.batch.academic_year }} · {{ item.batch.semester }}
+            </template>
+            <template v-else>—</template>
+          </td>
+          <td class="px-3 py-3 capitalize">{{ item.status }}</td>
+          <td class="px-3 py-3 tabular-nums">
+            {{ item.valid_rows }}/{{ item.total_rows }}
+            <span v-if="item.invalid_rows" class="text-danger">({{ item.invalid_rows }} err)</span>
+          </td>
+          <td class="px-3 py-3 tabular-nums">{{ item.imported_rows }}</td>
+          <td class="px-3 py-3 text-text-muted">{{ formatDate(item.created_at) }}</td>
+        </tr>
+        <tr v-if="!loadingList && !imports.length">
+          <td colspan="6" class="p-8 text-center text-text-muted">
+            No masterlist records yet. Upload from Onboarding Center or use the form below.
+          </td>
+        </tr>
+        <tr v-if="loadingList">
+          <td colspan="6" class="p-8 text-center text-text-muted">Loading records…</td>
+        </tr>
+        <template v-if="importsMeta" #footer>
+          <TablePagination
+            :meta="importsMeta"
+            :busy="loadingList"
+            @update:page="importsPage = $event"
+          />
+        </template>
+      </DataTable>
+    </section>
+
+    <section class="mb-4 grid gap-4 rounded-lg border bg-surface p-4 lg:grid-cols-2">
+      <div class="lg:col-span-2">
+        <h2 class="text-sm font-semibold">Upload updated masterlist</h2>
+        <p class="mt-0.5 text-xs text-text-muted">
+          Choose a batch and upload a new CHED file when the masterlist needs updating. Preview, then confirm
+          to create/update grantee accounts.
+        </p>
+      </div>
       <label class="block">
-        <span class="mb-1.5 block text-xs font-medium">Batch name</span>
-        <input v-model="batchName" class="h-9 w-full rounded-md border px-3 text-sm" />
+        <span class="mb-1.5 block text-xs font-medium">Batch (with deadline)</span>
+        <select v-model.number="uploadBatchId" class="h-9 w-full rounded-md border px-3 text-sm">
+          <option :value="null" disabled>Select a batch</option>
+          <option v-for="batch in deadlineBatches" :key="batch.id" :value="batch.id">
+            {{ batch.name }} · {{ batch.academic_year }} · {{ batch.semester }}
+          </option>
+        </select>
       </label>
-      <label class="block">
-        <span class="mb-1.5 block text-xs font-medium">Academic year</span>
-        <input v-model="academicYear" class="h-9 w-full rounded-md border px-3 text-sm" />
-      </label>
-      <label class="block">
-        <span class="mb-1.5 block text-xs font-medium">Semester</span>
-        <input v-model="semester" class="h-9 w-full rounded-md border px-3 text-sm" />
-      </label>
-      <label class="block">
+      <div class="block">
         <span class="mb-1.5 block text-xs font-medium">CHED file</span>
         <input
+          ref="fileInput"
           type="file"
-          accept=".csv,.xlsx"
-          class="block w-full text-xs"
+          accept=".csv,.xlsx,.xls"
+          class="hidden"
           data-tour="masterlist-upload"
           @change="chooseFile"
         />
-      </label>
-      <div class="flex items-end lg:col-span-4">
+        <button
+          type="button"
+          class="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-md bg-primary px-3 text-xs font-medium text-white"
+          @click="openFilePicker"
+        >
+          <IconFileSpreadsheet :size="14" /> Upload Excel or CSV file
+        </button>
+        <p class="mt-1.5 truncate text-xs text-text-muted">
+          {{ selectedFile?.name || "No file selected" }}
+        </p>
+      </div>
+      <div class="flex items-end lg:col-span-2">
         <button
           :disabled="busy"
           class="inline-flex h-9 items-center gap-1.5 rounded-md bg-primary px-3 text-xs font-medium text-white disabled:opacity-60"
@@ -170,6 +382,8 @@ async function confirmImport(close: () => void) {
     >
       <IconAlertTriangle :size="14" />{{ error }}
     </p>
+
+    <p v-if="loadingDetail" class="mb-4 text-xs text-text-muted">Loading import detail…</p>
 
     <div v-if="preview" class="space-y-4">
       <section class="grid grid-cols-2 gap-3 sm:grid-cols-4" data-tour="masterlist-stats">
@@ -247,10 +461,7 @@ async function confirmImport(close: () => void) {
         </tr>
       </DataTable>
 
-      <section
-        v-if="mailResult"
-        class="rounded-lg border bg-surface p-4"
-      >
+      <section v-if="mailResult" class="rounded-lg border bg-surface p-4">
         <h2 class="flex items-center gap-2 text-sm font-semibold">
           <IconMail :size="16" class="text-primary" /> Invitation emails
         </h2>
@@ -259,26 +470,27 @@ async function confirmImport(close: () => void) {
         </p>
       </section>
 
-      <div class="flex justify-end">
+      <div v-if="preview.status !== 'imported'" class="flex justify-end">
         <button
-          :disabled="preview.status === 'imported' || preview.valid_rows === 0"
+          :disabled="preview.valid_rows === 0"
           class="inline-flex h-9 items-center gap-1.5 rounded-md bg-primary px-3 text-xs font-medium text-white disabled:opacity-60"
           @click="confirmDialog = true"
         >
           <IconCheck :size="14" />
-          {{ preview.status === "imported" ? "Import confirmed" : `Confirm import (${preview.valid_rows} accounts)` }}
+          Confirm import ({{ preview.valid_rows }} accounts)
         </button>
       </div>
+      <p v-else class="text-right text-xs text-text-muted">This import is confirmed.</p>
     </div>
 
     <section
-      v-else
-      class="flex min-h-64 flex-col items-center justify-center rounded-lg border-2 border-dashed bg-surface p-8 text-center"
+      v-else-if="!loadingDetail"
+      class="flex min-h-48 flex-col items-center justify-center rounded-lg border-2 border-dashed bg-surface p-8 text-center"
     >
       <span class="mb-3 grid size-12 place-items-center rounded-full bg-primary-soft text-primary">
         <IconFileSpreadsheet :size="24" />
       </span>
-      <span class="text-sm font-semibold">Upload a CHED CSV or XLSX file</span>
+      <span class="text-sm font-semibold">Select a stored import or upload a file</span>
       <span class="mt-1 text-xs text-text-muted">
         Required columns: student ID, name, email, program, year level, and optional student number.
       </span>

@@ -39,7 +39,9 @@
     "auditLog": "Audit Log",
     "auditTrail": "Audit Trail",
     "batches": "Mga Batch",
+    "billing": "Billing / Call-for-Billing",
     "communication": "Komunikasyon",
+    "distributionReport": "Ulat sa Distribusyon",
     "documentValidation": "Pag-validate ng Dokumento",
     "documents": "Mga Dokumento",
     "eligibility": "Pagiging Kwalipikado",
@@ -48,6 +50,7 @@
     "grantees": "Mga Grantee",
     "logs": "Mga Log",
     "masterlist": "Masterlist",
+    "onboardingCenter": "Onboarding Center",
     "monitoringReports": "Monitoring at Reports",
     "new": "Bago",
     "openMenu": "Buksan ang menu",
@@ -153,7 +156,7 @@
     "createStaffUser": { "title": "Gumawa ng staff user" },
     "documentValidation": { "title": "Document Validation Queue" },
     "editAnnouncement": { "title": "I-edit ang Anunsyo" },
-    "eligibilityStatus": { "title": "Eligibility Status" },
+    "eligibilityStatus": { "title": "Submission eligibility" },
     "files": {
       "title": "File Manager",
       "description": "Tingnan at ayusin ang uploaded scholarship files."
@@ -374,7 +377,7 @@
       },
       "progress": {
         "requiredDocuments": "Mga Kinakailangang Dokumento",
-        "requiredDocumentsMeta": "School ID, Course History, at Grade Slip",
+        "requiredDocumentsMeta": "School ID, Course History, Grade Slip, at 3 Specimen Signatures",
         "tesApplication": "TES Application",
         "tesApplicationMeta": "Kumpletuhin ang requirement vault"
       },
