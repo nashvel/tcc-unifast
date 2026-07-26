@@ -29,20 +29,37 @@ export function apiUrl(path: string): string {
 
 let mockHandler: typeof import("@/mock/handlers").handleMockRequest | null = null;
 
+async function getMockHandler() {
+  if (!mockHandler) {
+    const mod = await import("@/mock/handlers");
+    mockHandler = mod.handleMockRequest;
+  }
+  return mockHandler;
+}
+
+function handleMockResponse<T>(method: string, path: string, body?: string): T | null {
+  if (!mockHandler) return null;
+  const mockResponse = mockHandler(method, path, body);
+  if (mockResponse) {
+    if (mockResponse.status >= 400) {
+      throw new ApiError("Mock error", mockResponse.status);
+    }
+    return mockResponse.body as T;
+  }
+  return null;
+}
+
 export async function apiFetch<T>(
   url: string,
   init: RequestInit = {},
 ): Promise<T> {
   // Mock mode: lazy-load mock handlers and intercept
   if (useMock) {
-    if (!mockHandler) {
-      const mod = await import("@/mock/handlers");
-      mockHandler = mod.handleMockRequest;
-    }
+    await getMockHandler();
     const method = (init.method || "GET").toUpperCase();
     const path = url.startsWith("http") ? new URL(url).pathname : url;
     const body = typeof init.body === "string" ? init.body : undefined;
-    const mockResponse = mockHandler(method, path.split("?")[0], body);
+    const mockResponse = mockHandler!(method, path.split("?")[0], body);
     if (mockResponse) {
       if (mockResponse.status >= 400) {
         throw new ApiError("Mock error", mockResponse.status);
@@ -65,18 +82,33 @@ export async function apiFetch<T>(
     headers.set("Authorization", `Bearer ${token}`);
   }
 
-  const response = await fetch(fullUrl, { ...init, headers });
-  const payload = await response.json().catch(() => ({}));
+  try {
+    const response = await fetch(fullUrl, { ...init, headers });
+    const payload = await response.json().catch(() => ({}));
 
-  if (!response.ok) {
-    const validation = payload?.errors
-      ? Object.values(payload.errors as Record<string, string[]>).flat().join(" ")
-      : "";
-    throw new ApiError(
-      validation || payload?.message || `Request failed (${response.status})`,
-      response.status,
-    );
+    if (!response.ok) {
+      const validation = payload?.errors
+        ? Object.values(payload.errors as Record<string, string[]>).flat().join(" ")
+        : "";
+      throw new ApiError(
+        validation || payload?.message || `Request failed (${response.status})`,
+        response.status,
+      );
+    }
+
+    return payload as T;
+  } catch (error) {
+    // If API fails and we have mock data, fall back to mock
+    if (error instanceof ApiError && error.status >= 400) throw error;
+    console.warn(`[api] Request failed, falling back to mock: ${error}`);
+    await getMockHandler();
+    const method = (init.method || "GET").toUpperCase();
+    const path = url.startsWith("http") ? new URL(url).pathname : url;
+    const body = typeof init.body === "string" ? init.body : undefined;
+    const mockResponse = mockHandler!(method, path.split("?")[0], body);
+    if (mockResponse) {
+      return mockResponse.body as T;
+    }
+    throw error;
   }
-
-  return payload as T;
 }
