@@ -11,10 +11,11 @@ class DatabaseController extends Controller
 {
     public function tables(): JsonResponse
     {
-        $tables = DB::connection()->getDoctrineSchemaManager()->listTableNames();
+        $tables = Schema::getTables();
         $tableData = [];
 
-        foreach ($tables as $table) {
+        foreach ($tables as $tableInfo) {
+            $table = $tableInfo['name'];
             $columns = Schema::getColumns($table);
             $count = DB::table($table)->count();
 
@@ -38,10 +39,9 @@ class DatabaseController extends Controller
         }
 
         $columns = Schema::getColumns($table);
-        $indexes = DB::select(DB::raw("PRAGMA index_list('{$table}')"));
         $count = DB::table($table)->count();
 
-        $columnDetails = array_map(function ($col) use ($table) {
+        $columnDetails = array_map(function ($col) {
             return [
                 'name' => $col['name'],
                 'type' => $col['type'] ?? 'unknown',
@@ -55,10 +55,7 @@ class DatabaseController extends Controller
             'data' => [
                 'name' => $table,
                 'columns' => $columnDetails,
-                'indexes' => array_map(fn ($idx) => [
-                    'name' => $idx->name,
-                    'unique' => (bool) $idx->unique,
-                ], $indexes),
+                'indexes' => [],
                 'row_count' => $count,
             ],
         ]);
@@ -145,10 +142,11 @@ class DatabaseController extends Controller
 
     public function stats(): JsonResponse
     {
-        $tables = DB::connection()->getDoctrineSchemaManager()->listTableNames();
+        $tables = Schema::getTables();
         $stats = [];
 
-        foreach ($tables as $table) {
+        foreach ($tables as $tableInfo) {
+            $table = $tableInfo['name'];
             $count = DB::table($table)->count();
             $columns = count(Schema::getColumns($table));
 
