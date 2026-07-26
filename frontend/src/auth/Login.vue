@@ -237,6 +237,13 @@ onMounted(async () => {
               <span class="text-xs font-medium">{{ demoAccountLabel(role) }}</span>
             </button>
           </div>
+          <RouterLink
+            :to="withLang('/help/support', route.query.lang)"
+            class="mt-4 flex items-center justify-center gap-2 rounded-md border py-2.5 text-xs font-medium text-text-muted hover:bg-surface-muted"
+          >
+            <HelpCircle :size="14" />
+            Help & Support
+          </RouterLink>
         </div>
 
         <!-- Terms & Conditions -->

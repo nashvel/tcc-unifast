@@ -103,6 +103,7 @@ function createAppRouter(): Router {
       { path: "/activate/:token", component: () => import("@/auth/Activate.vue") },
       { path: "/activate-success", component: () => import("@/auth/ActivateSuccess.vue") },
       { path: "/locked", component: () => import("@/auth/Locked.vue") },
+      { path: "/help/support", component: () => import("@/public/HelpSupport.vue") },
       { path: "/app", component: () => import("@/layouts/AppShell.vue"), children: appChildren },
       {
         path: "/student",
