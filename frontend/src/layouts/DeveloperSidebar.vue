@@ -153,8 +153,9 @@ function go(path: string) {
       <ul class="space-y-0.5">
         <li>
           <button
-            class="flex h-8 w-full items-center gap-2.5 rounded-md px-2.5 text-left text-sm"
-            style="color: #d4d4d4;"
+            class="flex h-8 w-full items-center gap-2.5 rounded-md px-2.5 text-left text-sm transition-colors"
+            :style="isActive('/app/developer/api-docs') ? 'background-color: #1a1a1a; color: #fafafa;' : 'color: #d4d4d4;'"
+            @click="go('/app/developer/api-docs')"
           >
             <IconSettings :size="15" style="color: #737373;" />
             <span class="truncate">Integration</span>

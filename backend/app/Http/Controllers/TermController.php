@@ -8,18 +8,29 @@ use Illuminate\Http\Request;
 
 class TermController extends Controller
 {
+    private function getOrCreateDefaultTerm(): Term
+    {
+        $term = Term::query()->orderByDesc('is_active')->orderByDesc('updated_at')->first();
+        if (!$term) {
+            $term = Term::create([
+                'title' => 'TERMS AND CONDITIONS FOR TCC-UNIFAST TES PORTAL',
+                'version' => 'v2.1.0',
+                'content' => "TERMS AND CONDITIONS FOR TCC-UNIFAST TES PORTAL\n\n1. ACCEPTANCE OF TERMS\nBy accessing and utilizing the Tagoloan Community College (TCC) UniFAST Tertiary Education Subsidy (TES) Portal, students and administrators agree to adhere to all terms, policies, and regulations governed by UniFAST guidelines.\n\n2. ACCURACY OF SUBMITTED DOCUMENTS\nAll documents uploaded (Certificate of Indigency, Transcript of Records, Student IDs, and Proof of Income) must be authentic. Falsification of documents will lead to immediate disqualification and legal escalation under RA 10931.\n\n3. DATA PRIVACY COMPLIANCE\nIn compliance with Republic Act 10173 (Data Privacy Act of 2012), all student records collected through this portal will be processed exclusively for subsidy qualification verification and reporting.",
+                'is_active' => true,
+            ]);
+        }
+        return $term;
+    }
+
     public function index(): JsonResponse
     {
-        $terms = Term::orderByDesc('is_active')->orderByDesc('updated_at')->get();
-        return response()->json(['data' => $terms]);
+        $term = $this->getOrCreateDefaultTerm();
+        return response()->json(['data' => [$term]]);
     }
 
     public function active(): JsonResponse
     {
-        $term = Term::active()->first();
-        if (!$term) {
-            return response()->json(['data' => null]);
-        }
+        $term = $this->getOrCreateDefaultTerm();
         return response()->json(['data' => $term]);
     }
 
@@ -45,8 +56,13 @@ class TermController extends Controller
         return response()->json(['data' => $term]);
     }
 
-    public function update(Request $request, Term $term): JsonResponse
+    public function update(Request $request, $id): JsonResponse
     {
+        $term = Term::find($id);
+        if (!$term) {
+            $term = $this->getOrCreateDefaultTerm();
+        }
+
         $validated = $request->validate([
             'title' => 'sometimes|required|string|max:255',
             'content' => 'sometimes|required|string',

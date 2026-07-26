@@ -5,25 +5,46 @@ namespace App\Services;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Illuminate\Support\Collection as SupportCollection;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
 
 class RbacService
 {
-    private const CACHE_TTL = 3600;
+    private const CACHE_TTL = 3600; // 1 hour
 
-    public function getAllRoles(): \Illuminate\Database\Eloquent\Collection
+    public function getAllRoles(): EloquentCollection
     {
-        return Cache::remember('rbac:roles', self::CACHE_TTL, function () {
-            return Role::with('permissions')->get();
-        });
+        $roles = Cache::get('rbac:roles');
+
+        if (!$roles instanceof EloquentCollection) {
+            Cache::forget('rbac:roles');
+            $roles = Role::with('permissions')->get();
+            try {
+                Cache::put('rbac:roles', $roles, self::CACHE_TTL);
+            } catch (\Throwable $e) {
+                // Ignore cache write errors
+            }
+        }
+
+        return $roles;
     }
 
-    public function getAllPermissions(): \Illuminate\Database\Eloquent\Collection
+    public function getAllPermissions(): EloquentCollection
     {
-        return Cache::remember('rbac:permissions', self::CACHE_TTL, function () {
-            return Permission::all();
-        });
+        $permissions = Cache::get('rbac:permissions');
+
+        if (!$permissions instanceof EloquentCollection) {
+            Cache::forget('rbac:permissions');
+            $permissions = Permission::all();
+            try {
+                Cache::put('rbac:permissions', $permissions, self::CACHE_TTL);
+            } catch (\Throwable $e) {
+                // Ignore cache write errors
+            }
+        }
+
+        return $permissions;
     }
 
     public function getRoleById(int $id): ?Role
@@ -92,18 +113,27 @@ class RbacService
         $this->clearUserCache($user);
     }
 
-    public function getUserRoles(User $user): \Illuminate\Database\Eloquent\Collection
+    public function getUserRoles(User $user): EloquentCollection
     {
         return $user->roles()->get();
     }
 
-    public function getUserPermissions(User $user): \Illuminate\Support\Collection
+    public function getUserPermissions(User $user): SupportCollection
     {
         $cacheKey = "rbac:user_permissions:{$user->id}";
+        $permissions = Cache::get($cacheKey);
 
-        return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($user) {
-            return $user->getAllPermissions();
-        });
+        if (!$permissions instanceof SupportCollection) {
+            Cache::forget($cacheKey);
+            $permissions = $user->getAllPermissions();
+            try {
+                Cache::put($cacheKey, $permissions, self::CACHE_TTL);
+            } catch (\Throwable $e) {
+                // Ignore cache write errors
+            }
+        }
+
+        return $permissions;
     }
 
     public function userHasPermission(User $user, string $permissionName): bool
@@ -140,21 +170,31 @@ class RbacService
 
     public function getRoleStats(): array
     {
-        return Cache::remember('rbac:role_stats', self::CACHE_TTL, function () {
-            return Role::withCount('users', 'permissions')->get()->map(fn ($role) => [
-                'id' => $role->id,
-                'name' => $role->name,
-                'description' => $role->description,
-                'color' => $role->color,
-                'is_system' => $role->is_system,
-                'users_count' => $role->users_count,
-                'permissions_count' => $role->permissions_count,
-                'permissions' => $role->permissions->pluck('name'),
-            ])->toArray();
-        });
+        Cache::forget('rbac:role_stats');
+
+        $stats = Role::withCount('users', 'permissions')->get()->map(fn ($role) => [
+            'id' => $role->id,
+            'name' => $role->name,
+            'description' => $role->description,
+            'color' => $role->color,
+            'is_system' => $role->is_system,
+            'users_count' => $role->users_count,
+            'permissions_count' => $role->permissions_count,
+            'permissions' => ($role->is_system && strtolower($role->name) === 'developer')
+                ? ['*']
+                : $role->permissions->pluck('name')->values()->all(),
+        ])->toArray();
+
+        try {
+            Cache::put('rbac:role_stats', $stats, self::CACHE_TTL);
+        } catch (\Throwable $e) {
+            // Ignore cache write errors
+        }
+
+        return $stats;
     }
 
-    private function clearCache(): void
+    public function clearCache(): void
     {
         Cache::forget('rbac:roles');
         Cache::forget('rbac:permissions');

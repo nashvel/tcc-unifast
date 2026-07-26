@@ -1,89 +1,97 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
-import { IconEdit, IconPlus, IconTrash, IconCheck, IconX } from "@tabler/icons-vue";
+import { IconFileText, IconCheck, IconHistory, IconDeviceFloppy, IconLoader, IconRefresh } from "@tabler/icons-vue";
 import PageHeader from "@/components/ui/PageHeader.vue";
-import { apiFetch } from "@/api/client";
+import { apiFetch, isMockMode } from "@/api/client";
 import { toast } from "@/composables/useToast";
 
-type Term = {
-  id: number;
-  title: string;
-  content: string;
+type TermsDoc = {
+  id?: number;
+  title?: string;
   version: string;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
+  effectiveDate?: string;
+  content: string;
 };
 
-const terms = ref<Term[]>([]);
+const defaultTerms: TermsDoc = {
+  id: 1,
+  title: "TERMS AND CONDITIONS FOR TCC-UNIFAST TES PORTAL",
+  version: "v2.1.0",
+  effectiveDate: "July 1, 2026",
+  content: `TERMS AND CONDITIONS FOR TCC-UNIFAST TES PORTAL
+
+1. ACCEPTANCE OF TERMS
+By accessing and utilizing the Tagoloan Community College (TCC) UniFAST Tertiary Education Subsidy (TES) Portal, students and administrators agree to adhere to all terms, policies, and regulations governed by UniFAST guidelines.
+
+2. ACCURACY OF SUBMITTED DOCUMENTS
+All documents uploaded (Certificate of Indigency, Transcript of Records, Student IDs, and Proof of Income) must be authentic. Falsification of documents will lead to immediate disqualification and legal escalation under RA 10931.
+
+3. DATA PRIVACY COMPLIANCE
+In compliance with Republic Act 10173 (Data Privacy Act of 2012), all student records collected through this portal will be processed exclusively for subsidy qualification verification and reporting.`,
+};
+
+const termsDoc = ref<TermsDoc>(defaultTerms);
 const loading = ref(false);
-const editDialog = ref(false);
-const editingTerm = ref<Partial<Term>>({});
+const saving = ref(false);
+const errorMessage = ref("");
 
 async function loadTerms() {
   loading.value = true;
+  errorMessage.value = "";
   try {
-    const payload = await apiFetch<{ data: Term[] }>("/api/terms");
-    terms.value = payload.data;
-  } catch (e) {
-    toast.error("Failed to load terms.");
+    const res = await apiFetch<{ data: TermsDoc | TermsDoc[] }>("/api/terms");
+    if (res.data) {
+      const doc = Array.isArray(res.data) ? res.data[0] : res.data;
+      if (doc && doc.content) {
+        termsDoc.value = doc;
+      } else {
+        termsDoc.value = defaultTerms;
+      }
+    } else {
+      termsDoc.value = defaultTerms;
+    }
+  } catch (err: any) {
+    if (isMockMode) {
+      termsDoc.value = defaultTerms;
+    } else {
+      errorMessage.value = err?.message || "Failed to connect to backend server. Using default template.";
+      termsDoc.value = defaultTerms;
+    }
   } finally {
     loading.value = false;
   }
 }
 
-function openCreate() {
-  editingTerm.value = { title: "", content: "", version: "1.0", is_active: true };
-  editDialog.value = true;
-}
-
-function openEdit(term: Term) {
-  editingTerm.value = { ...term };
-  editDialog.value = true;
-}
-
-async function save() {
-  try {
-    if (editingTerm.value.id) {
-      await apiFetch(`/api/terms/${editingTerm.value.id}`, {
-        method: "PUT",
-        body: JSON.stringify(editingTerm.value),
-      });
-      toast.success("Term updated.");
-    } else {
-      await apiFetch("/api/terms", {
-        method: "POST",
-        body: JSON.stringify(editingTerm.value),
-      });
-      toast.success("Term created.");
-    }
-    editDialog.value = false;
-    loadTerms();
-  } catch (e) {
-    toast.error(e instanceof Error ? e.message : "Failed to save.");
+async function saveTerms() {
+  if (!termsDoc.value || !termsDoc.value.content.trim()) {
+    toast.error("Terms content cannot be empty.");
+    return;
   }
-}
+  saving.value = true;
 
-async function deleteTerm(id: number) {
-  if (!confirm("Delete this term?")) return;
   try {
-    await apiFetch(`/api/terms/${id}`, { method: "DELETE" });
-    toast.success("Term deleted.");
-    loadTerms();
-  } catch (e) {
-    toast.error("Failed to delete.");
-  }
-}
-
-async function toggleActive(term: Term) {
-  try {
-    await apiFetch(`/api/terms/${term.id}`, {
-      method: "PUT",
-      body: JSON.stringify({ is_active: !term.is_active }),
+    const method = termsDoc.value.id ? "PUT" : "POST";
+    const endpoint = termsDoc.value.id ? `/api/terms/${termsDoc.value.id}` : "/api/terms";
+    
+    const res = await apiFetch<{ data: TermsDoc }>(endpoint, {
+      method,
+      body: JSON.stringify({
+        title: termsDoc.value.title || "Terms and Conditions",
+        content: termsDoc.value.content,
+        version: termsDoc.value.version || "v2.1.0",
+        is_active: true,
+      }),
     });
-    loadTerms();
-  } catch (e) {
-    toast.error("Failed to update.");
+    if (res.data) termsDoc.value = res.data;
+    toast.success("Terms & Conditions published to system.");
+  } catch (err: any) {
+    if (isMockMode) {
+      toast.success("Terms & Conditions published (Mock mode).");
+    } else {
+      toast.error(err?.message || "Failed to save Terms & Conditions on server.");
+    }
+  } finally {
+    saving.value = false;
   }
 }
 
@@ -92,61 +100,56 @@ onMounted(loadTerms);
 
 <template>
   <div>
-    <PageHeader title="Terms & Conditions" description="Manage the terms and conditions displayed on the login page.">
+    <PageHeader
+      title="Terms & Conditions Manager"
+      description="Manage the legal terms, disclaimers, and guidelines presented to students."
+    >
       <template #actions>
-        <button class="inline-flex h-8 items-center gap-1.5 rounded-md bg-[var(--primary)] px-3 text-xs text-black" @click="openCreate">
-          <IconPlus :size="14" /> New Term
+        <button
+          class="inline-flex h-9 items-center gap-1.5 rounded-md bg-white text-black font-medium px-3 text-xs hover:bg-neutral-200 disabled:opacity-50 transition-colors shadow-sm"
+          :disabled="saving || !termsDoc"
+          @click="saveTerms"
+        >
+          <IconDeviceFloppy :size="14" /> {{ saving ? "Publishing..." : "Publish Terms" }}
         </button>
       </template>
     </PageHeader>
 
-    <div class="space-y-2">
-      <div v-for="term in terms" :key="term.id" class="flex items-center justify-between rounded-lg border border-[var(--border)] bg-[var(--surface)] px-4 py-3">
-        <div class="flex items-center gap-3">
-          <h3 class="text-sm font-medium text-[var(--text)]">{{ term.title }}</h3>
-          <span class="rounded bg-[var(--surface-muted)] px-1.5 py-0.5 font-mono text-2xs text-[var(--text-muted)]">v{{ term.version }}</span>
-          <span :class="['rounded-full px-2 py-0.5 text-2xs font-medium', term.is_active ? 'bg-[var(--success-soft)] text-[var(--success)]' : 'bg-[var(--surface-muted)] text-[var(--text-muted)]']">
-            {{ term.is_active ? "Active" : "Inactive" }}
-          </span>
-          <span class="text-2xs text-[var(--text-soft)]">Updated {{ new Date(term.updated_at).toLocaleDateString() }}</span>
-        </div>
-        <div class="flex gap-1">
-          <button class="rounded p-1.5 hover:bg-[var(--surface-muted)]" @click="toggleActive(term)">
-            <IconCheck v-if="term.is_active" :size="14" class="text-[var(--success)]" />
-            <IconX v-else :size="14" class="text-[var(--text-soft)]" />
-          </button>
-          <button class="rounded p-1.5 hover:bg-[var(--surface-muted)]" @click="openEdit(term)">
-            <IconEdit :size="14" class="text-[var(--text-muted)]" />
-          </button>
-          <button class="rounded p-1.5 hover:bg-[var(--surface-muted)]" @click="deleteTerm(term.id)">
-            <IconTrash :size="14" class="text-[var(--danger)]" />
-          </button>
-        </div>
-      </div>
+    <div v-if="errorMessage" class="mb-4 rounded-lg border border-amber-500/30 bg-amber-950/40 p-4 text-xs text-amber-200">
+      {{ errorMessage }}
     </div>
 
-    <!-- Edit Dialog -->
-    <div v-if="editDialog" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50" @click.self="editDialog = false">
-      <div class="w-full max-w-2xl rounded-lg bg-[var(--surface)] p-6 shadow-xl">
-        <h2 class="text-sm font-semibold text-[var(--text)]">{{ editingTerm.id ? "Edit" : "Create" }} Terms & Conditions</h2>
-        <div class="mt-4 space-y-3">
-          <label class="block text-xs font-medium text-[var(--text-muted)]">
-            Title
-            <input v-model="editingTerm.title" class="mt-1 h-9 w-full rounded-md border border-[var(--border)] bg-[var(--bg)] px-3 text-sm text-[var(--text)]" />
-          </label>
-          <label class="block text-xs font-medium text-[var(--text-muted)]">
-            Version
-            <input v-model="editingTerm.version" class="mt-1 h-9 w-full rounded-md border border-[var(--border)] bg-[var(--bg)] px-3 text-sm text-[var(--text)]" />
-          </label>
-          <label class="block text-xs font-medium text-[var(--text-muted)]">
-            Content (HTML)
-            <textarea v-model="editingTerm.content" rows="12" class="mt-1 w-full rounded-md border border-[var(--border)] bg-[var(--bg)] p-3 font-mono text-xs text-[var(--text)]" />
-          </label>
-        </div>
-        <div class="mt-4 flex justify-end gap-2">
-          <button class="rounded-md border border-[var(--border)] px-4 py-2 text-xs text-[var(--text-muted)]" @click="editDialog = false">Cancel</button>
-          <button class="rounded-md bg-[var(--primary)] px-4 py-2 text-xs text-black" @click="save">Save</button>
-        </div>
+    <div v-if="loading" class="flex items-center justify-center p-12">
+      <IconLoader :size="24" class="animate-spin text-text-muted" />
+    </div>
+
+    <div v-else class="space-y-4">
+      <div class="grid gap-3 sm:grid-cols-2">
+        <label class="block text-xs font-medium text-text">
+          Document Version
+          <input
+            v-model="termsDoc.version"
+            class="mt-1 h-9 w-full rounded-md border border-border px-3 text-xs bg-surface text-text"
+            placeholder="v2.1.0"
+          />
+        </label>
+        <label class="block text-xs font-medium text-text">
+          Effective Date
+          <input
+            v-model="termsDoc.effectiveDate"
+            class="mt-1 h-9 w-full rounded-md border border-border px-3 text-xs bg-surface text-text"
+            placeholder="July 1, 2026"
+          />
+        </label>
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-text mb-1">Terms & Conditions Content (Markdown / Plain Text)</label>
+        <textarea
+          v-model="termsDoc.content"
+          rows="16"
+          class="w-full rounded-lg border border-border bg-surface p-4 font-mono text-xs text-text focus:outline-none focus:ring-1 focus:ring-primary"
+        />
       </div>
     </div>
   </div>
