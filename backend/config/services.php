@@ -57,4 +57,21 @@ return [
         'threshold' => (float) env('FACE_API_MATCH_THRESHOLD', 85),
     ],
 
+    'identity' => [
+        'tcc_registrar_domains' => array_values(array_filter(array_map(
+            'trim',
+            explode(',', (string) env('TCC_REGISTRAR_DOMAINS', 'registrar.tcc.edu.ph,sis.tcc.edu.ph,tcc.edu.ph'))
+        ))),
+        'ocr_space_api_key' => env('OCR_SPACE_API_KEY'),
+        'ocr_space_timeout' => (int) env('OCR_SPACE_TIMEOUT', 60),
+        'authenticity_service_url' => env('AUTHENTICITY_SERVICE_URL'),
+        'face_match_threshold' => (float) env('IDENTITY_FACE_MATCH_THRESHOLD', 0.5),
+    ],
+
+    'gradeslip_qr' => [
+        // Optional override; default resolves python/.venv then system `python`.
+        'python' => env('GRADESLIP_QR_PYTHON'),
+        'timeout' => (int) env('GRADESLIP_QR_TIMEOUT', 60),
+    ],
+
 ];

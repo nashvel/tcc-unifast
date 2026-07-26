@@ -1,24 +1,100 @@
 <script setup lang="ts">
-import { onMounted } from "vue";
+import { onMounted, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 import { IconAlertTriangle, IconCheck, IconId, IconSchool, IconUser } from "@tabler/icons-vue";
 import PageHeader from "@/components/ui/PageHeader.vue";
 import CardSkeleton from "@/components/ui/CardSkeleton.vue";
-import { useStudentKyc } from "@/composables/useStudentKyc";
+import { authSession, getAuthToken } from "@/auth/session";
 import { toast } from "@/composables/useToast";
 
+type KycResponse = {
+  status: string;
+  mismatches: Record<string, string>;
+  reference: {
+    full_name: string;
+    student_id: string;
+    program: string;
+    year_level: string | null;
+  };
+};
+
 const router = useRouter();
-const { loading, busy, error, mismatches, reference, form, loadKyc, submit } = useStudentKyc();
+const loading = ref(true);
+const busy = ref(false);
+const error = ref("");
+const mismatches = ref<Record<string, string>>({});
+const reference = ref<KycResponse["reference"] | null>(null);
+const form = reactive({
+  full_name: "",
+  student_id: "",
+  program: "",
+  year_level: "",
+  birthdate: "",
+  contact: "",
+  address: "",
+  guardian_name: "",
+  household_income: "",
+});
 
 onMounted(loadKyc);
 
-async function handleSubmit() {
-  const success = await submit();
-  if (success) {
-    await router.push("/student");
-    toast.success("KYC profile submitted");
-  } else {
+async function loadKyc() {
+  try {
+    const response = await fetch("/api/student/kyc", { headers: { Accept: "application/json" } });
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.message || "Unable to load KYC profile.");
+    reference.value = payload.data.reference;
+    mismatches.value = payload.data.mismatches || {};
+    form.full_name = payload.data.profile?.full_name || payload.data.reference.full_name || "";
+    form.student_id = payload.data.profile?.student_id || payload.data.reference.student_id || "";
+    form.program = payload.data.profile?.program || payload.data.reference.program || "";
+    form.year_level = payload.data.profile?.year_level || payload.data.reference.year_level || "";
+    form.birthdate = payload.data.profile?.birthdate || "";
+    form.contact = payload.data.profile?.contact || "";
+    form.address = payload.data.profile?.address || "";
+    form.guardian_name = payload.data.profile?.guardian_name || "";
+    form.household_income = payload.data.profile?.household_income || "";
+  } catch (exception) {
+    error.value = exception instanceof Error ? exception.message : "Unable to load KYC profile.";
+  } finally {
+    loading.value = false;
+  }
+}
+
+async function submit() {
+  busy.value = true;
+  error.value = "";
+  mismatches.value = {};
+
+  try {
+    const response = await fetch("/api/student/kyc", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${getAuthToken()}`,
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        ...form,
+        household_income: form.household_income === "" ? null : Number(form.household_income),
+      }),
+    });
+    const payload = await response.json();
+    if (!response.ok) {
+      mismatches.value = payload.data?.mismatches || {};
+      const validation = payload.errors ? Object.values(payload.errors).flat().join(" ") : "";
+      throw new Error(validation || "KYC details did not match the CHED masterlist.");
+    }
+    authSession.user = authSession.user
+      ? { ...authSession.user, account_status: payload.data.account_status, kyc_status: payload.data.status }
+      : null;
+    await router.push("/student/onboarding/id-scan");
+    toast.success("KYC validated — continue with School ID scan");
+  } catch (exception) {
+    error.value = exception instanceof Error ? exception.message : "Unable to submit KYC profile.";
     toast.error(error.value);
+  } finally {
+    busy.value = false;
   }
 }
 </script>
@@ -27,7 +103,7 @@ async function handleSubmit() {
   <div>
     <PageHeader
       title="KYC Profile Validation"
-      description="Complete your profile. Your name, student ID, and program must match the CHED masterlist."
+      description="Complete your profile. Name, student ID, program, and year level must match the CHED masterlist."
     />
 
     <div v-if="loading" class="space-y-4">
@@ -35,7 +111,7 @@ async function handleSubmit() {
       <CardSkeleton :lines="6" />
     </div>
 
-    <form v-else class="space-y-4" @submit.prevent="handleSubmit">
+    <form v-else class="space-y-4" @submit.prevent="submit">
       <section v-if="reference" class="rounded-lg border bg-surface p-4">
         <h2 class="flex items-center gap-2 text-sm font-semibold">
           <IconId :size="16" class="text-primary" /> Masterlist reference
@@ -109,6 +185,13 @@ async function handleSubmit() {
               <input v-model="form.program" class="h-9 w-full rounded-md border px-3 text-sm" />
               <p v-if="mismatches.program" class="mt-1 text-xs text-danger">
                 {{ mismatches.program }}
+              </p>
+            </label>
+            <label class="block">
+              <span class="mb-1.5 block text-xs font-medium">Year level *</span>
+              <input v-model="form.year_level" class="h-9 w-full rounded-md border px-3 text-sm" />
+              <p v-if="mismatches.year_level" class="mt-1 text-xs text-danger">
+                {{ mismatches.year_level }}
               </p>
             </label>
             <label class="block">

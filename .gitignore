@@ -1,12 +1,15 @@
 # Dependencies
 node_modules/
 vendor/
+frontend/node_modules/
 
 # Build outputs
 frontend/dist/
 backend/public/build/
+public/build/
 dist/
 dist-ssr/
+.vite/
 
 # Environment
 .env
@@ -18,12 +21,20 @@ backend/storage/framework/cache/data/*
 backend/storage/framework/sessions/*
 backend/storage/framework/views/*
 backend/storage/logs/*
+backend/bootstrap/cache/*.php
 backend/.phpunit.cache/
 backend/.phpunit.result.cache
+.phpunit.result.cache
+bootstrap/cache/*.php
+bootstrap/cache/*.tmp
+storage/logs/*
+storage/framework/**
+storage/app/private/**
 
 # Python
 backend/python/.venv/
 backend/ocr-service/.venv/
+**/.venv/
 
 # Tools
 .tools/

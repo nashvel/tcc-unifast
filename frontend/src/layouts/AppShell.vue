@@ -2,6 +2,7 @@
 import { computed, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
+import { useQuery, useQueryClient } from "@tanstack/vue-query";
 import {
   IconBell,
   IconChevronDown,
@@ -28,15 +29,27 @@ import DiceBearAvatar from "@/components/ui/DiceBearAvatar.vue";
 import OfflineBanner from "@/components/ui/OfflineBanner.vue";
 import { authSession } from "@/auth/session";
 import { logout } from "@/api/auth";
+import { apiFetch, type PaginatedResponse } from "@/api";
+import { queryKeys } from "@/api/queryKeys";
 import { studentVerification } from "@/auth/studentVerification";
-import { ensureEcho } from "@/composables/useEcho";
+import { ensureEcho, useNotificationChannel } from "@/composables/useEcho";
 import { withLang } from "@/i18n/routeLang";
 
 ensureEcho();
 
+type ShellNotification = {
+  id: number;
+  title: string;
+  body: string;
+  type: string;
+  read: boolean;
+  time: string | null;
+};
+
 const route = useRoute();
 const router = useRouter();
 const { t } = useI18n();
+const queryClient = useQueryClient();
 const mobile = ref(false);
 const profile = ref(false);
 const notifications = ref(false);
@@ -44,6 +57,51 @@ const isStudent = computed(() => route.path.startsWith("/student"));
 const isDeveloper = computed(() => authSession.user?.role === "developer");
 const role = computed(() => authSession.user?.role ?? "student");
 const user = computed(() => authSession.user);
+const staffNotifyEnabled = computed(
+  () => !isStudent.value && ["admin", "head", "staff", "developer"].includes(String(role.value)),
+);
+
+const staffNotificationsQuery = useQuery({
+  queryKey: queryKeys.notifications,
+  enabled: staffNotifyEnabled,
+  queryFn: () => apiFetch<PaginatedResponse<ShellNotification>>("/api/notifications?per_page=20"),
+});
+
+const staffItems = computed(() => staffNotificationsQuery.data.value?.data ?? []);
+const unreadCount = computed(() => staffItems.value.filter((item) => !item.read).length);
+
+useNotificationChannel((payload) => {
+  if (!staffNotifyEnabled.value) return;
+  queryClient.setQueryData<PaginatedResponse<ShellNotification>>(queryKeys.notifications, (current) => {
+    const nextItem: ShellNotification = {
+      id: payload.id,
+      title: payload.title,
+      body: payload.body,
+      type: payload.type,
+      read: payload.read,
+      time: payload.time,
+    };
+    if (!current) {
+      return {
+        data: [nextItem],
+        meta: { current_page: 1, last_page: 1, per_page: 20, total: 1, from: 1, to: 1 },
+      };
+    }
+    return { ...current, data: [nextItem, ...current.data.filter((row) => row.id !== nextItem.id)] };
+  });
+});
+
+watch(notifications, (open) => {
+  if (open && staffNotifyEnabled.value) void staffNotificationsQuery.refetch();
+});
+
+async function markAllStaffRead() {
+  await apiFetch("/api/notifications/read-all", { method: "POST" });
+  queryClient.setQueryData<PaginatedResponse<ShellNotification>>(queryKeys.notifications, (current) => {
+    if (!current) return current;
+    return { ...current, data: current.data.map((row) => ({ ...row, read: true })) };
+  });
+}
 
 const dark = ref(
   typeof localStorage !== "undefined"
@@ -55,7 +113,7 @@ const sections = computed(() => {
   if (isStudent.value)
     return studentVerification.verified ? studentNavigation : lockedStudentNavigation;
   if (role.value === "developer") return developerNavigation;
-  if (role.value === "admin") return staffNavigation;
+  if (role.value === "admin") return adminNavigation;
   return staffNavigation;
 });
 
@@ -82,16 +140,20 @@ async function signOut() {
 }
 
 // Force dark mode for developers
-watch(isDeveloper, (val) => {
-  if (val && typeof document !== "undefined") {
-    dark.value = true;
-    document.documentElement.classList.add("dev-dark");
-    document.documentElement.classList.remove("dark");
-    localStorage.setItem("theme", "dark");
-  } else if (typeof document !== "undefined") {
-    document.documentElement.classList.remove("dev-dark");
-  }
-}, { immediate: true });
+watch(
+  isDeveloper,
+  (val) => {
+    if (val && typeof document !== "undefined") {
+      dark.value = true;
+      document.documentElement.classList.add("dev-dark");
+      document.documentElement.classList.remove("dark");
+      localStorage.setItem("theme", "dark");
+    } else if (typeof document !== "undefined") {
+      document.documentElement.classList.remove("dev-dark");
+    }
+  },
+  { immediate: true },
+);
 
 if (isDeveloper.value && typeof document !== "undefined") {
   document.documentElement.classList.add("dev-dark");
@@ -178,13 +240,14 @@ if (isDeveloper.value && typeof document !== "undefined") {
       <header
         :class="[
           'sticky top-0 z-30 flex h-14 items-center gap-2 border-b px-4',
-          isDeveloper
-            ? 'border-[var(--border)] bg-[var(--bg)]'
-            : 'bg-surface',
+          isDeveloper ? 'border-[var(--border)] bg-[var(--bg)]' : 'bg-surface',
         ]"
       >
         <button
-          :class="['rounded-md p-1.5 lg:hidden', isDeveloper ? 'hover:bg-[var(--surface-muted)] text-[var(--text-muted)]' : 'hover:bg-surface-muted']"
+          :class="[
+            'rounded-md p-1.5 lg:hidden',
+            isDeveloper ? 'hover:bg-[var(--surface-muted)] text-[var(--text-muted)]' : 'hover:bg-surface-muted',
+          ]"
           :aria-label="t('nav.openMenu')"
           @click="mobile = true"
         >
@@ -205,9 +268,7 @@ if (isDeveloper.value && typeof document !== "undefined") {
           <kbd
             :class="[
               'hidden items-center gap-0.5 rounded border px-1 py-0.5 text-2xs sm:inline-flex',
-              isDeveloper
-                ? 'border-[var(--border)] text-[var(--text-soft)]'
-                : 'border bg-surface text-text-soft',
+              isDeveloper ? 'border-[var(--border)] text-[var(--text-soft)]' : 'border bg-surface text-text-soft',
             ]"
             ><IconCommand :size="10" /> K</kbd
           >
@@ -217,7 +278,6 @@ if (isDeveloper.value && typeof document !== "undefined") {
 
         <LanguageSwitcher :dark="isDeveloper" />
 
-        <!-- Theme toggle hidden for developers (forced dark) -->
         <button
           v-if="!isDeveloper"
           class="rounded-md p-2 hover:bg-surface-muted"
@@ -228,34 +288,82 @@ if (isDeveloper.value && typeof document !== "undefined") {
 
         <div class="relative">
           <button
-            :class="['relative rounded-md p-2', isDeveloper ? 'hover:bg-[var(--surface-muted)] text-[var(--text-muted)]' : 'hover:bg-surface-muted']"
+            :class="[
+              'relative rounded-md p-2',
+              isDeveloper ? 'hover:bg-[var(--surface-muted)] text-[var(--text-muted)]' : 'hover:bg-surface-muted',
+            ]"
             :aria-label="t('shell.notifications')"
-            @click="notifications = !notifications; profile = false;"
+            @click="
+              notifications = !notifications;
+              profile = false;
+            "
           >
             <IconBell :size="18" /><span
+              v-if="staffNotifyEnabled && unreadCount > 0"
               class="absolute right-1 top-1 grid h-4 min-w-4 place-items-center rounded-full bg-danger px-1 text-2xs text-white"
-              >3</span
+              >{{ unreadCount > 9 ? "9+" : unreadCount }}</span
             >
           </button>
           <div
             v-if="notifications"
             :class="[
               'absolute right-0 mt-1 w-80 rounded-lg border shadow-xl',
-              isDeveloper
-                ? 'border-[var(--border)] bg-[var(--surface)]'
-                : 'border bg-surface',
+              isDeveloper ? 'border-[var(--border)] bg-[var(--surface)]' : 'border bg-surface',
             ]"
           >
-            <div :class="['flex h-10 items-center justify-between border-b px-3', isDeveloper ? 'border-[var(--border)]' : '']">
-              <p :class="['text-sm font-semibold', isDeveloper ? 'text-[var(--text)]' : '']">{{ t("shell.notifications") }}</p>
-              <button :class="['text-xs', isDeveloper ? 'text-white' : 'text-primary']">{{ t("shell.markAllRead") }}</button>
+            <div
+              :class="[
+                'flex h-10 items-center justify-between border-b px-3',
+                isDeveloper ? 'border-[var(--border)]' : '',
+              ]"
+            >
+              <p :class="['text-sm font-semibold', isDeveloper ? 'text-[var(--text)]' : '']">
+                {{ t("shell.notifications") }}
+              </p>
+              <button
+                v-if="staffNotifyEnabled && unreadCount > 0"
+                :class="['text-xs', isDeveloper ? 'text-white' : 'text-primary']"
+                @click="markAllStaffRead"
+              >
+                {{ t("shell.markAllRead") }}
+              </button>
             </div>
-            <div :class="['space-y-3 p-3 text-xs', isDeveloper ? 'text-[var(--text-muted)]' : '']">
+            <div
+              v-if="staffNotifyEnabled"
+              :class="[
+                'max-h-72 space-y-3 overflow-y-auto p-3 text-xs',
+                isDeveloper ? 'text-[var(--text-muted)]' : '',
+              ]"
+            >
+              <p v-if="staffNotificationsQuery.isLoading.value" class="text-text-muted">Loading…</p>
+              <p v-else-if="staffItems.length === 0" class="text-text-muted">No notifications yet.</p>
+              <div v-for="item in staffItems" :key="item.id" :class="item.read ? 'opacity-70' : ''">
+                <p>
+                  <b>{{ item.title }}</b
+                  ><br /><span :class="isDeveloper ? 'text-[var(--text-soft)]' : 'text-text-muted'">{{
+                    item.body
+                  }}</span>
+                </p>
+                <p
+                  v-if="item.time"
+                  :class="['mt-0.5 text-2xs', isDeveloper ? 'text-[var(--text-soft)]' : 'text-text-soft']"
+                >
+                  {{ item.time }}
+                </p>
+              </div>
+            </div>
+            <div v-else :class="['space-y-3 p-3 text-xs', isDeveloper ? 'text-[var(--text-muted)]' : '']">
               <p>
-                <b>{{ t("shell.documentsValidated") }}</b><br /><span :class="isDeveloper ? 'text-[var(--text-soft)]' : 'text-text-muted'">{{ t("shell.documentsReady") }}</span>
+                <b>{{ t("shell.documentsValidated") }}</b
+                ><br /><span :class="isDeveloper ? 'text-[var(--text-soft)]' : 'text-text-muted'">{{
+                  t("shell.documentsReady")
+                }}</span>
               </p>
               <p>
-                <b>{{ t("shell.batchClosingSoon") }}</b><br /><span :class="isDeveloper ? 'text-[var(--text-soft)]' : 'text-text-muted'">{{ t("shell.batchClosingDetail") }}</span>
+                <b>{{ t("shell.batchClosingSoon") }}</b
+                ><br /><span :class="isDeveloper ? 'text-[var(--text-soft)]' : 'text-text-muted'">{{
+                  t("shell.batchClosingDetail")
+                }}</span>
               </p>
             </div>
           </div>
@@ -263,8 +371,14 @@ if (isDeveloper.value && typeof document !== "undefined") {
 
         <div class="relative">
           <button
-            :class="['flex items-center gap-2 rounded-md py-1 pl-1 pr-2', isDeveloper ? 'hover:bg-[var(--surface-muted)]' : 'hover:bg-surface-muted']"
-            @click="profile = !profile; notifications = false;"
+            :class="[
+              'flex items-center gap-2 rounded-md py-1 pl-1 pr-2',
+              isDeveloper ? 'hover:bg-[var(--surface-muted)]' : 'hover:bg-surface-muted',
+            ]"
+            @click="
+              profile = !profile;
+              notifications = false;
+            "
           >
             <DiceBearAvatar
               :seed="isStudent ? 'student@tcc.edu.ph' : 'admin@unifast.gov.ph'"
@@ -275,18 +389,23 @@ if (isDeveloper.value && typeof document !== "undefined") {
               ><span :class="['block text-xs font-medium', isDeveloper ? 'text-[var(--text)]' : '']">{{
                 user?.name ?? (isStudent ? "Maria Santos" : t("shell.systemDeveloper"))
               }}</span
-              ><span :class="['block text-2xs capitalize', isDeveloper ? 'text-[var(--text-muted)]' : 'text-text-muted']">{{
-                isStudent ? t("shell.student") : role
-              }}</span></span
-            ><IconChevronDown :size="14" :class="isDeveloper ? 'text-[var(--text-soft)]' : 'text-text-muted'" />
+              ><span
+                :class="[
+                  'block text-2xs capitalize',
+                  isDeveloper ? 'text-[var(--text-muted)]' : 'text-text-muted',
+                ]"
+                >{{ isStudent ? t("shell.student") : role }}</span
+              ></span
+            ><IconChevronDown
+              :size="14"
+              :class="isDeveloper ? 'text-[var(--text-soft)]' : 'text-text-muted'"
+            />
           </button>
           <div
             v-if="profile"
             :class="[
               'absolute right-0 mt-1 w-56 rounded-lg border p-1 shadow-xl',
-              isDeveloper
-                ? 'border-[var(--border)] bg-[var(--surface)]'
-                : 'border bg-surface',
+              isDeveloper ? 'border-[var(--border)] bg-[var(--surface)]' : 'border bg-surface',
             ]"
           >
             <div :class="['border-b px-2.5 py-2', isDeveloper ? 'border-[var(--border)]' : '']">
@@ -298,11 +417,17 @@ if (isDeveloper.value && typeof document !== "undefined") {
               </p>
             </div>
             <button
-              :class="['flex w-full items-center gap-2 rounded px-2.5 py-1.5 text-sm', isDeveloper ? 'text-[var(--text)] hover:bg-[var(--surface-muted)]' : 'hover:bg-surface-muted']"
+              :class="[
+                'flex w-full items-center gap-2 rounded px-2.5 py-1.5 text-sm',
+                isDeveloper ? 'text-[var(--text)] hover:bg-[var(--surface-muted)]' : 'hover:bg-surface-muted',
+              ]"
             >
               <IconUserCircle :size="15" /> {{ t("common.profile") }}</button
             ><button
-              :class="['flex w-full items-center gap-2 rounded px-2.5 py-1.5 text-sm text-danger', isDeveloper ? 'hover:bg-[var(--surface-muted)]' : 'hover:bg-surface-muted']"
+              :class="[
+                'flex w-full items-center gap-2 rounded px-2.5 py-1.5 text-sm text-danger',
+                isDeveloper ? 'hover:bg-[var(--surface-muted)]' : 'hover:bg-surface-muted',
+              ]"
               @click="signOut"
             >
               <IconLogout :size="15" /> {{ t("common.signOut") }}
@@ -311,7 +436,7 @@ if (isDeveloper.value && typeof document !== "undefined") {
         </div>
       </header>
 
-      <main class="mx-auto w-full max-w-[1400px] p-4 sm:p-6" data-tour="page-content">
+      <main class="mx-auto w-full max-w-[1400px] p-4 sm:p-6" data-cloud="page-content">
         <AppBreadcrumbs v-if="!isStudent && !isDeveloper" />
         <RouterView v-slot="{ Component }"
           ><Transition name="page" mode="out-in"

@@ -40,4 +40,14 @@ class Grantee extends Model
     {
         return $this->hasMany(RequirementIdentityCheck::class);
     }
+
+    public function identityProfile(): HasOne
+    {
+        return $this->hasOne(GranteeIdentityProfile::class);
+    }
+
+    public function pipelineResults(): HasMany
+    {
+        return $this->hasMany(SubmissionPipelineResult::class);
+    }
 }
