@@ -15,6 +15,9 @@ import {
   mockVault,
   mockTables,
   mockDbStats,
+  mockUserRows,
+  mockTables,
+  mockDbStats,
   mockUserTable,
   mockUserRows,
   mockTerms,
@@ -96,11 +99,6 @@ const handlers: Record<string, MockHandler> = {
   // Database
   "GET /api/database/tables": () => ({ status: 200, body: { data: mockTables } }),
   "GET /api/database/stats": () => ({ status: 200, body: { data: mockDbStats } }),
-  "GET /api/database/tables/users": () => ({ status: 200, body: { data: mockUserTable } }),
-  "GET /api/database/tables/users/rows": () => ({
-    status: 200,
-    body: { data: mockUserRows, meta: { current_page: 1, per_page: 25, total: 4, last_page: 1 } },
-  }),
 
   // Student
   "GET /api/student/kyc": () => ({
@@ -134,14 +132,47 @@ export function handleMockRequest(method: string, path: string, body?: string): 
   const handler = handlers[key];
   if (handler) return handler(body);
 
+  // Database table detail - generate dynamically from mockTables
+  const tableMatch = path.match(/^\/api\/database\/tables\/(\w+)$/);
+  if (tableMatch && method === "GET") {
+    const tableName = tableMatch[1];
+    const tableInfo = mockTables.find((t) => t.name === tableName);
+    if (tableInfo) {
+      return {
+        status: 200,
+        body: {
+          data: {
+            name: tableInfo.name,
+            columns: tableInfo.column_names.map((name, i) => ({
+              name,
+              type: i === 0 ? "bigint" : "varchar",
+              nullable: i > 0 && Math.random() > 0.7,
+              default: i === 0 ? null : null,
+              primary: i === 0,
+            })),
+            indexes: [{ name: "primary", unique: true }],
+            row_count: tableInfo.rows,
+          },
+        },
+      };
+    }
+  }
+
+  // Database table rows
+  const rowsMatch = path.match(/^\/api\/database\/tables\/(\w+)\/rows$/);
+  if (rowsMatch && method === "GET") {
+    return {
+      status: 200,
+      body: { data: mockUserRows, meta: { current_page: 1, per_page: 25, total: 4, last_page: 1 } },
+    };
+  }
+
   // Fallback for parameterized routes
   if (path.match(/^\/api\/batches\/\d+/)) return handlers["GET /api/batches/1"]?.();
   if (path.match(/^\/api\/grantees\/\d+/)) return handlers["GET /api/grantees/1"]?.();
   if (path.match(/^\/api\/academic-records\/\d+/)) return handlers["GET /api/academic-records/1"]?.();
   if (path.match(/^\/api\/document-submissions\/\d+\/review/)) return handlers["POST /api/document-submissions/1/review"]?.();
   if (path.match(/^\/api\/document-submissions\/\d+/)) return handlers["GET /api/document-submissions/1"]?.();
-  if (path.match(/^\/api\/database\/tables\/\w+\/rows/)) return handlers["GET /api/database/tables/users/rows"]?.();
-  if (path.match(/^\/api\/database\/tables\/\w+/)) return handlers["GET /api/database/tables/users"]?.();
   if (path.match(/^\/api\/terms\/\d+/)) return handlers["GET /api/terms/active"]?.();
   if (path.match(/^\/api\/faqs\/\d+/)) return handlers["GET /api/faqs/all"]?.();
 
