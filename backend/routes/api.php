@@ -6,6 +6,7 @@ use App\Http\Controllers\ActivationController;
 use App\Http\Controllers\AdminStudentIdSampleController;
 use App\Http\Controllers\AuditEventController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\AuthCaptchaController;
 use App\Http\Controllers\BatchActivationNotificationController;
 use App\Http\Controllers\BatchController;
 use App\Http\Controllers\BillingReportController;
@@ -28,10 +29,20 @@ use App\Http\Controllers\StudentNotificationController;
 use App\Http\Controllers\StudentSubmissionWindowController;
 use App\Http\Controllers\TccUnifastStudentsController;
 use App\Http\Controllers\TccUnifastSyncController;
+use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
+use Illuminate\Cookie\Middleware\EncryptCookies;
+use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Route;
 
 // Public routes (no auth required)
-Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:20,1');
+Route::middleware([
+    EncryptCookies::class,
+    AddQueuedCookiesToResponse::class,
+    StartSession::class,
+])->group(function (): void {
+    Route::get('/auth/captcha', AuthCaptchaController::class)->middleware('throttle:30,1');
+    Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:20,1');
+});
 Route::get('/activation/{token}', [ActivationController::class, 'show'])->middleware('throttle:20,1');
 Route::post('/activation/{token}', [ActivationController::class, 'activate'])->middleware('throttle:10,1');
 

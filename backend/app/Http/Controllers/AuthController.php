@@ -14,9 +14,9 @@ class AuthController extends Controller
     public function login(Request $request): JsonResponse
     {
         $credentials = $request->validate([
-            'email' => ['required', 'email'],
+            'email'    => ['required', 'email'],
             'password' => ['required', 'string'],
-            'captcha' => ['required', 'string'],
+            'captcha'  => ['required', 'string'],
         ]);
 
         if (! $this->captchaIsValid($request, $credentials['captcha'])) {
@@ -24,7 +24,7 @@ class AuthController extends Controller
 
             return response()->json([
                 'message' => 'The security verification code is incorrect or has expired.',
-                'errors' => ['captcha' => ['The security verification code is incorrect or has expired.']],
+                'errors'  => ['captcha' => ['The security verification code is incorrect or has expired.']],
             ], 422);
         }
 
@@ -36,20 +36,37 @@ class AuthController extends Controller
         }
 
         $user = $request->user();
+
+        // Reject accounts that are not active
+        if ($user->account_status !== 'active') {
+            $statusMessages = [
+                'unverified'       => 'Your account has not been verified yet. Please check your email for the activation link.',
+                'pending_kyc'      => 'Your account is pending KYC verification. Please complete the verification process.',
+                'pending_identity' => 'Your account is pending identity verification.',
+                'blocked'          => 'Your account has been blocked. Please contact the administrator.',
+            ];
+            $message = $statusMessages[$user->account_status]
+                ?? 'Your account is not active. Please contact the administrator.';
+
+            Auth::logout();
+
+            return response()->json(['message' => $message], 403);
+        }
+
         $token = $user->createToken('auth-token')->plainTextToken;
 
         AuditLog::create([
-            'actor' => $user->name,
-            'role' => ucfirst($user->role),
-            'action' => 'auth_login',
-            'module' => 'Authentication',
-            'target' => $user->email,
-            'context' => ['method' => 'sanctum_token'],
+            'actor'      => $user->name,
+            'role'       => ucfirst($user->role),
+            'action'     => 'auth_login',
+            'module'     => 'Authentication',
+            'target'     => $user->email,
+            'context'    => ['method' => 'sanctum_token'],
             'ip_address' => $request->ip(),
         ]);
 
         return response()->json([
-            'user' => $this->presentUser($user),
+            'user'  => $this->presentUser($user),
             'token' => $token,
         ]);
     }
@@ -65,12 +82,12 @@ class AuthController extends Controller
     {
         if ($request->user()) {
             AuditLog::create([
-                'actor' => $request->user()->name,
-                'role' => ucfirst($request->user()->role),
-                'action' => 'auth_logout',
-                'module' => 'Authentication',
-                'target' => $request->user()->email,
-                'context' => ['method' => 'sanctum_token'],
+                'actor'      => $request->user()->name,
+                'role'       => ucfirst($request->user()->role),
+                'action'     => 'auth_logout',
+                'module'     => 'Authentication',
+                'target'     => $request->user()->email,
+                'context'    => ['method' => 'sanctum_token'],
                 'ip_address' => $request->ip(),
             ]);
 

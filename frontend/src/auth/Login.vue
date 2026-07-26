@@ -3,10 +3,12 @@ import { onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { ArrowRight, ChevronDown, ChevronUp, HelpCircle, Lock, Mail, ShieldCheck, UserRound } from "lucide-vue-next";
-import logo from "@/assets/system-logo.png";
-import studentsCutout from "@/assets/auth/tcc-students-cutout.png";
+import logo from "@/assets/system-logo.webp";
+import studentsCutout from "@/assets/auth/tcc-students-cutout.webp";
 import { authSession } from "@/auth/session";
 import { login } from "@/api/auth";
+import { apiFetch } from "@/api/client";
+import CaptchaModal from "@/components/CaptchaModal.vue";
 import LanguageSwitcher from "@/components/LanguageSwitcher.vue";
 import { withLang } from "@/i18n/routeLang";
 
@@ -16,13 +18,15 @@ onMounted(() => {
     document.documentElement.classList.add("dark");
   }
 });
-import { apiFetch } from "@/api/client";
 
 const route = useRoute();
 const router = useRouter();
 const { t } = useI18n();
 const email = ref("");
 const password = ref("");
+const showCaptchaModal = ref(false);
+const captchaCode = ref("");
+const captchaError = ref(""); // error shown inside the captcha modal
 const error = ref("");
 const busy = ref(false);
 const mode = route.path.includes("forgot")
@@ -46,6 +50,22 @@ const demoAccounts: Record<string, string> = {
   Student: "student@tcc.edu.ph",
 };
 
+function openCaptchaModal() {
+  if (mode === "login" && (!email.value || !password.value)) {
+    error.value = t("auth.emailPasswordRequired");
+    return;
+  }
+  captchaError.value = "";
+  showCaptchaModal.value = true;
+}
+
+// Called when the user clicks Verify inside the modal.
+// We do NOT close the modal here — submit() decides based on the API response.
+async function handleCaptchaVerify(code: string) {
+  captchaCode.value = code;
+  await submit();
+}
+
 async function submit() {
   if (mode === "login" && (!email.value || !password.value)) {
     error.value = t("auth.emailPasswordRequired");
@@ -54,22 +74,34 @@ async function submit() {
 
   busy.value = true;
   error.value = "";
+  captchaError.value = "";
   try {
-    const user = await login(email.value, password.value);
+    const user = await login(email.value, password.value, captchaCode.value);
+    // Success — close the modal and navigate
+    showCaptchaModal.value = false;
     authSession.user = user;
     authSession.loaded = true;
     await router.push(withLang(user.role === "student" ? "/student" : "/app", route.query.lang));
   } catch (exception) {
-    error.value = exception instanceof Error ? exception.message : t("auth.signInFailed");
+    const msg = exception instanceof Error ? exception.message : t("auth.signInFailed");
+    // If the captcha modal is open, captcha-related errors stay inside the modal
+    if (showCaptchaModal.value) {
+      captchaError.value = msg;
+      captchaCode.value = "";
+      // Reload captcha image for a fresh attempt
+    } else {
+      error.value = msg;
+    }
   } finally {
     busy.value = false;
+    if (!showCaptchaModal.value) captchaCode.value = "";
   }
 }
 
 async function quickLogin(label: string) {
   email.value = demoAccounts[label];
   password.value = "password";
-  await submit();
+  openCaptchaModal();
 }
 
 function demoAccountLabel(role: string) {
@@ -85,8 +117,8 @@ function demoAccountLabel(role: string) {
 onMounted(async () => {
   try {
     const [termsRes, faqsRes] = await Promise.all([
-      fetch("/api/terms/active").then((r) => r.json()),
-      fetch("/api/faqs").then((r) => r.json()),
+      apiFetch<{ data: Term }>("/api/terms/active"),
+      apiFetch<{ data: Faq[] }>("/api/faqs"),
     ]);
     terms.value = termsRes.data;
     faqs.value = faqsRes.data || [];
@@ -183,21 +215,21 @@ onMounted(async () => {
           }}
         </p>
 
-        <form class="mt-5 space-y-3.5" @submit.prevent="submit">
+        <form class="mt-5 space-y-3.5">
           <label class="block">
-            <span class="mb-1.5 block text-xs font-medium">{{ t("common.email") }} <b class="text-danger">*</b></span>
+            <span class="mb-1.5 block text-xs font-medium text-text">{{ t("common.email") }} <b class="text-danger">*</b></span>
             <div class="relative">
               <Mail :size="17" class="absolute left-3 top-1/2 -translate-y-1/2 text-text-soft" />
               <input
                 v-model="email"
                 type="email"
                 placeholder="you@unifast.gov.ph"
-                class="h-10 w-full rounded-md border bg-[#f1f5fb] pl-10 pr-3 text-sm shadow-inner shadow-slate-200/40"
+                class="h-10 w-full rounded-md border bg-[#f1f5fb] pl-10 pr-3 text-sm text-text shadow-inner shadow-slate-200/40"
               />
             </div>
           </label>
           <label v-if="mode === 'login'" class="block">
-            <span class="mb-1.5 block text-xs font-medium"
+            <span class="mb-1.5 block text-xs font-medium text-text"
               >{{ t("common.password") }} <b class="text-danger">*</b></span
             >
             <div class="relative">
@@ -206,14 +238,16 @@ onMounted(async () => {
                 v-model="password"
                 type="password"
                 :placeholder="t('common.password')"
-                class="h-10 w-full rounded-md border bg-[#f1f5fb] pl-10 pr-3 text-sm shadow-inner shadow-slate-200/40"
+                class="h-10 w-full rounded-md border bg-[#f1f5fb] pl-10 pr-3 text-sm text-text shadow-inner shadow-slate-200/40"
               />
             </div>
           </label>
           <p v-if="error" class="text-xs text-danger">{{ error }}</p>
           <button
+            type="button"
             :disabled="busy"
             class="flex h-10 w-full items-center justify-center gap-2 rounded-md bg-primary text-sm font-semibold text-white shadow-sm hover:bg-primary-hover disabled:opacity-60"
+            @click="mode === 'login' ? openCaptchaModal() : submit()"
           >
             {{ busy ? t("auth.signingIn") : mode === "login" ? t("common.signIn") : t("common.continue") }}
             <ArrowRight :size="15" />
@@ -286,4 +320,12 @@ onMounted(async () => {
       </div>
     </main>
   </div>
+
+  <CaptchaModal
+    :show="showCaptchaModal"
+    :submit-error="captchaError"
+    :loading="busy"
+    @close="showCaptchaModal = false; captchaError = ''"
+    @verify="handleCaptchaVerify"
+  />
 </template>
