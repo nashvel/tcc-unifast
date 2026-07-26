@@ -94,11 +94,28 @@ class PdfResult(BaseModel):
     processing_time_ms: int
 
 
+class PdfMetadataInfo(BaseModel):
+    format: Optional[str] = None
+    title: Optional[str] = None
+    author: Optional[str] = None
+    subject: Optional[str] = None
+    keywords: Optional[str] = None
+    creator: Optional[str] = None
+    producer: Optional[str] = None
+    creationDate: Optional[str] = None
+    modDate: Optional[str] = None
+    encryption: Optional[str] = None
+    is_encrypted: bool = False
+    page_count: int = 0
+    engine: Literal["pymupdf"] = "pymupdf"
+
+
 class PdfOcrResponse(BaseModel):
     success: Literal[True] = True
     document_type: Literal["pdf"] = "pdf"
     engine: Literal["tesseract"] = "tesseract"
     result: PdfResult
+    pdf_metadata: Optional[PdfMetadataInfo] = None
 
 
 class CliResult(BaseModel):

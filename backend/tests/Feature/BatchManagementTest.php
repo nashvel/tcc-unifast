@@ -16,7 +16,7 @@ class BatchManagementTest extends TestCase
     public function test_activating_batch_deactivates_previous_active_batch(): void
     {
         Mail::fake();
-        $head = User::factory()->create(['role' => 'head', 'account_status' => 'active']);
+        $admin = User::factory()->create(['role' => 'admin', 'account_status' => 'active']);
         $first = Batch::create([
             'name' => 'Batch 1',
             'academic_year' => 'AY 2026-2027',
@@ -35,7 +35,7 @@ class BatchManagementTest extends TestCase
             'status' => 'draft',
         ]);
 
-        $this->actingAs($head)
+        $this->actingAs($admin)
             ->postJson("/api/batches/{$second->id}/activate")
             ->assertOk()
             ->assertJsonPath('data.window_status', 'active');

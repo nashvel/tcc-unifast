@@ -36,18 +36,18 @@ const isMatrix = computed(
 const users = [
   [
     "sysadmin",
-    "System Administrator",
+    "System Developer",
     "admin@unifast.gov.ph",
-    "Admin",
+    "Developer",
     true,
     true,
     "Jul 11, 2026, 7:41 PM",
   ],
   [
     "office.head",
-    "Office Head",
+    "Office Administrator",
     "head@unifast.gov.ph",
-    "Head",
+    "Admin",
     true,
     true,
     "Jul 11, 2026, 5:12 PM",
@@ -150,8 +150,8 @@ const allowed = (role: string, permission: string) =>
       </div>
       <select v-model="roleFilter" class="h-9 rounded-md border bg-surface px-3 text-xs">
         <option value="All roles">{{ t("users.allRoles") }}</option>
+        <option value="Developer">{{ t("roles.developer") }}</option>
         <option value="Admin">{{ t("roles.admin") }}</option>
-        <option value="Head">{{ t("roles.head") }}</option>
         <option value="Staff">{{ t("roles.staff") }}</option></select
       ><select v-model="statusFilter" class="h-9 rounded-md border bg-surface px-3 text-xs">
         <option value="All statuses">{{ t("users.allStatuses") }}</option>
@@ -257,8 +257,8 @@ const allowed = (role: string, permission: string) =>
         ><label class="text-xs font-medium"
           >{{ t("users.role") }}<select class="mt-1.5 h-10 w-full rounded-md border bg-surface px-3 text-sm">
             <option>{{ t("roles.staff") }}</option>
-            <option>{{ t("roles.head") }}</option>
             <option>{{ t("roles.admin") }}</option>
+            <option>{{ t("roles.developer") }}</option>
           </select></label
         ><label class="flex items-center gap-2 text-xs sm:col-span-2"
           ><input type="checkbox" checked />{{ t("users.requirePasswordMfa") }}</label

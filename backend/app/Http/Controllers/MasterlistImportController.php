@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\GranteeActivationInviteMail;
 use App\Models\ActivationToken;
 use App\Models\Batch;
 use App\Models\Grantee;
@@ -9,37 +10,72 @@ use App\Models\MasterlistImport;
 use App\Models\MasterlistRow;
 use App\Models\User;
 use App\Services\MasterlistSpreadsheetParser;
+use App\Support\PaginatedJson;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Throwable;
 
 class MasterlistImportController extends Controller
 {
+    public function index(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'batch_id' => ['nullable', 'integer', 'exists:batches,id'],
+        ]);
+
+        $perPage = min(max((int) $request->integer('per_page', 15), 1), 100);
+
+        $query = MasterlistImport::query()
+            ->with('batch')
+            ->latest('id');
+
+        if (! empty($validated['batch_id'])) {
+            $query->where('batch_id', $validated['batch_id']);
+        }
+
+        $paginator = $query->paginate($perPage);
+        $rows = collect($paginator->items())->map(fn (MasterlistImport $import) => [
+            'id' => $import->id,
+            'status' => $import->status,
+            'original_name' => $import->original_name,
+            'total_rows' => $import->total_rows,
+            'valid_rows' => $import->valid_rows,
+            'invalid_rows' => $import->invalid_rows,
+            'imported_rows' => $import->imported_rows,
+            'created_at' => $import->created_at,
+            'batch' => $import->batch ? [
+                'id' => $import->batch->id,
+                'name' => $import->batch->name,
+                'academic_year' => $import->batch->academic_year,
+                'semester' => $import->batch->semester,
+            ] : null,
+        ]);
+
+        return PaginatedJson::from($paginator, $rows->values());
+    }
+
     public function preview(Request $request, MasterlistSpreadsheetParser $parser): JsonResponse
     {
         $validated = $request->validate([
-            'file' => ['required', 'file', 'mimes:csv,xlsx', 'max:20480'],
-            'batch_name' => ['required', 'string', 'max:120'],
-            'academic_year' => ['required', 'string', 'max:40'],
-            'semester' => ['required', 'string', 'max:80'],
+            'file' => ['required', 'file', 'mimes:csv,xlsx,xls', 'max:20480'],
+            'batch_id' => ['required', 'integer', 'exists:batches,id'],
         ]);
+
+        $batch = Batch::query()->findOrFail($validated['batch_id']);
+        if (! $batch->submission_deadline) {
+            throw ValidationException::withMessages([
+                'batch_id' => 'Select a batch that already has a submission deadline before importing.',
+            ]);
+        }
 
         $file = $validated['file'];
         $storedPath = $file->store('masterlist-imports', 'local');
         $parsedRows = $parser->parse($file);
-
-        $batch = Batch::query()->firstOrCreate(
-            [
-                'academic_year' => $validated['academic_year'],
-                'semester' => $validated['semester'],
-                'name' => $validated['batch_name'],
-            ],
-            ['status' => 'open'],
-        );
 
         $import = MasterlistImport::create([
             'batch_id' => $batch->id,
@@ -94,10 +130,17 @@ class MasterlistImportController extends Controller
 
     public function confirm(Request $request, MasterlistImport $import): JsonResponse
     {
-        abort_unless(in_array($request->user()->role, ['admin', 'head'], true), 403);
+        abort_unless(in_array($request->user()->role, ['developer', 'admin'], true), 403);
 
         if ($import->status === 'imported') {
             return response()->json(['data' => $this->presentImport($import->load(['batch', 'rows']))]);
+        }
+
+        $batch = $import->batch;
+        if (! $batch || ! $batch->submission_deadline) {
+            throw ValidationException::withMessages([
+                'batch_id' => 'The import batch must exist and include a submission deadline.',
+            ]);
         }
 
         $sent = 0;
@@ -157,7 +200,7 @@ class MasterlistImportController extends Controller
     }
 
     /**
-     * @param array<string, string> $row
+     * @param  array<string, string>  $row
      * @return array<string, string|null>
      */
     private function normalizeRow(array $row): array
@@ -173,15 +216,15 @@ class MasterlistImportController extends Controller
     }
 
     /**
-     * @param array<string, string|null> $row
-     * @param list<string> $seenStudentIds
-     * @param list<string> $seenStudentNumbers
+     * @param  array<string, string|null>  $row
+     * @param  list<string>  $seenStudentIds
+     * @param  list<string>  $seenStudentNumbers
      * @return list<string>
      */
     private function rowErrors(array $row, array $seenStudentIds, array $seenStudentNumbers): array
     {
         $errors = [];
-        foreach (['student_id', 'full_name', 'email', 'program'] as $field) {
+        foreach (['student_id', 'full_name', 'email', 'program', 'year_level'] as $field) {
             if (($row[$field] ?? '') === '') {
                 $errors[] = "Missing {$field}.";
             }
@@ -215,18 +258,11 @@ class MasterlistImportController extends Controller
 
     private function sendActivationEmail(User $user, string $temporaryPassword, string $plainToken): void
     {
-        $body = implode("\n\n", [
-            "Hello {$user->name},",
-            'Your TCC UniFAST TES account was created from the CHED masterlist.',
-            'Activation link: '.url('/activate/'.$plainToken),
-            "Temporary password: {$temporaryPassword}",
-            'Use the link once, replace your password, then complete your KYC profile.',
-            'Do not share this temporary password with anyone.',
-        ]);
-
-        Mail::raw($body, fn ($message) => $message
-            ->to($user->email, $user->name)
-            ->subject('Activate your TCC UniFAST TES student portal account'));
+        Mail::to($user->email, $user->name)->send(new GranteeActivationInviteMail(
+            $user,
+            $temporaryPassword,
+            url('/activate/'.$plainToken),
+        ));
     }
 
     private function presentImport(MasterlistImport $import): array
@@ -244,6 +280,7 @@ class MasterlistImportController extends Controller
                 'name' => $import->batch->name,
                 'academic_year' => $import->batch->academic_year,
                 'semester' => $import->batch->semester,
+                'submission_deadline' => $import->batch->submission_deadline,
             ] : null,
             'rows' => $import->rows->map(fn (MasterlistRow $row) => [
                 'id' => $row->id,

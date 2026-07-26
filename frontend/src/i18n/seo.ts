@@ -1,6 +1,7 @@
 import type { Router } from "vue-router";
 import { watch } from "vue";
 import { i18n } from "@/i18n";
+import { authSession } from "@/auth/session";
 
 const routeSeoKeys: Record<string, { title: string; description: string }> = {
   "/login": { title: "seo.login.title", description: "seo.login.description" },
@@ -29,8 +30,12 @@ export function updateSeo(path: string): void {
 
   const { t, locale } = i18n.global;
   const seo = bestSeoMatch(path);
-  const title = t(seo.title);
+  let title = t(seo.title);
   const description = t(seo.description);
+
+  if (path.startsWith("/app") && authSession.user?.role === "developer") {
+    title = title.replace("Admin Dashboard", "Developer Dashboard").replace("Admin", "Developer");
+  }
 
   document.documentElement.lang = locale.value;
   document.title = title;

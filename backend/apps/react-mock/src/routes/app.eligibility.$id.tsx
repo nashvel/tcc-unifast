@@ -11,12 +11,16 @@ export const Route = createFileRoute("/app/eligibility/$id")({
   component: EvalDetail,
 });
 
+/** Matches Settings → Max failed subjects per semester. */
+const maxFailedSubjectsPerSemester = 1;
+
 const criteria = [
-  { label: "Documents complete and approved", pass: true },
-  { label: "Cumulative GWA within TES retention rule", pass: true },
-  { label: "No more than 1 failed subject in the last semester", pass: true },
-  { label: "Not enrolled in disqualified program", pass: true },
-  { label: "Account verified and active", pass: true },
+  { label: "Enrolled in current activation batch", pass: true },
+  { label: "Required documents submitted for current batch", pass: true },
+  {
+    label: `Academic retention (max ${maxFailedSubjectsPerSemester} failed subject(s) per semester)`,
+    pass: true,
+  },
 ];
 
 function EvalDetail() {
@@ -31,11 +35,17 @@ function EvalDetail() {
       <Link to="/app/eligibility" className="inline-flex items-center gap-1 text-xs text-text-muted hover:text-text mb-3">
         <IconArrowLeft size={13} /> Back
       </Link>
-      <PageHeader title={`Eligibility — ${g.firstName} ${g.lastName}`} description={`${g.studentNumber} • ${g.program}`} />
+      <PageHeader
+        title={`Submission eligibility — ${g.firstName} ${g.lastName}`}
+        description={`${g.studentNumber} • ${g.batch} • ${g.program}`}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2 rounded-lg border bg-surface p-4">
-          <p className="text-sm font-semibold mb-3">Criteria Checklist</p>
+          <p className="text-sm font-semibold mb-1">Submission &amp; retention checklist</p>
+          <p className="text-xs text-text-muted mb-3">
+            CHED already confirmed this student as a TES grantee. Checks cover batch submissions and Settings retention only.
+          </p>
           <ul className="space-y-2">
             {criteria.map((c, i) => (
               <li key={i} className="flex items-center justify-between text-sm border-b last:border-0 pb-2">
@@ -45,14 +55,16 @@ function EvalDetail() {
             ))}
           </ul>
           <div className="mt-4 p-3 rounded-md bg-success-soft text-success text-xs">
-            <p className="font-semibold">Rules-based decision: Eligible</p>
-            <p className="text-text-muted mt-1">All criteria met. Recommendation may be overridden by Office Head with documented justification.</p>
+            <p className="font-semibold">Retention checks: Eligible</p>
+            <p className="text-text-muted mt-1">
+              Batch submissions and max failed subjects ({maxFailedSubjectsPerSemester}/semester) are within Settings rules.
+            </p>
           </div>
         </div>
         <div className="rounded-lg border bg-surface p-4">
           <p className="text-sm font-semibold mb-2">Current Status</p>
           <StatusBadge variant={statusVariantFor(g.eligibility)}>{formatStatus(g.eligibility)}</StatusBadge>
-          <p className="text-xs text-text-muted mt-3">Update the official eligibility status for this grantee.</p>
+          <p className="text-xs text-text-muted mt-3">Update submission eligibility for this grantee&apos;s active batch.</p>
           <div className="grid grid-cols-2 gap-2 mt-3">
             <Btn variant="primary" icon={IconCheck} onClick={() => setConfirm("eligible")}>Mark Eligible</Btn>
             <Btn variant="danger" icon={IconX} onClick={() => setConfirm("ineligible")}>Mark Ineligible</Btn>

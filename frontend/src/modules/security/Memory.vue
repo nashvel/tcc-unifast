@@ -9,7 +9,7 @@ const records = ref([
     "SEC-2026-0184",
     "Repeated failed login pattern",
     "Authentication",
-    "System Administrator",
+    "System Developer",
     "July 11, 2026",
     "Active",
   ],

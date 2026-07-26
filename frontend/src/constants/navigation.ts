@@ -2,22 +2,27 @@ import type { Component } from "vue";
 import {
   IconBell,
   IconChecklist,
+  IconCode,
   IconDashboard,
   IconFileCheck,
   IconFileImport,
+  IconFileInvoice,
   IconFolder,
   IconFolders,
   IconHistory,
   IconLifebuoy,
   IconReportAnalytics,
+  IconReportMoney,
   IconSchool,
   IconSettings,
   IconShieldCheck,
   IconSpeakerphone,
+  IconTerminal,
   IconUpload,
   IconUserCircle,
   IconUserCog,
   IconUsersGroup,
+  IconUserPlus,
 } from "@tabler/icons-vue";
 
 export type NavigationSection = {
@@ -32,6 +37,8 @@ export const adminNavigation: NavigationSection[] = [
     items: [
       { labelKey: "nav.announcements", path: "/app/announcements", icon: IconSpeakerphone },
       { labelKey: "nav.monitoringReports", path: "/app/reports", icon: IconReportAnalytics },
+      { labelKey: "nav.billing", path: "/app/billing", icon: IconFileInvoice },
+      { labelKey: "nav.distributionReport", path: "/app/distribution", icon: IconReportMoney },
       { labelKey: "nav.supportTickets", path: "/app/support", icon: IconLifebuoy },
     ],
   },
@@ -47,11 +54,39 @@ export const adminNavigation: NavigationSection[] = [
   },
 ];
 
+export const developerNavigation: NavigationSection[] = [
+  { items: [{ labelKey: "common.dashboard", path: "/app", icon: IconDashboard }] },
+  {
+    labelKey: "nav.developer.system",
+    items: [
+      { labelKey: "nav.developer.rbac", path: "/app/developer/rbac", icon: IconShieldCheck },
+      { labelKey: "nav.developer.apiDocs", path: "/app/developer/api-docs", icon: IconCode },
+      { labelKey: "nav.developer.flowChart", path: "/app/developer/flow-chart", icon: IconTerminal },
+    ],
+  },
+  {
+    labelKey: "nav.developer.operations",
+    items: [
+      { labelKey: "nav.developer.supportTickets", path: "/app/developer/support", icon: IconLifebuoy },
+      { labelKey: "nav.developer.auditTrail", path: "/app/developer/audit", icon: IconHistory },
+      { labelKey: "nav.developer.collaborators", path: "/app/developer/collaborators", icon: IconUsersGroup },
+    ],
+  },
+  {
+    labelKey: "nav.administration",
+    items: [
+      { labelKey: "nav.usersRoles", path: "/app/developer/users", icon: IconUserCog },
+      { labelKey: "common.settings", path: "/app/developer/settings", icon: IconSettings },
+    ],
+  },
+];
+
 export const staffNavigation: NavigationSection[] = [
   { items: [{ labelKey: "common.dashboard", path: "/app", icon: IconDashboard }] },
   {
     labelKey: "nav.operations",
     items: [
+      { labelKey: "nav.onboardingCenter", path: "/app/onboarding", icon: IconUserPlus },
       { labelKey: "nav.masterlist", path: "/app/masterlist", icon: IconFileImport },
       { labelKey: "nav.batches", path: "/app/batches", icon: IconFolders },
       { labelKey: "nav.grantees", path: "/app/grantees", icon: IconUsersGroup },
@@ -71,6 +106,8 @@ export const staffNavigation: NavigationSection[] = [
     items: [
       { labelKey: "nav.announcements", path: "/app/announcements", icon: IconSpeakerphone },
       { labelKey: "nav.reports", path: "/app/reports", icon: IconReportAnalytics },
+      { labelKey: "nav.billing", path: "/app/billing", icon: IconFileInvoice },
+      { labelKey: "nav.distributionReport", path: "/app/distribution", icon: IconReportMoney },
       { labelKey: "nav.supportTickets", path: "/app/support", icon: IconLifebuoy },
     ],
   },

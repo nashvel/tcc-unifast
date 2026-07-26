@@ -2,22 +2,27 @@
 import { onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
-import { ArrowRight, Lock, Mail, RefreshCw, UserRound } from "lucide-vue-next";
+import { ArrowRight, ChevronDown, ChevronUp, HelpCircle, Lock, Mail, ShieldCheck, UserRound } from "lucide-vue-next";
 import logo from "@/assets/system-logo.png";
 import studentsCutout from "@/assets/auth/tcc-students-cutout.png";
 import { authSession } from "@/auth/session";
-import { fetchLoginCaptcha, login } from "@/api/auth";
+import { login } from "@/api/auth";
 import LanguageSwitcher from "@/components/LanguageSwitcher.vue";
 import { withLang } from "@/i18n/routeLang";
+
+// Preserve dark theme on login page if it was set before logout
+onMounted(() => {
+  if (typeof localStorage !== "undefined" && localStorage.getItem("theme") === "dark") {
+    document.documentElement.classList.add("dark");
+  }
+});
+import { apiFetch } from "@/api/client";
 
 const route = useRoute();
 const router = useRouter();
 const { t } = useI18n();
 const email = ref("");
 const password = ref("");
-const captcha = ref("");
-const captchaImageUrl = ref("");
-const captchaLoading = ref(false);
 const error = ref("");
 const busy = ref(false);
 const mode = route.path.includes("forgot")
@@ -25,26 +30,21 @@ const mode = route.path.includes("forgot")
   : route.path.includes("activate")
     ? "activate"
     : "login";
+
+type Term = { id: number; title: string; content: string; version: string };
+type Faq = { id: number; question: string; answer: string; category: string };
+
+const terms = ref<Term | null>(null);
+const faqs = ref<Faq[]>([]);
+const showTerms = ref(false);
+const expandedFaq = ref<number | null>(null);
+
 const demoAccounts: Record<string, string> = {
-  Administrator: "admin@unifast.gov.ph",
-  "Office Head": "head@unifast.gov.ph",
+  Developer: "admin@unifast.gov.ph",
+  Administrator: "head@unifast.gov.ph",
   "UniFAST Staff": "staff@unifast.gov.ph",
   Student: "student@tcc.edu.ph",
 };
-
-async function loadCaptcha() {
-  if (mode !== "login") return;
-
-  captchaLoading.value = true;
-  try {
-    captchaImageUrl.value = await fetchLoginCaptcha();
-    captcha.value = "";
-  } catch {
-    error.value = "Unable to load the security verification image.";
-  } finally {
-    captchaLoading.value = false;
-  }
-}
 
 async function submit() {
   if (mode === "login" && (!email.value || !password.value)) {
@@ -55,13 +55,12 @@ async function submit() {
   busy.value = true;
   error.value = "";
   try {
-    const user = await login(email.value, password.value, captcha.value);
+    const user = await login(email.value, password.value);
     authSession.user = user;
     authSession.loaded = true;
     await router.push(withLang(user.role === "student" ? "/student" : "/app", route.query.lang));
   } catch (exception) {
     error.value = exception instanceof Error ? exception.message : t("auth.signInFailed");
-    await loadCaptcha();
   } finally {
     busy.value = false;
   }
@@ -75,15 +74,24 @@ async function quickLogin(label: string) {
 
 function demoAccountLabel(role: string) {
   const labels: Record<string, string> = {
+    Developer: t("auth.developer"),
     Administrator: t("auth.administrator"),
-    "Office Head": t("auth.officeHead"),
     "UniFAST Staff": t("auth.staff"),
     Student: t("auth.student"),
   };
   return labels[role] ?? role;
 }
 
-onMounted(loadCaptcha);
+onMounted(async () => {
+  try {
+    const [termsRes, faqsRes] = await Promise.all([
+      fetch("/api/terms/active").then((r) => r.json()),
+      fetch("/api/faqs").then((r) => r.json()),
+    ]);
+    terms.value = termsRes.data;
+    faqs.value = faqsRes.data || [];
+  } catch {}
+});
 </script>
 
 <template>
@@ -202,46 +210,6 @@ onMounted(loadCaptcha);
               />
             </div>
           </label>
-          <div v-if="mode === 'login'" class="space-y-1.5">
-            <span class="block text-xs font-medium text-slate-700">
-              Security Verification
-            </span>
-            <div class="flex items-center gap-2">
-              <div
-                class="relative flex h-10 min-w-0 flex-1 select-none items-center justify-center overflow-hidden rounded-md border bg-[#f1f5fb] px-4 shadow-inner shadow-slate-200/40"
-              >
-                <span v-if="captchaLoading" class="text-xs font-medium text-text-soft">Loading...</span>
-                <img
-                  v-else-if="captchaImageUrl"
-                  :src="captchaImageUrl"
-                  alt="Security verification code"
-                  class="h-full w-full object-cover"
-                />
-              </div>
-              <button
-                type="button"
-                class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md border bg-white text-primary hover:bg-surface-muted"
-                aria-label="Refresh CAPTCHA"
-                title="Refresh CAPTCHA"
-                :disabled="captchaLoading || busy"
-                @click="loadCaptcha"
-              >
-                <RefreshCw :size="15" />
-              </button>
-            </div>
-            <label class="block">
-              <span class="mb-1.5 block text-xs font-medium">Enter CAPTCHA</span>
-              <input
-                v-model="captcha"
-                type="text"
-                inputmode="text"
-                autocomplete="off"
-                placeholder="Type the code shown"
-                class="h-10 w-full rounded-md border bg-[#f1f5fb] px-3 text-sm shadow-inner shadow-slate-200/40"
-              />
-            </label>
-            <p class="sr-only text-xs text-danger" aria-live="polite">CAPTCHA error message</p>
-          </div>
           <p v-if="error" class="text-xs text-danger">{{ error }}</p>
           <button
             :disabled="busy"
@@ -260,21 +228,59 @@ onMounted(loadCaptcha);
           <RouterLink :to="withLang('/login', route.query.lang)" class="text-primary">{{ t("auth.backToSignIn") }}</RouterLink>
         </div>
 
-        <div v-if="mode === 'login'" class="mt-5 border-t pt-3">
-          <p class="mb-2 text-2xs font-semibold uppercase tracking-wider text-text-soft">
+        <div v-if="mode === 'login'" class="mt-6 border-t pt-4">
+          <p class="mb-2.5 text-2xs font-semibold uppercase tracking-wider text-text-soft">
             {{ t("auth.demoAccounts") }}
           </p>
           <div class="grid grid-cols-2 gap-2">
             <button
-              v-for="role in ['Administrator', 'Office Head', 'UniFAST Staff', 'Student']"
+              v-for="role in ['Developer', 'Administrator', 'UniFAST Staff', 'Student']"
               :key="role"
               type="button"
-              class="flex h-8 min-w-0 items-center gap-2 rounded-md border bg-white px-2.5 text-left hover:bg-surface-muted"
+              class="flex h-10 items-center gap-2.5 rounded-md border bg-white px-3 text-left hover:bg-surface-muted"
               @click="quickLogin(role)"
             >
-              <UserRound :size="14" class="shrink-0 text-text-muted" />
-              <span class="truncate text-[11px] font-medium">{{ demoAccountLabel(role) }}</span>
+              <UserRound :size="17" class="text-text-muted" />
+              <span class="text-xs font-medium">{{ demoAccountLabel(role) }}</span>
             </button>
+          </div>
+          <RouterLink
+            :to="withLang('/help/support', route.query.lang)"
+            class="mt-4 flex items-center justify-center gap-2 rounded-md border py-2.5 text-xs font-medium text-text-muted hover:bg-surface-muted"
+          >
+            <HelpCircle :size="14" />
+            Help & Support
+          </RouterLink>
+        </div>
+
+        <!-- Terms & Conditions -->
+        <div v-if="terms && mode === 'login'" class="mt-6 border-t pt-4">
+          <button class="flex w-full items-center gap-2 text-xs font-medium text-text-muted hover:text-text" @click="showTerms = !showTerms">
+            <ShieldCheck :size="14" />
+            <span>{{ terms.title }} (v{{ terms.version }})</span>
+            <component :is="showTerms ? ChevronUp : ChevronDown" :size="14" class="ml-auto" />
+          </button>
+          <div v-if="showTerms" class="mt-3 max-h-48 overflow-y-auto rounded-md border bg-surface p-3 text-xs text-text-muted">
+            <div v-html="terms.content" />
+          </div>
+        </div>
+
+        <!-- FAQ -->
+        <div v-if="faqs.length && mode === 'login'" class="mt-4 border-t pt-4">
+          <button class="flex w-full items-center gap-2 text-xs font-medium text-text-muted hover:text-text mb-3">
+            <HelpCircle :size="14" />
+            <span>Frequently Asked Questions</span>
+          </button>
+          <div class="space-y-2">
+            <div v-for="faq in faqs" :key="faq.id" class="rounded-md border bg-surface">
+              <button class="flex w-full items-center justify-between p-3 text-left text-xs font-medium text-text" @click="expandedFaq = expandedFaq === faq.id ? null : faq.id">
+                <span>{{ faq.question }}</span>
+                <component :is="expandedFaq === faq.id ? ChevronUp : ChevronDown" :size="14" class="shrink-0 text-text-muted" />
+              </button>
+              <div v-if="expandedFaq === faq.id" class="border-t px-3 py-2 text-xs text-text-muted">
+                {{ faq.answer }}
+              </div>
+            </div>
           </div>
         </div>
       </div>

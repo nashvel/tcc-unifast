@@ -16,6 +16,11 @@ export type FaceDescriptorResult = {
   quality: number;
 };
 
+export type FaceCropResult = FaceDescriptorResult & {
+  blob: Blob;
+  box: { x: number; y: number; width: number; height: number };
+};
+
 export type Challenge = "blink" | "turn_left" | "turn_right";
 
 export async function loadFaceModels() {
@@ -33,10 +38,10 @@ export async function loadFaceModels() {
   return loading;
 }
 
-export async function descriptorFromImage(file: File): Promise<FaceDescriptorResult> {
+export async function descriptorFromImage(file: File | HTMLImageElement): Promise<FaceDescriptorResult> {
   await loadFaceModels();
   const api = await faceApi();
-  const image = await api.bufferToImage(file);
+  const image = file instanceof HTMLImageElement ? file : await api.bufferToImage(file);
   const result = await api
     .detectSingleFace(image, new api.TinyFaceDetectorOptions({ inputSize: 416 }))
     .withFaceLandmarks()
@@ -49,6 +54,51 @@ export async function descriptorFromImage(file: File): Promise<FaceDescriptorRes
   return {
     descriptor: Array.from(result.descriptor),
     quality: Number(result.detection.score.toFixed(2)),
+  };
+}
+
+export async function cropFaceFromImage(source: File | HTMLImageElement | HTMLCanvasElement): Promise<FaceCropResult> {
+  await loadFaceModels();
+  const api = await faceApi();
+  let image: HTMLImageElement | HTMLCanvasElement;
+  if (source instanceof File) {
+    image = await api.bufferToImage(source);
+  } else {
+    image = source;
+  }
+
+  const result = await api
+    .detectSingleFace(image, new api.TinyFaceDetectorOptions({ inputSize: 416 }))
+    .withFaceLandmarks()
+    .withFaceDescriptor();
+
+  if (!result) {
+    throw new Error("No face was detected on the ID card. Align the photo inside the guide frame.");
+  }
+
+  const box = result.detection.box;
+  const pad = Math.max(box.width, box.height) * 0.35;
+  const sx = Math.max(0, box.x - pad);
+  const sy = Math.max(0, box.y - pad);
+  const sw = Math.min((image as HTMLImageElement).width || (image as HTMLCanvasElement).width, box.width + pad * 2);
+  const sh = Math.min((image as HTMLImageElement).height || (image as HTMLCanvasElement).height, box.height + pad * 2);
+
+  const canvas = document.createElement("canvas");
+  canvas.width = 240;
+  canvas.height = 240;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Unable to crop ID face.");
+  ctx.drawImage(image, sx, sy, sw, sh, 0, 0, 240, 240);
+
+  const blob = await new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob((value) => (value ? resolve(value) : reject(new Error("Unable to encode face crop."))), "image/jpeg", 0.92);
+  });
+
+  return {
+    descriptor: Array.from(result.descriptor),
+    quality: Number(result.detection.score.toFixed(2)),
+    blob,
+    box: { x: box.x, y: box.y, width: box.width, height: box.height },
   };
 }
 
@@ -106,6 +156,29 @@ export function euclideanDistance(first: number[], second: number[]) {
 
   const total = first.reduce((sum, value, index) => sum + (value - second[index]) ** 2, 0);
   return Math.sqrt(total);
+}
+
+export async function descriptorFromUrl(url: string): Promise<FaceDescriptorResult> {
+  await loadFaceModels();
+  const api = await faceApi();
+  const image = await api.fetchImage(url);
+  return descriptorFromImage(image);
+}
+
+export function captureVideoFrame(video: HTMLVideoElement, quality = 0.9): Promise<Blob> {
+  const canvas = document.createElement("canvas");
+  canvas.width = video.videoWidth || 960;
+  canvas.height = video.videoHeight || 720;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return Promise.reject(new Error("Unable to capture camera frame."));
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("Unable to encode camera frame."))), "image/jpeg", quality);
+  });
+}
+
+export function shuffleChallenges(): Challenge[] {
+  return (["blink", "turn_left", "turn_right"] as Challenge[]).sort(() => Math.random() - 0.5);
 }
 
 function eyeAspectRatio(points: { x: number; y: number }[]) {
