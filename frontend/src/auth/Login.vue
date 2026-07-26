@@ -9,6 +9,13 @@ import { authSession } from "@/auth/session";
 import { login } from "@/api/auth";
 import LanguageSwitcher from "@/components/LanguageSwitcher.vue";
 import { withLang } from "@/i18n/routeLang";
+
+// Preserve dark theme on login page if it was set before logout
+onMounted(() => {
+  if (typeof localStorage !== "undefined" && localStorage.getItem("theme") === "dark") {
+    document.documentElement.classList.add("dark");
+  }
+});
 import { apiFetch } from "@/api/client";
 
 const route = useRoute();
