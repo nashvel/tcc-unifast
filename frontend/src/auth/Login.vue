@@ -10,11 +10,9 @@ import { login } from "@/api/auth";
 import LanguageSwitcher from "@/components/LanguageSwitcher.vue";
 import { withLang } from "@/i18n/routeLang";
 
-// Preserve dark theme on login page if it was set before logout
+// Force light mode on login page - never use dark mode here
 onMounted(() => {
-  if (typeof localStorage !== "undefined" && localStorage.getItem("theme") === "dark") {
-    document.documentElement.classList.add("dark");
-  }
+  document.documentElement.classList.remove("dark", "dev-dark");
 });
 import { apiFetch } from "@/api/client";
 
