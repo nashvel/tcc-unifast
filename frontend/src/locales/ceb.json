@@ -409,8 +409,12 @@
       "description": "I-activate ang imong UniFAST TES portal account."
     },
     "adminDashboard": {
-      "title": "Admin Dashboard - UniFAST TES",
+      "title": "Developer Dashboard - UniFAST TES",
       "description": "Dumala ang TES grantees, dokumento, batch, report, ug eligibility."
+    },
+    "developerDashboard": {
+      "title": "Developer Dashboard - UniFAST TES",
+      "description": "Kahimsog sa sistema, performance sa API, ug deployment status."
     },
     "studentDashboard": {
       "title": "Student Dashboard - UniFAST TES",
