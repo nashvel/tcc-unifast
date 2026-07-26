@@ -6,11 +6,15 @@ import "vue-sonner/style.css";
 <template>
   <Toaster
     position="top-right"
-    :duration="4000"
-    :toast-options="{
-      class: 'border bg-surface text-text shadow-lg',
-    }"
+    :duration="3500"
     rich-colors
     close-button
+    :toast-options="{
+      style: {
+        borderRadius: '8px',
+        fontSize: '12px',
+        fontFamily: 'inherit',
+      },
+    }"
   />
 </template>
