@@ -17,6 +17,7 @@ import {
   IconUserCog,
   IconHistory,
 } from "@tabler/icons-vue";
+import logo from "@/assets/system-logo.png";
 import { withLang } from "@/i18n/routeLang";
 
 const route = useRoute();
@@ -85,9 +86,7 @@ function go(path: string) {
   <aside class="flex h-full w-56 shrink-0 flex-col bg-[var(--sidebar-bg)]">
     <!-- Logo -->
     <div class="flex h-14 shrink-0 items-center gap-2.5 px-4">
-      <div class="flex size-7 items-center justify-center rounded-lg bg-white">
-        <span class="text-xs font-bold text-white">T</span>
-      </div>
+      <img :src="logo" class="size-7 object-contain" alt="TCC UniFAST" draggable="false" />
       <span class="text-sm font-semibold text-[var(--sidebar-text)]">TCC UniFAST</span>
     </div>
 
