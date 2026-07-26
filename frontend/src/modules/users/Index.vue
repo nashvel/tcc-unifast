@@ -33,7 +33,9 @@ function confirmAccount(action: string, name: string) {
 const isMatrix = computed(
   () => route.params.section === "permissions" || route.path.endsWith("/users/permissions"),
 );
-const users = [
+import { apiFetch, isMockMode } from "@/api/client";
+
+const initialUsers: any[][] = [
   [
     "sysadmin",
     "System Developer",
@@ -71,8 +73,42 @@ const users = [
     "Jul 8, 2026, 9:16 AM",
   ],
 ];
+
+const users = ref<any[][]>(isMockMode ? initialUsers : []);
+
+async function loadUsers() {
+  try {
+    const res = await apiFetch<{ data: any[] }>("/api/collaborators");
+    if (res.data && res.data.length > 0) {
+      users.value = res.data.map((collab) => [
+        collab.email.split("@")[0],
+        collab.name,
+        collab.email,
+        collab.role.charAt(0).toUpperCase() + collab.role.slice(1),
+        true,
+        collab.status === "active" || collab.status === "pending",
+        collab.invitedAt || "Recent",
+      ]);
+    } else if (isMockMode) {
+      users.value = initialUsers;
+    } else {
+      users.value = [];
+    }
+  } catch {
+    if (isMockMode) {
+      users.value = initialUsers;
+    } else {
+      users.value = [];
+    }
+  }
+}
+
+if (typeof window !== "undefined") {
+  loadUsers();
+}
+
 const filtered = computed(() =>
-  users.filter((user) => {
+  users.value.filter((user) => {
     const matchesSearch =
       !search.value ||
       `${user[0]} ${user[1]} ${user[2]}`.toLowerCase().includes(search.value.toLowerCase());
@@ -126,11 +162,11 @@ const allowed = (role: string, permission: string) =>
         >
           <IconDownload :size="14" />{{ t("common.export") }}</button
         ><RouterLink
-          :to="withLang('/app/users/permissions', route.query.lang)"
+          :to="withLang(route.path.startsWith('/app/developer') ? '/app/developer/users/permissions' : '/app/users/permissions', route.query.lang)"
           class="inline-flex h-9 items-center rounded-md border bg-surface px-3 text-xs"
           >{{ t("users.permissionMatrix") }}</RouterLink
         ><button
-          class="inline-flex h-9 items-center gap-1.5 rounded-md bg-primary px-3 text-xs font-medium text-white"
+          class="inline-flex h-9 items-center gap-1.5 rounded-md bg-white text-black font-medium px-3 text-xs hover:bg-neutral-200 transition-colors shadow-sm"
           @click="userDialog = true"
         >
           <IconPlus :size="14" />{{ t("users.newUser") }}
@@ -296,7 +332,7 @@ const allowed = (role: string, permission: string) =>
   </div>
   <div v-else>
     <RouterLink
-      :to="withLang('/app/users', route.query.lang)"
+      :to="withLang(route.path.startsWith('/app/developer') ? '/app/developer/users' : '/app/users', route.query.lang)"
       class="mb-3 inline-flex items-center gap-1 text-xs text-text-muted hover:text-text"
       ><IconArrowLeft :size="13" />{{ t("common.back") }}</RouterLink
     >

@@ -2,7 +2,8 @@ import { getAuthToken } from "@/auth/session";
 import { API_BASE } from "@/config";
 import type { ListQuery } from "./types";
 
-const useMock = import.meta.env.VITE_USE_MOCK === "true" || !API_BASE;
+export const isMockMode = import.meta.env.VITE_USE_MOCK === "true";
+const useMock = isMockMode || (!API_BASE && import.meta.env.VITE_USE_MOCK !== "false");
 
 export class ApiError extends Error {
   status: number;
@@ -37,23 +38,11 @@ async function getMockHandler() {
   return mockHandler;
 }
 
-function handleMockResponse<T>(method: string, path: string, body?: string): T | null {
-  if (!mockHandler) return null;
-  const mockResponse = mockHandler(method, path, body);
-  if (mockResponse) {
-    if (mockResponse.status >= 400) {
-      throw new ApiError("Mock error", mockResponse.status);
-    }
-    return mockResponse.body as T;
-  }
-  return null;
-}
-
 export async function apiFetch<T>(
   url: string,
   init: RequestInit = {},
 ): Promise<T> {
-  // Mock mode: lazy-load mock handlers and intercept
+  // If mock mode is explicitly true or no API_BASE and VITE_USE_MOCK is not false
   if (useMock) {
     await getMockHandler();
     const method = (init.method || "GET").toUpperCase();
@@ -104,6 +93,10 @@ export async function apiFetch<T>(
   } catch (error) {
     // Re-throw ApiError (HTTP errors with status codes) directly — no mock fallback
     // when VITE_USE_MOCK=false. This ensures real failures surface to the UI.
-    throw error;
+    if (error instanceof ApiError) throw error;
+    throw new ApiError(
+      error instanceof Error ? error.message : "Failed to connect to API server.",
+      0,
+    );
   }
 }

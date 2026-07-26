@@ -55,8 +55,8 @@ class FaqController extends Controller
 
     public function destroy(Faq $faq): JsonResponse
     {
-        $faq->delete();
-        return response()->json(['message' => 'FAQ deleted.']);
+        $faq->update(['is_active' => false]);
+        return response()->json(['message' => 'FAQ deactivated (soft deleted).']);
     }
 
     public function reorder(Request $request): JsonResponse

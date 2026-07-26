@@ -103,7 +103,13 @@ const handlers: Record<string, MockHandler> = {
   }),
 
   // Audit
-  "GET /api/audit-logs": () => ({ status: 200, body: { data: mockAuditLogs } }),
+  "GET /api/audit-logs": () => ({
+    status: 200,
+    body: {
+      data: mockAuditLogs,
+      meta: { current_page: 1, per_page: 15, total: mockAuditLogs.length, last_page: 1 },
+    },
+  }),
   "POST /api/audit-events": () => ({ status: 200, body: { ok: true } }),
 
   // Terms & Conditions
@@ -115,7 +121,18 @@ const handlers: Record<string, MockHandler> = {
   "GET /api/faqs/all": () => ({ status: 200, body: { data: mockFaqs } }),
 
   // Database
-  "GET /api/database/tables": () => ({ status: 200, body: { data: mockTables } }),
+  "GET /api/database/tables": () => ({
+    status: 200,
+    body: {
+      data: mockTables,
+      summary: {
+        total_tables: mockTables.length,
+        total_rows: mockTables.reduce((acc, t) => acc + t.rows, 0),
+        database: "SQLITE (tcc_unifast.sqlite)",
+        largest_table: "batches (12 rows)",
+      },
+    },
+  }),
   "GET /api/database/stats": () => ({ status: 200, body: { data: mockDbStats } }),
 
   // Student
@@ -142,6 +159,104 @@ const handlers: Record<string, MockHandler> = {
   "GET /api/student/notifications": () => ({
     status: 200,
     body: { data: mockNotifications, meta: { current_page: 1, last_page: 1, per_page: 50, total: mockNotifications.length, from: 1, to: mockNotifications.length } },
+  }),
+
+  // Developer System Health Telemetry
+  "GET /api/system/health": () => ({
+    status: 200,
+    body: {
+      data: {
+        health: [
+          { name: "API Server", status: "healthy", latency: "14ms", uptime: "99.99%" },
+          { name: "Database Engine (SQLITE)", status: "healthy", latency: "1.2ms", uptime: "99.99%" },
+          { name: "OCR Service Engine", status: "healthy", latency: "185ms", uptime: "99.8%" },
+          { name: "File Storage", status: "healthy", latency: "0.8ms", uptime: "45.2 GB free" },
+        ],
+        kpis: [
+          { title: "System Accounts", value: `${mockUsers.length}`, change: `${mockUsers.length} Active`, trend: "up", subtitle: "Registered Accounts" },
+          { title: "Academic Batches", value: `${mockBatches.length}`, change: `${mockBatches.length} Open`, trend: "up", subtitle: "System Batches" },
+          { title: "Document Vault", value: `${mockDocuments.length}`, change: `${mockDocuments.length} Approved`, trend: "up", subtitle: "Uploaded Documents" },
+          { title: "Support Tickets", value: "3", change: "1 Pending", trend: "up", subtitle: "Developer Queue" },
+        ],
+        endpoints: [
+          { endpoint: "/api/auth/login", method: "POST", p50: "45ms", p95: "110ms", calls: `${mockUsers.length} users`, errors: "0.00%" },
+          { endpoint: "/api/batches", method: "GET", p50: "18ms", p95: "55ms", calls: `${mockBatches.length} batches`, errors: "0.00%" },
+          { endpoint: "/api/document-submissions", method: "GET", p50: "32ms", p95: "95ms", calls: `${mockDocuments.length} submissions`, errors: "0.01%" },
+          { endpoint: "/api/grantees", method: "GET", p50: "24ms", p95: "80ms", calls: `${mockGrantees.length} grantees`, errors: "0.00%" },
+          { endpoint: "/api/academic-records", method: "GET", p50: "28ms", p95: "85ms", calls: `${mockAcademicRecords.length} records`, errors: "0.00%" },
+          { endpoint: "/api/audit-logs", method: "GET", p50: "12ms", p95: "35ms", calls: `${mockAuditLogs.length} logs`, errors: "0.00%" },
+        ],
+        system: {
+          framework: "Laravel 11 + Vue 3",
+          php_version: "PHP 8.3.6",
+          auth: "Sanctum API Tokens",
+          database: "SQLITE (tcc_unifast.sqlite)",
+          users_count: mockUsers.length,
+          batches_count: mockBatches.length,
+          submissions_count: mockDocuments.length,
+          audit_events_count: mockAuditLogs.length,
+          memory_usage: "18.4 MB",
+          os: "Linux",
+        },
+        logs: mockAuditLogs.slice(0, 6).map((log) => ({
+          time: log.created_at ? log.created_at.split("T")[1]?.slice(0, 8) || "10:42:18" : "10:42:18",
+          level: "info",
+          message: `${log.actor} (${log.role}) — ${log.action} in ${log.module}: ${log.target || "System operation"}`,
+          service: log.module.toLowerCase(),
+        })),
+        deployments: [
+          { version: "v2.1.0 (Current Release)", status: "success", commit: "main", time: "Jul 26, 2026 18:30", author: "System Developer" },
+          { version: "v2.0.9 (Security Patch)", status: "success", commit: "a3f8c2d", time: "Jul 25, 2026 14:15", author: "System Developer" },
+        ],
+      },
+    },
+  }),
+
+  // Collaborators
+  "GET /api/collaborators": () => ({
+    status: 200,
+    body: {
+      data: [
+        { id: "1", name: "System Developer", email: "admin@unifast.gov.ph", role: "developer", access: ["*"], status: "active", invitedAt: "Jul 1, 2026" },
+        { id: "2", name: "Office Administrator", email: "head@unifast.gov.ph", role: "admin", access: ["users", "batches", "settings", "audit"], status: "active", invitedAt: "Jul 1, 2026" },
+        { id: "3", name: "Dev Assistant", email: "dev2@unifast.gov.ph", role: "staff", access: ["documents", "grantees", "academic"], status: "pending", invitedAt: "Jul 12, 2026" },
+      ],
+      summary: {
+        total_members: 3,
+        active_members: 2,
+        pending_invites: 1,
+        developers: 1,
+      },
+    },
+  }),
+  "POST /api/collaborators/invite": (body) => {
+    const parsed = body ? JSON.parse(body) : {};
+    return {
+      status: 201,
+      body: {
+        data: {
+          id: String(Date.now()),
+          name: (parsed.email || "colleague@unifast.gov.ph").split("@")[0],
+          email: parsed.email || "colleague@unifast.gov.ph",
+          role: parsed.role || "staff",
+          access: parsed.access || [],
+          status: "pending",
+          invitedAt: "Just now",
+        },
+      },
+    };
+  },
+
+  // Support Tickets
+  "GET /api/support-tickets": () => ({
+    status: 200,
+    body: {
+      data: [
+        { id: 1, ticket_id: "TK-001", title: "Face verification timeout after 30s", category: "bug", priority: "High", status: "Open", reporter: "Maria Santos", assignee: "System Developer", createdAt: "Jul 12, 2026", replies: [], description: "Face verification API times out on weak mobile connections." },
+        { id: 2, ticket_id: "TK-002", title: "Request: CSV export for audit trail", category: "feature", priority: "Normal", status: "In Progress", reporter: "Office Administrator", assignee: "System Developer", createdAt: "Jul 11, 2026", replies: [], description: "Admin requested CSV export capability for developer audit logs." },
+        { id: 3, ticket_id: "TK-003", title: "OCR mismatch on non-standard font transcripts", category: "bug", priority: "Normal", status: "Waiting", reporter: "UniFAST Staff", assignee: "System Developer", createdAt: "Jul 10, 2026", replies: [], description: "Special characters on course names cause low confidence score." },
+      ],
+    },
   }),
 };
 
