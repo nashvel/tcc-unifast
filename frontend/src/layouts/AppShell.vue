@@ -128,8 +128,15 @@ function go(path: string) {
 }
 function toggleTheme() {
   dark.value = !dark.value;
-  if (typeof document !== "undefined")
-    document.documentElement.classList.toggle("dark", dark.value);
+  if (typeof document !== "undefined") {
+    if (isDeveloper.value) {
+      document.documentElement.classList.toggle("dev-dark", dark.value);
+      document.documentElement.classList.remove("dark");
+    } else {
+      document.documentElement.classList.toggle("dark", dark.value);
+      document.documentElement.classList.remove("dev-dark");
+    }
+  }
   if (typeof localStorage !== "undefined")
     localStorage.setItem("theme", dark.value ? "dark" : "light");
 }
@@ -139,19 +146,30 @@ async function signOut() {
   await router.push(withLang("/login", route.query.lang));
 }
 
-// Force dark mode for developers
+// Apply dev-dark for developers on mount
 watch(
   isDeveloper,
   (val) => {
-    if (!val && typeof document !== "undefined") {
+    if (typeof document === "undefined") return;
+    if (val) {
+      document.documentElement.classList.add("dev-dark");
+      document.documentElement.classList.remove("dark");
+    } else {
       document.documentElement.classList.remove("dev-dark");
+      if (dark.value) {
+        document.documentElement.classList.add("dark");
+      }
     }
   },
   { immediate: true },
 );
 
 if (dark.value && typeof document !== "undefined") {
-  document.documentElement.classList.add("dark");
+  if (isDeveloper.value) {
+    document.documentElement.classList.add("dev-dark");
+  } else {
+    document.documentElement.classList.add("dark");
+  }
 }
 </script>
 
