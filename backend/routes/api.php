@@ -44,7 +44,7 @@ Route::middleware([
     StartSession::class,
 ])->group(function (): void {
     Route::get('/auth/captcha', AuthCaptchaController::class)->middleware('throttle:30,1');
-    Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:20,1');
+    Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
 });
 Route::get('/activation/{token}', [ActivationController::class, 'show'])->middleware('throttle:20,1');
 Route::post('/activation/{token}', [ActivationController::class, 'activate'])->middleware('throttle:10,1');

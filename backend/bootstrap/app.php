@@ -17,6 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ['middleware' => ['web', 'auth:sanctum']],
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
         $middleware->alias(['role' => \App\Http\Middleware\RequireRole::class]);
         $middleware->web(append: [\App\Http\Middleware\SetLocaleFromUrl::class]);
     })
