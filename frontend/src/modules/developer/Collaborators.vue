@@ -44,7 +44,7 @@ const collaborators = ref<Collaborator[]>([
 ]);
 
 const roleColors: Record<string, string> = {
-  developer: "bg-purple-100 text-purple-700",
+  developer: "bg-white/10 text-white",
   admin: "bg-blue-100 text-blue-700",
   staff: "bg-green-100 text-green-700",
 };

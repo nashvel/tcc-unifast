@@ -248,7 +248,7 @@ if (isDeveloper.value && typeof document !== "undefined") {
           >
             <div :class="['flex h-10 items-center justify-between border-b px-3', isDeveloper ? 'border-[var(--border)]' : '']">
               <p :class="['text-sm font-semibold', isDeveloper ? 'text-[var(--text)]' : '']">{{ t("shell.notifications") }}</p>
-              <button :class="['text-xs', isDeveloper ? 'text-[var(--primary)]' : 'text-primary']">{{ t("shell.markAllRead") }}</button>
+              <button :class="['text-xs', isDeveloper ? 'text-white' : 'text-primary']">{{ t("shell.markAllRead") }}</button>
             </div>
             <div :class="['space-y-3 p-3 text-xs', isDeveloper ? 'text-[var(--text-muted)]' : '']">
               <p>

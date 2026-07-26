@@ -85,7 +85,7 @@ function go(path: string) {
   <aside class="flex h-full w-56 shrink-0 flex-col bg-[var(--sidebar-bg)]">
     <!-- Logo -->
     <div class="flex h-14 shrink-0 items-center gap-2.5 px-4">
-      <div class="flex size-7 items-center justify-center rounded-lg bg-[var(--primary)]">
+      <div class="flex size-7 items-center justify-center rounded-lg bg-white">
         <span class="text-xs font-bold text-white">T</span>
       </div>
       <span class="text-sm font-semibold text-[var(--sidebar-text)]">TCC UniFAST</span>
@@ -123,7 +123,7 @@ function go(path: string) {
                 <component
                   :is="item.icon"
                   :size="15"
-                  :class="isActive(item.path!) ? 'text-[var(--primary)]' : 'text-[var(--sidebar-text-muted)]'"
+                  :class="isActive(item.path!) ? 'text-white' : 'text-[var(--sidebar-text-muted)]'"
                 />
                 <span class="truncate">{{ item.label }}</span>
               </button>
@@ -147,7 +147,7 @@ function go(path: string) {
                 <component
                   :is="item.icon"
                   :size="15"
-                  :class="isActive(item.path!) ? 'text-[var(--primary)]' : 'text-[var(--sidebar-text-muted)]'"
+                  :class="isActive(item.path!) ? 'text-white' : 'text-[var(--sidebar-text-muted)]'"
                 />
                 <span class="truncate">{{ item.label }}</span>
               </button>

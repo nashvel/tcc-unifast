@@ -24,7 +24,7 @@ const roles = ref<Role[]>([
     id: "developer",
     name: "Developer",
     description: "Full system access including API management and configuration",
-    color: "bg-purple-100 text-purple-700",
+    color: "bg-white/10 text-white",
     userCount: 1,
     permissions: ["*"],
   },

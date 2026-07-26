@@ -184,7 +184,7 @@ onMounted(() => {
         :class="[
           'px-4 py-2 text-xs font-medium border-b-2 transition-colors',
           activeTab === 'tables'
-            ? 'border-[var(--primary)] text-[var(--primary)]'
+            ? 'border-white text-white'
             : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text)]',
         ]"
         @click="activeTab = 'tables'"
@@ -195,7 +195,7 @@ onMounted(() => {
         :class="[
           'px-4 py-2 text-xs font-medium border-b-2 transition-colors',
           activeTab === 'query'
-            ? 'border-[var(--primary)] text-[var(--primary)]'
+            ? 'border-white text-white'
             : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text)]',
         ]"
         @click="activeTab = 'query'"
@@ -267,7 +267,7 @@ onMounted(() => {
                   >
                     <span class="flex items-center gap-1">
                       {{ col.name }}
-                      <span v-if="sort === col.name" class="text-[var(--primary)]">
+                      <span v-if="sort === col.name" class="text-white">
                         {{ direction === "asc" ? "\u2191" : "\u2193" }}
                       </span>
                     </span>
@@ -337,7 +337,7 @@ onMounted(() => {
         <div class="mt-2 flex items-center justify-between">
           <span class="text-2xs text-[var(--text-soft)]">Press Ctrl+Enter to run</span>
           <button
-            class="inline-flex h-8 items-center gap-1.5 rounded-md bg-[var(--primary)] px-3 text-xs text-white disabled:opacity-50"
+            class="inline-flex h-8 items-center gap-1.5 rounded-md bg-white px-3 text-xs text-black disabled:opacity-50"
             :disabled="queryLoading || !sqlQuery.trim()"
             @click="runQuery"
           >
