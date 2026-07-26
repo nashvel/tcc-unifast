@@ -420,8 +420,12 @@
       "description": "Activate your UniFAST TES portal account."
     },
     "adminDashboard": {
-      "title": "Admin Dashboard - UniFAST TES",
+      "title": "Developer Dashboard - UniFAST TES",
       "description": "Manage TES grantees, documents, batches, reports, and eligibility."
+    },
+    "developerDashboard": {
+      "title": "Developer Dashboard - UniFAST TES",
+      "description": "System health, API performance, and deployment status."
     },
     "studentDashboard": {
       "title": "Student Dashboard - UniFAST TES",
