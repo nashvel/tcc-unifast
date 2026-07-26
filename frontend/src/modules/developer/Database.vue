@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
-import { IconDatabase, IconSearch, IconRefresh, IconTable, IconCode, IconLoader, IconKey } from "@tabler/icons-vue";
+import { IconDatabase, IconSearch, IconRefresh, IconTable, IconKey, IconLoader } from "@tabler/icons-vue";
 import PageHeader from "@/components/ui/PageHeader.vue";
 import { apiFetch } from "@/api/client";
 
@@ -104,86 +104,90 @@ onMounted(() => {
       </div>
     </section>
 
-    <!-- Search -->
-    <div class="mb-4">
-      <div class="relative max-w-md">
-        <IconSearch :size="14" class="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-soft)]" />
-        <input
-          v-model="search"
-          class="h-9 w-full rounded-md border border-[var(--border)] bg-[var(--surface)] pl-9 pr-3 text-xs text-[var(--text)]"
-          placeholder="Search tables..."
-        />
-      </div>
-    </div>
-
-    <!-- Tables Grid -->
-    <div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-      <div
-        v-for="table in tables.filter(t => !search || t.name.includes(search.toLowerCase()))"
-        :key="table.name"
-        :class="[
-          'rounded-lg border p-4 cursor-pointer transition-all',
-          selectedTable === table.name
-            ? 'border-[var(--primary)] bg-[var(--primary-soft)]'
-            : 'border-[var(--border)] bg-[var(--surface)] hover:border-[var(--border-strong)]',
-        ]"
-        @click="selectTable(table.name)"
-      >
-        <div class="flex items-center gap-2">
-          <IconTable :size="16" class="text-[var(--text-soft)]" />
-          <span class="text-sm font-medium text-[var(--text)]">{{ table.name }}</span>
+    <!-- Sidebar + Content -->
+    <div class="grid gap-4 lg:grid-cols-[240px_1fr]">
+      <!-- Table List Sidebar -->
+      <section class="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-3">
+        <div class="relative mb-2">
+          <IconSearch :size="14" class="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--text-soft)]" />
+          <input
+            v-model="search"
+            class="h-8 w-full rounded-md border border-[var(--border)] bg-[var(--bg)] pl-8 pr-2 text-xs text-[var(--text)]"
+            placeholder="Search tables..."
+          />
         </div>
-        <div class="mt-2 flex gap-3 text-2xs text-[var(--text-muted)]">
-          <span>{{ table.columns }} columns</span>
-          <span>{{ table.rows.toLocaleString() }} rows</span>
+        <div class="max-h-[500px] overflow-y-auto space-y-0.5">
+          <button
+            v-for="table in tables.filter(t => !search || t.name.includes(search.toLowerCase()))"
+            :key="table.name"
+            :class="[
+              'flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-left text-xs transition-colors',
+              selectedTable === table.name
+                ? 'bg-[var(--surface-muted)] text-[var(--text)]'
+                : 'text-[var(--text-muted)] hover:bg-[var(--surface-muted)] hover:text-[var(--text)]',
+            ]"
+            @click="selectTable(table.name)"
+          >
+            <span class="flex items-center gap-1.5">
+              <IconDatabase :size="12" class="text-[var(--text-soft)]" />
+              {{ table.name }}
+            </span>
+            <span class="text-2xs text-[var(--text-soft)]">{{ table.rows }}</span>
+          </button>
         </div>
-      </div>
-    </div>
+      </section>
 
-    <!-- Table Detail -->
-    <div v-if="selectedTable" class="mt-6">
-      <div v-if="loadingDetail" class="flex items-center justify-center p-8">
-        <IconLoader :size="20" class="animate-spin text-[var(--text-soft)]" />
-      </div>
-      <template v-else-if="tableDetail">
-        <div class="mb-3 flex items-center gap-3">
-          <h2 class="text-sm font-semibold text-[var(--text)]">{{ tableDetail.name }}</h2>
-          <span class="text-2xs text-[var(--text-muted)]">{{ tableDetail.columns.length }} columns, {{ tableDetail.row_count.toLocaleString() }} rows</span>
+      <!-- Table Detail -->
+      <section>
+        <div v-if="!selectedTable" class="flex items-center justify-center rounded-lg border border-dashed border-[var(--border)] bg-[var(--surface)] p-12">
+          <p class="text-sm text-[var(--text-muted)]">Select a table to view its structure</p>
         </div>
 
-        <!-- Columns Table -->
-        <div class="overflow-x-auto rounded-lg border border-[var(--border)] bg-[var(--surface)]">
-          <table class="w-full text-xs">
-            <thead>
-              <tr class="border-b border-[var(--border)] text-left">
-                <th class="px-3 py-2 font-medium text-[var(--text-muted)]">Column</th>
-                <th class="px-3 py-2 font-medium text-[var(--text-muted)]">Type</th>
-                <th class="px-3 py-2 font-medium text-[var(--text-muted)]">Nullable</th>
-                <th class="px-3 py-2 font-medium text-[var(--text-muted)]">Default</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="col in tableDetail.columns" :key="col.name" class="border-b border-[var(--border)]/50 last:border-0 hover:bg-[var(--surface-muted)]/50">
-                <td class="px-3 py-2">
-                  <span class="flex items-center gap-1.5 font-medium text-[var(--text)]">
-                    <IconKey v-if="col.primary" :size="12" class="text-[var(--warning)]" />
-                    {{ col.name }}
-                  </span>
-                </td>
-                <td class="px-3 py-2 font-mono text-2xs text-[var(--text-muted)]">{{ col.type }}</td>
-                <td class="px-3 py-2">
-                  <span :class="col.nullable ? 'text-[var(--warning)]' : 'text-[var(--text-soft)]'">
-                    {{ col.nullable ? "YES" : "NO" }}
-                  </span>
-                </td>
-                <td class="px-3 py-2 text-2xs text-[var(--text-soft)]">
-                  {{ col.default ?? "NULL" }}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </template>
+        <template v-else>
+          <div v-if="loadingDetail" class="flex items-center justify-center p-8">
+            <IconLoader :size="20" class="animate-spin text-[var(--text-soft)]" />
+          </div>
+          <template v-else-if="tableDetail">
+            <div class="mb-3 flex items-center gap-3">
+              <h2 class="text-sm font-semibold text-[var(--text)]">{{ tableDetail.name }}</h2>
+              <span class="text-2xs text-[var(--text-muted)]">{{ tableDetail.columns.length }} columns, {{ tableDetail.row_count.toLocaleString() }} rows</span>
+            </div>
+
+            <!-- Columns Table -->
+            <div class="overflow-x-auto rounded-lg border border-[var(--border)] bg-[var(--surface)]">
+              <table class="w-full text-xs">
+                <thead>
+                  <tr class="border-b border-[var(--border)] text-left">
+                    <th class="px-3 py-2 font-medium text-[var(--text-muted)]">Column</th>
+                    <th class="px-3 py-2 font-medium text-[var(--text-muted)]">Type</th>
+                    <th class="px-3 py-2 font-medium text-[var(--text-muted)]">Nullable</th>
+                    <th class="px-3 py-2 font-medium text-[var(--text-muted)]">Default</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="col in tableDetail.columns" :key="col.name" class="border-b border-[var(--border)]/50 last:border-0 hover:bg-[var(--surface-muted)]/50">
+                    <td class="px-3 py-2">
+                      <span class="flex items-center gap-1.5 font-medium text-[var(--text)]">
+                        <IconKey v-if="col.primary" :size="12" class="text-[var(--warning)]" />
+                        {{ col.name }}
+                      </span>
+                    </td>
+                    <td class="px-3 py-2 font-mono text-2xs text-[var(--text-muted)]">{{ col.type }}</td>
+                    <td class="px-3 py-2">
+                      <span :class="col.nullable ? 'text-[var(--warning)]' : 'text-[var(--text-soft)]'">
+                        {{ col.nullable ? "YES" : "NO" }}
+                      </span>
+                    </td>
+                    <td class="px-3 py-2 text-2xs text-[var(--text-soft)]">
+                      {{ col.default ?? "NULL" }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </template>
+        </template>
+      </section>
     </div>
   </div>
 </template>
