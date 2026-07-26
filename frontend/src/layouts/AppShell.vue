@@ -271,8 +271,8 @@ if (dark.value && typeof document !== "undefined") {
         <LanguageSwitcher :dark="isDeveloper" />
 
         <button
-          v-if="!isDeveloper"
-          class="rounded-md p-2 hover:bg-surface-muted"
+          class="rounded-md p-2"
+          :class="isDeveloper ? 'hover:bg-[var(--surface-muted)]' : 'hover:bg-surface-muted'"
           @click="toggleTheme"
         >
           <IconSun v-if="dark" :size="18" /><IconMoon v-else :size="18" />
