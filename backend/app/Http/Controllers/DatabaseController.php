@@ -103,43 +103,6 @@ class DatabaseController extends Controller
         ]);
     }
 
-    public function query(Request $request): JsonResponse
-    {
-        $validated = $request->validate([
-            'sql' => 'required|string|max:1000',
-        ]);
-
-        $sql = $validated['sql'];
-        $lowerSql = strtolower(trim($sql));
-
-        if (!str_starts_with($lowerSql, 'select')) {
-            return response()->json(['message' => 'Only SELECT queries are allowed.'], 403);
-        }
-
-        $forbidden = ['drop', 'delete', 'truncate', 'alter', 'insert', 'update', 'create'];
-        foreach ($forbidden as $word) {
-            if (str_contains($lowerSql, $word)) {
-                return response()->json(['message' => "Forbidden keyword '{$word}' in query."], 403);
-            }
-        }
-
-        try {
-            $start = microtime(true);
-            $results = DB::select($sql);
-            $elapsed = round((microtime(true) - $start) * 1000, 2);
-
-            return response()->json([
-                'data' => $results,
-                'meta' => [
-                    'count' => count($results),
-                    'elapsed_ms' => $elapsed,
-                ],
-            ]);
-        } catch (\Exception $e) {
-            return response()->json(['message' => 'Query error: ' . $e->getMessage()], 422);
-        }
-    }
-
     public function stats(): JsonResponse
     {
         $tables = Schema::getTables();
