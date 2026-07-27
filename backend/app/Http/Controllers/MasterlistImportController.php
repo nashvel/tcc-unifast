@@ -90,9 +90,17 @@ class MasterlistImportController extends Controller
         $validRows = 0;
         $invalidRows = 0;
 
+        $validPrograms = \App\Models\AcademicProgram::query()
+            ->where('is_active', true)
+            ->get()
+            ->flatMap(fn ($p) => [strtoupper($p->name), strtoupper($p->code)])
+            ->unique()
+            ->values()
+            ->toArray();
+
         foreach ($parsedRows as $index => $row) {
             $normalized = $this->normalizeRow($row);
-            $errors = $this->rowErrors($normalized, $seenStudentIds, $seenStudentNumbers);
+            $errors = $this->rowErrors($normalized, $seenStudentIds, $seenStudentNumbers, $validPrograms);
             $status = $errors === [] ? 'valid' : 'invalid';
             $validRows += $status === 'valid' ? 1 : 0;
             $invalidRows += $status === 'invalid' ? 1 : 0;
@@ -219,14 +227,21 @@ class MasterlistImportController extends Controller
      * @param  array<string, string|null>  $row
      * @param  list<string>  $seenStudentIds
      * @param  list<string>  $seenStudentNumbers
+     * @param  list<string>  $validPrograms
      * @return list<string>
      */
-    private function rowErrors(array $row, array $seenStudentIds, array $seenStudentNumbers): array
+    private function rowErrors(array $row, array $seenStudentIds, array $seenStudentNumbers, array $validPrograms): array
     {
         $errors = [];
         foreach (['student_id', 'full_name', 'email', 'program', 'year_level'] as $field) {
             if (($row[$field] ?? '') === '') {
                 $errors[] = "Missing {$field}.";
+            }
+        }
+        if (($row['program'] ?? '') !== '') {
+            $progStr = strtoupper(trim($row['program']));
+            if (!in_array($progStr, $validPrograms, true)) {
+                $errors[] = 'Program not recognized in the system (Caution: update system first).';
             }
         }
         if (($row['email'] ?? '') !== '' && ! filter_var($row['email'], FILTER_VALIDATE_EMAIL)) {
