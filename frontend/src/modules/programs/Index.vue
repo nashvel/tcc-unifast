@@ -51,6 +51,14 @@ function openEditDialog(program: AcademicProgram) {
   dialogOpen.value = true;
 }
 
+const deleteDialogOpen = ref(false);
+const deletingProgram = ref<AcademicProgram | null>(null);
+
+function openDeleteDialog(program: AcademicProgram) {
+  deletingProgram.value = program;
+  deleteDialogOpen.value = true;
+}
+
 const busy = ref(false);
 const error = ref("");
 
@@ -81,14 +89,18 @@ async function saveProgram() {
   }
 }
 
-async function deleteProgram(id: number) {
-  if (!confirm("Are you sure you want to delete this program?")) return;
+async function deleteProgram() {
+  if (!deletingProgram.value) return;
+  busy.value = true;
   try {
-    await apiFetch(`/api/academic-programs/${id}`, { method: "DELETE" });
+    await apiFetch(`/api/academic-programs/${deletingProgram.value.id}`, { method: "DELETE" });
     toast.success("Program deleted successfully");
     await queryClient.invalidateQueries({ queryKey: ["academic_programs"] });
+    deleteDialogOpen.value = false;
   } catch (exception) {
     toast.error(exception instanceof Error ? exception.message : "Unable to delete program.");
+  } finally {
+    busy.value = false;
   }
 }
 </script>
@@ -129,7 +141,7 @@ async function deleteProgram(id: number) {
               <button class="text-text-muted hover:text-primary" @click="openEditDialog(program)" title="Edit">
                 <IconEdit :size="16" />
               </button>
-              <button class="text-text-muted hover:text-danger" @click="deleteProgram(program.id)" title="Delete">
+              <button class="text-text-muted hover:text-danger" @click="openDeleteDialog(program)" title="Delete">
                 <IconTrash :size="16" />
               </button>
             </div>
@@ -201,6 +213,31 @@ async function deleteProgram(id: number) {
           </button>
         </div>
       </form>
+    </AppDialog>
+
+    <AppDialog
+      :open="deleteDialogOpen"
+      title="Delete program"
+      description="Are you sure you want to delete this academic program? This action cannot be undone."
+      @close="deleteDialogOpen = false"
+    >
+      <div class="flex justify-end gap-2 pt-4">
+        <button
+          type="button"
+          class="rounded-md border px-4 py-2 text-xs font-medium hover:bg-surface-muted"
+          @click="deleteDialogOpen = false"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          class="rounded-md bg-danger px-4 py-2 text-xs font-medium text-white disabled:opacity-50"
+          :disabled="busy"
+          @click="deleteProgram"
+        >
+          {{ busy ? "Deleting..." : "Delete program" }}
+        </button>
+      </div>
     </AppDialog>
   </div>
 </template>
