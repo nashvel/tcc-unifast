@@ -41,15 +41,12 @@ const { data: changelog, isPending, error, refetch } = useQuery({
   queryKey: ["changelogs"],
   queryFn: async (): Promise<ChangelogResponse> => {
     const url = isRefreshing.value ? '/api/changelogs?refresh=1' : '/api/changelogs';
-    const res = await apiFetch(url);
-    if (!res.ok) {
-      throw new Error("Failed to fetch changelog");
-    }
+    const data = await apiFetch<ChangelogResponse>(url);
     
     // Reset refreshing state after successful fetch
     isRefreshing.value = false;
     
-    return res.json();
+    return data;
   },
 });
 
@@ -119,11 +116,11 @@ const paginationMeta = computed<PaginationMeta>(() => {
         <div>
           <h3 class="text-sm font-semibold text-amber-800 dark:text-amber-500">GitHub API Token Missing</h3>
           <p class="mt-1 text-sm text-amber-700 dark:text-amber-400">
-            <template v-if="isMockMode || isLocalDev">
-              To fetch real commits locally without hitting GitHub's 60-request hourly rate limit, add <code>VITE_GITHUB_TOKEN</code> to your local <code>.env</code> file.
+            <template v-if="isLocalDev">
+              To fetch real commits locally without hitting GitHub's 60-request hourly rate limit, add <code>GITHUB_TOKEN</code> to your backend's <code>.env</code> file.
             </template>
             <template v-else>
-              To avoid strict rate limiting or to fetch from a private repository, please add <code>GITHUB_TOKEN</code> to your Vercel Environment Variables.
+              To avoid strict rate limiting or to fetch from a private repository, please add <code>GITHUB_TOKEN</code> to your production Environment Variables.
             </template>
           </p>
         </div>
