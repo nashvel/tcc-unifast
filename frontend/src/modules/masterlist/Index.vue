@@ -7,6 +7,7 @@ import {
   IconMail,
   IconSearch,
   IconUpload,
+  IconTrash,
 } from "@tabler/icons-vue";
 import DataTable from "@/components/tables/DataTable.vue";
 import TablePagination from "@/components/tables/TablePagination.vue";
@@ -323,7 +324,7 @@ function formatDate(value: string | null) {
           v-for="item in imports"
           :key="item.id"
           :class="[
-            'cursor-pointer hover:bg-primary/5',
+            'group cursor-pointer hover:bg-primary/5',
             selectedImportId === item.id ? 'bg-primary/5' : '',
           ]"
           @click="selectImport(item.id)"
