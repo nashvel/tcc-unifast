@@ -44,11 +44,14 @@ class ChangelogController extends Controller
             'has_token' => !empty($token),
         ];
 
-        // In local environment, generate the static mock JSON file for frontend previews
-        if (app()->environment('local')) {
+        // In local environment, only generate the static mock JSON file when explicitly refreshing
+        if (app()->environment('local') && request()->has('refresh')) {
             $mockPath = base_path('../frontend/src/mock/changelogs.json');
             if (file_exists(dirname($mockPath))) {
-                file_put_contents($mockPath, json_encode($responseData, JSON_PRETTY_PRINT));
+                $jsonString = json_encode($responseData, JSON_PRETTY_PRINT | JSON_INVALID_UTF8_SUBSTITUTE);
+                if ($jsonString !== false) {
+                    file_put_contents($mockPath, $jsonString);
+                }
             }
         }
 
