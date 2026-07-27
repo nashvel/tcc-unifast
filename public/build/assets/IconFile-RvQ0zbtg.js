@@ -1,0 +1,1 @@
+import{c as e}from"./createVueComponent-C18BaF1-.js";var o=e("outline","file","File",[["path",{d:"M14 3v4a1 1 0 0 0 1 1h4",key:"svg-0"}],["path",{d:"M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2",key:"svg-1"}]]);export{o as I};

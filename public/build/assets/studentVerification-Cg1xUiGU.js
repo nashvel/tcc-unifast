@@ -1,0 +1,1 @@
+import{D as i}from"./app-_aspkbkK.js";const e="tcc_student_identity_verified",t=()=>typeof localStorage<"u",o=i({verified:t()&&localStorage.getItem(e)==="1"});function a(){o.verified=!0,t()&&localStorage.setItem(e,"1")}export{a as m,o as s};
