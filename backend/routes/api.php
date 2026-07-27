@@ -124,8 +124,8 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('/distribution-reports/{report}/download', [DistributionReportController::class, 'download']);
     });
 
-    // Developer/Admin only routes (includes legacy head for batch ops)
-    Route::middleware('role:developer,admin,head')->group(function (): void {
+    // Developer/Admin/Head/Staff routes (for batch ops and masterlists)
+    Route::middleware('role:developer,admin,head,staff')->group(function (): void {
         Route::post('/batches', [BatchController::class, 'store'])->middleware('throttle:20,1');
         Route::patch('/batches/{batch}', [BatchController::class, 'update'])->middleware('throttle:20,1');
         Route::post('/batches/{batch}/activate', [BatchController::class, 'activate'])->middleware('throttle:10,1');
