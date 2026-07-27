@@ -35,7 +35,16 @@ type ChangelogResponse = {
 
 const { data: changelog, isPending, error, refetch } = useQuery({
   queryKey: ["changelogs"],
-  queryFn: () => apiFetch<ChangelogResponse>("/api/changelogs"),
+  queryFn: async (): Promise<ChangelogResponse> => {
+    // This hits the Vercel Serverless Function created in frontend/api/changelogs.js
+    const res = await fetch('/api/changelogs');
+    
+    if (!res.ok) {
+      throw new Error("Failed to fetch commits");
+    }
+    
+    return res.json();
+  },
 });
 
 function formatDate(dateString: string) {
@@ -97,7 +106,7 @@ const paginationMeta = computed<PaginationMeta>(() => {
         <div>
           <h3 class="text-sm font-semibold text-amber-800 dark:text-amber-500">GitHub API Token Missing</h3>
           <p class="mt-1 text-sm text-amber-700 dark:text-amber-400">
-            To avoid strict rate limiting or to fetch from a private repository, please add <code>GITHUB_TOKEN</code> to your backend <code>.env</code> file.
+            To avoid strict rate limiting or to fetch from a private repository, please add <code>GITHUB_TOKEN</code> to your Vercel Environment Variables.
           </p>
         </div>
       </div>
