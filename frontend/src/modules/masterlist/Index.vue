@@ -335,45 +335,54 @@ function formatDate(value: string | null) {
           to create/update grantee accounts.
         </p>
       </div>
-      <label class="block">
-        <span class="mb-1.5 block text-xs font-medium">Batch (with deadline)</span>
-        <select v-model.number="uploadBatchId" class="h-9 w-full rounded-md border px-3 text-sm">
-          <option :value="null" disabled>Select a batch</option>
-          <option v-for="batch in deadlineBatches" :key="batch.id" :value="batch.id">
-            {{ batch.name }} · {{ batch.academic_year }} · {{ batch.semester }}
-          </option>
-        </select>
-      </label>
-      <div class="block">
-        <span class="mb-1.5 block text-xs font-medium">CHED file</span>
-        <input
-          ref="fileInput"
-          type="file"
-          accept=".csv,.xlsx,.xls"
-          class="hidden"
-          data-tour="masterlist-upload"
-          @change="chooseFile"
-        />
-        <button
-          type="button"
-          class="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-md bg-primary px-3 text-xs font-medium text-white"
-          @click="openFilePicker"
-        >
-          <IconFileSpreadsheet :size="14" /> Upload Excel or CSV file
-        </button>
-        <p class="mt-1.5 truncate text-xs text-text-muted">
-          {{ selectedFile?.name || "No file selected" }}
-        </p>
+      
+      <div v-if="!deadlineBatches.length" class="lg:col-span-2 flex items-center gap-3 rounded-md border border-warning/30 bg-warning-soft p-4">
+        <IconAlertTriangle :size="20" class="text-warning" />
+        <div>
+          <p class="text-sm font-medium text-warning">No active batch detected</p>
+          <p class="mt-0.5 text-xs text-warning/80">You must <RouterLink to="/batches" class="underline font-semibold hover:text-warning-dark">create a batch</RouterLink> or activate a submission deadline before you can upload a masterlist.</p>
+        </div>
       </div>
-      <div class="flex items-end lg:col-span-2">
-        <button
-          :disabled="busy"
-          class="inline-flex h-9 items-center gap-1.5 rounded-md bg-primary px-3 text-xs font-medium text-white disabled:opacity-60"
-          @click="previewImport"
-        >
-          <IconUpload :size="14" />{{ busy ? "Processing..." : "Preview import" }}
-        </button>
-      </div>
+
+      <template v-else>
+        <label class="block">
+          <span class="mb-1.5 block text-xs font-medium">Batch (with deadline)</span>
+          <select v-model.number="uploadBatchId" class="h-9 w-full rounded-md border px-3 text-sm">
+            <option :value="null" disabled>Select a batch</option>
+            <option v-for="batch in deadlineBatches" :key="batch.id" :value="batch.id">
+              {{ batch.name }} · {{ batch.academic_year }} · {{ batch.semester }}
+            </option>
+          </select>
+        </label>
+
+        <div class="flex items-end gap-2">
+          <input
+            ref="fileInput"
+            type="file"
+            accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
+            class="hidden"
+            @change="chooseFile"
+          />
+          <button
+            class="flex h-9 w-full items-center justify-center gap-2 rounded-md border bg-surface px-4 text-xs font-medium hover:bg-surface-muted"
+            data-tour="masterlist-upload"
+            @click="openFilePicker"
+          >
+            <IconFileSpreadsheet :size="14" /> Upload Excel or CSV file
+          </button>
+        </div>
+
+        <div v-if="selectedFile" class="lg:col-span-2 flex items-center justify-between rounded-md border bg-surface-muted px-3 py-2">
+          <span class="text-xs font-medium">{{ selectedFile.name }}</span>
+          <button
+            class="flex items-center gap-1 rounded bg-primary px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50"
+            :disabled="busy || !uploadBatchId"
+            @click="previewImport"
+          >
+            <IconUpload :size="14" />{{ busy ? "Processing..." : "Preview import" }}
+          </button>
+        </div>
+      </template>
     </section>
 
     <p
