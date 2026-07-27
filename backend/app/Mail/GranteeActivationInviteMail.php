@@ -31,6 +31,7 @@ class GranteeActivationInviteMail extends Mailable
     public function content(): Content
     {
         return new Content(
+            view: 'mail.grantee-activation-invite-html',
             text: 'mail.grantee-activation-invite',
         );
     }
