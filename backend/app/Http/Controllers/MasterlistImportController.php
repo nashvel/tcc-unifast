@@ -163,7 +163,7 @@ class MasterlistImportController extends Controller
                     'user_id' => $user->id,
                     'batch_id' => $import->batch_id,
                     'student_id' => $row->student_id,
-                    'student_number' => $row->student_number,
+                    'student_number' => $row->student_number ?: null,
                     'full_name' => $row->full_name,
                     'email' => $row->email,
                     'program' => $row->program,
