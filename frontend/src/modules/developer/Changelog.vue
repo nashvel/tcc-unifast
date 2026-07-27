@@ -37,24 +37,33 @@ type ChangelogResponse = {
 const { data: changelog, isPending, error, refetch } = useQuery({
   queryKey: ["changelogs"],
   queryFn: async (): Promise<ChangelogResponse> => {
-    if (isMockMode) {
-      return {
-        data: [
-          {
-            sha: "mocksha1234567890",
-            html_url: "#",
-            commit: {
-              message: "chore: mock commit for local preview",
-              author: { name: "System Developer", date: new Date().toISOString() }
-            }
-          }
-        ],
-        repo: "nashvel/tcc-unifast (Mock)",
-        has_token: true
+    if (isMockMode || import.meta.env.DEV) {
+      const repo = import.meta.env.VITE_GITHUB_REPO || "nashvel/tcc-unifast";
+      const token = import.meta.env.VITE_GITHUB_TOKEN;
+      
+      const headers: Record<string, string> = {
+        'Accept': 'application/vnd.github.v3+json',
       };
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
+      try {
+        const res = await fetch(`https://api.github.com/repos/${repo}/commits?per_page=100`, { headers });
+        if (res.ok) {
+          const commits = await res.json();
+          return { data: commits, repo, has_token: !!token };
+        }
+      } catch (e) {
+        // Fallback to empty if fetch fails
+      }
+      
+      return { data: [], repo: repo + " (Mock/Local API Failed)", has_token: !!token };
     }
 
     // This hits the Vercel Serverless Function created in frontend/api/changelogs.js
+    // It will ONLY run when deployed to Vercel production.
     const res = await fetch('/api/changelogs');
     
     if (!res.ok) {
@@ -161,9 +170,12 @@ const paginationMeta = computed<PaginationMeta>(() => {
         <div class="min-w-0 flex-1">
           <p class="text-xs font-medium text-text-muted">Repository</p>
           <p class="truncate text-sm font-bold text-text">
-            <a v-if="changelog?.repo" :href="'https://github.com/' + changelog.repo" target="_blank" class="hover:text-primary hover:underline">
-              {{ changelog.repo }}
-            </a>
+            <template v-if="changelog?.repo">
+              <a v-if="!isMockMode" :href="'https://github.com/' + changelog.repo" target="_blank" class="hover:text-primary hover:underline">
+                {{ changelog.repo }}
+              </a>
+              <span v-else class="cursor-not-allowed opacity-80">{{ changelog.repo }}</span>
+            </template>
             <span v-else>Loading...</span>
           </p>
         </div>
@@ -183,9 +195,14 @@ const paginationMeta = computed<PaginationMeta>(() => {
         <div v-for="commitInfo in paginatedCommits" :key="commitInfo.sha" class="flex gap-3 px-5 py-3 hover:bg-surface-muted transition-colors">
           <!-- Avatar -->
           <div class="flex-shrink-0 pt-0.5">
-            <a v-if="commitInfo.author" :href="commitInfo.author.html_url" target="_blank">
-              <img :src="commitInfo.author.avatar_url" class="h-8 w-8 rounded-full border border-border shadow-xs" alt="Author" />
-            </a>
+            <template v-if="commitInfo.author">
+              <a v-if="!isMockMode" :href="commitInfo.author.html_url" target="_blank">
+                <img :src="commitInfo.author.avatar_url" class="h-8 w-8 rounded-full border border-border shadow-xs" alt="Author" />
+              </a>
+              <span v-else class="cursor-not-allowed">
+                <img :src="commitInfo.author.avatar_url" class="h-8 w-8 rounded-full border border-border shadow-xs opacity-80" alt="Author" />
+              </span>
+            </template>
             <div v-else class="flex h-8 w-8 items-center justify-center rounded-full bg-surface-muted text-text-soft border border-border shadow-xs">
               <Github :size="16" />
             </div>
@@ -195,14 +212,20 @@ const paginationMeta = computed<PaginationMeta>(() => {
           <div class="flex-1 min-w-0">
             <div class="flex items-start justify-between gap-4">
               <h4 class="truncate text-sm font-medium text-text">
-                <a :href="commitInfo.html_url" target="_blank" class="hover:text-primary hover:underline">
+                <a v-if="!isMockMode" :href="commitInfo.html_url" target="_blank" class="hover:text-primary hover:underline">
                   {{ commitInfo.commit.message.split('\n')[0] }}
                 </a>
+                <span v-else class="cursor-not-allowed opacity-90">
+                  {{ commitInfo.commit.message.split('\n')[0] }}
+                </span>
               </h4>
-              <a :href="commitInfo.html_url" target="_blank" class="flex-shrink-0 text-xs font-mono text-text-muted hover:text-primary">
+              <a v-if="!isMockMode" :href="commitInfo.html_url" target="_blank" class="flex-shrink-0 text-xs font-mono text-text-muted hover:text-primary">
                 {{ commitInfo.sha.substring(0, 7) }}
                 <ExternalLink :size="12" class="inline-block ml-0.5 -mt-0.5" />
               </a>
+              <span v-else class="flex-shrink-0 text-xs font-mono text-text-muted cursor-not-allowed opacity-80">
+                {{ commitInfo.sha.substring(0, 7) }}
+              </span>
             </div>
             
             <div class="mt-0.5 flex items-center gap-1.5 text-xs text-text-muted">
