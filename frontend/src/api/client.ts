@@ -72,7 +72,11 @@ export async function apiFetch<T>(
   }
 
   try {
-    const response = await fetch(fullUrl, { ...init, headers });
+    const response = await fetch(fullUrl, { 
+      ...init, 
+      headers,
+      credentials: 'include' // Required for session cookies
+    });
     const payload = await response.json().catch(() => ({}));
 
     if (!response.ok) {
@@ -87,8 +91,9 @@ export async function apiFetch<T>(
 
     return payload as T;
   } catch (error) {
+    // Re-throw ApiError (HTTP errors with status codes) directly — no mock fallback
+    // when VITE_USE_MOCK=false. This ensures real failures surface to the UI.
     if (error instanceof ApiError) throw error;
-    // Hardened: DO NOT fall back to mock data if VITE_USE_MOCK is false!
     throw new ApiError(
       error instanceof Error ? error.message : "Failed to connect to API server.",
       0,

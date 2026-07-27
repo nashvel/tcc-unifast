@@ -42,6 +42,23 @@ const handlers: Record<string, MockHandler> = {
     if (!token) return { status: 401, body: { message: "Unauthenticated." } };
     return { status: 200, body: { user: makeUser("admin@unifast.gov.ph") } };
   },
+  "GET /api/auth/captcha": () => {
+    // Return a simple SVG image as a base64 data URL for mock mode
+    const mockCode = "MOCK01";
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="180" height="50">
+      <rect width="180" height="50" fill="#1e293b"/>
+      <text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle"
+        font-family="monospace" font-size="20" font-weight="bold" fill="#e2e8f0"
+        letter-spacing="6">${mockCode}</text>
+      <line x1="10" y1="15" x2="170" y2="35" stroke="#475569" stroke-width="1"/>
+      <line x1="20" y1="40" x2="160" y2="10" stroke="#475569" stroke-width="1"/>
+    </svg>`;
+    const b64 = btoa(unescape(encodeURIComponent(svg)));
+    return {
+      status: 200,
+      body: { image: `data:image/svg+xml;base64,${b64}`, key: "mock-captcha-key" },
+    };
+  },
   "POST /api/auth/login": (body) => {
     const parsed = body ? JSON.parse(body) : {};
     const user = makeUser(parsed.email || "admin@unifast.gov.ph");
