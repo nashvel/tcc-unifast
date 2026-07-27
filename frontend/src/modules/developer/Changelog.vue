@@ -4,6 +4,7 @@ import { useI18n } from "vue-i18n";
 import { useQuery } from "@tanstack/vue-query";
 import { apiFetch } from "@/api/client";
 import { GitCommit, GitBranch, Github, ExternalLink, Loader2, Activity, Calendar } from "lucide-vue-next";
+import { isMockMode } from "@/api/client";
 import PageHeader from "@/components/ui/PageHeader.vue";
 import TablePagination from "@/components/tables/TablePagination.vue";
 import type { PaginationMeta } from "@/api";
@@ -36,6 +37,23 @@ type ChangelogResponse = {
 const { data: changelog, isPending, error, refetch } = useQuery({
   queryKey: ["changelogs"],
   queryFn: async (): Promise<ChangelogResponse> => {
+    if (isMockMode) {
+      return {
+        data: [
+          {
+            sha: "mocksha1234567890",
+            html_url: "#",
+            commit: {
+              message: "chore: mock commit for local preview",
+              author: { name: "System Developer", date: new Date().toISOString() }
+            }
+          }
+        ],
+        repo: "nashvel/tcc-unifast (Mock)",
+        has_token: true
+      };
+    }
+
     // This hits the Vercel Serverless Function created in frontend/api/changelogs.js
     const res = await fetch('/api/changelogs');
     
