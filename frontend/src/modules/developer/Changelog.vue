@@ -9,6 +9,7 @@ import PageHeader from "@/components/ui/PageHeader.vue";
 import TablePagination from "@/components/tables/TablePagination.vue";
 import type { PaginationMeta } from "@/api";
 
+const isLocalDev = import.meta.env.DEV;
 const { t } = useI18n();
 
 type GithubCommitInfo = {
@@ -127,17 +128,22 @@ const paginationMeta = computed<PaginationMeta>(() => {
       </template>
     </PageHeader>
 
-    <div v-if="changelog && !changelog.has_token" class="rounded-lg border border-amber-200 bg-amber-50 p-4 shadow-sm dark:bg-amber-900/20">
-      <div class="flex items-start gap-3">
-        <Github class="mt-0.5 text-amber-600" :size="20" />
+      <div v-if="!changelog?.has_token" class="mb-6 flex items-start gap-4 rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/50 dark:bg-amber-900/20">
+        <div class="mt-0.5 rounded-full bg-amber-100 p-1.5 dark:bg-amber-900/40">
+          <Activity class="h-4 w-4 text-amber-600 dark:text-amber-500" />
+        </div>
         <div>
           <h3 class="text-sm font-semibold text-amber-800 dark:text-amber-500">GitHub API Token Missing</h3>
           <p class="mt-1 text-sm text-amber-700 dark:text-amber-400">
-            To avoid strict rate limiting or to fetch from a private repository, please add <code>GITHUB_TOKEN</code> to your Vercel Environment Variables.
+            <template v-if="isMockMode || isLocalDev">
+              To fetch real commits locally without hitting GitHub's 60-request hourly rate limit, add <code>VITE_GITHUB_TOKEN</code> to your local <code>.env</code> file.
+            </template>
+            <template v-else>
+              To avoid strict rate limiting or to fetch from a private repository, please add <code>GITHUB_TOKEN</code> to your Vercel Environment Variables.
+            </template>
           </p>
         </div>
       </div>
-    </div>
 
     <!-- KPIs -->
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
