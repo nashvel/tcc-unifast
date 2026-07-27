@@ -11,12 +11,24 @@ class DatabaseController extends Controller
 {
     public function tables(): JsonResponse
     {
-        $tables = DB::connection()->getDoctrineSchemaManager()->listTableNames();
+        $tables = Schema::getTables();
         $tableData = [];
+        $seen = [];
 
-        foreach ($tables as $table) {
-            $columns = Schema::getColumns($table);
-            $count = DB::table($table)->count();
+        foreach ($tables as $tableInfo) {
+            $table = is_array($tableInfo) ? ($tableInfo['name'] ?? null) : (is_object($tableInfo) ? ($tableInfo->name ?? null) : (string) $tableInfo);
+            if (!$table || in_array($table, $seen, true)) {
+                continue;
+            }
+            $seen[] = $table;
+
+            try {
+                $columns = Schema::getColumns($table);
+                $count = DB::table($table)->count();
+            } catch (\Throwable $e) {
+                // Ignore missing views or permission errors on system tables
+                continue;
+            }
 
             $tableData[] = [
                 'name' => $table,
@@ -28,7 +40,24 @@ class DatabaseController extends Controller
 
         usort($tableData, fn ($a, $b) => strcmp($a['name'], $b['name']));
 
-        return response()->json(['data' => $tableData]);
+        $totalRows = array_sum(array_column($tableData, 'rows'));
+        $totalTables = count($tableData);
+        $largest = null;
+        foreach ($tableData as $t) {
+            if (!$largest || $t['rows'] > $largest['rows']) {
+                $largest = $t;
+            }
+        }
+
+        return response()->json([
+            'data' => $tableData,
+            'summary' => [
+                'total_tables' => $totalTables,
+                'total_rows' => $totalRows,
+                'database' => strtoupper(DB::connection()->getDriverName()),
+                'largest_table' => $largest ? "{$largest['name']} ({$largest['rows']} rows)" : 'None',
+            ],
+        ]);
     }
 
     public function table(string $table): JsonResponse
@@ -37,11 +66,14 @@ class DatabaseController extends Controller
             return response()->json(['message' => "Table '{$table}' not found."], 404);
         }
 
-        $columns = Schema::getColumns($table);
-        $indexes = DB::select(DB::raw("PRAGMA index_list('{$table}')"));
-        $count = DB::table($table)->count();
+        try {
+            $columns = Schema::getColumns($table);
+            $count = DB::table($table)->count();
+        } catch (\Throwable $e) {
+            return response()->json(['message' => "Unable to inspect table '{$table}'."], 500);
+        }
 
-        $columnDetails = array_map(function ($col) use ($table) {
+        $columnDetails = array_map(function ($col) {
             return [
                 'name' => $col['name'],
                 'type' => $col['type'] ?? 'unknown',
@@ -55,10 +87,7 @@ class DatabaseController extends Controller
             'data' => [
                 'name' => $table,
                 'columns' => $columnDetails,
-                'indexes' => array_map(fn ($idx) => [
-                    'name' => $idx->name,
-                    'unique' => (bool) $idx->unique,
-                ], $indexes),
+                'indexes' => [],
                 'row_count' => $count,
             ],
         ]);
@@ -76,24 +105,36 @@ class DatabaseController extends Controller
         $sort = $request->input('sort', 'id');
         $direction = $request->input('direction', 'asc');
 
-        $query = DB::table($table);
+        try {
+            $query = DB::table($table);
 
-        if ($search) {
-            $columns = Schema::getColumns($table);
-            $query->where(function ($q) use ($search, $columns) {
-                foreach ($columns as $col) {
-                    $q->orWhere($col['name'], 'like', "%{$search}%");
-                }
-            });
+            if ($search) {
+                $columns = Schema::getColumns($table);
+                $query->where(function ($q) use ($search, $columns) {
+                    foreach ($columns as $col) {
+                        $q->orWhere($col['name'], 'like', "%{$search}%");
+                    }
+                });
+            }
+
+            $allowedSorts = array_column(Schema::getColumns($table), 'name');
+            if (in_array($sort, $allowedSorts)) {
+                $query->orderBy($sort, $direction === 'desc' ? 'desc' : 'asc');
+            }
+
+            $total = $query->count();
+            $rows = $query->skip(($page - 1) * $perPage)->take($perPage)->get();
+        } catch (\Throwable $e) {
+            return response()->json([
+                'data' => [],
+                'meta' => [
+                    'current_page' => 1,
+                    'per_page' => $perPage,
+                    'total' => 0,
+                    'last_page' => 1,
+                ],
+            ]);
         }
-
-        $allowedSorts = array_column(Schema::getColumns($table), 'name');
-        if (in_array($sort, $allowedSorts)) {
-            $query->orderBy($sort, $direction === 'desc' ? 'desc' : 'asc');
-        }
-
-        $total = $query->count();
-        $rows = $query->skip(($page - 1) * $perPage)->take($perPage)->get();
 
         return response()->json([
             'data' => $rows,
@@ -106,51 +147,25 @@ class DatabaseController extends Controller
         ]);
     }
 
-    public function query(Request $request): JsonResponse
-    {
-        $validated = $request->validate([
-            'sql' => 'required|string|max:1000',
-        ]);
-
-        $sql = $validated['sql'];
-        $lowerSql = strtolower(trim($sql));
-
-        if (!str_starts_with($lowerSql, 'select')) {
-            return response()->json(['message' => 'Only SELECT queries are allowed.'], 403);
-        }
-
-        $forbidden = ['drop', 'delete', 'truncate', 'alter', 'insert', 'update', 'create'];
-        foreach ($forbidden as $word) {
-            if (str_contains($lowerSql, $word)) {
-                return response()->json(['message' => "Forbidden keyword '{$word}' in query."], 403);
-            }
-        }
-
-        try {
-            $start = microtime(true);
-            $results = DB::select($sql);
-            $elapsed = round((microtime(true) - $start) * 1000, 2);
-
-            return response()->json([
-                'data' => $results,
-                'meta' => [
-                    'count' => count($results),
-                    'elapsed_ms' => $elapsed,
-                ],
-            ]);
-        } catch (\Exception $e) {
-            return response()->json(['message' => 'Query error: ' . $e->getMessage()], 422);
-        }
-    }
-
     public function stats(): JsonResponse
     {
-        $tables = DB::connection()->getDoctrineSchemaManager()->listTableNames();
+        $tables = Schema::getTables();
         $stats = [];
+        $seen = [];
 
-        foreach ($tables as $table) {
-            $count = DB::table($table)->count();
-            $columns = count(Schema::getColumns($table));
+        foreach ($tables as $tableInfo) {
+            $table = is_array($tableInfo) ? ($tableInfo['name'] ?? null) : (is_object($tableInfo) ? ($tableInfo->name ?? null) : (string) $tableInfo);
+            if (!$table || in_array($table, $seen, true)) {
+                continue;
+            }
+            $seen[] = $table;
+
+            try {
+                $count = DB::table($table)->count();
+                $columns = count(Schema::getColumns($table));
+            } catch (\Throwable $e) {
+                continue;
+            }
 
             $stats[] = [
                 'table' => $table,

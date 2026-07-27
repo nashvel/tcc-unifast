@@ -4,7 +4,7 @@ import { useRouter } from "vue-router";
 import { IconAlertTriangle, IconCheck, IconId, IconSchool, IconUser } from "@tabler/icons-vue";
 import PageHeader from "@/components/ui/PageHeader.vue";
 import CardSkeleton from "@/components/ui/CardSkeleton.vue";
-import { authSession, csrfToken } from "@/auth/session";
+import { authSession, getAuthToken } from "@/auth/session";
 import { toast } from "@/composables/useToast";
 
 type KycResponse = {
@@ -71,7 +71,7 @@ async function submit() {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "X-CSRF-TOKEN": csrfToken(),
+        Authorization: `Bearer ${getAuthToken()}`,
         Accept: "application/json",
       },
       body: JSON.stringify({

@@ -97,6 +97,11 @@
     "loginDescription": "Gumamit ng seeded account o pumili ng demo role sa ibaba.",
     "emailDescription": "Ilagay ang institutional email para magpatuloy.",
     "emailPasswordRequired": "Ilagay ang email at password.",
+    "captchaLabel": "Larawan ng CAPTCHA",
+    "captchaInput": "Ilagay ang CAPTCHA",
+    "captchaPlaceholder": "I-type ang code na ipinakita",
+    "captchaErrorPlaceholder": "Mensahe ng error sa CAPTCHA",
+    "refreshCaptcha": "I-refresh",
     "signInFailed": "Nabigo ang pag-sign in.",
     "signingIn": "Nagsa-sign in...",
     "forgotPassword": "Nakalimutan ang password?",
@@ -409,8 +414,12 @@
       "description": "I-activate ang iyong UniFAST TES portal account."
     },
     "adminDashboard": {
-      "title": "Admin Dashboard - UniFAST TES",
+      "title": "Developer Dashboard - UniFAST TES",
       "description": "Pamahalaan ang TES grantees, dokumento, batch, ulat, at eligibility."
+    },
+    "developerDashboard": {
+      "title": "Developer Dashboard - UniFAST TES",
+      "description": "Kalusogan ng sistema, performance ng API, at deployment status."
     },
     "studentDashboard": {
       "title": "Student Dashboard - UniFAST TES",

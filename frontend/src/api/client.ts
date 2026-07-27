@@ -2,7 +2,8 @@ import { getAuthToken } from "@/auth/session";
 import { API_BASE } from "@/config";
 import type { ListQuery } from "./types";
 
-const useMock = import.meta.env.VITE_USE_MOCK === "true" || !API_BASE;
+export const isMockMode = import.meta.env.VITE_USE_MOCK === "true";
+const useMock = isMockMode || (!API_BASE && import.meta.env.VITE_USE_MOCK !== "false");
 
 export class ApiError extends Error {
   status: number;
@@ -29,20 +30,25 @@ export function apiUrl(path: string): string {
 
 let mockHandler: typeof import("@/mock/handlers").handleMockRequest | null = null;
 
+async function getMockHandler() {
+  if (!mockHandler) {
+    const mod = await import("@/mock/handlers");
+    mockHandler = mod.handleMockRequest;
+  }
+  return mockHandler;
+}
+
 export async function apiFetch<T>(
   url: string,
   init: RequestInit = {},
 ): Promise<T> {
-  // Mock mode: lazy-load mock handlers and intercept
+  // If mock mode is explicitly true or no API_BASE and VITE_USE_MOCK is not false
   if (useMock) {
-    if (!mockHandler) {
-      const mod = await import("@/mock/handlers");
-      mockHandler = mod.handleMockRequest;
-    }
+    await getMockHandler();
     const method = (init.method || "GET").toUpperCase();
     const path = url.startsWith("http") ? new URL(url).pathname : url;
     const body = typeof init.body === "string" ? init.body : undefined;
-    const mockResponse = mockHandler(method, path.split("?")[0], body);
+    const mockResponse = mockHandler!(method, path.split("?")[0], body);
     if (mockResponse) {
       if (mockResponse.status >= 400) {
         throw new ApiError("Mock error", mockResponse.status);
@@ -65,18 +71,32 @@ export async function apiFetch<T>(
     headers.set("Authorization", `Bearer ${token}`);
   }
 
-  const response = await fetch(fullUrl, { ...init, headers });
-  const payload = await response.json().catch(() => ({}));
+  try {
+    const response = await fetch(fullUrl, { 
+      ...init, 
+      headers,
+      credentials: 'include' // Required for session cookies
+    });
+    const payload = await response.json().catch(() => ({}));
 
-  if (!response.ok) {
-    const validation = payload?.errors
-      ? Object.values(payload.errors as Record<string, string[]>).flat().join(" ")
-      : "";
+    if (!response.ok) {
+      const validation = payload?.errors
+        ? Object.values(payload.errors as Record<string, string[]>).flat().join(" ")
+        : "";
+      throw new ApiError(
+        validation || payload?.message || `Request failed (${response.status})`,
+        response.status,
+      );
+    }
+
+    return payload as T;
+  } catch (error) {
+    // Re-throw ApiError (HTTP errors with status codes) directly — no mock fallback
+    // when VITE_USE_MOCK=false. This ensures real failures surface to the UI.
+    if (error instanceof ApiError) throw error;
     throw new ApiError(
-      validation || payload?.message || `Request failed (${response.status})`,
-      response.status,
+      error instanceof Error ? error.message : "Failed to connect to API server.",
+      0,
     );
   }
-
-  return payload as T;
 }

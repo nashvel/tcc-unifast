@@ -1,20 +1,30 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
-import { ArrowRight, Lock, Mail, UserRound } from "lucide-vue-next";
+import { ArrowRight, ChevronDown, ChevronUp, HelpCircle, Lock, Mail, ShieldCheck, UserRound } from "lucide-vue-next";
 import logo from "@/assets/system-logo.png";
 import studentsCutout from "@/assets/auth/tcc-students-cutout.png";
 import { authSession } from "@/auth/session";
 import { login } from "@/api/auth";
+import { apiFetch } from "@/api/client";
+import CaptchaModal from "@/components/CaptchaModal.vue";
 import LanguageSwitcher from "@/components/LanguageSwitcher.vue";
 import { withLang } from "@/i18n/routeLang";
+
+// Force light mode on login page - never use dark mode here
+onMounted(() => {
+  document.documentElement.classList.remove("dark", "dev-dark");
+});
 
 const route = useRoute();
 const router = useRouter();
 const { t } = useI18n();
 const email = ref("");
 const password = ref("");
+const showCaptchaModal = ref(false);
+const captchaCode = ref("");
+const captchaError = ref(""); // error shown inside the captcha modal
 const error = ref("");
 const busy = ref(false);
 const mode = route.path.includes("forgot")
@@ -22,12 +32,42 @@ const mode = route.path.includes("forgot")
   : route.path.includes("activate")
     ? "activate"
     : "login";
+
+type Term = { id: number; title: string; content: string; version: string };
+
+const terms = ref<Term | null>(null);
+const showTerms = ref(false);
+
 const demoAccounts: Record<string, string> = {
   Developer: "admin@unifast.gov.ph",
   Administrator: "head@unifast.gov.ph",
   "UniFAST Staff": "staff@unifast.gov.ph",
   Student: "student@tcc.edu.ph",
 };
+
+function openCaptchaModal() {
+  if (mode === "login" && (!email.value || !password.value)) {
+    error.value = t("auth.emailPasswordRequired");
+    return;
+  }
+  
+  // Local development bypass using Vite env flag
+  if (import.meta.env.VITE_DEV_BYPASS_CAPTCHA === 'true') {
+    captchaCode.value = "BYPASS"; // Dummy value for the backend to receive
+    submit();
+    return;
+  }
+  
+  captchaError.value = "";
+  showCaptchaModal.value = true;
+}
+
+// Called when the user clicks Verify inside the modal.
+// We do NOT close the modal here — submit() decides based on the API response.
+async function handleCaptchaVerify(code: string) {
+  captchaCode.value = code;
+  await submit();
+}
 
 async function submit() {
   if (mode === "login" && (!email.value || !password.value)) {
@@ -37,22 +77,34 @@ async function submit() {
 
   busy.value = true;
   error.value = "";
+  captchaError.value = "";
   try {
-    const user = await login(email.value, password.value);
+    const user = await login(email.value, password.value, captchaCode.value);
+    // Success — close the modal and navigate
+    showCaptchaModal.value = false;
     authSession.user = user;
     authSession.loaded = true;
     await router.push(withLang(user.role === "student" ? "/student" : "/app", route.query.lang));
   } catch (exception) {
-    error.value = exception instanceof Error ? exception.message : t("auth.signInFailed");
+    const msg = exception instanceof Error ? exception.message : t("auth.signInFailed");
+    // If the captcha modal is open, captcha-related errors stay inside the modal
+    if (showCaptchaModal.value) {
+      captchaError.value = msg;
+      captchaCode.value = "";
+      // Reload captcha image for a fresh attempt
+    } else {
+      error.value = msg;
+    }
   } finally {
     busy.value = false;
+    if (!showCaptchaModal.value) captchaCode.value = "";
   }
 }
 
 async function quickLogin(label: string) {
   email.value = demoAccounts[label];
   password.value = "password";
-  await submit();
+  openCaptchaModal();
 }
 
 function demoAccountLabel(role: string) {
@@ -64,6 +116,13 @@ function demoAccountLabel(role: string) {
   };
   return labels[role] ?? role;
 }
+
+onMounted(async () => {
+  try {
+    const termsRes = await apiFetch<{ data: Term }>("/api/terms/active");
+    terms.value = termsRes.data;
+  } catch {}
+});
 </script>
 
 <template>
@@ -155,21 +214,21 @@ function demoAccountLabel(role: string) {
           }}
         </p>
 
-        <form class="mt-5 space-y-3.5" @submit.prevent="submit">
+        <form class="mt-5 space-y-3.5">
           <label class="block">
-            <span class="mb-1.5 block text-xs font-medium">{{ t("common.email") }} <b class="text-danger">*</b></span>
+            <span class="mb-1.5 block text-xs font-medium text-text">{{ t("common.email") }} <b class="text-danger">*</b></span>
             <div class="relative">
               <Mail :size="17" class="absolute left-3 top-1/2 -translate-y-1/2 text-text-soft" />
               <input
                 v-model="email"
                 type="email"
                 placeholder="you@unifast.gov.ph"
-                class="h-10 w-full rounded-md border bg-[#f1f5fb] pl-10 pr-3 text-sm shadow-inner shadow-slate-200/40"
+                class="h-10 w-full rounded-md border bg-[#f1f5fb] pl-10 pr-3 text-sm text-text shadow-inner shadow-slate-200/40"
               />
             </div>
           </label>
           <label v-if="mode === 'login'" class="block">
-            <span class="mb-1.5 block text-xs font-medium"
+            <span class="mb-1.5 block text-xs font-medium text-text"
               >{{ t("common.password") }} <b class="text-danger">*</b></span
             >
             <div class="relative">
@@ -178,14 +237,16 @@ function demoAccountLabel(role: string) {
                 v-model="password"
                 type="password"
                 :placeholder="t('common.password')"
-                class="h-10 w-full rounded-md border bg-[#f1f5fb] pl-10 pr-3 text-sm shadow-inner shadow-slate-200/40"
+                class="h-10 w-full rounded-md border bg-[#f1f5fb] pl-10 pr-3 text-sm text-text shadow-inner shadow-slate-200/40"
               />
             </div>
           </label>
           <p v-if="error" class="text-xs text-danger">{{ error }}</p>
           <button
+            type="button"
             :disabled="busy"
             class="flex h-10 w-full items-center justify-center gap-2 rounded-md bg-primary text-sm font-semibold text-white shadow-sm hover:bg-primary-hover disabled:opacity-60"
+            @click="mode === 'login' ? openCaptchaModal() : submit()"
           >
             {{ busy ? t("auth.signingIn") : mode === "login" ? t("common.signIn") : t("common.continue") }}
             <ArrowRight :size="15" />
@@ -216,8 +277,35 @@ function demoAccountLabel(role: string) {
               <span class="text-xs font-medium">{{ demoAccountLabel(role) }}</span>
             </button>
           </div>
+          <RouterLink
+            :to="withLang('/help/support', route.query.lang)"
+            class="mt-4 flex items-center justify-center gap-2 rounded-md border py-2.5 text-xs font-medium text-text-muted hover:bg-surface-muted"
+          >
+            <HelpCircle :size="14" />
+            Help & Support
+          </RouterLink>
+        </div>
+
+        <!-- Terms & Conditions -->
+        <div v-if="terms && mode === 'login'" class="mt-6 border-t pt-4">
+          <button class="flex w-full items-center gap-2 text-xs font-medium text-text-muted hover:text-text" @click="showTerms = !showTerms">
+            <ShieldCheck :size="14" />
+            <span>{{ terms.title }} (v{{ terms.version }})</span>
+            <component :is="showTerms ? ChevronUp : ChevronDown" :size="14" class="ml-auto" />
+          </button>
+          <div v-if="showTerms" class="mt-3 max-h-48 overflow-y-auto rounded-md border bg-surface p-3 text-xs text-text-muted">
+            <div v-html="terms.content" />
+          </div>
         </div>
       </div>
     </main>
   </div>
+
+  <CaptchaModal
+    :show="showCaptchaModal"
+    :submit-error="captchaError"
+    :loading="busy"
+    @close="showCaptchaModal = false; captchaError = ''"
+    @verify="handleCaptchaVerify"
+  />
 </template>

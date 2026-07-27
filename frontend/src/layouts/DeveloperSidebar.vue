@@ -17,6 +17,7 @@ import {
   IconUserCog,
   IconHistory,
 } from "@tabler/icons-vue";
+import logo from "@/assets/system-logo.png";
 import { withLang } from "@/i18n/routeLang";
 
 const route = useRoute();
@@ -27,7 +28,6 @@ type NavItem = {
   label: string;
   path?: string;
   icon?: typeof IconDashboard;
-  children?: NavItem[];
 };
 
 const sections = ref<{ title?: string; items: NavItem[] }[]>([
@@ -37,10 +37,14 @@ const sections = ref<{ title?: string; items: NavItem[] }[]>([
   {
     title: "System",
     items: [
+      { label: "Developer Playground", path: "/app/developer/playground", icon: IconTerminal },
+      { label: "Change Logs", path: "/app/developer/changelogs", icon: IconHistory },
       { label: "RBAC & Permissions", path: "/app/developer/rbac", icon: IconShield },
       { label: "API Documentation", path: "/app/developer/api-docs", icon: IconCode },
       { label: "System Flow Charts", path: "/app/developer/flow-chart", icon: IconGitBranch },
       { label: "Database", path: "/app/developer/database", icon: IconDatabase },
+      { label: "Terms & Conditions", path: "/app/developer/terms", icon: IconShield },
+      { label: "FAQs", path: "/app/developer/faqs", icon: IconCode },
     ],
   },
   {
@@ -82,13 +86,11 @@ function go(path: string) {
 </script>
 
 <template>
-  <aside class="flex h-full w-56 shrink-0 flex-col bg-[var(--sidebar-bg)]">
+  <aside class="flex h-full w-56 shrink-0 flex-col" style="background-color: #0f0f0f; border-right: 1px solid #262626;">
     <!-- Logo -->
-    <div class="flex h-14 shrink-0 items-center gap-2.5 px-4">
-      <div class="flex size-7 items-center justify-center rounded-lg bg-[var(--primary)]">
-        <span class="text-xs font-bold text-white">T</span>
-      </div>
-      <span class="text-sm font-semibold text-[var(--sidebar-text)]">TCC UniFAST</span>
+    <div class="flex h-14 shrink-0 items-center gap-2.5 px-4" style="border-bottom: 1px solid #262626;">
+      <img :src="logo" class="size-7 object-contain" alt="TCC UniFAST" draggable="false" />
+      <span class="text-sm font-semibold" style="color: #fafafa;">TCC UniFAST</span>
     </div>
 
     <!-- Navigation -->
@@ -97,33 +99,28 @@ function go(path: string) {
         <!-- Section with title -->
         <template v-if="section.title">
           <button
-            class="flex w-full items-center justify-between px-2.5 py-2 text-2xs font-medium uppercase tracking-wider text-[var(--sidebar-text-muted)] hover:text-[var(--sidebar-text)]"
+            class="flex w-full items-center justify-between px-2.5 py-2 text-2xs font-medium uppercase tracking-wider"
+            style="color: #737373;"
             @click="toggleSection(section.title!)"
           >
             {{ section.title }}
             <IconChevronDown
               :size="14"
-              :class="[
-                'transition-transform',
-                expanded[section.title!] ? 'rotate-0' : '-rotate-90',
-              ]"
+              :class="['transition-transform', expanded[section.title!] ? 'rotate-0' : '-rotate-90']"
+              style="color: #525252;"
             />
           </button>
           <ul v-show="expanded[section.title!]" class="space-y-0.5">
             <li v-for="item in section.items" :key="item.path">
               <button
                 class="flex h-8 w-full items-center gap-2.5 rounded-md px-2.5 text-left text-sm transition-colors"
-                :class="
-                  isActive(item.path!)
-                    ? 'bg-[var(--surface-muted)] font-medium text-[var(--sidebar-text)]'
-                    : 'text-[var(--sidebar-text-muted)] hover:bg-[var(--surface-muted)] hover:text-[var(--sidebar-text)]'
-                "
+                :style="isActive(item.path!) ? 'background-color: #1a1a1a; color: #fafafa;' : 'color: #d4d4d4;'"
                 @click="go(item.path!)"
               >
                 <component
                   :is="item.icon"
                   :size="15"
-                  :class="isActive(item.path!) ? 'text-[var(--primary)]' : 'text-[var(--sidebar-text-muted)]'"
+                  :style="isActive(item.path!) ? 'color: #fafafa;' : 'color: #737373;'"
                 />
                 <span class="truncate">{{ item.label }}</span>
               </button>
@@ -137,17 +134,13 @@ function go(path: string) {
             <li v-for="item in section.items" :key="item.path">
               <button
                 class="flex h-8 w-full items-center gap-2.5 rounded-md px-2.5 text-left text-sm transition-colors"
-                :class="
-                  isActive(item.path!)
-                    ? 'bg-[var(--surface-muted)] font-medium text-[var(--sidebar-text)]'
-                    : 'text-[var(--sidebar-text-muted)] hover:bg-[var(--surface-muted)] hover:text-[var(--sidebar-text)]'
-                "
+                :style="isActive(item.path!) ? 'background-color: #1a1a1a; color: #fafafa;' : 'color: #d4d4d4;'"
                 @click="go(item.path!)"
               >
                 <component
                   :is="item.icon"
                   :size="15"
-                  :class="isActive(item.path!) ? 'text-[var(--primary)]' : 'text-[var(--sidebar-text-muted)]'"
+                  :style="isActive(item.path!) ? 'color: #fafafa;' : 'color: #737373;'"
                 />
                 <span class="truncate">{{ item.label }}</span>
               </button>
@@ -158,22 +151,25 @@ function go(path: string) {
     </nav>
 
     <!-- Bottom -->
-    <div class="border-t border-[var(--border)] px-2 py-2">
+    <div class="px-2 py-2" style="border-top: 1px solid #262626;">
       <ul class="space-y-0.5">
         <li>
           <button
-            class="flex h-8 w-full items-center gap-2.5 rounded-md px-2.5 text-left text-sm text-[var(--sidebar-text-muted)] hover:bg-[var(--surface-muted)] hover:text-[var(--sidebar-text)]"
+            class="flex h-8 w-full items-center gap-2.5 rounded-md px-2.5 text-left text-sm transition-colors"
+            :style="isActive('/app/developer/api-docs') ? 'background-color: #1a1a1a; color: #fafafa;' : 'color: #d4d4d4;'"
+            @click="go('/app/developer/api-docs')"
           >
-            <IconSettings :size="15" class="text-[var(--sidebar-text-muted)]" />
+            <IconSettings :size="15" style="color: #737373;" />
             <span class="truncate">Integration</span>
           </button>
         </li>
         <li>
           <button
-            class="flex h-8 w-full items-center gap-2.5 rounded-md px-2.5 text-left text-sm text-[var(--sidebar-text-muted)] hover:bg-[var(--surface-muted)] hover:text-[var(--sidebar-text)]"
+            class="flex h-8 w-full items-center gap-2.5 rounded-md px-2.5 text-left text-sm"
+            style="color: #d4d4d4;"
             @click="$emit('logout')"
           >
-            <IconLogout :size="15" class="text-[var(--sidebar-text-muted)]" />
+            <IconLogout :size="15" style="color: #737373;" />
             <span class="truncate">Logout</span>
           </button>
         </li>

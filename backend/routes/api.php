@@ -6,19 +6,26 @@ use App\Http\Controllers\ActivationController;
 use App\Http\Controllers\AdminStudentIdSampleController;
 use App\Http\Controllers\AuditEventController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\AuthCaptchaController;
 use App\Http\Controllers\BatchActivationNotificationController;
 use App\Http\Controllers\BatchController;
 use App\Http\Controllers\BillingReportController;
+use App\Http\Controllers\ChangelogController;
+use App\Http\Controllers\CollaboratorController;
 use App\Http\Controllers\DatabaseController;
 use App\Http\Controllers\DistributionReportController;
 use App\Http\Controllers\DocumentSubmissionController;
 use App\Http\Controllers\EligibilityController;
+use App\Http\Controllers\FaqController;
 use App\Http\Controllers\GranteeController;
 use App\Http\Controllers\IdentityOnboardingController;
 use App\Http\Controllers\MasterlistImportController;
 use App\Http\Controllers\PolicySettingsController;
 use App\Http\Controllers\RbacController;
 use App\Http\Controllers\RequirementVaultController;
+use App\Http\Controllers\SupportTicketController;
+use App\Http\Controllers\SystemHealthController;
+use App\Http\Controllers\TermController;
 use App\Http\Controllers\StudentDocumentOcrController;
 use App\Http\Controllers\StudentFaceVerificationController;
 use App\Http\Controllers\StudentKycController;
@@ -26,12 +33,26 @@ use App\Http\Controllers\StudentNotificationController;
 use App\Http\Controllers\StudentSubmissionWindowController;
 use App\Http\Controllers\TccUnifastStudentsController;
 use App\Http\Controllers\TccUnifastSyncController;
+use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
+use Illuminate\Cookie\Middleware\EncryptCookies;
+use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Route;
 
 // Public routes (no auth required)
-Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:20,1');
+Route::middleware([
+    EncryptCookies::class,
+    AddQueuedCookiesToResponse::class,
+    StartSession::class,
+])->group(function (): void {
+    Route::get('/auth/captcha', AuthCaptchaController::class)->middleware('throttle:30,1');
+    Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
+});
 Route::get('/activation/{token}', [ActivationController::class, 'show'])->middleware('throttle:20,1');
 Route::post('/activation/{token}', [ActivationController::class, 'activate'])->middleware('throttle:10,1');
+
+// Public content (for login page)
+Route::get('/terms/active', [TermController::class, 'active']);
+Route::get('/faqs', [FaqController::class, 'index']);
 
 // Authenticated routes (Sanctum token required)
 Route::middleware('auth:sanctum')->group(function (): void {
@@ -115,6 +136,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
     // RBAC + database viewer (developer/admin)
     Route::middleware('role:developer,admin')->group(function (): void {
+        Route::get('/changelogs', [ChangelogController::class, 'index']);
         Route::get('/rbac/roles', [RbacController::class, 'index']);
         Route::post('/rbac/roles', [RbacController::class, 'store']);
         Route::get('/rbac/roles/{role}', [RbacController::class, 'show']);
@@ -133,7 +155,34 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('/database/stats', [DatabaseController::class, 'stats']);
         Route::get('/database/tables/{table}', [DatabaseController::class, 'table']);
         Route::get('/database/tables/{table}/rows', [DatabaseController::class, 'rows']);
-        Route::post('/database/query', [DatabaseController::class, 'query']);
+
+        // Terms & Conditions management
+        Route::get('/terms', [TermController::class, 'index']);
+        Route::post('/terms', [TermController::class, 'store']);
+        Route::get('/terms/{term}', [TermController::class, 'show']);
+        Route::put('/terms/{term}', [TermController::class, 'update']);
+        Route::delete('/terms/{term}', [TermController::class, 'destroy']);
+
+        // FAQ management
+        Route::get('/faqs/all', [FaqController::class, 'all']);
+        Route::post('/faqs', [FaqController::class, 'store']);
+        Route::get('/faqs/{faq}', [FaqController::class, 'show']);
+        Route::put('/faqs/{faq}', [FaqController::class, 'update']);
+        Route::delete('/faqs/{faq}', [FaqController::class, 'destroy']);
+        Route::post('/faqs/reorder', [FaqController::class, 'reorder']);
+
+        // Support tickets management
+        Route::get('/support-tickets', [SupportTicketController::class, 'index']);
+        Route::post('/support-tickets', [SupportTicketController::class, 'store']);
+        Route::patch('/support-tickets/{supportTicket}', [SupportTicketController::class, 'update']);
+
+        // Collaborators management
+        Route::get('/collaborators', [CollaboratorController::class, 'index']);
+        Route::post('/collaborators/invite', [CollaboratorController::class, 'invite']);
+        Route::delete('/collaborators/{user}', [CollaboratorController::class, 'destroy']);
+
+        // System health telemetry
+        Route::get('/system/health', [SystemHealthController::class, 'show']);
     });
 
     // Document submission review (developer/admin/staff)

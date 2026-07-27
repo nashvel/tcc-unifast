@@ -107,6 +107,11 @@
     "loginDescription": "Use a seeded account or choose a demo role below.",
     "emailDescription": "Enter your institutional email to continue.",
     "emailPasswordRequired": "Enter email and password.",
+    "captchaLabel": "CAPTCHA image",
+    "captchaInput": "Enter CAPTCHA",
+    "captchaPlaceholder": "Type the code shown",
+    "captchaErrorPlaceholder": "CAPTCHA error message",
+    "refreshCaptcha": "Refresh",
     "signInFailed": "Sign in failed.",
     "signingIn": "Signing in...",
     "forgotPassword": "Forgot password?",
@@ -420,8 +425,12 @@
       "description": "Activate your UniFAST TES portal account."
     },
     "adminDashboard": {
-      "title": "Admin Dashboard - UniFAST TES",
+      "title": "Developer Dashboard - UniFAST TES",
       "description": "Manage TES grantees, documents, batches, reports, and eligibility."
+    },
+    "developerDashboard": {
+      "title": "Developer Dashboard - UniFAST TES",
+      "description": "System health, API performance, and deployment status."
     },
     "studentDashboard": {
       "title": "Student Dashboard - UniFAST TES",

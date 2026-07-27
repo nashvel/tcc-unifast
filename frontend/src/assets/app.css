@@ -2,6 +2,18 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@theme inline {
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-soft: var(--primary-soft);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-border: var(--border);
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-text-soft: var(--text-soft);
+}
+
 :root {
   --primary: #7a1e2b;
   --primary-hover: #611620;
@@ -33,9 +45,9 @@
   --ring: rgba(184, 137, 74, 0.32);
 }
 .dark {
-  --primary: #c97a86;
-  --primary-hover: #d68f99;
-  --primary-soft: #3a1620;
+  --primary: #8f2434;
+  --primary-hover: #a32b3d;
+  --primary-soft: #2d1217;
   --success: #7aa384;
   --success-soft: #1a241c;
   --warning: #d0a35a;
@@ -67,9 +79,9 @@ html.dev-dark {
 }
 html.dev-dark,
 html.dev-dark * {
-  --primary: #a78bfa;
-  --primary-hover: #8b5cf6;
-  --primary-soft: rgba(167, 139, 250, 0.1);
+  --primary: #ffffff;
+  --primary-hover: #e5e5e5;
+  --primary-soft: rgba(255, 255, 255, 0.08);
   --success: #22c55e;
   --success-soft: rgba(34, 197, 94, 0.1);
   --warning: #eab308;
@@ -89,13 +101,25 @@ html.dev-dark * {
   --sidebar-bg: #0d0d0d;
   --sidebar-active: #1a1a1a;
   --sidebar-text: #fafafa;
-  --sidebar-text-muted: #737373;
+  --sidebar-text-muted: #d4d4d4;
 }
 html.dev-dark body {
   background-color: #0d0d0d !important;
 }
 html.dev-dark #app {
   background-color: #0d0d0d !important;
+}
+html.dev-dark .bg-primary,
+html.dev-dark button.bg-primary,
+html.dev-dark .btn-primary {
+  background-color: #ffffff !important;
+  color: #09090b !important;
+}
+html.dev-dark .bg-primary:hover,
+html.dev-dark button.bg-primary:hover,
+html.dev-dark .btn-primary:hover {
+  background-color: #e5e5e5 !important;
+  color: #09090b !important;
 }
 @theme inline {
   --color-bg: var(--bg);

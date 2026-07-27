@@ -4,7 +4,8 @@ import { IconDownload, IconReportAnalytics, IconRefresh } from "@tabler/icons-vu
 import DataTable from "@/components/tables/DataTable.vue";
 import TablePagination from "@/components/tables/TablePagination.vue";
 import PageHeader from "@/components/ui/PageHeader.vue";
-import { apiFetch, buildQuery, type PaginatedResponse, type PaginationMeta } from "@/lib/api";
+import { apiFetch, buildQuery } from "@/api/client";
+import type { PaginatedResponse, PaginationMeta } from "@/api/types";
 import { toast } from "@/composables/useToast";
 
 type Batch = {

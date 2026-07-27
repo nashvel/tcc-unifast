@@ -17,6 +17,7 @@ import AppDialog from "@/components/dialogs/AppDialog.vue";
 import CardSkeleton from "@/components/ui/CardSkeleton.vue";
 import EmptyState from "@/components/ui/EmptyState.vue";
 import { useBatchDetail, useBatchAction } from "@/composables/useBatches";
+import { apiFetch } from "@/api/client";
 import { toast } from "@/composables/useToast";
 import { scheduleUndo } from "@/composables/useUndo";
 

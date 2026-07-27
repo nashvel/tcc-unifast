@@ -11,9 +11,10 @@ import {
 import PageHeader from "@/components/ui/PageHeader.vue";
 import DataTable from "@/components/tables/DataTable.vue";
 import AppDialog from "@/components/dialogs/AppDialog.vue";
-import { apiFetch, type PaginatedResponse } from "@/lib/api";
-import { queryKeys } from "@/lib/queryClient";
-import { csrfToken } from "@/auth/session";
+import { apiFetch } from "@/api/client";
+import type { PaginatedResponse } from "@/api/types";
+import { queryKeys } from "@/api/queryKeys";
+import { getAuthToken } from "@/auth/session";
 import { toast } from "@/composables/useToast";
 
 type Batch = {
@@ -130,7 +131,7 @@ async function previewImport() {
   try {
     const response = await fetch("/api/masterlist/imports/preview", {
       method: "POST",
-      headers: { "X-CSRF-TOKEN": csrfToken(), Accept: "application/json" },
+      headers: { Authorization: `Bearer ${getAuthToken()}`, Accept: "application/json" },
       body,
     });
     const payload = await response.json();
@@ -155,7 +156,7 @@ async function confirmImport() {
   try {
     const response = await fetch(`/api/masterlist/imports/${preview.value.id}/confirm`, {
       method: "POST",
-      headers: { "X-CSRF-TOKEN": csrfToken(), Accept: "application/json" },
+      headers: { Authorization: `Bearer ${getAuthToken()}`, Accept: "application/json" },
     });
     const payload = await response.json();
     if (!response.ok && response.status !== 207) {

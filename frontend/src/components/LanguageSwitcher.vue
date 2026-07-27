@@ -103,7 +103,7 @@ onBeforeUnmount(() => {
           'flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm transition focus:outline-none',
           dark
             ? lang === currentLanguage
-              ? 'font-semibold text-[var(--primary)]'
+              ? 'font-semibold text-white'
               : 'text-[var(--text)] hover:bg-[var(--surface-muted)]'
             : lang === currentLanguage
               ? 'font-semibold text-primary'

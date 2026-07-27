@@ -3,7 +3,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { IconAlertTriangle, IconCamera, IconCheck, IconId, IconRefresh } from "@tabler/icons-vue";
 import PageHeader from "@/components/ui/PageHeader.vue";
-import { csrfToken } from "@/auth/session";
+import { getAuthToken } from "@/auth/session";
 import { toast } from "@/composables/useToast";
 import { captureVideoFrame, cropFaceFromImage } from "@/modules/requirements/faceApi";
 import { decodeQrFromBlob, decodeQrFromVideo, isTccRegistrarQr } from "@/modules/requirements/idQr";
@@ -91,7 +91,7 @@ async function captureAndSubmit() {
 
     const response = await fetch("/api/student/identity-onboarding/id-scan", {
       method: "POST",
-      headers: { "X-CSRF-TOKEN": csrfToken(), Accept: "application/json" },
+      headers: { Authorization: `Bearer ${getAuthToken()}`, Accept: "application/json" },
       body,
     });
     const payload = await response.json();

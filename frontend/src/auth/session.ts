@@ -7,7 +7,7 @@ export type AuthUser = {
   email: string;
   role: "developer" | "admin" | "staff" | "student";
   student_id: string | null;
-  account_status?: "active" | "unverified" | "pending_kyc" | "blocked";
+  account_status?: "active" | "unverified" | "pending_kyc" | "pending_identity" | "blocked";
   kyc_status?: string | null;
 };
 

@@ -15,7 +15,7 @@ import {
 import AppDialog from "@/components/dialogs/AppDialog.vue";
 import PageHeader from "@/components/ui/PageHeader.vue";
 import CardSkeleton from "@/components/ui/CardSkeleton.vue";
-import { csrfToken } from "@/auth/session";
+import { getAuthToken } from "@/auth/session";
 import { toast } from "@/composables/useToast";
 import type { Challenge } from "@/modules/requirements/faceApi";
 import { decodeQrFromBlob, decodeQrFromVideo, isTccRegistrarQr } from "@/modules/requirements/idQr";
@@ -278,7 +278,7 @@ async function captureIdScan() {
 
     const response = await fetch("/api/student/requirement-vault/id", {
       method: "POST",
-      headers: { "X-CSRF-TOKEN": csrfToken(), Accept: "application/json" },
+      headers: { Authorization: `Bearer ${getAuthToken()}`, Accept: "application/json" },
       body,
     });
     const payload = await response.json();
@@ -322,7 +322,7 @@ async function uploadDocument(
     body.append("file", file);
     const response = await fetch("/api/student/requirement-vault/document", {
       method: "POST",
-      headers: { "X-CSRF-TOKEN": csrfToken(), Accept: "application/json" },
+      headers: { Authorization: `Bearer ${getAuthToken()}`, Accept: "application/json" },
       body,
     });
     const payload = await response.json();
@@ -404,7 +404,7 @@ async function finishIdentityCheck() {
 
   const response = await fetch("/api/student/requirement-vault/identity-check", {
     method: "POST",
-    headers: { "X-CSRF-TOKEN": csrfToken(), Accept: "application/json" },
+    headers: { Authorization: `Bearer ${getAuthToken()}`, Accept: "application/json" },
     body,
   });
   const payload = await response.json();
@@ -425,7 +425,7 @@ async function confirmSubmission() {
   try {
     const response = await fetch("/api/student/requirement-vault/confirm", {
       method: "POST",
-      headers: { "X-CSRF-TOKEN": csrfToken(), Accept: "application/json" },
+      headers: { Authorization: `Bearer ${getAuthToken()}`, Accept: "application/json" },
     });
     const payload = await response.json();
     if (!response.ok) throw new Error(payload.message || "Unable to confirm submission.");

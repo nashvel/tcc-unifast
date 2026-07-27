@@ -20,6 +20,30 @@ class RbacController extends Controller
         return response()->json(['data' => $roles]);
     }
 
+    private function resolvePermissionIds(array $inputs): array
+    {
+        $resolvedIds = [];
+        foreach ($inputs as $item) {
+            if (is_numeric($item)) {
+                $perm = Permission::find((int) $item);
+                if ($perm) {
+                    $resolvedIds[] = $perm->id;
+                }
+            } else if (is_string($item) && trim($item) !== '') {
+                $category = 'System';
+                if (str_contains($item, '.')) {
+                    $category = ucfirst(explode('.', $item)[0]);
+                }
+                $perm = Permission::firstOrCreate(
+                    ['name' => trim($item)],
+                    ['category' => $category, 'description' => 'System permission ' . $item]
+                );
+                $resolvedIds[] = $perm->id;
+            }
+        }
+        return array_values(array_unique($resolvedIds));
+    }
+
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -27,8 +51,11 @@ class RbacController extends Controller
             'description' => 'nullable|string|max:255',
             'color' => 'nullable|string|max:30',
             'permission_ids' => 'nullable|array',
-            'permission_ids.*' => 'exists:permissions,id',
         ]);
+
+        if (!empty($validated['permission_ids'])) {
+            $validated['permission_ids'] = $this->resolvePermissionIds($validated['permission_ids']);
+        }
 
         $role = $this->rbac->createRole($validated);
 
@@ -48,8 +75,11 @@ class RbacController extends Controller
             'description' => 'nullable|string|max:255',
             'color' => 'nullable|string|max:30',
             'permission_ids' => 'nullable|array',
-            'permission_ids.*' => 'exists:permissions,id',
         ]);
+
+        if (array_key_exists('permission_ids', $validated) && is_array($validated['permission_ids'])) {
+            $validated['permission_ids'] = $this->resolvePermissionIds($validated['permission_ids']);
+        }
 
         $role = $this->rbac->updateRole($role, $validated);
 
@@ -124,10 +154,16 @@ class RbacController extends Controller
     {
         $validated = $request->validate([
             'role_ids' => 'required|array',
-            'role_ids.*' => 'exists:roles,id',
         ]);
 
-        $this->rbac->syncUserRoles($user, $validated['role_ids']);
+        $resolvedRoleIds = [];
+        foreach ($validated['role_ids'] as $rId) {
+            if (is_numeric($rId) && Role::where('id', (int) $rId)->exists()) {
+                $resolvedRoleIds[] = (int) $rId;
+            }
+        }
+
+        $this->rbac->syncUserRoles($user, $resolvedRoleIds);
 
         return response()->json(['message' => 'Roles updated.']);
     }
