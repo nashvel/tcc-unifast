@@ -215,7 +215,7 @@ function selectExistingBatch(id: number) {
       <li
         v-for="item in [
           [1, 'Create / select batch'],
-          [2, 'Upload Excel'],
+          [2, 'Select master list'],
           [3, 'Preview & confirm'],
           [4, 'Activate window'],
         ]"
@@ -274,7 +274,7 @@ function selectExistingBatch(id: number) {
     </section>
 
     <section class="mb-4 rounded-lg border bg-surface p-4">
-      <h2 class="mb-3 text-sm font-semibold">2. Upload CHED masterlist</h2>
+      <h2 class="mb-3 text-sm font-semibold">2. Select a master list</h2>
       
       <div class="flex items-end gap-2">
         <input 
@@ -289,7 +289,7 @@ function selectExistingBatch(id: number) {
           :disabled="!selectedBatchId"
           @click="openFilePicker"
         >
-          <IconFileSpreadsheet :size="14" /> Upload Excel or CSV file
+          <IconFileSpreadsheet :size="14" /> Select Excel or CSV file
         </button>
       </div>
 
