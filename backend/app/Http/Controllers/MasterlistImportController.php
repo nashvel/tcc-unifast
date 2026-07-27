@@ -130,7 +130,7 @@ class MasterlistImportController extends Controller
 
     public function confirm(Request $request, MasterlistImport $import): JsonResponse
     {
-        abort_unless(in_array($request->user()->role, ['developer', 'admin'], true), 403);
+        abort_unless(in_array($request->user()->role, ['developer', 'admin', 'head'], true), 403);
 
         if ($import->status === 'imported') {
             return response()->json(['data' => $this->presentImport($import->load(['batch', 'rows']))]);
