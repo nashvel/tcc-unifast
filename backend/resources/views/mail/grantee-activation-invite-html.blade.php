@@ -132,7 +132,11 @@
         <div class="header">
             <div class="header-content">
                 <div class="header-logo">
-                    <img src="{{ $message->embed(public_path('system-logo.png')) }}" alt="Logo">
+                    @if(config('app.logo_url'))
+                        <img src="{{ config('app.logo_url') }}" alt="Logo">
+                    @else
+                        <img src="{{ $message->embed(public_path('system-logo.png')) }}" alt="Logo">
+                    @endif
                 </div>
                 <div class="header-text">
                     <div class="header-title">UniFAST TES</div>
