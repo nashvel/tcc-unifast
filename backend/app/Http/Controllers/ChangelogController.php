@@ -12,8 +12,11 @@ class ChangelogController extends Controller
     {
         $repo = env('GITHUB_REPO', 'nashvel/tcc-unifast');
         $token = env('GITHUB_TOKEN');
-
         $cacheKey = "github_commits_{$repo}";
+
+        if (request()->has('refresh')) {
+            Cache::forget($cacheKey);
+        }
 
         // Cache for 5 minutes
         $commits = Cache::remember($cacheKey, now()->addMinutes(5), function () use ($repo, $token) {
@@ -35,10 +38,20 @@ class ChangelogController extends Controller
             return [];
         });
 
-        return response()->json([
+        $responseData = [
             'data' => $commits,
             'repo' => $repo,
             'has_token' => !empty($token),
-        ]);
+        ];
+
+        // In local environment, generate the static mock JSON file for frontend previews
+        if (app()->environment('local')) {
+            $mockPath = base_path('../frontend/src/mock/changelogs.json');
+            if (file_exists(dirname($mockPath))) {
+                file_put_contents($mockPath, json_encode($responseData, JSON_PRETTY_PRINT));
+            }
+        }
+
+        return response()->json($responseData);
     }
 }

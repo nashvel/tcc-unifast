@@ -20,6 +20,8 @@ import {
   mockFaqs,
 } from "../../vercel/mocks";
 
+import mockChangelogs from "./changelogs.json";
+
 type MockResponse = { status: number; body: unknown };
 type MockHandler = (body?: string) => MockResponse;
 
@@ -41,6 +43,11 @@ const handlers: Record<string, MockHandler> = {
     const token = typeof localStorage !== "undefined" ? localStorage.getItem("unifast_auth_token") : null;
     if (!token) return { status: 401, body: { message: "Unauthenticated." } };
     return { status: 200, body: { user: makeUser("admin@unifast.gov.ph") } };
+  },
+  
+  // Developer
+  "GET /api/changelogs": () => {
+    return { status: 200, body: mockChangelogs };
   },
   "GET /api/auth/captcha": () => {
     // Return a simple SVG image as a base64 data URL for mock mode
