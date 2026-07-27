@@ -266,6 +266,17 @@ class MasterlistImportController extends Controller
         return $errors;
     }
 
+    public function destroy(Request $request, MasterlistImport $import): JsonResponse
+    {
+        // Only allow deleting imports that haven't been completed yet (e.g. pending/failed)
+        if ($import->status === 'completed') {
+            return response()->json(['message' => 'Completed imports cannot be deleted.'], 403);
+        }
+
+        $import->delete();
+        return response()->json(['message' => 'Import deleted successfully.']);
+    }
+
     private function temporaryPassword(): string
     {
         return 'TCC-'.Str::upper(Str::random(4)).'-'.Str::upper(Str::random(4));

@@ -107,6 +107,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('/masterlist/imports', [MasterlistImportController::class, 'index']);
         Route::post('/masterlist/imports/preview', [MasterlistImportController::class, 'preview'])->middleware('throttle:10,1');
         Route::get('/masterlist/imports/{import}', [MasterlistImportController::class, 'show']);
+        Route::delete('/masterlist/imports/{import}', [MasterlistImportController::class, 'destroy']);
         Route::get('/academic-records', [AcademicRecordController::class, 'index']);
         Route::get('/academic-records/{record}', [AcademicRecordController::class, 'show']);
         Route::get('/document-submissions', [DocumentSubmissionController::class, 'index']);

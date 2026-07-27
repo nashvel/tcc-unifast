@@ -250,6 +250,40 @@ async function confirmImport(close: () => void) {
   }
 }
 
+const deleteDialogOpen = ref(false);
+const deletingImport = ref<ImportItem | null>(null);
+
+function openDeleteDialog(item: ImportItem) {
+  deletingImport.value = item;
+  deleteDialogOpen.value = true;
+}
+
+async function deleteImport() {
+  if (!deletingImport.value) return;
+  busy.value = true;
+  try {
+    const response = await fetch(`/api/masterlist/imports/${deletingImport.value.id}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${getAuthToken()}`, Accept: "application/json" },
+    });
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.message || "Unable to delete import.");
+    
+    // Clear preview if we deleted the currently selected one
+    if (selectedImportId.value === deletingImport.value.id) {
+      selectedImportId.value = null;
+      preview.value = null;
+    }
+    
+    await loadImports();
+    deleteDialogOpen.value = false;
+  } catch (exception) {
+    error.value = exception instanceof Error ? exception.message : "Unable to delete import.";
+  } finally {
+    busy.value = false;
+  }
+}
+
 function formatDate(value: string | null) {
   if (!value) return "—";
   return new Date(value).toLocaleString();
@@ -284,7 +318,7 @@ function formatDate(value: string | null) {
         </label>
       </div>
 
-      <DataTable :headings="['File', 'Batch', 'Status', 'Rows', 'Imported', 'Uploaded']">
+      <DataTable :headings="['File', 'Batch', 'Status', 'Rows', 'Imported', 'Uploaded', '']">
         <tr
           v-for="item in imports"
           :key="item.id"
@@ -308,6 +342,16 @@ function formatDate(value: string | null) {
           </td>
           <td class="px-3 py-3 tabular-nums">{{ item.imported_rows }}</td>
           <td class="px-3 py-3 text-text-muted">{{ formatDate(item.created_at) }}</td>
+          <td class="px-3 py-3 text-right">
+            <button
+              v-if="item.status !== 'completed'"
+              class="text-text-muted hover:text-danger opacity-0 group-hover:opacity-100 transition-opacity"
+              title="Delete import"
+              @click.stop="openDeleteDialog(item)"
+            >
+              <IconTrash :size="16" />
+            </button>
+          </td>
         </tr>
         <tr v-if="!loadingList && !imports.length">
           <td colspan="6" class="p-8 text-center text-text-muted">
@@ -340,7 +384,7 @@ function formatDate(value: string | null) {
         <IconAlertTriangle :size="20" class="text-warning" />
         <div>
           <p class="text-sm font-medium text-warning">No active batch detected</p>
-          <p class="mt-0.5 text-xs text-warning/80">You must <RouterLink to="/batches" class="underline font-semibold hover:text-warning-dark">create a batch</RouterLink> or activate a submission deadline before you can upload a masterlist.</p>
+          <p class="mt-0.5 text-xs text-warning/80">You must <RouterLink to="/app/batches?create=true" class="underline font-semibold hover:text-warning-dark">create a batch</RouterLink> or activate a submission deadline before you can upload a masterlist.</p>
         </div>
       </div>
 
@@ -525,6 +569,30 @@ function formatDate(value: string | null) {
           {{ confirming ? "Importing..." : "Confirm import" }}
         </button>
       </template>
+    </AppDialog>
+
+    <AppDialog
+      v-model="deleteDialogOpen"
+      title="Delete import record"
+      description="Are you sure you want to delete this masterlist import? This action cannot be undone."
+    >
+      <div class="flex justify-end gap-2 pt-4">
+        <button
+          type="button"
+          class="rounded-md border px-4 py-2 text-xs font-medium hover:bg-surface-muted"
+          @click="deleteDialogOpen = false"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          class="rounded-md bg-danger px-4 py-2 text-xs font-medium text-white disabled:opacity-50"
+          :disabled="busy"
+          @click="deleteImport"
+        >
+          {{ busy ? "Deleting..." : "Delete record" }}
+        </button>
+      </div>
     </AppDialog>
   </div>
 </template>
