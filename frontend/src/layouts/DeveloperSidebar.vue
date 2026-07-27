@@ -38,6 +38,7 @@ const sections = ref<{ title?: string; items: NavItem[] }[]>([
     title: "System",
     items: [
       { label: "Developer Playground", path: "/app/developer/playground", icon: IconTerminal },
+      { label: "Change Logs", path: "/app/developer/changelogs", icon: IconHistory },
       { label: "RBAC & Permissions", path: "/app/developer/rbac", icon: IconShield },
       { label: "API Documentation", path: "/app/developer/api-docs", icon: IconCode },
       { label: "System Flow Charts", path: "/app/developer/flow-chart", icon: IconGitBranch },
