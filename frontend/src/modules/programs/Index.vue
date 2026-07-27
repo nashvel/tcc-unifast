@@ -151,10 +151,9 @@ async function deleteProgram() {
     </div>
 
     <AppDialog
-      :open="dialogOpen"
+      v-model="dialogOpen"
       :title="editingProgram ? 'Edit program' : 'New program'"
       :description="editingProgram ? 'Update academic program details.' : 'Add a new academic program to the registry.'"
-      @close="dialogOpen = false"
     >
       <form @submit.prevent="saveProgram" class="space-y-4">
         <div>
@@ -216,10 +215,9 @@ async function deleteProgram() {
     </AppDialog>
 
     <AppDialog
-      :open="deleteDialogOpen"
+      v-model="deleteDialogOpen"
       title="Delete program"
       description="Are you sure you want to delete this academic program? This action cannot be undone."
-      @close="deleteDialogOpen = false"
     >
       <div class="flex justify-end gap-2 pt-4">
         <button
