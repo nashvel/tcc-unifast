@@ -4,7 +4,6 @@ import {
   IconAlertTriangle,
   IconCheck,
   IconFileSpreadsheet,
-  IconMail,
   IconSearch,
   IconUpload,
   IconTrash,
@@ -515,14 +514,7 @@ function formatDate(value: string | null) {
         </tr>
       </DataTable>
 
-      <section v-if="mailResult" class="rounded-lg border bg-surface p-4">
-        <h2 class="flex items-center gap-2 text-sm font-semibold">
-          <IconMail :size="16" class="text-primary" /> Invitation emails
-        </h2>
-        <p class="mt-1 text-xs text-text-muted">
-          {{ mailResult.sent }} activation emails sent. {{ mailResult.failed.length }} failed.
-        </p>
-      </section>
+
 
       <div v-if="preview.status !== 'imported'" class="flex justify-end">
         <button
