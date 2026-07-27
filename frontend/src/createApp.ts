@@ -40,6 +40,7 @@ const appChildren: RouteRecordRaw[] = [
 { path: "onboarding", component: () => import("@/modules/onboarding/Index.vue") },
   // Developer routes
   { path: "developer/playground", component: () => import("@/modules/developer/Playground.vue") },
+  { path: "developer/changelogs", component: () => import("@/modules/developer/Changelog.vue") },
   { path: "developer/rbac", component: () => import("@/modules/developer/Rbac.vue") },
   { path: "developer/api-docs", component: () => import("@/modules/developer/ApiDocs.vue") },
   { path: "developer/flow-chart", component: () => import("@/modules/developer/FlowChart.vue") },

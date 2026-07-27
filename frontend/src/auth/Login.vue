@@ -50,6 +50,14 @@ function openCaptchaModal() {
     error.value = t("auth.emailPasswordRequired");
     return;
   }
+  
+  // Local development bypass using Vite env flag
+  if (import.meta.env.VITE_DEV_BYPASS_CAPTCHA === 'true') {
+    captchaCode.value = "BYPASS"; // Dummy value for the backend to receive
+    submit();
+    return;
+  }
+  
   captchaError.value = "";
   showCaptchaModal.value = true;
 }
@@ -111,12 +119,8 @@ function demoAccountLabel(role: string) {
 
 onMounted(async () => {
   try {
-    const [termsRes, faqsRes] = await Promise.all([
-      apiFetch<{ data: Term }>("/api/terms/active"),
-      apiFetch<{ data: Faq[] }>("/api/faqs"),
-    ]);
+    const termsRes = await apiFetch<{ data: Term }>("/api/terms/active");
     terms.value = termsRes.data;
-    faqs.value = faqsRes.data || [];
   } catch {}
 });
 </script>

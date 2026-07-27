@@ -10,6 +10,7 @@ use App\Http\Controllers\AuthCaptchaController;
 use App\Http\Controllers\BatchActivationNotificationController;
 use App\Http\Controllers\BatchController;
 use App\Http\Controllers\BillingReportController;
+use App\Http\Controllers\ChangelogController;
 use App\Http\Controllers\CollaboratorController;
 use App\Http\Controllers\DatabaseController;
 use App\Http\Controllers\DistributionReportController;
@@ -135,6 +136,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
     // RBAC + database viewer (developer/admin)
     Route::middleware('role:developer,admin')->group(function (): void {
+        Route::get('/changelogs', [ChangelogController::class, 'index']);
         Route::get('/rbac/roles', [RbacController::class, 'index']);
         Route::post('/rbac/roles', [RbacController::class, 'store']);
         Route::get('/rbac/roles/{role}', [RbacController::class, 'show']);

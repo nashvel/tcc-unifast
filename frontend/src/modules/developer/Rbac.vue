@@ -45,6 +45,7 @@ type DynamicMenuGroup = {
 const developerDefaultItems = new Set([
   "dashboard",
   "developer.playground",
+  "developer.changelogs",
   "developer.rbac",
   "developer.apidocs",
   "developer.flowchart",
@@ -66,6 +67,7 @@ const menuGroups: DynamicMenuGroup[] = [
     items: [
       { id: "dashboard", name: "Dashboard Overview", description: "Main system metrics & telemetry desk" },
       { id: "developer.playground", name: "Developer Playground", description: "API Sandbox to test CRUD operations" },
+      { id: "developer.changelogs", name: "Change Logs", description: "System changelogs and git commits" },
       { id: "developer.rbac", name: "RBAC & Permissions", description: "Role & access control manager" },
       { id: "developer.apidocs", name: "API Documentation", description: "OpenAPI endpoint specification" },
       { id: "developer.flowchart", name: "System Flow Charts", description: "Architecture & process diagrams" },

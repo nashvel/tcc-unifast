@@ -109,6 +109,10 @@ class AuthController extends Controller
 
     private function captchaIsValid(Request $request, string $input): bool
     {
+        if (env('DEV_BYPASS_CAPTCHA', false) === true) {
+            return true;
+        }
+
         $captcha = $request->session()->get(self::CAPTCHA_SESSION_KEY);
 
         if (! is_array($captcha) || empty($captcha['code']) || empty($captcha['expires_at'])) {
