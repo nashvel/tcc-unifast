@@ -198,6 +198,8 @@ function selectExistingBatch(id: number) {
   selectedBatchId.value = id;
   preview.value = null;
   step.value = 2;
+}
+
 function formatDate(date: string | null) {
   return date ? new Date(date).toLocaleString() : "—";
 }
