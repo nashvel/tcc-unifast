@@ -55,6 +55,7 @@ const step = ref(1);
 const batchDialog = ref(false);
 const selectedBatchId = ref<number | null>(null);
 const selectedFile = ref<File | null>(null);
+const fileInput = ref<HTMLInputElement | null>(null);
 const preview = ref<ImportPreview | null>(null);
 const busy = ref(false);
 const confirming = ref(false);
@@ -110,6 +111,10 @@ function chooseFile(event: Event) {
   const input = event.target as HTMLInputElement;
   selectedFile.value = input.files?.[0] ?? null;
   preview.value = null;
+}
+
+function openFilePicker() {
+  fileInput.value?.click();
 }
 
 async function previewImport() {
@@ -270,18 +275,34 @@ function selectExistingBatch(id: number) {
 
     <section class="mb-4 rounded-lg border bg-surface p-4">
       <h2 class="mb-3 text-sm font-semibold">2. Upload CHED masterlist</h2>
-      <label class="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-md border border-dashed p-6 text-xs text-text-muted">
-        <IconUpload :size="18" />
-        <span>{{ selectedFile?.name || "Choose CSV or XLSX file" }}</span>
-        <input type="file" accept=".csv,.xlsx,.xls" class="hidden" @change="chooseFile" />
-      </label>
-      <button
-        class="mt-3 inline-flex h-9 items-center gap-1.5 rounded-md border px-3 text-xs disabled:opacity-60"
-        :disabled="busy || !selectedBatchId || !selectedFile"
-        @click="previewImport"
-      >
-        <IconFileSpreadsheet :size="14" />{{ busy ? "Parsing..." : "Preview import" }}
-      </button>
+      
+      <div class="flex items-end gap-2">
+        <input 
+          ref="fileInput" 
+          type="file" 
+          accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" 
+          class="hidden" 
+          @change="chooseFile" 
+        />
+        <button
+          class="flex h-9 w-full items-center justify-center gap-2 rounded-md border bg-surface px-4 text-xs font-medium hover:bg-surface-muted disabled:opacity-50"
+          :disabled="!selectedBatchId"
+          @click="openFilePicker"
+        >
+          <IconFileSpreadsheet :size="14" /> Upload Excel or CSV file
+        </button>
+      </div>
+
+      <div v-if="selectedFile" class="mt-3 flex items-center justify-between rounded-md border bg-surface-muted px-3 py-2">
+        <span class="text-xs font-medium">{{ selectedFile.name }}</span>
+        <button
+          class="flex items-center gap-1 rounded bg-primary px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50"
+          :disabled="busy || !selectedBatchId"
+          @click="previewImport"
+        >
+          <IconUpload :size="14" />{{ busy ? "Processing..." : "Preview import" }}
+        </button>
+      </div>
     </section>
 
     <section v-if="preview" class="mb-4 rounded-lg border bg-surface p-4">
