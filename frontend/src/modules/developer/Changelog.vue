@@ -3,7 +3,7 @@ import { ref, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useQuery } from "@tanstack/vue-query";
 import { apiFetch } from "@/api/client";
-import { GitCommit, GitBranch, Github, ExternalLink, Loader2, Activity, Calendar } from "lucide-vue-next";
+import { GitCommit, GitBranch, Github, ExternalLink, Loader2, Activity, Calendar, RefreshCcw } from "lucide-vue-next";
 import { isMockMode } from "@/api/client";
 import PageHeader from "@/components/ui/PageHeader.vue";
 import TablePagination from "@/components/tables/TablePagination.vue";
@@ -11,6 +11,8 @@ import type { PaginationMeta } from "@/api";
 
 const isLocalDev = import.meta.env.DEV;
 const { t } = useI18n();
+
+const isRefreshing = ref(false);
 
 type GithubCommitInfo = {
   sha: string;
@@ -38,38 +40,14 @@ type ChangelogResponse = {
 const { data: changelog, isPending, error, refetch } = useQuery({
   queryKey: ["changelogs"],
   queryFn: async (): Promise<ChangelogResponse> => {
-    if (isMockMode || import.meta.env.DEV) {
-      const repo = import.meta.env.VITE_GITHUB_REPO || "nashvel/tcc-unifast";
-      const token = import.meta.env.VITE_GITHUB_TOKEN;
-      
-      const headers: Record<string, string> = {
-        'Accept': 'application/vnd.github.v3+json',
-      };
-      
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-      
-      try {
-        const res = await fetch(`https://api.github.com/repos/${repo}/commits?per_page=100`, { headers });
-        if (res.ok) {
-          const commits = await res.json();
-          return { data: commits, repo, has_token: !!token };
-        }
-      } catch (e) {
-        // Fallback to empty if fetch fails
-      }
-      
-      return { data: [], repo: repo + " (Mock/Local API Failed)", has_token: !!token };
-    }
-
-    // This hits the Vercel Serverless Function created in frontend/api/changelogs.js
-    // It will ONLY run when deployed to Vercel production.
-    const res = await fetch('/api/changelogs');
-    
+    const url = isRefreshing.value ? '/api/changelogs?refresh=1' : '/api/changelogs';
+    const res = await apiFetch(url);
     if (!res.ok) {
-      throw new Error("Failed to fetch commits");
+      throw new Error("Failed to fetch changelog");
     }
+    
+    // Reset refreshing state after successful fetch
+    isRefreshing.value = false;
     
     return res.json();
   },
@@ -86,6 +64,11 @@ function formatDate(dateString: string) {
 // Client-side pagination
 const currentPage = ref(1);
 const perPage = 10;
+
+const handleRefresh = async () => {
+  isRefreshing.value = true;
+  await refetch();
+};
 
 const totalCommits = computed(() => changelog.value?.data?.length || 0);
 const totalPages = computed(() => Math.ceil(totalCommits.value / perPage));
@@ -119,11 +102,12 @@ const paginationMeta = computed<PaginationMeta>(() => {
     <PageHeader title="System Change Logs" description="Live commit history from GitHub">
       <template #actions>
         <button
-          @click="() => refetch()"
-          class="inline-flex h-9 items-center gap-1.5 rounded-md border border-border bg-surface px-3 text-xs font-medium text-text hover:bg-surface-muted transition-colors"
+          @click="handleRefresh"
+          :disabled="isPending"
+          class="inline-flex h-9 items-center gap-1.5 rounded-md border border-border bg-surface px-3 text-xs font-medium text-text hover:bg-surface-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <Loader2 v-if="isPending" :size="14" class="animate-spin" />
-          <span v-else>Refresh</span>
+          <RefreshCcw :size="14" :class="{ 'animate-spin': isPending }" />
+          Refresh
         </button>
       </template>
     </PageHeader>
