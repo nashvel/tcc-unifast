@@ -174,7 +174,7 @@ class BatchController extends Controller
 
     private function authorizeMutation(Request $request): void
     {
-        abort_unless(in_array($request->user()->role, ['developer', 'admin'], true), 403);
+        abort_unless(in_array($request->user()->role, ['developer', 'admin', 'head'], true), 403);
     }
 
     private function present(Batch $batch): array
