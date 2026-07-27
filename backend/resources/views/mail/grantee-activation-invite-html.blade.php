@@ -23,13 +23,42 @@
         }
         .header {
             background-color: #7a1e2b;
-            padding: 24px 32px;
-            text-align: center;
+            padding: 20px 32px;
             border-bottom: 4px solid #611620;
         }
-        .header img {
-            height: 52px;
+        .header-content {
+            display: table;
+            width: 100%;
+        }
+        .header-logo {
+            display: table-cell;
+            vertical-align: middle;
+            width: 60px;
+        }
+        .header-logo img {
+            height: 48px;
             width: auto;
+            display: block;
+        }
+        .header-text {
+            display: table-cell;
+            vertical-align: middle;
+            padding-left: 16px;
+            color: #ffffff;
+            text-align: left;
+        }
+        .header-title {
+            font-size: 22px;
+            font-weight: 600;
+            line-height: 1.2;
+            letter-spacing: 0.5px;
+        }
+        .header-subtitle {
+            font-size: 13px;
+            color: #e5e7eb;
+            margin-top: 2px;
+            font-weight: 400;
+            letter-spacing: 0.5px;
         }
         .content {
             padding: 40px 32px;
@@ -101,7 +130,15 @@
 <body>
     <div class="container">
         <div class="header">
-            <img src="{{ $message->embed(public_path('system-logo.png')) }}" alt="TCC UniFAST Logo">
+            <div class="header-content">
+                <div class="header-logo">
+                    <img src="{{ $message->embed(public_path('system-logo.png')) }}" alt="Logo">
+                </div>
+                <div class="header-text">
+                    <div class="header-title">UniFAST TES</div>
+                    <div class="header-subtitle">Grantee Management</div>
+                </div>
+            </div>
         </div>
         
         <div class="content">
