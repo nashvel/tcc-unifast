@@ -35,8 +35,8 @@ class FileManagerController extends Controller
             });
 
         $imports = MasterlistImport::query()
-            ->with('user')
-            ->select('id', 'user_id', 'original_name', 'file_path', 'created_at')
+            ->with('uploader')
+            ->select('id', 'uploaded_by', 'original_name', 'stored_path', 'created_at')
             ->get()
             ->map(function ($import) {
                 $size = 0;
@@ -46,7 +46,7 @@ class FileManagerController extends Controller
                     'id' => 'import_' . $import->id,
                     'name' => $import->original_name ?: 'masterlist_import_' . $import->id . '.csv',
                     'category' => 'spreadsheet',
-                    'owner' => $import->user ? $import->user->name : 'System Admin',
+                    'owner' => $import->uploader ? $import->uploader->name : 'System Admin',
                     'size' => $formattedSize,
                     'size_bytes' => $size,
                     'created_at' => $import->created_at,
