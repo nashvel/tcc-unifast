@@ -111,6 +111,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('/academic-records', [AcademicRecordController::class, 'index']);
         Route::get('/academic-records/{record}', [AcademicRecordController::class, 'show']);
         Route::get('/document-submissions', [DocumentSubmissionController::class, 'index']);
+        Route::get('/files', [\App\Http\Controllers\FileManagerController::class, 'index']);
         Route::get('/document-submissions/{submission}', [DocumentSubmissionController::class, 'show']);
         Route::get('/audit-logs', [AuditEventController::class, 'index']);
 
