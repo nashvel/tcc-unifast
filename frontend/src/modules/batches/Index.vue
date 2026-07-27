@@ -196,7 +196,6 @@ onMounted(() => {
           >
             <option>1st Semester</option>
             <option>2nd Semester</option>
-            <option>Summer</option>
           </select>
         </label>
         <label class="text-xs font-medium sm:col-span-2">
