@@ -154,7 +154,9 @@
     "activationFailed": "Activation failed."
   },
   "pages": {
-    "academicRecords": { "title": "Academic Records" },
+    "academicRecords": {
+      "title": "Academic Records"
+    },
     "announcements": {
       "title": "Announcements",
       "description": "Updates from the UniFAST Office."
@@ -163,47 +165,92 @@
       "title": "Appearance",
       "description": "Choose how the UniFAST TES workspace looks on this device."
     },
-    "auditTrail": { "title": "Audit Trail" },
+    "auditTrail": {
+      "title": "Audit Trail"
+    },
     "batches": {
       "title": "Batches",
       "description": "Manage TES submission windows by academic period."
     },
-    "createAnnouncement": { "title": "Create Announcement" },
-    "createStaffUser": { "title": "Create staff user" },
-    "documentValidation": { "title": "Document Validation Queue" },
-    "editAnnouncement": { "title": "Edit Announcement" },
-    "eligibilityStatus": { "title": "Submission eligibility" },
+    "createAnnouncement": {
+      "title": "Create Announcement"
+    },
+    "createStaffUser": {
+      "title": "Create staff user"
+    },
+    "documentValidation": {
+      "title": "Document Validation Queue"
+    },
+    "editAnnouncement": {
+      "title": "Edit Announcement"
+    },
+    "eligibilityStatus": {
+      "title": "Submission eligibility"
+    },
     "files": {
       "title": "File Manager",
       "description": "Browse and organize uploaded scholarship files."
     },
-    "generateReport": { "title": "Generate Report" },
+    "generateReport": {
+      "title": "Generate Report"
+    },
     "grantees": {
       "title": "Grantees",
       "description": "Search, filter, and manage TES grantee records."
     },
-    "kyc": { "title": "KYC Profile Validation" },
-    "masterlist": { "title": "Masterlist Import" },
-    "newSupportTicket": { "title": "New support ticket" },
-    "notificationLogs": { "title": "Notification Logs" },
-    "notifications": { "title": "Notifications" },
-    "profile": { "title": "My Profile" },
+    "kyc": {
+      "title": "KYC Profile Validation"
+    },
+    "masterlist": {
+      "title": "Masterlist Import"
+    },
+    "newSupportTicket": {
+      "title": "New support ticket"
+    },
+    "notificationLogs": {
+      "title": "Notification Logs"
+    },
+    "notifications": {
+      "title": "Notifications"
+    },
+    "profile": {
+      "title": "My Profile"
+    },
     "reports": {
       "title": "Reports",
       "description": "Generate, preview, and export operational reports."
     },
-    "reportPreview": { "title": "Report Preview" },
-    "requirementVault": { "title": "Requirement Vault" },
-    "securityFindings": { "title": "Security Findings" },
-    "securityMemory": { "title": "Security Memory" },
+    "reportPreview": {
+      "title": "Report Preview"
+    },
+    "requirementVault": {
+      "title": "Requirement Vault"
+    },
+    "securityFindings": {
+      "title": "Security Findings"
+    },
+    "securityMemory": {
+      "title": "Security Memory"
+    },
     "settings": {
       "title": "Settings",
       "description": "Manage your profile, password, and sign-in activity."
     },
-    "submissionStatus": { "title": "Submission Status" },
-    "styleGuide": { "title": "UI Style Guide" },
-    "supportInbox": { "title": "Support Inbox" },
-    "uploadDocument": { "title": "Upload Document" }
+    "submissionStatus": {
+      "title": "Submission Status"
+    },
+    "styleGuide": {
+      "title": "UI Style Guide"
+    },
+    "supportInbox": {
+      "title": "Support Inbox"
+    },
+    "uploadDocument": {
+      "title": "Upload Document"
+    },
+    "dashboard": {
+      "title": "Dashboard"
+    }
   },
   "tour": {
     "label": "Tour",
@@ -435,6 +482,25 @@
     "studentDashboard": {
       "title": "Student Dashboard - UniFAST TES",
       "description": "Track TES requirements, documents, announcements, and account status."
+    }
+  },
+  "developer": {
+    "sidebar": {
+      "system": "System",
+      "playground": "Developer Playground",
+      "changelogs": "Change Logs",
+      "rbac": "RBAC & Permissions",
+      "apiDocs": "API Documentation",
+      "flowCharts": "System Flow Charts",
+      "database": "Database",
+      "terms": "Terms & Conditions",
+      "faqs": "FAQs",
+      "support": "Support Tickets",
+      "audit": "Developer Audit",
+      "collaborators": "Collaborators",
+      "administration": "Administration",
+      "settings": "Platform Settings",
+      "auditConfig": "Audit Configuration"
     }
   }
 }
