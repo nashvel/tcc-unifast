@@ -1,6 +1,252 @@
 {
     "data": [
         {
+            "sha": "1ef64f053096df59293d91ad538b3be4588d87ab",
+            "node_id": "C_kwDOTROnQdoAKDFlZjY0ZjA1MzA5NmRmNTkyOTNkOTFhZDUzOGIzYmU0NTg4ZDg3YWI",
+            "commit": {
+                "author": {
+                    "name": "nashvel",
+                    "email": "nash.backup21@gmail.com",
+                    "date": "2026-07-27T09:04:21Z"
+                },
+                "committer": {
+                    "name": "nashvel",
+                    "email": "nash.backup21@gmail.com",
+                    "date": "2026-07-27T09:04:21Z"
+                },
+                "message": "fix(developer): only generate mock changelog on explicit refresh",
+                "tree": {
+                    "sha": "f29dbd2c32df511526e6e7978f850fc028a6d5bf",
+                    "url": "https:\/\/api.github.com\/repos\/nashvel\/tcc-unifast\/git\/trees\/f29dbd2c32df511526e6e7978f850fc028a6d5bf"
+                },
+                "url": "https:\/\/api.github.com\/repos\/nashvel\/tcc-unifast\/git\/commits\/1ef64f053096df59293d91ad538b3be4588d87ab",
+                "comment_count": 0,
+                "verification": {
+                    "verified": false,
+                    "reason": "unsigned",
+                    "signature": null,
+                    "payload": null,
+                    "verified_at": null
+                }
+            },
+            "url": "https:\/\/api.github.com\/repos\/nashvel\/tcc-unifast\/commits\/1ef64f053096df59293d91ad538b3be4588d87ab",
+            "html_url": "https:\/\/github.com\/nashvel\/tcc-unifast\/commit\/1ef64f053096df59293d91ad538b3be4588d87ab",
+            "comments_url": "https:\/\/api.github.com\/repos\/nashvel\/tcc-unifast\/commits\/1ef64f053096df59293d91ad538b3be4588d87ab\/comments",
+            "author": {
+                "login": "nashvel",
+                "id": 189434046,
+                "node_id": "U_kgDOC0qIvg",
+                "avatar_url": "https:\/\/avatars.githubusercontent.com\/u\/189434046?v=4",
+                "gravatar_id": "",
+                "url": "https:\/\/api.github.com\/users\/nashvel",
+                "html_url": "https:\/\/github.com\/nashvel",
+                "followers_url": "https:\/\/api.github.com\/users\/nashvel\/followers",
+                "following_url": "https:\/\/api.github.com\/users\/nashvel\/following{\/other_user}",
+                "gists_url": "https:\/\/api.github.com\/users\/nashvel\/gists{\/gist_id}",
+                "starred_url": "https:\/\/api.github.com\/users\/nashvel\/starred{\/owner}{\/repo}",
+                "subscriptions_url": "https:\/\/api.github.com\/users\/nashvel\/subscriptions",
+                "organizations_url": "https:\/\/api.github.com\/users\/nashvel\/orgs",
+                "repos_url": "https:\/\/api.github.com\/users\/nashvel\/repos",
+                "events_url": "https:\/\/api.github.com\/users\/nashvel\/events{\/privacy}",
+                "received_events_url": "https:\/\/api.github.com\/users\/nashvel\/received_events",
+                "type": "User",
+                "user_view_type": "public",
+                "site_admin": false
+            },
+            "committer": {
+                "login": "nashvel",
+                "id": 189434046,
+                "node_id": "U_kgDOC0qIvg",
+                "avatar_url": "https:\/\/avatars.githubusercontent.com\/u\/189434046?v=4",
+                "gravatar_id": "",
+                "url": "https:\/\/api.github.com\/users\/nashvel",
+                "html_url": "https:\/\/github.com\/nashvel",
+                "followers_url": "https:\/\/api.github.com\/users\/nashvel\/followers",
+                "following_url": "https:\/\/api.github.com\/users\/nashvel\/following{\/other_user}",
+                "gists_url": "https:\/\/api.github.com\/users\/nashvel\/gists{\/gist_id}",
+                "starred_url": "https:\/\/api.github.com\/users\/nashvel\/starred{\/owner}{\/repo}",
+                "subscriptions_url": "https:\/\/api.github.com\/users\/nashvel\/subscriptions",
+                "organizations_url": "https:\/\/api.github.com\/users\/nashvel\/orgs",
+                "repos_url": "https:\/\/api.github.com\/users\/nashvel\/repos",
+                "events_url": "https:\/\/api.github.com\/users\/nashvel\/events{\/privacy}",
+                "received_events_url": "https:\/\/api.github.com\/users\/nashvel\/received_events",
+                "type": "User",
+                "user_view_type": "public",
+                "site_admin": false
+            },
+            "parents": [
+                {
+                    "sha": "22ed065a7297190520933232229801bc413d6233",
+                    "url": "https:\/\/api.github.com\/repos\/nashvel\/tcc-unifast\/commits\/22ed065a7297190520933232229801bc413d6233",
+                    "html_url": "https:\/\/github.com\/nashvel\/tcc-unifast\/commit\/22ed065a7297190520933232229801bc413d6233"
+                }
+            ]
+        },
+        {
+            "sha": "22ed065a7297190520933232229801bc413d6233",
+            "node_id": "C_kwDOTROnQdoAKDIyZWQwNjVhNzI5NzE5MDUyMDkzMzIzMjIyOTgwMWJjNDEzZDYyMzM",
+            "commit": {
+                "author": {
+                    "name": "nashvel",
+                    "email": "nash.backup21@gmail.com",
+                    "date": "2026-07-27T09:02:13Z"
+                },
+                "committer": {
+                    "name": "nashvel",
+                    "email": "nash.backup21@gmail.com",
+                    "date": "2026-07-27T09:02:13Z"
+                },
+                "message": "fix(developer): correct apiFetch wrapper usage",
+                "tree": {
+                    "sha": "b5fb668f5465c80a34bd86095dc525ce3928e787",
+                    "url": "https:\/\/api.github.com\/repos\/nashvel\/tcc-unifast\/git\/trees\/b5fb668f5465c80a34bd86095dc525ce3928e787"
+                },
+                "url": "https:\/\/api.github.com\/repos\/nashvel\/tcc-unifast\/git\/commits\/22ed065a7297190520933232229801bc413d6233",
+                "comment_count": 0,
+                "verification": {
+                    "verified": false,
+                    "reason": "unsigned",
+                    "signature": null,
+                    "payload": null,
+                    "verified_at": null
+                }
+            },
+            "url": "https:\/\/api.github.com\/repos\/nashvel\/tcc-unifast\/commits\/22ed065a7297190520933232229801bc413d6233",
+            "html_url": "https:\/\/github.com\/nashvel\/tcc-unifast\/commit\/22ed065a7297190520933232229801bc413d6233",
+            "comments_url": "https:\/\/api.github.com\/repos\/nashvel\/tcc-unifast\/commits\/22ed065a7297190520933232229801bc413d6233\/comments",
+            "author": {
+                "login": "nashvel",
+                "id": 189434046,
+                "node_id": "U_kgDOC0qIvg",
+                "avatar_url": "https:\/\/avatars.githubusercontent.com\/u\/189434046?v=4",
+                "gravatar_id": "",
+                "url": "https:\/\/api.github.com\/users\/nashvel",
+                "html_url": "https:\/\/github.com\/nashvel",
+                "followers_url": "https:\/\/api.github.com\/users\/nashvel\/followers",
+                "following_url": "https:\/\/api.github.com\/users\/nashvel\/following{\/other_user}",
+                "gists_url": "https:\/\/api.github.com\/users\/nashvel\/gists{\/gist_id}",
+                "starred_url": "https:\/\/api.github.com\/users\/nashvel\/starred{\/owner}{\/repo}",
+                "subscriptions_url": "https:\/\/api.github.com\/users\/nashvel\/subscriptions",
+                "organizations_url": "https:\/\/api.github.com\/users\/nashvel\/orgs",
+                "repos_url": "https:\/\/api.github.com\/users\/nashvel\/repos",
+                "events_url": "https:\/\/api.github.com\/users\/nashvel\/events{\/privacy}",
+                "received_events_url": "https:\/\/api.github.com\/users\/nashvel\/received_events",
+                "type": "User",
+                "user_view_type": "public",
+                "site_admin": false
+            },
+            "committer": {
+                "login": "nashvel",
+                "id": 189434046,
+                "node_id": "U_kgDOC0qIvg",
+                "avatar_url": "https:\/\/avatars.githubusercontent.com\/u\/189434046?v=4",
+                "gravatar_id": "",
+                "url": "https:\/\/api.github.com\/users\/nashvel",
+                "html_url": "https:\/\/github.com\/nashvel",
+                "followers_url": "https:\/\/api.github.com\/users\/nashvel\/followers",
+                "following_url": "https:\/\/api.github.com\/users\/nashvel\/following{\/other_user}",
+                "gists_url": "https:\/\/api.github.com\/users\/nashvel\/gists{\/gist_id}",
+                "starred_url": "https:\/\/api.github.com\/users\/nashvel\/starred{\/owner}{\/repo}",
+                "subscriptions_url": "https:\/\/api.github.com\/users\/nashvel\/subscriptions",
+                "organizations_url": "https:\/\/api.github.com\/users\/nashvel\/orgs",
+                "repos_url": "https:\/\/api.github.com\/users\/nashvel\/repos",
+                "events_url": "https:\/\/api.github.com\/users\/nashvel\/events{\/privacy}",
+                "received_events_url": "https:\/\/api.github.com\/users\/nashvel\/received_events",
+                "type": "User",
+                "user_view_type": "public",
+                "site_admin": false
+            },
+            "parents": [
+                {
+                    "sha": "b1be7798683f245b6cf9b17d6f061b858f5c2a5e",
+                    "url": "https:\/\/api.github.com\/repos\/nashvel\/tcc-unifast\/commits\/b1be7798683f245b6cf9b17d6f061b858f5c2a5e",
+                    "html_url": "https:\/\/github.com\/nashvel\/tcc-unifast\/commit\/b1be7798683f245b6cf9b17d6f061b858f5c2a5e"
+                }
+            ]
+        },
+        {
+            "sha": "b1be7798683f245b6cf9b17d6f061b858f5c2a5e",
+            "node_id": "C_kwDOTROnQdoAKGIxYmU3Nzk4NjgzZjI0NWI2Y2Y5YjE3ZDZmMDYxYjg1OGY1YzJhNWU",
+            "commit": {
+                "author": {
+                    "name": "nashvel",
+                    "email": "nash.backup21@gmail.com",
+                    "date": "2026-07-27T08:51:57Z"
+                },
+                "committer": {
+                    "name": "nashvel",
+                    "email": "nash.backup21@gmail.com",
+                    "date": "2026-07-27T08:51:57Z"
+                },
+                "message": "feat(developer): auto-generate mock changelog and return github api to backend",
+                "tree": {
+                    "sha": "82731701ef38e3e09982ac8e7dca30a3f56b4df1",
+                    "url": "https:\/\/api.github.com\/repos\/nashvel\/tcc-unifast\/git\/trees\/82731701ef38e3e09982ac8e7dca30a3f56b4df1"
+                },
+                "url": "https:\/\/api.github.com\/repos\/nashvel\/tcc-unifast\/git\/commits\/b1be7798683f245b6cf9b17d6f061b858f5c2a5e",
+                "comment_count": 0,
+                "verification": {
+                    "verified": false,
+                    "reason": "unsigned",
+                    "signature": null,
+                    "payload": null,
+                    "verified_at": null
+                }
+            },
+            "url": "https:\/\/api.github.com\/repos\/nashvel\/tcc-unifast\/commits\/b1be7798683f245b6cf9b17d6f061b858f5c2a5e",
+            "html_url": "https:\/\/github.com\/nashvel\/tcc-unifast\/commit\/b1be7798683f245b6cf9b17d6f061b858f5c2a5e",
+            "comments_url": "https:\/\/api.github.com\/repos\/nashvel\/tcc-unifast\/commits\/b1be7798683f245b6cf9b17d6f061b858f5c2a5e\/comments",
+            "author": {
+                "login": "nashvel",
+                "id": 189434046,
+                "node_id": "U_kgDOC0qIvg",
+                "avatar_url": "https:\/\/avatars.githubusercontent.com\/u\/189434046?v=4",
+                "gravatar_id": "",
+                "url": "https:\/\/api.github.com\/users\/nashvel",
+                "html_url": "https:\/\/github.com\/nashvel",
+                "followers_url": "https:\/\/api.github.com\/users\/nashvel\/followers",
+                "following_url": "https:\/\/api.github.com\/users\/nashvel\/following{\/other_user}",
+                "gists_url": "https:\/\/api.github.com\/users\/nashvel\/gists{\/gist_id}",
+                "starred_url": "https:\/\/api.github.com\/users\/nashvel\/starred{\/owner}{\/repo}",
+                "subscriptions_url": "https:\/\/api.github.com\/users\/nashvel\/subscriptions",
+                "organizations_url": "https:\/\/api.github.com\/users\/nashvel\/orgs",
+                "repos_url": "https:\/\/api.github.com\/users\/nashvel\/repos",
+                "events_url": "https:\/\/api.github.com\/users\/nashvel\/events{\/privacy}",
+                "received_events_url": "https:\/\/api.github.com\/users\/nashvel\/received_events",
+                "type": "User",
+                "user_view_type": "public",
+                "site_admin": false
+            },
+            "committer": {
+                "login": "nashvel",
+                "id": 189434046,
+                "node_id": "U_kgDOC0qIvg",
+                "avatar_url": "https:\/\/avatars.githubusercontent.com\/u\/189434046?v=4",
+                "gravatar_id": "",
+                "url": "https:\/\/api.github.com\/users\/nashvel",
+                "html_url": "https:\/\/github.com\/nashvel",
+                "followers_url": "https:\/\/api.github.com\/users\/nashvel\/followers",
+                "following_url": "https:\/\/api.github.com\/users\/nashvel\/following{\/other_user}",
+                "gists_url": "https:\/\/api.github.com\/users\/nashvel\/gists{\/gist_id}",
+                "starred_url": "https:\/\/api.github.com\/users\/nashvel\/starred{\/owner}{\/repo}",
+                "subscriptions_url": "https:\/\/api.github.com\/users\/nashvel\/subscriptions",
+                "organizations_url": "https:\/\/api.github.com\/users\/nashvel\/orgs",
+                "repos_url": "https:\/\/api.github.com\/users\/nashvel\/repos",
+                "events_url": "https:\/\/api.github.com\/users\/nashvel\/events{\/privacy}",
+                "received_events_url": "https:\/\/api.github.com\/users\/nashvel\/received_events",
+                "type": "User",
+                "user_view_type": "public",
+                "site_admin": false
+            },
+            "parents": [
+                {
+                    "sha": "385f07cec4a8ebb9ad37c77a7a07b9ec9ab288e0",
+                    "url": "https:\/\/api.github.com\/repos\/nashvel\/tcc-unifast\/commits\/385f07cec4a8ebb9ad37c77a7a07b9ec9ab288e0",
+                    "html_url": "https:\/\/github.com\/nashvel\/tcc-unifast\/commit\/385f07cec4a8ebb9ad37c77a7a07b9ec9ab288e0"
+                }
+            ]
+        },
+        {
             "sha": "385f07cec4a8ebb9ad37c77a7a07b9ec9ab288e0",
             "node_id": "C_kwDOTROnQdoAKDM4NWYwN2NlYzRhOGViYjlhZDM3Yzc3YTdhMDdiOWVjOWFiMjg4ZTA",
             "commit": {
@@ -8016,257 +8262,6 @@
                     "sha": "7fe64596bfa3ebb858a99d4b9eb1e23027b55564",
                     "url": "https:\/\/api.github.com\/repos\/nashvel\/tcc-unifast\/commits\/7fe64596bfa3ebb858a99d4b9eb1e23027b55564",
                     "html_url": "https:\/\/github.com\/nashvel\/tcc-unifast\/commit\/7fe64596bfa3ebb858a99d4b9eb1e23027b55564"
-                }
-            ]
-        },
-        {
-            "sha": "7fe64596bfa3ebb858a99d4b9eb1e23027b55564",
-            "node_id": "C_kwDOTROnQdoAKDdmZTY0NTk2YmZhM2ViYjg1OGE5OWQ0YjllYjFlMjMwMjdiNTU1NjQ",
-            "commit": {
-                "author": {
-                    "name": "gpt-engineer-app[bot]",
-                    "email": "159125892+gpt-engineer-app[bot]@users.noreply.github.com",
-                    "date": "2026-07-11T02:29:03Z"
-                },
-                "committer": {
-                    "name": "gpt-engineer-app[bot]",
-                    "email": "159125892+gpt-engineer-app[bot]@users.noreply.github.com",
-                    "date": "2026-07-11T02:29:03Z"
-                },
-                "message": "Changes\n\nCo-authored-by: nashvel <189434046+nashvel@users.noreply.github.com>",
-                "tree": {
-                    "sha": "67b9186f9efc93d0a67e81bb738b6fcd6903db37",
-                    "url": "https:\/\/api.github.com\/repos\/nashvel\/tcc-unifast\/git\/trees\/67b9186f9efc93d0a67e81bb738b6fcd6903db37"
-                },
-                "url": "https:\/\/api.github.com\/repos\/nashvel\/tcc-unifast\/git\/commits\/7fe64596bfa3ebb858a99d4b9eb1e23027b55564",
-                "comment_count": 0,
-                "verification": {
-                    "verified": false,
-                    "reason": "unsigned",
-                    "signature": null,
-                    "payload": null,
-                    "verified_at": null
-                }
-            },
-            "url": "https:\/\/api.github.com\/repos\/nashvel\/tcc-unifast\/commits\/7fe64596bfa3ebb858a99d4b9eb1e23027b55564",
-            "html_url": "https:\/\/github.com\/nashvel\/tcc-unifast\/commit\/7fe64596bfa3ebb858a99d4b9eb1e23027b55564",
-            "comments_url": "https:\/\/api.github.com\/repos\/nashvel\/tcc-unifast\/commits\/7fe64596bfa3ebb858a99d4b9eb1e23027b55564\/comments",
-            "author": {
-                "login": "lovable-dev[bot]",
-                "id": 159125892,
-                "node_id": "BOT_kgDOCXwRhA",
-                "avatar_url": "https:\/\/avatars.githubusercontent.com\/in\/818760?v=4",
-                "gravatar_id": "",
-                "url": "https:\/\/api.github.com\/users\/lovable-dev%5Bbot%5D",
-                "html_url": "https:\/\/github.com\/apps\/lovable-dev",
-                "followers_url": "https:\/\/api.github.com\/users\/lovable-dev%5Bbot%5D\/followers",
-                "following_url": "https:\/\/api.github.com\/users\/lovable-dev%5Bbot%5D\/following{\/other_user}",
-                "gists_url": "https:\/\/api.github.com\/users\/lovable-dev%5Bbot%5D\/gists{\/gist_id}",
-                "starred_url": "https:\/\/api.github.com\/users\/lovable-dev%5Bbot%5D\/starred{\/owner}{\/repo}",
-                "subscriptions_url": "https:\/\/api.github.com\/users\/lovable-dev%5Bbot%5D\/subscriptions",
-                "organizations_url": "https:\/\/api.github.com\/users\/lovable-dev%5Bbot%5D\/orgs",
-                "repos_url": "https:\/\/api.github.com\/users\/lovable-dev%5Bbot%5D\/repos",
-                "events_url": "https:\/\/api.github.com\/users\/lovable-dev%5Bbot%5D\/events{\/privacy}",
-                "received_events_url": "https:\/\/api.github.com\/users\/lovable-dev%5Bbot%5D\/received_events",
-                "type": "Bot",
-                "user_view_type": "public",
-                "site_admin": false
-            },
-            "committer": {
-                "login": "lovable-dev[bot]",
-                "id": 159125892,
-                "node_id": "BOT_kgDOCXwRhA",
-                "avatar_url": "https:\/\/avatars.githubusercontent.com\/in\/818760?v=4",
-                "gravatar_id": "",
-                "url": "https:\/\/api.github.com\/users\/lovable-dev%5Bbot%5D",
-                "html_url": "https:\/\/github.com\/apps\/lovable-dev",
-                "followers_url": "https:\/\/api.github.com\/users\/lovable-dev%5Bbot%5D\/followers",
-                "following_url": "https:\/\/api.github.com\/users\/lovable-dev%5Bbot%5D\/following{\/other_user}",
-                "gists_url": "https:\/\/api.github.com\/users\/lovable-dev%5Bbot%5D\/gists{\/gist_id}",
-                "starred_url": "https:\/\/api.github.com\/users\/lovable-dev%5Bbot%5D\/starred{\/owner}{\/repo}",
-                "subscriptions_url": "https:\/\/api.github.com\/users\/lovable-dev%5Bbot%5D\/subscriptions",
-                "organizations_url": "https:\/\/api.github.com\/users\/lovable-dev%5Bbot%5D\/orgs",
-                "repos_url": "https:\/\/api.github.com\/users\/lovable-dev%5Bbot%5D\/repos",
-                "events_url": "https:\/\/api.github.com\/users\/lovable-dev%5Bbot%5D\/events{\/privacy}",
-                "received_events_url": "https:\/\/api.github.com\/users\/lovable-dev%5Bbot%5D\/received_events",
-                "type": "Bot",
-                "user_view_type": "public",
-                "site_admin": false
-            },
-            "parents": [
-                {
-                    "sha": "849b295f62213634080a02ca4dfd48484afdbb42",
-                    "url": "https:\/\/api.github.com\/repos\/nashvel\/tcc-unifast\/commits\/849b295f62213634080a02ca4dfd48484afdbb42",
-                    "html_url": "https:\/\/github.com\/nashvel\/tcc-unifast\/commit\/849b295f62213634080a02ca4dfd48484afdbb42"
-                }
-            ]
-        },
-        {
-            "sha": "849b295f62213634080a02ca4dfd48484afdbb42",
-            "node_id": "C_kwDOTROnQdoAKDg0OWIyOTVmNjIyMTM2MzQwODBhMDJjYTRkZmQ0ODQ4NGFmZGJiNDI",
-            "commit": {
-                "author": {
-                    "name": "gpt-engineer-app[bot]",
-                    "email": "159125892+gpt-engineer-app[bot]@users.noreply.github.com",
-                    "date": "2026-07-11T02:28:18Z"
-                },
-                "committer": {
-                    "name": "gpt-engineer-app[bot]",
-                    "email": "159125892+gpt-engineer-app[bot]@users.noreply.github.com",
-                    "date": "2026-07-11T02:28:18Z"
-                },
-                "message": "Enabled auto-scroll per step\n\nX-Lovable-Edit-ID: edt-2a4baf3d-0ca1-41aa-83cf-3ca51a04304c\nCo-authored-by: nashvel <189434046+nashvel@users.noreply.github.com>",
-                "tree": {
-                    "sha": "485858693dd680b3675542371c006d9606930d47",
-                    "url": "https:\/\/api.github.com\/repos\/nashvel\/tcc-unifast\/git\/trees\/485858693dd680b3675542371c006d9606930d47"
-                },
-                "url": "https:\/\/api.github.com\/repos\/nashvel\/tcc-unifast\/git\/commits\/849b295f62213634080a02ca4dfd48484afdbb42",
-                "comment_count": 0,
-                "verification": {
-                    "verified": false,
-                    "reason": "unsigned",
-                    "signature": null,
-                    "payload": null,
-                    "verified_at": null
-                }
-            },
-            "url": "https:\/\/api.github.com\/repos\/nashvel\/tcc-unifast\/commits\/849b295f62213634080a02ca4dfd48484afdbb42",
-            "html_url": "https:\/\/github.com\/nashvel\/tcc-unifast\/commit\/849b295f62213634080a02ca4dfd48484afdbb42",
-            "comments_url": "https:\/\/api.github.com\/repos\/nashvel\/tcc-unifast\/commits\/849b295f62213634080a02ca4dfd48484afdbb42\/comments",
-            "author": {
-                "login": "lovable-dev[bot]",
-                "id": 159125892,
-                "node_id": "BOT_kgDOCXwRhA",
-                "avatar_url": "https:\/\/avatars.githubusercontent.com\/in\/818760?v=4",
-                "gravatar_id": "",
-                "url": "https:\/\/api.github.com\/users\/lovable-dev%5Bbot%5D",
-                "html_url": "https:\/\/github.com\/apps\/lovable-dev",
-                "followers_url": "https:\/\/api.github.com\/users\/lovable-dev%5Bbot%5D\/followers",
-                "following_url": "https:\/\/api.github.com\/users\/lovable-dev%5Bbot%5D\/following{\/other_user}",
-                "gists_url": "https:\/\/api.github.com\/users\/lovable-dev%5Bbot%5D\/gists{\/gist_id}",
-                "starred_url": "https:\/\/api.github.com\/users\/lovable-dev%5Bbot%5D\/starred{\/owner}{\/repo}",
-                "subscriptions_url": "https:\/\/api.github.com\/users\/lovable-dev%5Bbot%5D\/subscriptions",
-                "organizations_url": "https:\/\/api.github.com\/users\/lovable-dev%5Bbot%5D\/orgs",
-                "repos_url": "https:\/\/api.github.com\/users\/lovable-dev%5Bbot%5D\/repos",
-                "events_url": "https:\/\/api.github.com\/users\/lovable-dev%5Bbot%5D\/events{\/privacy}",
-                "received_events_url": "https:\/\/api.github.com\/users\/lovable-dev%5Bbot%5D\/received_events",
-                "type": "Bot",
-                "user_view_type": "public",
-                "site_admin": false
-            },
-            "committer": {
-                "login": "lovable-dev[bot]",
-                "id": 159125892,
-                "node_id": "BOT_kgDOCXwRhA",
-                "avatar_url": "https:\/\/avatars.githubusercontent.com\/in\/818760?v=4",
-                "gravatar_id": "",
-                "url": "https:\/\/api.github.com\/users\/lovable-dev%5Bbot%5D",
-                "html_url": "https:\/\/github.com\/apps\/lovable-dev",
-                "followers_url": "https:\/\/api.github.com\/users\/lovable-dev%5Bbot%5D\/followers",
-                "following_url": "https:\/\/api.github.com\/users\/lovable-dev%5Bbot%5D\/following{\/other_user}",
-                "gists_url": "https:\/\/api.github.com\/users\/lovable-dev%5Bbot%5D\/gists{\/gist_id}",
-                "starred_url": "https:\/\/api.github.com\/users\/lovable-dev%5Bbot%5D\/starred{\/owner}{\/repo}",
-                "subscriptions_url": "https:\/\/api.github.com\/users\/lovable-dev%5Bbot%5D\/subscriptions",
-                "organizations_url": "https:\/\/api.github.com\/users\/lovable-dev%5Bbot%5D\/orgs",
-                "repos_url": "https:\/\/api.github.com\/users\/lovable-dev%5Bbot%5D\/repos",
-                "events_url": "https:\/\/api.github.com\/users\/lovable-dev%5Bbot%5D\/events{\/privacy}",
-                "received_events_url": "https:\/\/api.github.com\/users\/lovable-dev%5Bbot%5D\/received_events",
-                "type": "Bot",
-                "user_view_type": "public",
-                "site_admin": false
-            },
-            "parents": [
-                {
-                    "sha": "81e52bfbf4389fab93f3735802b27f16aea1c128",
-                    "url": "https:\/\/api.github.com\/repos\/nashvel\/tcc-unifast\/commits\/81e52bfbf4389fab93f3735802b27f16aea1c128",
-                    "html_url": "https:\/\/github.com\/nashvel\/tcc-unifast\/commit\/81e52bfbf4389fab93f3735802b27f16aea1c128"
-                },
-                {
-                    "sha": "d589daa4bac947605b03ab4c1df08e344cacf138",
-                    "url": "https:\/\/api.github.com\/repos\/nashvel\/tcc-unifast\/commits\/d589daa4bac947605b03ab4c1df08e344cacf138",
-                    "html_url": "https:\/\/github.com\/nashvel\/tcc-unifast\/commit\/d589daa4bac947605b03ab4c1df08e344cacf138"
-                }
-            ]
-        },
-        {
-            "sha": "d589daa4bac947605b03ab4c1df08e344cacf138",
-            "node_id": "C_kwDOTROnQdoAKGQ1ODlkYWE0YmFjOTQ3NjA1YjAzYWI0YzFkZjA4ZTM0NGNhY2YxMzg",
-            "commit": {
-                "author": {
-                    "name": "gpt-engineer-app[bot]",
-                    "email": "159125892+gpt-engineer-app[bot]@users.noreply.github.com",
-                    "date": "2026-07-11T02:28:10Z"
-                },
-                "committer": {
-                    "name": "gpt-engineer-app[bot]",
-                    "email": "159125892+gpt-engineer-app[bot]@users.noreply.github.com",
-                    "date": "2026-07-11T02:28:10Z"
-                },
-                "message": "Changes\n\nCo-authored-by: nashvel <189434046+nashvel@users.noreply.github.com>",
-                "tree": {
-                    "sha": "485858693dd680b3675542371c006d9606930d47",
-                    "url": "https:\/\/api.github.com\/repos\/nashvel\/tcc-unifast\/git\/trees\/485858693dd680b3675542371c006d9606930d47"
-                },
-                "url": "https:\/\/api.github.com\/repos\/nashvel\/tcc-unifast\/git\/commits\/d589daa4bac947605b03ab4c1df08e344cacf138",
-                "comment_count": 0,
-                "verification": {
-                    "verified": false,
-                    "reason": "unsigned",
-                    "signature": null,
-                    "payload": null,
-                    "verified_at": null
-                }
-            },
-            "url": "https:\/\/api.github.com\/repos\/nashvel\/tcc-unifast\/commits\/d589daa4bac947605b03ab4c1df08e344cacf138",
-            "html_url": "https:\/\/github.com\/nashvel\/tcc-unifast\/commit\/d589daa4bac947605b03ab4c1df08e344cacf138",
-            "comments_url": "https:\/\/api.github.com\/repos\/nashvel\/tcc-unifast\/commits\/d589daa4bac947605b03ab4c1df08e344cacf138\/comments",
-            "author": {
-                "login": "lovable-dev[bot]",
-                "id": 159125892,
-                "node_id": "BOT_kgDOCXwRhA",
-                "avatar_url": "https:\/\/avatars.githubusercontent.com\/in\/818760?v=4",
-                "gravatar_id": "",
-                "url": "https:\/\/api.github.com\/users\/lovable-dev%5Bbot%5D",
-                "html_url": "https:\/\/github.com\/apps\/lovable-dev",
-                "followers_url": "https:\/\/api.github.com\/users\/lovable-dev%5Bbot%5D\/followers",
-                "following_url": "https:\/\/api.github.com\/users\/lovable-dev%5Bbot%5D\/following{\/other_user}",
-                "gists_url": "https:\/\/api.github.com\/users\/lovable-dev%5Bbot%5D\/gists{\/gist_id}",
-                "starred_url": "https:\/\/api.github.com\/users\/lovable-dev%5Bbot%5D\/starred{\/owner}{\/repo}",
-                "subscriptions_url": "https:\/\/api.github.com\/users\/lovable-dev%5Bbot%5D\/subscriptions",
-                "organizations_url": "https:\/\/api.github.com\/users\/lovable-dev%5Bbot%5D\/orgs",
-                "repos_url": "https:\/\/api.github.com\/users\/lovable-dev%5Bbot%5D\/repos",
-                "events_url": "https:\/\/api.github.com\/users\/lovable-dev%5Bbot%5D\/events{\/privacy}",
-                "received_events_url": "https:\/\/api.github.com\/users\/lovable-dev%5Bbot%5D\/received_events",
-                "type": "Bot",
-                "user_view_type": "public",
-                "site_admin": false
-            },
-            "committer": {
-                "login": "lovable-dev[bot]",
-                "id": 159125892,
-                "node_id": "BOT_kgDOCXwRhA",
-                "avatar_url": "https:\/\/avatars.githubusercontent.com\/in\/818760?v=4",
-                "gravatar_id": "",
-                "url": "https:\/\/api.github.com\/users\/lovable-dev%5Bbot%5D",
-                "html_url": "https:\/\/github.com\/apps\/lovable-dev",
-                "followers_url": "https:\/\/api.github.com\/users\/lovable-dev%5Bbot%5D\/followers",
-                "following_url": "https:\/\/api.github.com\/users\/lovable-dev%5Bbot%5D\/following{\/other_user}",
-                "gists_url": "https:\/\/api.github.com\/users\/lovable-dev%5Bbot%5D\/gists{\/gist_id}",
-                "starred_url": "https:\/\/api.github.com\/users\/lovable-dev%5Bbot%5D\/starred{\/owner}{\/repo}",
-                "subscriptions_url": "https:\/\/api.github.com\/users\/lovable-dev%5Bbot%5D\/subscriptions",
-                "organizations_url": "https:\/\/api.github.com\/users\/lovable-dev%5Bbot%5D\/orgs",
-                "repos_url": "https:\/\/api.github.com\/users\/lovable-dev%5Bbot%5D\/repos",
-                "events_url": "https:\/\/api.github.com\/users\/lovable-dev%5Bbot%5D\/events{\/privacy}",
-                "received_events_url": "https:\/\/api.github.com\/users\/lovable-dev%5Bbot%5D\/received_events",
-                "type": "Bot",
-                "user_view_type": "public",
-                "site_admin": false
-            },
-            "parents": [
-                {
-                    "sha": "81e52bfbf4389fab93f3735802b27f16aea1c128",
-                    "url": "https:\/\/api.github.com\/repos\/nashvel\/tcc-unifast\/commits\/81e52bfbf4389fab93f3735802b27f16aea1c128",
-                    "html_url": "https:\/\/github.com\/nashvel\/tcc-unifast\/commit\/81e52bfbf4389fab93f3735802b27f16aea1c128"
                 }
             ]
         }

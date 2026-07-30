@@ -19,4 +19,9 @@ class MasterlistImport extends Model
     {
         return $this->hasMany(MasterlistRow::class);
     }
+
+    public function uploader(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'uploaded_by');
+    }
 }

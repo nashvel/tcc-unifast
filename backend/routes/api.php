@@ -105,9 +105,11 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('/masterlist/imports', [MasterlistImportController::class, 'index']);
         Route::post('/masterlist/imports/preview', [MasterlistImportController::class, 'preview'])->middleware('throttle:10,1');
         Route::get('/masterlist/imports/{import}', [MasterlistImportController::class, 'show']);
+        Route::delete('/masterlist/imports/{import}', [MasterlistImportController::class, 'destroy']);
         Route::get('/academic-records', [AcademicRecordController::class, 'index']);
         Route::get('/academic-records/{record}', [AcademicRecordController::class, 'show']);
         Route::get('/document-submissions', [DocumentSubmissionController::class, 'index']);
+        Route::get('/files', [\App\Http\Controllers\FileManagerController::class, 'index']);
         Route::get('/document-submissions/{submission}', [DocumentSubmissionController::class, 'show']);
         Route::get('/audit-logs', [AuditEventController::class, 'index']);
 
@@ -122,8 +124,8 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('/distribution-reports/{report}/download', [DistributionReportController::class, 'download']);
     });
 
-    // Developer/Admin only routes (includes legacy head for batch ops)
-    Route::middleware('role:developer,admin,head')->group(function (): void {
+    // Developer/Admin/Head/Staff routes (for batch ops and masterlists)
+    Route::middleware('role:developer,admin,head,staff')->group(function (): void {
         Route::post('/batches', [BatchController::class, 'store'])->middleware('throttle:20,1');
         Route::patch('/batches/{batch}', [BatchController::class, 'update'])->middleware('throttle:20,1');
         Route::post('/batches/{batch}/activate', [BatchController::class, 'activate'])->middleware('throttle:10,1');

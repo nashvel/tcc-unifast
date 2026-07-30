@@ -89,6 +89,7 @@ export const staffNavigation: NavigationSection[] = [
       { labelKey: "nav.onboardingCenter", path: "/app/onboarding", icon: IconUserPlus },
       { labelKey: "nav.masterlist", path: "/app/masterlist", icon: IconFileImport },
       { labelKey: "nav.batches", path: "/app/batches", icon: IconFolders },
+      { labelKey: "nav.programs", path: "/app/programs", icon: IconSchool },
       { labelKey: "nav.grantees", path: "/app/grantees", icon: IconUsersGroup },
     ],
   },
