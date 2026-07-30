@@ -6,11 +6,10 @@ use App\Models\AuditLog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Http;
 
 class AuthController extends Controller
 {
-    private const CAPTCHA_SESSION_KEY = 'auth_captcha';
-
     public function login(Request $request): JsonResponse
     {
         $credentials = $request->validate([
@@ -19,16 +18,13 @@ class AuthController extends Controller
             'captcha'  => ['required', 'string'],
         ]);
 
-        if (! $this->captchaIsValid($request, $credentials['captcha'])) {
-            $request->session()->forget(self::CAPTCHA_SESSION_KEY);
-
+        if (! $this->captchaIsValid($credentials['captcha'])) {
             return response()->json([
-                'message' => 'The security verification code is incorrect or has expired.',
-                'errors'  => ['captcha' => ['The security verification code is incorrect or has expired.']],
+                'message' => 'The security verification code is incorrect.',
+                'errors'  => ['captcha' => ['Failed to verify reCAPTCHA. Please try again.']],
             ], 422);
         }
 
-        $request->session()->forget(self::CAPTCHA_SESSION_KEY);
         unset($credentials['captcha']);
 
         if (! Auth::attempt($credentials)) {
@@ -107,22 +103,24 @@ class AuthController extends Controller
         ];
     }
 
-    private function captchaIsValid(Request $request, string $input): bool
+    private function captchaIsValid(string $input): bool
     {
         if (env('DEV_BYPASS_CAPTCHA', false) === true) {
             return true;
         }
 
-        $captcha = $request->session()->get(self::CAPTCHA_SESSION_KEY);
+        $secret = env('RECAPTCHA_SECRET_KEY');
 
-        if (! is_array($captcha) || empty($captcha['code']) || empty($captcha['expires_at'])) {
+        if (empty($secret)) {
+            // Failsafe in case the key isn't configured in production
             return false;
         }
 
-        if ((int) $captcha['expires_at'] < now()->timestamp) {
-            return false;
-        }
+        $response = Http::asForm()->post('https://www.google.com/recaptcha/api/siteverify', [
+            'secret'   => $secret,
+            'response' => $input,
+        ]);
 
-        return hash_equals($captcha['code'], strtoupper(trim($input)));
+        return $response->json('success') === true;
     }
 }

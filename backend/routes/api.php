@@ -6,7 +6,6 @@ use App\Http\Controllers\ActivationController;
 use App\Http\Controllers\AdminStudentIdSampleController;
 use App\Http\Controllers\AuditEventController;
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\AuthCaptchaController;
 use App\Http\Controllers\BatchActivationNotificationController;
 use App\Http\Controllers\BatchController;
 use App\Http\Controllers\BillingReportController;
@@ -44,7 +43,6 @@ Route::middleware([
     AddQueuedCookiesToResponse::class,
     StartSession::class,
 ])->group(function (): void {
-    Route::get('/auth/captcha', AuthCaptchaController::class)->middleware('throttle:30,1');
     Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
 });
 Route::get('/activation/{token}', [ActivationController::class, 'show'])->middleware('throttle:20,1');
