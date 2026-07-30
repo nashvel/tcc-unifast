@@ -143,7 +143,9 @@
     "activationFailed": "Napakyas ang activation."
   },
   "pages": {
-    "academicRecords": { "title": "Mga Academic Record" },
+    "academicRecords": {
+      "title": "Mga Academic Record"
+    },
     "announcements": {
       "title": "Mga Pahibalo",
       "description": "Mga update gikan sa UniFAST Office."
@@ -152,47 +154,92 @@
       "title": "Panagway",
       "description": "Pilia kung unsa ang hitsura sa UniFAST TES workspace sa kini nga device."
     },
-    "auditTrail": { "title": "Audit Trail" },
+    "auditTrail": {
+      "title": "Audit Trail"
+    },
     "batches": {
       "title": "Mga Batch",
       "description": "Dumala ang TES submission windows sumala sa academic period."
     },
-    "createAnnouncement": { "title": "Paghimo og Pahibalo" },
-    "createStaffUser": { "title": "Paghimo og staff user" },
-    "documentValidation": { "title": "Document Validation Queue" },
-    "editAnnouncement": { "title": "I-edit ang Pahibalo" },
-    "eligibilityStatus": { "title": "Submission eligibility" },
+    "createAnnouncement": {
+      "title": "Paghimo og Pahibalo"
+    },
+    "createStaffUser": {
+      "title": "Paghimo og staff user"
+    },
+    "documentValidation": {
+      "title": "Document Validation Queue"
+    },
+    "editAnnouncement": {
+      "title": "I-edit ang Pahibalo"
+    },
+    "eligibilityStatus": {
+      "title": "Submission eligibility"
+    },
     "files": {
       "title": "File Manager",
       "description": "Tan-awa ug ihan-ay ang uploaded scholarship files."
     },
-    "generateReport": { "title": "Paghimo og Report" },
+    "generateReport": {
+      "title": "Paghimo og Report"
+    },
     "grantees": {
       "title": "Mga Grantee",
       "description": "Pangita, filter, ug dumala ang TES grantee records."
     },
-    "kyc": { "title": "KYC Profile Validation" },
-    "masterlist": { "title": "Masterlist Import" },
-    "newSupportTicket": { "title": "Bag-ong support ticket" },
-    "notificationLogs": { "title": "Notification Logs" },
-    "notifications": { "title": "Mga Notification" },
-    "profile": { "title": "Akong Profile" },
+    "kyc": {
+      "title": "KYC Profile Validation"
+    },
+    "masterlist": {
+      "title": "Masterlist Import"
+    },
+    "newSupportTicket": {
+      "title": "Bag-ong support ticket"
+    },
+    "notificationLogs": {
+      "title": "Notification Logs"
+    },
+    "notifications": {
+      "title": "Mga Notification"
+    },
+    "profile": {
+      "title": "Akong Profile"
+    },
     "reports": {
       "title": "Mga Report",
       "description": "Paghimo, preview, ug export sa operational reports."
     },
-    "reportPreview": { "title": "Report Preview" },
-    "requirementVault": { "title": "Requirement Vault" },
-    "securityFindings": { "title": "Mga Nakita sa Seguridad" },
-    "securityMemory": { "title": "Security Memory" },
+    "reportPreview": {
+      "title": "Report Preview"
+    },
+    "requirementVault": {
+      "title": "Requirement Vault"
+    },
+    "securityFindings": {
+      "title": "Mga Nakita sa Seguridad"
+    },
+    "securityMemory": {
+      "title": "Security Memory"
+    },
     "settings": {
       "title": "Mga Setting",
       "description": "Dumala ang imong profile, password, ug sign-in activity."
     },
-    "submissionStatus": { "title": "Submission Status" },
-    "styleGuide": { "title": "UI Style Guide" },
-    "supportInbox": { "title": "Support Inbox" },
-    "uploadDocument": { "title": "Pag-upload sa Dokumento" }
+    "submissionStatus": {
+      "title": "Submission Status"
+    },
+    "styleGuide": {
+      "title": "UI Style Guide"
+    },
+    "supportInbox": {
+      "title": "Support Inbox"
+    },
+    "uploadDocument": {
+      "title": "Pag-upload sa Dokumento"
+    },
+    "dashboard": {
+      "title": "Dashboard"
+    }
   },
   "tour": {
     "label": "Tour",
@@ -424,6 +471,25 @@
     "studentDashboard": {
       "title": "Student Dashboard - UniFAST TES",
       "description": "Subaya ang TES requirements, dokumento, pahibalo, ug account status."
+    }
+  },
+  "developer": {
+    "sidebar": {
+      "system": "Sistema",
+      "playground": "Dulaanan sa Developer",
+      "changelogs": "Mga Tala sa Kausaban",
+      "rbac": "Mga Pagtugot (RBAC)",
+      "apiDocs": "Dokumentasyon sa API",
+      "flowCharts": "Mga Flow Chart",
+      "database": "Database",
+      "terms": "Mga Termino ug Kondisyon",
+      "faqs": "Mga Pangutana (FAQs)",
+      "support": "Mga Ticket sa Suporta",
+      "audit": "Audit sa Developer",
+      "collaborators": "Mga Kaabag",
+      "administration": "Administrasyon",
+      "settings": "Mga Setting sa Plataporma",
+      "auditConfig": "Pag-configure sa Audit"
     }
   }
 }
