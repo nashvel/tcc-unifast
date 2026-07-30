@@ -251,9 +251,9 @@ async function confirmImport(close: () => void) {
 }
 
 const deleteDialogOpen = ref(false);
-const deletingImport = ref<ImportItem | null>(null);
+const deletingImport = ref<ImportSummary | null>(null);
 
-function openDeleteDialog(item: ImportItem) {
+function openDeleteDialog(item: ImportSummary) {
   deletingImport.value = item;
   deleteDialogOpen.value = true;
 }
