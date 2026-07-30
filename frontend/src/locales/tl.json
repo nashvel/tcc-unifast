@@ -143,7 +143,9 @@
     "activationFailed": "Nabigo ang activation."
   },
   "pages": {
-    "academicRecords": { "title": "Mga Akademikong Rekord" },
+    "academicRecords": {
+      "title": "Mga Akademikong Rekord"
+    },
     "announcements": {
       "title": "Mga Anunsyo",
       "description": "Mga update mula sa UniFAST Office."
@@ -152,47 +154,92 @@
       "title": "Hitsura",
       "description": "Piliin kung paano titingnan ang UniFAST TES workspace sa device na ito."
     },
-    "auditTrail": { "title": "Audit Trail" },
+    "auditTrail": {
+      "title": "Audit Trail"
+    },
     "batches": {
       "title": "Mga Batch",
       "description": "Pamahalaan ang TES submission windows ayon sa academic period."
     },
-    "createAnnouncement": { "title": "Gumawa ng Anunsyo" },
-    "createStaffUser": { "title": "Gumawa ng staff user" },
-    "documentValidation": { "title": "Document Validation Queue" },
-    "editAnnouncement": { "title": "I-edit ang Anunsyo" },
-    "eligibilityStatus": { "title": "Submission eligibility" },
+    "createAnnouncement": {
+      "title": "Gumawa ng Anunsyo"
+    },
+    "createStaffUser": {
+      "title": "Gumawa ng staff user"
+    },
+    "documentValidation": {
+      "title": "Document Validation Queue"
+    },
+    "editAnnouncement": {
+      "title": "I-edit ang Anunsyo"
+    },
+    "eligibilityStatus": {
+      "title": "Submission eligibility"
+    },
     "files": {
       "title": "File Manager",
       "description": "Tingnan at ayusin ang uploaded scholarship files."
     },
-    "generateReport": { "title": "Gumawa ng Ulat" },
+    "generateReport": {
+      "title": "Gumawa ng Ulat"
+    },
     "grantees": {
       "title": "Mga Grantee",
       "description": "Maghanap, mag-filter, at pamahalaan ang TES grantee records."
     },
-    "kyc": { "title": "KYC Profile Validation" },
-    "masterlist": { "title": "Masterlist Import" },
-    "newSupportTicket": { "title": "Bagong support ticket" },
-    "notificationLogs": { "title": "Notification Logs" },
-    "notifications": { "title": "Mga Notification" },
-    "profile": { "title": "Aking Profile" },
+    "kyc": {
+      "title": "KYC Profile Validation"
+    },
+    "masterlist": {
+      "title": "Masterlist Import"
+    },
+    "newSupportTicket": {
+      "title": "Bagong support ticket"
+    },
+    "notificationLogs": {
+      "title": "Notification Logs"
+    },
+    "notifications": {
+      "title": "Mga Notification"
+    },
+    "profile": {
+      "title": "Aking Profile"
+    },
     "reports": {
       "title": "Mga Ulat",
       "description": "Gumawa, mag-preview, at mag-export ng operational reports."
     },
-    "reportPreview": { "title": "Report Preview" },
-    "requirementVault": { "title": "Requirement Vault" },
-    "securityFindings": { "title": "Mga Natuklasan sa Seguridad" },
-    "securityMemory": { "title": "Security Memory" },
+    "reportPreview": {
+      "title": "Report Preview"
+    },
+    "requirementVault": {
+      "title": "Requirement Vault"
+    },
+    "securityFindings": {
+      "title": "Mga Natuklasan sa Seguridad"
+    },
+    "securityMemory": {
+      "title": "Security Memory"
+    },
     "settings": {
       "title": "Mga Setting",
       "description": "Pamahalaan ang iyong profile, password, at sign-in activity."
     },
-    "submissionStatus": { "title": "Submission Status" },
-    "styleGuide": { "title": "UI Style Guide" },
-    "supportInbox": { "title": "Support Inbox" },
-    "uploadDocument": { "title": "Mag-upload ng Dokumento" }
+    "submissionStatus": {
+      "title": "Submission Status"
+    },
+    "styleGuide": {
+      "title": "UI Style Guide"
+    },
+    "supportInbox": {
+      "title": "Support Inbox"
+    },
+    "uploadDocument": {
+      "title": "Mag-upload ng Dokumento"
+    },
+    "dashboard": {
+      "title": "Dashboard"
+    }
   },
   "tour": {
     "label": "Tour",
@@ -424,6 +471,25 @@
     "studentDashboard": {
       "title": "Student Dashboard - UniFAST TES",
       "description": "Subaybayan ang TES requirements, dokumento, anunsyo, at account status."
+    }
+  },
+  "developer": {
+    "sidebar": {
+      "system": "Sistema",
+      "playground": "Palaruan ng Developer",
+      "changelogs": "Mga Tala ng Pagbabago",
+      "rbac": "Mga Pahintulot (RBAC)",
+      "apiDocs": "Dokumentasyon ng API",
+      "flowCharts": "Mga Flow Chart",
+      "database": "Database",
+      "terms": "Mga Tuntunin at Kundisyon",
+      "faqs": "Mga Madalas Itanong",
+      "support": "Mga Ticket ng Suporta",
+      "audit": "Audit ng Developer",
+      "collaborators": "Mga Katuwang",
+      "administration": "Administrasyon",
+      "settings": "Mga Setting ng Platform",
+      "auditConfig": "Pag-configure ng Audit"
     }
   }
 }

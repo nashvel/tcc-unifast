@@ -17,8 +17,9 @@ import {
   IconUserCog,
   IconHistory,
 } from "@tabler/icons-vue";
-import logo from "@/assets/system-logo.png";
+import logo from "@/assets/system-logo.webp";
 import { withLang } from "@/i18n/routeLang";
+import { translateKnownText } from "@/i18n/knownText";
 
 const route = useRoute();
 const router = useRouter();
@@ -103,7 +104,7 @@ function go(path: string) {
             style="color: #737373;"
             @click="toggleSection(section.title!)"
           >
-            {{ section.title }}
+            {{ translateKnownText(t, section.title!) }}
             <IconChevronDown
               :size="14"
               :class="['transition-transform', expanded[section.title!] ? 'rotate-0' : '-rotate-90']"
@@ -122,7 +123,7 @@ function go(path: string) {
                   :size="15"
                   :style="isActive(item.path!) ? 'color: #fafafa;' : 'color: #737373;'"
                 />
-                <span class="truncate">{{ item.label }}</span>
+                <span class="truncate">{{ translateKnownText(t, item.label) }}</span>
               </button>
             </li>
           </ul>
@@ -142,7 +143,7 @@ function go(path: string) {
                   :size="15"
                   :style="isActive(item.path!) ? 'color: #fafafa;' : 'color: #737373;'"
                 />
-                <span class="truncate">{{ item.label }}</span>
+                <span class="truncate">{{ translateKnownText(t, item.label) }}</span>
               </button>
             </li>
           </ul>

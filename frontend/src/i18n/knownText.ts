@@ -77,7 +77,23 @@ const knownTextKeys: Record<string, string> = {
   "Masterlist Import": "pages.masterlist.title",
   "New support ticket": "pages.newSupportTicket.title",
   "Generate, preview, and export operational reports.": "pages.reports.description",
-  "Manage your profile, password, and sign-in activity.": "pages.settings.description"
+  "Manage your profile, password, and sign-in activity.": "pages.settings.description",
+  "Dashboard": "pages.dashboard.title",
+  "System": "developer.sidebar.system",
+  "Developer Playground": "developer.sidebar.playground",
+  "Change Logs": "developer.sidebar.changelogs",
+  "RBAC & Permissions": "developer.sidebar.rbac",
+  "API Documentation": "developer.sidebar.apiDocs",
+  "System Flow Charts": "developer.sidebar.flowCharts",
+  "Database": "developer.sidebar.database",
+  "Terms & Conditions": "developer.sidebar.terms",
+  "FAQs": "developer.sidebar.faqs",
+  "Support Tickets": "developer.sidebar.support",
+  "Developer Audit": "developer.sidebar.audit",
+  "Collaborators": "developer.sidebar.collaborators",
+  "Administration": "developer.sidebar.administration",
+  "Platform Settings": "developer.sidebar.settings",
+  "Audit Configuration": "developer.sidebar.auditConfig"
 };
 
 export function translateKnownText(t: ComposerTranslation, text: string): string {
