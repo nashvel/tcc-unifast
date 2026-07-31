@@ -17,6 +17,9 @@ return Application::configure(basePath: dirname(__DIR__))
         ['middleware' => ['web', 'auth:sanctum']],
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Railway/Vercel terminate TLS at their edge and forward over HTTP.
+        // Without this, generated URLs (activation emails, signed routes) use http://.
+        $middleware->trustProxies(at: '*');
         $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
         $middleware->alias(['role' => \App\Http\Middleware\RequireRole::class]);
         $middleware->web(append: [\App\Http\Middleware\SetLocaleFromUrl::class]);
