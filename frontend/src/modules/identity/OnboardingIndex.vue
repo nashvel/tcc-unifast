@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { apiUrl } from "@/api/client";
 import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import PageHeader from "@/components/ui/PageHeader.vue";
@@ -9,7 +10,7 @@ const error = ref("");
 
 onMounted(async () => {
   try {
-    const response = await fetch("/api/student/identity-onboarding", { headers: { Accept: "application/json" } });
+    const response = await fetch(apiUrl("/api/student/identity-onboarding"), { headers: { Accept: "application/json" } });
     const payload = await response.json();
     if (!response.ok) throw new Error(payload.message || "Unable to load identity onboarding.");
     const next = payload.data.next_step as string;

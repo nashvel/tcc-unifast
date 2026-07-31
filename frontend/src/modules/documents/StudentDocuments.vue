@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { apiUrl } from "@/api/client";
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from "vue";
 import {
   IconAlertTriangle,
@@ -151,7 +152,7 @@ async function loadVault() {
   loading.value = true;
   error.value = "";
   try {
-    const response = await fetch("/api/student/requirement-vault", { headers: { Accept: "application/json" } });
+    const response = await fetch(apiUrl("/api/student/requirement-vault"), { headers: { Accept: "application/json" } });
     const payload = (await response.json()) as VaultResponse & { message?: string; errors?: Record<string, string[]> };
     if (!response.ok) throw new Error(payloadMessage(payload, "Unable to load the requirement vault."));
     windowOpen.value = Boolean(payload.window?.open);
@@ -276,7 +277,7 @@ async function captureIdScan() {
     body.append("consent_accepted", "1");
     body.append("precheck_accepted", "1");
 
-    const response = await fetch("/api/student/requirement-vault/id", {
+    const response = await fetch(apiUrl("/api/student/requirement-vault/id"), {
       method: "POST",
       headers: { Authorization: `Bearer ${getAuthToken()}`, Accept: "application/json" },
       body,
@@ -320,7 +321,7 @@ async function uploadDocument(
     const body = new FormData();
     body.append("slot_key", slotKey);
     body.append("file", file);
-    const response = await fetch("/api/student/requirement-vault/document", {
+    const response = await fetch(apiUrl("/api/student/requirement-vault/document"), {
       method: "POST",
       headers: { Authorization: `Bearer ${getAuthToken()}`, Accept: "application/json" },
       body,
@@ -402,7 +403,7 @@ async function finishIdentityCheck() {
   body.append("liveness_confirmed", "1");
   body.append("selfie", new File([selfie], "submission_selfie.jpg", { type: "image/jpeg" }));
 
-  const response = await fetch("/api/student/requirement-vault/identity-check", {
+  const response = await fetch(apiUrl("/api/student/requirement-vault/identity-check"), {
     method: "POST",
     headers: { Authorization: `Bearer ${getAuthToken()}`, Accept: "application/json" },
     body,
@@ -423,7 +424,7 @@ async function confirmSubmission() {
   error.value = "";
   success.value = "";
   try {
-    const response = await fetch("/api/student/requirement-vault/confirm", {
+    const response = await fetch(apiUrl("/api/student/requirement-vault/confirm"), {
       method: "POST",
       headers: { Authorization: `Bearer ${getAuthToken()}`, Accept: "application/json" },
     });

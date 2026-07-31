@@ -11,7 +11,7 @@ import {
 import PageHeader from "@/components/ui/PageHeader.vue";
 import DataTable from "@/components/tables/DataTable.vue";
 import AppDialog from "@/components/dialogs/AppDialog.vue";
-import { apiFetch } from "@/api/client";
+import { apiFetch, apiUrl } from "@/api/client";
 import type { PaginatedResponse } from "@/api/types";
 import { queryKeys } from "@/api/queryKeys";
 import { getAuthToken } from "@/auth/session";
@@ -156,7 +156,7 @@ async function confirmImport() {
   confirming.value = true;
   error.value = "";
   try {
-    const response = await fetch(`/api/masterlist/imports/${preview.value.id}/confirm`, {
+    const response = await fetch(apiUrl(`/api/masterlist/imports/${preview.value.id}/confirm`), {
       method: "POST",
       headers: { Authorization: `Bearer ${getAuthToken()}`, Accept: "application/json" },
     });

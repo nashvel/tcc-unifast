@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { apiUrl } from "@/api/client";
 import { onMounted, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 import { IconAlertTriangle, IconCheck, IconId, IconSchool, IconUser } from "@tabler/icons-vue";
@@ -40,7 +41,7 @@ onMounted(loadKyc);
 
 async function loadKyc() {
   try {
-    const response = await fetch("/api/student/kyc", { headers: { Accept: "application/json" } });
+    const response = await fetch(apiUrl("/api/student/kyc"), { headers: { Accept: "application/json" } });
     const payload = await response.json();
     if (!response.ok) throw new Error(payload.message || "Unable to load KYC profile.");
     reference.value = payload.data.reference;
@@ -67,7 +68,7 @@ async function submit() {
   mismatches.value = {};
 
   try {
-    const response = await fetch("/api/student/kyc", {
+    const response = await fetch(apiUrl("/api/student/kyc"), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

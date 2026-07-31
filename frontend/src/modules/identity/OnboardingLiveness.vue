@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { apiUrl } from "@/api/client";
 import { nextTick, onBeforeUnmount, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { IconAlertTriangle, IconCamera, IconRefresh, IconUserCheck } from "@tabler/icons-vue";
@@ -42,7 +43,7 @@ onMounted(async () => {
 onBeforeUnmount(stopCamera);
 
 async function loadStatus() {
-  const response = await fetch("/api/student/identity-onboarding", { headers: { Accept: "application/json" } });
+  const response = await fetch(apiUrl("/api/student/identity-onboarding"), { headers: { Accept: "application/json" } });
   const payload = await response.json();
   if (!response.ok) throw new Error(payload.message || "Unable to load onboarding status.");
   if (payload.data.next_step === "id_scan") {
@@ -124,7 +125,7 @@ async function finishLiveness() {
   body.append("distance", String(distance));
   body.append("liveness_confirmed", "1");
 
-  const response = await fetch("/api/student/identity-onboarding/liveness", {
+  const response = await fetch(apiUrl("/api/student/identity-onboarding/liveness"), {
     method: "POST",
     headers: { Authorization: `Bearer ${getAuthToken()}`, Accept: "application/json" },
     body,

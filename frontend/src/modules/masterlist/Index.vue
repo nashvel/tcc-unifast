@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { apiUrl } from "@/api/client";
 import { computed, onMounted, ref, watch } from "vue";
 import {
   IconAlertTriangle,
@@ -204,7 +205,7 @@ async function previewImport() {
   body.append("batch_id", String(uploadBatchId.value));
 
   try {
-    const response = await fetch("/api/masterlist/imports/preview", {
+    const response = await fetch(apiUrl("/api/masterlist/imports/preview"), {
       method: "POST",
       headers: { Authorization: `Bearer ${getAuthToken()}`, Accept: "application/json" },
       body,
@@ -230,7 +231,7 @@ async function confirmImport(close: () => void) {
   error.value = "";
 
   try {
-    const response = await fetch(`/api/masterlist/imports/${preview.value.id}/confirm`, {
+    const response = await fetch(apiUrl(`/api/masterlist/imports/${preview.value.id}/confirm`), {
       method: "POST",
       headers: { Authorization: `Bearer ${getAuthToken()}`, Accept: "application/json" },
     });
@@ -262,7 +263,7 @@ async function deleteImport() {
   if (!deletingImport.value) return;
   busy.value = true;
   try {
-    const response = await fetch(`/api/masterlist/imports/${deletingImport.value.id}`, {
+    const response = await fetch(apiUrl(`/api/masterlist/imports/${deletingImport.value.id}`), {
       method: "DELETE",
       headers: { Authorization: `Bearer ${getAuthToken()}`, Accept: "application/json" },
     });

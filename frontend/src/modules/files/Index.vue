@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { apiUrl } from "@/api/client";
 import { computed, ref, onMounted } from "vue";
 import {
   IconFile,
@@ -51,7 +52,7 @@ const rows = computed(() =>
 async function loadFiles() {
   loading.value = true;
   try {
-    const response = await fetch("/api/files", {
+    const response = await fetch(apiUrl("/api/files"), {
       headers: { Authorization: `Bearer ${getAuthToken()}`, Accept: "application/json" },
     });
     const payload = await response.json();
