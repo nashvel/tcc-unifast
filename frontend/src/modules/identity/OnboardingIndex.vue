@@ -3,13 +3,20 @@ import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import PageHeader from "@/components/ui/PageHeader.vue";
 import CardSkeleton from "@/components/ui/CardSkeleton.vue";
+import { getAuthToken } from "@/auth/session";
 
 const router = useRouter();
 const error = ref("");
 
 onMounted(async () => {
   try {
-    const response = await fetch("/api/student/identity-onboarding", { headers: { Accept: "application/json" } });
+    const token = getAuthToken();
+    if (!token) {
+      throw new Error("Unauthenticated. Activate or sign in again to continue identity onboarding.");
+    }
+    const response = await fetch("/api/student/identity-onboarding", {
+      headers: { Accept: "application/json", Authorization: `Bearer ${token}` },
+    });
     const payload = await response.json();
     if (!response.ok) throw new Error(payload.message || "Unable to load identity onboarding.");
     const next = payload.data.next_step as string;

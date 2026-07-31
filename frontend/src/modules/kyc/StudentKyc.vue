@@ -1,31 +1,27 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from "vue";
-import { useRouter } from "vue-router";
-import { IconAlertTriangle, IconCheck, IconId, IconSchool, IconUser } from "@tabler/icons-vue";
+import { useRoute, useRouter } from "vue-router";
+import { IconAlertTriangle, IconCheck, IconSchool, IconUser } from "@tabler/icons-vue";
 import PageHeader from "@/components/ui/PageHeader.vue";
 import CardSkeleton from "@/components/ui/CardSkeleton.vue";
 import { authSession, getAuthToken } from "@/auth/session";
 import { toast } from "@/composables/useToast";
+import { withLang } from "@/i18n/routeLang";
 
-type KycResponse = {
-  status: string;
-  mismatches: Record<string, string>;
-  reference: {
-    full_name: string;
-    student_id: string;
-    program: string;
-    year_level: string | null;
-  };
-};
+type ProgramOption = { id: number; code: string; name: string };
 
 const router = useRouter();
+const route = useRoute();
 const loading = ref(true);
 const busy = ref(false);
 const error = ref("");
-const mismatches = ref<Record<string, string>>({});
-const reference = ref<KycResponse["reference"] | null>(null);
+const programs = ref<ProgramOption[]>([]);
+const yearOptions = ref<string[]>(["1", "2", "3", "4"]);
+const hintLast4 = ref<string | null>(null);
 const form = reactive({
-  full_name: "",
+  first_name: "",
+  middle_name: "",
+  last_name: "",
   student_id: "",
   program: "",
   year_level: "",
@@ -40,22 +36,49 @@ onMounted(loadKyc);
 
 async function loadKyc() {
   try {
-    const response = await fetch("/api/student/kyc", { headers: { Accept: "application/json" } });
+    const token = getAuthToken();
+    if (!token) {
+      throw new Error("Unauthenticated. Activate or sign in again, then retry KYC.");
+    }
+    const response = await fetch("/api/student/kyc", {
+      headers: { Accept: "application/json", Authorization: `Bearer ${token}` },
+    });
     const payload = await response.json();
     if (!response.ok) throw new Error(payload.message || "Unable to load KYC profile.");
-    reference.value = payload.data.reference;
-    mismatches.value = payload.data.mismatches || {};
-    form.full_name = payload.data.profile?.full_name || payload.data.reference.full_name || "";
-    form.student_id = payload.data.profile?.student_id || payload.data.reference.student_id || "";
-    form.program = payload.data.profile?.program || payload.data.reference.program || "";
-    form.year_level = payload.data.profile?.year_level || payload.data.reference.year_level || "";
-    form.birthdate = payload.data.profile?.birthdate || "";
-    form.contact = payload.data.profile?.contact || "";
-    form.address = payload.data.profile?.address || "";
-    form.guardian_name = payload.data.profile?.guardian_name || "";
-    form.household_income = payload.data.profile?.household_income || "";
+
+    programs.value = payload.data.programs || [];
+    yearOptions.value = payload.data.year_level_options || ["1", "2", "3", "4"];
+    hintLast4.value = payload.data.hint?.student_id_last4 ?? null;
+
+    const next = payload.data.next_step as string | undefined;
+    if (next === "id_scan") {
+      await router.replace(withLang("/student/onboarding/id-scan", route.query.lang));
+      return;
+    }
+    if (next === "liveness") {
+      await router.replace(withLang("/student/onboarding/liveness", route.query.lang));
+      return;
+    }
+    if (next === "done") {
+      await router.replace(withLang("/student", route.query.lang));
+      return;
+    }
+
+    const profile = payload.data.profile || {};
+    form.first_name = profile.first_name || "";
+    form.middle_name = profile.middle_name || "";
+    form.last_name = profile.last_name || "";
+    form.student_id = profile.student_id || "";
+    form.program = profile.program || "";
+    form.year_level = profile.year_level || "";
+    form.birthdate = profile.birthdate || "";
+    form.contact = profile.contact || "";
+    form.address = profile.address || "";
+    form.guardian_name = profile.guardian_name || "";
+    form.household_income = profile.household_income ?? "";
   } catch (exception) {
     error.value = exception instanceof Error ? exception.message : "Unable to load KYC profile.";
+    toast.error(error.value);
   } finally {
     loading.value = false;
   }
@@ -64,32 +87,52 @@ async function loadKyc() {
 async function submit() {
   busy.value = true;
   error.value = "";
-  mismatches.value = {};
 
   try {
+    const token = getAuthToken();
+    if (!token) {
+      throw new Error("Unauthenticated. Activate or sign in again, then retry KYC.");
+    }
+    if (!form.first_name.trim() || !form.last_name.trim() || !form.student_id.trim() || !form.program || !form.year_level) {
+      throw new Error("Enter your first name, last name, student ID, program, and year level.");
+    }
     const response = await fetch("/api/student/kyc", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${getAuthToken()}`,
+        Authorization: `Bearer ${token}`,
         Accept: "application/json",
       },
       body: JSON.stringify({
-        ...form,
+        first_name: form.first_name.trim(),
+        middle_name: form.middle_name.trim() || null,
+        last_name: form.last_name.trim(),
+        student_id: form.student_id.trim(),
+        program: form.program,
+        year_level: form.year_level,
+        birthdate: form.birthdate || null,
+        contact: form.contact || null,
+        address: form.address || null,
+        guardian_name: form.guardian_name || null,
         household_income: form.household_income === "" ? null : Number(form.household_income),
       }),
     });
     const payload = await response.json();
     if (!response.ok) {
-      mismatches.value = payload.data?.mismatches || {};
       const validation = payload.errors ? Object.values(payload.errors).flat().join(" ") : "";
-      throw new Error(validation || "KYC details did not match the CHED masterlist.");
+      throw new Error(validation || payload.message || "Unable to validate KYC profile.");
     }
     authSession.user = authSession.user
-      ? { ...authSession.user, account_status: payload.data.account_status, kyc_status: payload.data.status }
+      ? {
+          ...authSession.user,
+          account_status: payload.data.account_status as AuthAccountStatus,
+          kyc_status: payload.data.status,
+          onboarding_next_step: "id_scan",
+          onboarding_path: "/student/onboarding/id-scan",
+        }
       : null;
-    await router.push("/student/onboarding/id-scan");
-    toast.success("KYC validated — continue with School ID scan");
+    await router.push(withLang("/student/onboarding/id-scan", route.query.lang));
+    toast.success("KYC confirmed — continue with School ID scan");
   } catch (exception) {
     error.value = exception instanceof Error ? exception.message : "Unable to submit KYC profile.";
     toast.error(error.value);
@@ -97,13 +140,15 @@ async function submit() {
     busy.value = false;
   }
 }
+
+type AuthAccountStatus = "active" | "unverified" | "pending_kyc" | "pending_identity" | "blocked";
 </script>
 
 <template>
   <div>
     <PageHeader
       title="KYC Profile Validation"
-      description="Complete your profile. Name, student ID, program, and year level must match the CHED masterlist."
+      description="Type your identity details exactly as they appear on your records. The server cross-checks them against the CHED masterlist after you submit."
     />
 
     <div v-if="loading" class="space-y-4">
@@ -112,28 +157,13 @@ async function submit() {
     </div>
 
     <form v-else class="space-y-4" @submit.prevent="submit">
-      <section v-if="reference" class="rounded-lg border bg-surface p-4">
-        <h2 class="flex items-center gap-2 text-sm font-semibold">
-          <IconId :size="16" class="text-primary" /> Masterlist reference
-        </h2>
-        <div class="mt-3 grid gap-3 text-xs md:grid-cols-4">
-          <div>
-            <p class="text-text-muted">Student ID</p>
-            <p class="mt-1 font-mono font-semibold">{{ reference.student_id }}</p>
-          </div>
-          <div>
-            <p class="text-text-muted">Name</p>
-            <p class="mt-1 font-semibold">{{ reference.full_name }}</p>
-          </div>
-          <div>
-            <p class="text-text-muted">Program</p>
-            <p class="mt-1 font-semibold">{{ reference.program }}</p>
-          </div>
-          <div>
-            <p class="text-text-muted">Year level</p>
-            <p class="mt-1 font-semibold">{{ reference.year_level || "Not provided" }}</p>
-          </div>
-        </div>
+      <section
+        v-if="hintLast4"
+        class="rounded-lg border border-info/30 bg-info-soft px-4 py-3 text-xs text-text-muted"
+      >
+        Account bound to masterlist student ID ending in
+        <span class="font-mono font-semibold text-text">••••{{ hintLast4 }}</span>.
+        Contact UniFAST support if this is not your record.
       </section>
 
       <section class="grid gap-4 lg:grid-cols-2">
@@ -142,12 +172,39 @@ async function submit() {
             <IconUser :size="16" class="text-primary" /> Personal information
           </h2>
           <div class="grid gap-3">
+            <div class="grid gap-3 sm:grid-cols-2">
+              <label class="block">
+                <span class="mb-1.5 block text-xs font-medium">First name *</span>
+                <input
+                  v-model="form.first_name"
+                  required
+                  autocomplete="given-name"
+                  placeholder="First name"
+                  class="h-9 w-full rounded-md border px-3 text-sm"
+                />
+              </label>
+              <label class="block">
+                <span class="mb-1.5 block text-xs font-medium">Last name *</span>
+                <input
+                  v-model="form.last_name"
+                  required
+                  autocomplete="family-name"
+                  placeholder="Last name / surname"
+                  class="h-9 w-full rounded-md border px-3 text-sm"
+                />
+              </label>
+            </div>
             <label class="block">
-              <span class="mb-1.5 block text-xs font-medium">Full name *</span>
-              <input v-model="form.full_name" class="h-9 w-full rounded-md border px-3 text-sm" />
-              <p v-if="mismatches.full_name" class="mt-1 text-xs text-danger">
-                {{ mismatches.full_name }}
-              </p>
+              <span class="mb-1.5 block text-xs font-medium">Middle name</span>
+              <input
+                v-model="form.middle_name"
+                autocomplete="additional-name"
+                placeholder="Optional"
+                class="h-9 w-full rounded-md border px-3 text-sm"
+              />
+              <span class="mt-1 block text-micro text-text-muted">
+                Case-insensitive match. Middle is optional; if you enter one and the masterlist has a middle name, they must match.
+              </span>
             </label>
             <label class="block">
               <span class="mb-1.5 block text-xs font-medium">Birthdate</span>
@@ -175,24 +232,29 @@ async function submit() {
           <div class="grid gap-3">
             <label class="block">
               <span class="mb-1.5 block text-xs font-medium">Student ID *</span>
-              <input v-model="form.student_id" class="h-9 w-full rounded-md border px-3 text-sm" />
-              <p v-if="mismatches.student_id" class="mt-1 text-xs text-danger">
-                {{ mismatches.student_id }}
-              </p>
+              <input
+                v-model="form.student_id"
+                required
+                autocomplete="off"
+                placeholder="Type your student ID"
+                class="h-9 w-full rounded-md border px-3 font-mono text-sm"
+              />
             </label>
             <label class="block">
               <span class="mb-1.5 block text-xs font-medium">Program *</span>
-              <input v-model="form.program" class="h-9 w-full rounded-md border px-3 text-sm" />
-              <p v-if="mismatches.program" class="mt-1 text-xs text-danger">
-                {{ mismatches.program }}
-              </p>
+              <select v-model="form.program" required class="h-9 w-full rounded-md border px-3 text-sm">
+                <option value="" disabled>Select program</option>
+                <option v-for="row in programs" :key="row.id" :value="row.code">
+                  {{ row.code }} — {{ row.name }}
+                </option>
+              </select>
             </label>
             <label class="block">
               <span class="mb-1.5 block text-xs font-medium">Year level *</span>
-              <input v-model="form.year_level" class="h-9 w-full rounded-md border px-3 text-sm" />
-              <p v-if="mismatches.year_level" class="mt-1 text-xs text-danger">
-                {{ mismatches.year_level }}
-              </p>
+              <select v-model="form.year_level" required class="h-9 w-full rounded-md border px-3 text-sm">
+                <option value="" disabled>Select year level</option>
+                <option v-for="year in yearOptions" :key="year" :value="year">Year {{ year }}</option>
+              </select>
             </label>
             <label class="block">
               <span class="mb-1.5 block text-xs font-medium">Guardian name</span>
@@ -223,7 +285,7 @@ async function submit() {
           :disabled="busy"
           class="inline-flex h-10 items-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-white disabled:opacity-60"
         >
-          <IconCheck :size="15" />{{ busy ? "Validating..." : "Submit and validate KYC" }}
+          <IconCheck :size="15" />{{ busy ? "Validating..." : "Confirm KYC and continue" }}
         </button>
       </div>
     </form>

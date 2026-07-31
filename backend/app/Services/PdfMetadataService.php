@@ -58,11 +58,12 @@ class PdfMetadataService
             return [];
         }
 
-        $payload = json_decode(trim($result->output()), true);
+        $payload = json_decode(trim($result->output()), true, 512, JSON_INVALID_UTF8_SUBSTITUTE);
         if (! is_array($payload) || ! ($payload['success'] ?? false)) {
             Log::warning('pdf_metadata.failed', [
                 'exit' => $result->exitCode(),
                 'stderr' => Str::limit(trim($result->errorOutput()), 300),
+                'json_error' => json_last_error_msg(),
             ]);
 
             return [];
@@ -78,16 +79,17 @@ class PdfMetadataService
             return $configured;
         }
 
-        $venv = base_path('python/.venv/Scripts/python.exe');
-        if (is_file($venv)) {
-            return $venv;
+        foreach ([
+            base_path('python/.venv/Scripts/python.exe'),
+            base_path('python/.venv/bin/python'),
+            base_path('ocr-service/.venv/Scripts/python.exe'),
+            base_path('ocr-service/.venv/bin/python'),
+        ] as $candidate) {
+            if (is_file($candidate)) {
+                return $candidate;
+            }
         }
 
-        $ocrVenv = base_path('ocr-service/.venv/Scripts/python.exe');
-        if (is_file($ocrVenv)) {
-            return $ocrVenv;
-        }
-
-        return 'python';
+        return PHP_OS_FAMILY === 'Windows' ? 'python' : 'python3';
     }
 }

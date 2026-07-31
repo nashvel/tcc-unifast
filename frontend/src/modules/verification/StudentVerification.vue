@@ -15,6 +15,7 @@ import AppDialog from "@/components/dialogs/AppDialog.vue";
 import PageHeader from "@/components/ui/PageHeader.vue";
 import { markStudentVerified } from "@/auth/studentVerification";
 import { getAuthToken } from "@/auth/session";
+import { getUserMediaSafe } from "@/modules/requirements/cameraAccess";
 import sampleStudentId from "@/assets/sample-student-id.png";
 import sampleStudentIdBack from "@/assets/sample-student-id-back.png";
 
@@ -57,11 +58,7 @@ async function startCamera() {
   stopCamera();
 
   try {
-    if (!navigator.mediaDevices?.getUserMedia) {
-      throw new Error("Camera access is not supported by this browser.");
-    }
-
-    cameraStream = await navigator.mediaDevices.getUserMedia({
+    cameraStream = await getUserMediaSafe({
       video: { facingMode: "user", width: { ideal: 960 }, height: { ideal: 720 } },
       audio: false,
     });

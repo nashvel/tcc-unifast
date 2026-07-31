@@ -338,7 +338,14 @@ onMounted(() => {
             </div>
             <div class="flex items-center justify-between gap-3 border-t px-4 py-3">
               <p class="text-xs text-text-muted">
-                Pass if grade ≤ pass grade; fail if higher. Blank grades ignored.
+                Pass if grade ≤ pass grade; fail if higher. Dropped subjects count toward max
+                failed. Course History blanks in the current term and 2 prior semesters
+                (including Summer) are Pending (ignored for retention); older-term blanks count
+                as Dropped. Grade Slip blanks are review-only and do not count. Eligibility
+                retention uses Course History (full history, including program shifts); Grade
+                Slip is supplemental when CH is present. Not eligible when failed+dropped ≥ Max
+                failed subjects (Settings key: max_failed_subjects_per_semester; set to 3 for
+                UniFAST’s 3-fail rule).
               </p>
               <button
                 class="shrink-0 rounded-md bg-primary px-3 py-2 text-xs text-white disabled:opacity-60"
@@ -355,7 +362,8 @@ onMounted(() => {
               <div>
                 <h2 class="text-sm font-semibold">Program list</h2>
                 <p class="mt-0.5 text-xs text-text-muted">
-                  OCR matches Course History headers (e.g. BSIT — Year 1st) to these codes.
+                  OCR matches Course History term headers (e.g. BSED Filipino — Year 1st, BSIT —
+                  Year 2nd) to these codes for per-term pass grades.
                 </p>
               </div>
               <button

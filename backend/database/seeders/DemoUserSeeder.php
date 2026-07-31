@@ -17,7 +17,11 @@ class DemoUserSeeder extends Seeder
             ['Maria Angela Santos', 'student@tcc.edu.ph', 'student', '2024-00182'],
         ] as [$name, $email, $role, $studentId]) {
             User::updateOrCreate(['email' => $email], [
-                'name' => $name, 'role' => $role, 'student_id' => $studentId, 'password' => Hash::make('password'),
+                'name' => $name,
+                'role' => $role,
+                'student_id' => $studentId,
+                'password' => Hash::make('password'),
+                'account_status' => 'active',
                 'email_verified_at' => now(),
             ]);
         }

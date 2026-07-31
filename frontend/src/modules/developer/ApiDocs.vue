@@ -36,13 +36,15 @@ const endpoints: Endpoint[] = [
   { method: "GET", path: "/api/academic-records/:id", description: "Get academic record details", auth: true, role: "developer,admin,staff", response: '{ "data": {...} }' },
 
   // Documents
-  { method: "GET", path: "/api/document-submissions", description: "List document submissions", auth: true, role: "developer,admin,staff", response: '{ "data": [...], "meta": {...} }' },
+  { method: "GET", path: "/api/document-submissions", description: "List document submissions (per file)", auth: true, role: "developer,admin,staff", response: '{ "data": [...], "meta": {...} }' },
+  { method: "GET", path: "/api/document-submission-packages", description: "List submission packages (one row per grantee+batch)", auth: true, role: "developer,admin,staff", response: '{ "data": [...], "meta": {...} }' },
+  { method: "GET", path: "/api/document-submission-packages/:granteeId/:batchId", description: "Get package with slot tabs metadata", auth: true, role: "developer,admin,staff", response: '{ "data": {...} }' },
   { method: "GET", path: "/api/document-submissions/:id", description: "Get submission details", auth: true, role: "developer,admin,staff", response: '{ "data": {...} }' },
   { method: "POST", path: "/api/document-submissions/:id/review", description: "Review a submission", auth: true, role: "developer,admin,staff", body: '{ "decision": "approved|rejected|resubmission", "notes": "..." }', response: '{ "data": {...} }' },
 
   // Student
   { method: "GET", path: "/api/student/kyc", description: "Get student KYC profile", auth: true, role: "student", response: '{ "data": {...} }' },
-  { method: "POST", path: "/api/student/kyc", description: "Submit KYC profile", auth: true, role: "student", body: '{ "full_name": "...", "student_id": "...", ... }', response: '{ "data": {...} }' },
+  { method: "POST", path: "/api/student/kyc", description: "Submit KYC profile", auth: true, role: "student", body: '{ "first_name": "...", "last_name": "...", "middle_name": null, "student_id": "...", ... }', response: '{ "data": {...} }' },
   { method: "GET", path: "/api/student/submission-window", description: "Get submission window status", auth: true, role: "student", response: '{ "data": {...} }' },
   { method: "GET", path: "/api/student/notifications", description: "List student notifications", auth: true, role: "student", response: '{ "data": [...], "meta": {...} }' },
   { method: "POST", path: "/api/student/notifications/:id/read", description: "Mark notification as read", auth: true, role: "student", response: '{ "data": {...} }' },

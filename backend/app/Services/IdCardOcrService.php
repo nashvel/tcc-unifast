@@ -10,9 +10,10 @@ use Illuminate\Support\Str;
 class IdCardOcrService
 {
     /**
-     * Extract printable text from an ID card image via OCR.space or local OCR service.
+     * Extract printable text from an ID card image via local OCR service (dev default).
+     * OCR.space only when OCR_SPACE_API_KEY is explicitly set (not used in local free/dev phase).
      *
-     * @return array{text: string, provider: string, raw: array<string, mixed>|null}
+     * @return array{text: string, provider: string, raw: array<string, mixed>|null, qr: array{found: bool, value: ?string, type: ?string, engine: ?string}}
      */
     public function extractText(UploadedFile $file): array
     {
@@ -22,6 +23,56 @@ class IdCardOcrService
         }
 
         return $this->viaLocalOcr($file);
+    }
+
+    /**
+     * OCR for secondary images (e.g. ID back).
+     * Service / provider failures throw (same as extractText). Empty or sparse text is success.
+     *
+     * @return array{text: string, provider: string, raw: array<string, mixed>|null, text_empty: bool, warning: ?string, qr: array{found: bool, value: ?string, type: ?string, engine: ?string}}
+     */
+    public function extractTextAllowEmpty(UploadedFile $file): array
+    {
+        $result = $this->extractText($file);
+        $text = trim((string) ($result['text'] ?? ''));
+        $qr = is_array($result['qr'] ?? null) ? $result['qr'] : $this->emptyQr();
+
+        return [
+            'text' => $text,
+            'provider' => (string) ($result['provider'] ?? 'unknown'),
+            'raw' => $result['raw'] ?? null,
+            'text_empty' => $text === '',
+            'warning' => $text === ''
+                ? 'OCR service succeeded but found little or no readable text on this image.'
+                : null,
+            'qr' => $qr,
+        ];
+    }
+
+    /**
+     * @return array{found: bool, value: ?string, type: ?string, engine: ?string}
+     */
+    public function emptyQr(): array
+    {
+        return ['found' => false, 'value' => null, 'type' => null, 'engine' => null];
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $raw
+     * @return array{found: bool, value: ?string, type: ?string, engine: ?string}
+     */
+    public function qrFromPayload(?array $raw): array
+    {
+        $found = (bool) data_get($raw, 'qr_code.found', false);
+        $value = data_get($raw, 'qr_code.value');
+        $value = is_string($value) ? trim($value) : null;
+
+        return [
+            'found' => $found && $value !== null && $value !== '',
+            'value' => ($found && is_string($value) && $value !== '') ? $value : null,
+            'type' => is_string(data_get($raw, 'qr_code.type')) ? (string) data_get($raw, 'qr_code.type') : null,
+            'engine' => is_string(data_get($raw, 'qr_code.engine')) ? (string) data_get($raw, 'qr_code.engine') : null,
+        ];
     }
 
     /**
@@ -40,12 +91,15 @@ class IdCardOcrService
             ? $expected['student_id']
             : $this->guessStudentId($ocr['text'] ?? '');
 
+        // Map match failures to id_frame so the UI does not look like a back-side OCR failure.
         $errors = [];
         if (! $this->findNeedleInHaystack($name, $text) && ! $this->namesLooselyMatch($name, $this->key((string) $extractedName))) {
-            $errors['ocr_name'] = 'OCR name on the School ID does not match the KYC / masterlist record.';
+            $errors['id_frame'] = 'Front of School ID: OCR name does not match the KYC / masterlist record.';
         }
         if (! $this->findNeedleInHaystack($studentId, $text) && $this->key((string) $extractedStudentId) !== $studentId) {
-            $errors['ocr_student_id'] = 'OCR student ID on the School ID does not match the KYC / masterlist record.';
+            $errors['id_frame'] = ($errors['id_frame'] ?? '')
+                ? $errors['id_frame'].' Student ID on the front also does not match.'
+                : 'Front of School ID: OCR student ID does not match the KYC / masterlist record.';
         }
 
         return [
@@ -85,17 +139,22 @@ class IdCardOcrService
             ->filter()
             ->implode("\n");
 
-        return ['text' => $text, 'provider' => 'ocr_space', 'raw' => $payload];
+        return [
+            'text' => $text,
+            'provider' => 'ocr_space',
+            'raw' => $payload,
+            'qr' => $this->emptyQr(),
+        ];
     }
 
     /**
-     * @return array{text: string, provider: string, raw: array<string, mixed>|null}
+     * @return array{text: string, provider: string, raw: array<string, mixed>|null, qr: array{found: bool, value: ?string, type: ?string, engine: ?string}}
      */
     private function viaLocalOcr(UploadedFile $file): array
     {
         $baseUrl = rtrim((string) config('services.ocr.url'), '/');
         if ($baseUrl === '') {
-            throw new \RuntimeException('No OCR provider configured. Set OCR_SPACE_API_KEY or OCR_SERVICE_URL.');
+            throw new \RuntimeException('No OCR provider configured. Set OCR_SERVICE_URL (local :8001) for development.');
         }
 
         try {
@@ -104,22 +163,42 @@ class IdCardOcrService
                 ->attach('file', fopen($file->getRealPath(), 'r'), $file->getClientOriginalName())
                 ->post($baseUrl.'/ocr/image');
         } catch (ConnectionException $exception) {
-            throw new \RuntimeException('Local OCR service is unavailable. Start ocr-service or configure OCR_SPACE_API_KEY.', 0, $exception);
+            throw new \RuntimeException(
+                'Local OCR service is unavailable on '.$baseUrl.'. Start backend/ocr-service (uvicorn :8001). Never bind PHP on 8001.',
+                0,
+                $exception,
+            );
         }
 
         if ($response->failed()) {
-            throw new \RuntimeException((string) data_get($response->json(), 'error.message', 'Local OCR failed.'));
+            $message = (string) data_get($response->json(), 'error.message', '');
+            throw new \RuntimeException(
+                $message !== ''
+                    ? 'Local OCR failed: '.$message
+                    : 'Local OCR service returned an error. Check ocr-service logs on :8001.',
+            );
         }
 
         $payload = $response->json() ?? [];
+        // Empty cleaned_text is a successful OCR result (common on sparse ID backs) — not a failure.
         $text = (string) (data_get($payload, 'result.cleaned_text') ?: data_get($payload, 'result.combined_text') ?: '');
 
-        return ['text' => $text, 'provider' => 'local_ocr', 'raw' => $payload];
+        return [
+            'text' => $text,
+            'provider' => 'local_ocr',
+            'raw' => $payload,
+            'qr' => $this->qrFromPayload($payload),
+        ];
     }
 
     private function key(string $value): string
     {
-        return Str::of($value)->lower()->replaceMatches('/\s+/', ' ')->trim()->toString();
+        return Str::of($value)
+            ->lower()
+            ->replaceMatches('/[^\p{L}\p{N}\s]+/u', ' ')
+            ->replaceMatches('/\s+/', ' ')
+            ->trim()
+            ->toString();
     }
 
     private function findNeedleInHaystack(string $needle, string $haystack): bool

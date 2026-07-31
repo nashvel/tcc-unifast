@@ -31,7 +31,6 @@ import { authSession } from "@/auth/session";
 import { logout } from "@/api/auth";
 import { apiFetch, type PaginatedResponse } from "@/api";
 import { queryKeys } from "@/api/queryKeys";
-import { studentVerification } from "@/auth/studentVerification";
 import { ensureEcho, useNotificationChannel } from "@/composables/useEcho";
 import { withLang } from "@/i18n/routeLang";
 
@@ -110,8 +109,27 @@ const dark = ref(
 );
 
 const sections = computed(() => {
-  if (isStudent.value)
-    return studentVerification.verified ? studentNavigation : lockedStudentNavigation;
+  if (isStudent.value) {
+    // Full nav only after KYC + identity onboarding (server account_status).
+    if (authSession.user?.account_status === "active") return studentNavigation;
+    const onboardingPath =
+      authSession.user?.onboarding_path ||
+      (authSession.user?.account_status === "pending_identity"
+        ? "/student/onboarding"
+        : "/student/kyc");
+    return [
+      {
+        items: [
+          {
+            labelKey: "nav.completeOnboarding",
+            path: onboardingPath,
+            icon: lockedStudentNavigation[0].items[0].icon,
+          },
+          lockedStudentNavigation[0].items[1],
+        ],
+      },
+    ];
+  }
   if (role.value === "developer") return developerNavigation;
   if (role.value === "admin") return adminNavigation;
   return staffNavigation;

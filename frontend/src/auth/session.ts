@@ -9,6 +9,8 @@ export type AuthUser = {
   student_id: string | null;
   account_status?: "active" | "unverified" | "pending_kyc" | "pending_identity" | "blocked";
   kyc_status?: string | null;
+  onboarding_next_step?: "blocked" | "kyc" | "id_scan" | "liveness" | "done";
+  onboarding_path?: string;
 };
 
 const TOKEN_KEY = "unifast_auth_token";

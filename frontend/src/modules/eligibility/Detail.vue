@@ -153,11 +153,38 @@ async function sendNotice() {
           <article class="rounded-lg border bg-surface p-4">
             <p class="text-xs text-text-muted">Current submission status</p>
             <p class="mt-1 text-xl font-semibold">{{ detail.status }}</p>
-            <p class="mt-2 text-xs leading-5 text-text-muted">
-              Checks passed: {{ detail.passed }}. Max failed subjects from Settings:
-              {{ detail.max_failed_subjects_per_semester }}. Citizenship, income, and other
-              scholarships are not re-evaluated here.
+            <p
+              v-if="detail.status === 'Not eligible'"
+              class="mt-2 rounded-md bg-danger-soft px-2 py-1 text-xs text-danger"
+            >
+              {{
+                (detail.eligibility?.note as string) ||
+                detail.missing ||
+                "Not eligible under retention rules."
+              }}
             </p>
+            <p class="mt-2 text-xs leading-5 text-text-muted">
+              Checks passed: {{ detail.passed }}. Max failed+dropped from Settings:
+              {{ detail.max_failed_subjects_per_semester }}. Retention uses Course History when
+              available (all terms/programs); Grade Slip is supplemental. Citizenship, income,
+              and other scholarships are not re-evaluated here.
+            </p>
+            <div
+              v-if="Array.isArray(detail.eligibility?.terms) && (detail.eligibility.terms as unknown[]).length"
+              class="mt-3 space-y-1 rounded-md border bg-surface-muted/40 p-2 text-xs text-text-muted"
+            >
+              <p class="font-medium text-text">Course History programs</p>
+              <p
+                v-for="(term, idx) in (detail.eligibility.terms as Array<Record<string, unknown>>)"
+                :key="idx"
+              >
+                {{ term.academic_term || "Term" }}
+                · {{ term.program_raw || term.program_code || "Program" }}
+                <span v-if="term.year_level"> · {{ term.year_level }}</span>
+                — {{ Number(term.failed_count ?? 0) }} failed /
+                {{ Number(term.dropped_count ?? 0) }} dropped
+              </p>
+            </div>
             <p
               v-if="detail.risk_badge"
               class="mt-3 text-xs text-text-muted"

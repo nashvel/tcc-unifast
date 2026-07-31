@@ -17,8 +17,11 @@ def process_image_upload(content: bytes, mime_type: str, settings: Settings) -> 
     validate_image_upload(content, mime_type)
     cv_image, pil_image = decode_image(content)
     metadata = extract_metadata(pil_image)
-    qr_code = detect_qr_code(cv_image)
-    result = ocr_image_array(cv_image, settings)
+    result, warped = ocr_image_array(cv_image, settings)
+    # Prefer warped card for School ID back QR (large code after perspective fix).
+    qr_code = detect_qr_code(warped)
+    if not qr_code.found:
+        qr_code = detect_qr_code(cv_image)
     return ImageOcrResponse(result=result, metadata=metadata, qr_code=qr_code)
 
 

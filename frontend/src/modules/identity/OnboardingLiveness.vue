@@ -5,6 +5,7 @@ import { IconAlertTriangle, IconCamera, IconRefresh, IconUserCheck } from "@tabl
 import PageHeader from "@/components/ui/PageHeader.vue";
 import { authSession, getAuthToken } from "@/auth/session";
 import { toast } from "@/composables/useToast";
+import { getUserMediaSafe } from "@/modules/requirements/cameraAccess";
 import {
   captureVideoFrame,
   descriptorFromUrl,
@@ -34,7 +35,13 @@ const challengeLabels: Record<Challenge, string> = {
 
 onMounted(async () => {
   challengeSequence.value = shuffleChallenges();
-  await loadStatus();
+  try {
+    await loadStatus();
+  } catch (exception) {
+    error.value = exception instanceof Error ? exception.message : "Unable to load onboarding status.";
+    toast.error(error.value);
+    return;
+  }
   await nextTick();
   await startCamera();
 });
@@ -42,7 +49,13 @@ onMounted(async () => {
 onBeforeUnmount(stopCamera);
 
 async function loadStatus() {
-  const response = await fetch("/api/student/identity-onboarding", { headers: { Accept: "application/json" } });
+  const token = getAuthToken();
+  if (!token) {
+    throw new Error("Unauthenticated. Activate or sign in again to continue liveness.");
+  }
+  const response = await fetch("/api/student/identity-onboarding", {
+    headers: { Accept: "application/json", Authorization: `Bearer ${token}` },
+  });
   const payload = await response.json();
   if (!response.ok) throw new Error(payload.message || "Unable to load onboarding status.");
   if (payload.data.next_step === "id_scan") {
@@ -60,7 +73,7 @@ async function startCamera() {
   stopCamera();
   cameraReady.value = false;
   try {
-    stream = await navigator.mediaDevices.getUserMedia({
+    stream = await getUserMediaSafe({
       video: { facingMode: "user", width: { ideal: 960 }, height: { ideal: 720 } },
       audio: false,
     });
@@ -121,12 +134,17 @@ async function finishLiveness() {
   const body = new FormData();
   body.append("selfie", new File([selfie], "onboarding_selfie.jpg", { type: "image/jpeg" }));
   challengeSequence.value.forEach((step, index) => body.append(`challenge_sequence[${index}]`, step));
-  body.append("distance", String(distance));
+  live.descriptor.forEach((value, index) => body.append(`face_descriptor[${index}]`, String(value)));
+  body.append("distance", String(distance)); // informational only; server recomputes
   body.append("liveness_confirmed", "1");
 
+  const token = getAuthToken();
+  if (!token) {
+    throw new Error("Unauthenticated. Activate or sign in again to continue liveness.");
+  }
   const response = await fetch("/api/student/identity-onboarding/liveness", {
     method: "POST",
-    headers: { Authorization: `Bearer ${getAuthToken()}`, Accept: "application/json" },
+    headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
     body,
   });
   const payload = await response.json();

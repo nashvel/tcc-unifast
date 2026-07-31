@@ -21,16 +21,22 @@ class StaffSubmissionNotifier
         $program = (string) ($eligibility['program_code'] ?? $grantee->program ?? '—');
         $name = (string) ($grantee->full_name ?: $grantee->student_id);
 
-        $title = 'New submission ready for review';
+        $title = $status === 'fail'
+            ? 'Not eligible: retention limit exceeded'
+            : 'New submission ready for review';
         $body = sprintf(
-            '%s (%s) · %s · eligibility: %s · failed subjects: %s · risk: %s',
+            '%s (%s) · %s · eligibility: %s · failed/dropped: %s (max %s) · risk: %s',
             $name,
             $grantee->student_id,
             $program,
             $status,
             $failed,
+            (string) ($eligibility['max_failed'] ?? 'n/a'),
             $riskBadge,
         );
+        if ($status === 'fail' && ! empty($eligibility['note'])) {
+            $body .= ' · '.(string) $eligibility['note'];
+        }
 
         $count = 0;
         $recipients = User::query()

@@ -126,6 +126,67 @@ export type DocSubmission = {
   risk_level: string;
   identity_review_required: boolean;
   created_at: string;
+  grantee_id?: number | null;
+  batch_id?: number | null;
+};
+
+export type DocPackageDocument = {
+  id: number;
+  slot_key: string | null;
+  document_type: string;
+  tab_label: string;
+  status: string;
+  risk_level: string;
+  identity_review_required: boolean;
+};
+
+export type DocSubmissionPackage = {
+  grantee_id: number;
+  batch_id: number;
+  batch_name: string | null;
+  student_name: string;
+  student_id: string;
+  status: string;
+  risk_level: string;
+  identity_review_required: boolean;
+  submitted_at: string | null;
+  slots_expected: number;
+  slots_submitted: number;
+  slots_reviewed: number;
+  progress: string;
+  documents: DocPackageDocument[];
+};
+
+export type OcrCourseRow = {
+  code?: string | null;
+  description?: string | null;
+  units?: string | null;
+  grade?: string | null;
+  instructor?: string | null;
+  remarks?: string | null;
+  fail_reason?: string | null;
+  counts_as_fail?: boolean;
+  academic_term?: string | null;
+  program_code?: string | null;
+  program_raw?: string | null;
+  year_level?: string | null;
+  pass_grade?: number | null;
+};
+
+export type OcrTermBlock = {
+  academic_term?: string | null;
+  program_raw?: string | null;
+  program_code?: string | null;
+  year_level?: string | null;
+  enrollment_status?: string | null;
+  pass_grade?: number | null;
+  program_matched?: boolean;
+  failed_count?: number;
+  blank_count?: number;
+  pending_count?: number;
+  dropped_count?: number;
+  retention_count?: number;
+  courses?: OcrCourseRow[];
 };
 
 export type DocSubmissionDetail = DocSubmission & {
@@ -133,6 +194,8 @@ export type DocSubmissionDetail = DocSubmission & {
   secondary_original_name: string | null;
   file_url: string;
   secondary_file_url: string | null;
+  file_preview_url?: string | null;
+  secondary_file_preview_url?: string | null;
   mime_type: string;
   secondary_mime_type: string | null;
   face_quality_score: number | null;
@@ -147,6 +210,31 @@ export type DocSubmissionDetail = DocSubmission & {
   } | null;
   extracted_text: string | null;
   ocr_confidence: number | null;
+  ocr_payload?: {
+    engine?: string;
+    method?: string;
+    result?: {
+      combined_text?: string;
+      formatted_table_text?: string | null;
+      courses?: OcrCourseRow[];
+      terms?: OcrTermBlock[];
+      grade_summary?: {
+        blank_count?: number;
+        pending_count?: number;
+        failed_count?: number;
+        numeric_failed_count?: number;
+        dropped_count?: number;
+        retention_count?: number;
+        pass_grade?: number;
+        program_code?: string | null;
+        document_type?: string | null;
+        blanks_count_as_fails?: boolean;
+        blanks_count_as_dropped?: boolean;
+        pending_term_window?: number;
+        term_count?: number;
+      };
+    };
+  } | null;
   metadata_payload: Record<string, unknown> | null;
   review_notes: string | null;
 };
@@ -188,12 +276,25 @@ export type AuditLog = {
 export type KycResponse = {
   status: string;
   mismatches: Record<string, string>;
-  reference: {
-    full_name: string;
-    student_id: string;
-    program: string;
-    year_level: string | null;
+  hint: { student_id_last4: string };
+  programs: Array<{ id: number; code: string; name: string }>;
+  year_level_options: string[];
+  profile?: {
+    first_name?: string | null;
+    middle_name?: string | null;
+    last_name?: string | null;
+    full_name?: string | null;
+    student_id?: string | null;
+    program?: string | null;
+    year_level?: string | null;
+    birthdate?: string | null;
+    contact?: string | null;
+    address?: string | null;
+    guardian_name?: string | null;
+    household_income?: string | number | null;
+    status?: string | null;
   };
+  next_step?: string;
 };
 
 export type VaultDocument = {
@@ -207,6 +308,7 @@ export type VaultDocument = {
   face_quality_score: number | null;
   identity_review_required: boolean;
   identity_review_reason: string | null;
+  review_notes: string | null;
   face_descriptor: number[] | null;
 };
 

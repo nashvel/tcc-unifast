@@ -74,4 +74,14 @@ return [
         'timeout' => (int) env('GRADESLIP_QR_TIMEOUT', 60),
     ],
 
+    'auth' => [
+        // Local/dev only: skip captcha verification when true.
+        'dev_bypass_captcha' => filter_var(env('DEV_BYPASS_CAPTCHA', false), FILTER_VALIDATE_BOOLEAN),
+        // Login attempts per minute per IP (use a higher value locally).
+        'login_throttle_per_minute' => max(1, (int) env(
+            'LOGIN_THROTTLE_PER_MINUTE',
+            env('APP_ENV') === 'local' ? 60 : 5
+        )),
+    ],
+
 ];

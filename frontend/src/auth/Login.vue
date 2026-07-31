@@ -2,10 +2,11 @@
 import { onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
-import { ArrowRight, ChevronDown, ChevronUp, HelpCircle, Lock, Mail, ShieldCheck, UserRound } from "lucide-vue-next";
+import { ArrowRight, ChevronDown, ChevronUp, Eye, EyeOff, HelpCircle, Lock, Mail, ShieldCheck, UserRound } from "lucide-vue-next";
 import logo from "@/assets/system-logo.png";
 import studentsCutout from "@/assets/auth/tcc-students-cutout.png";
 import { authSession } from "@/auth/session";
+import { studentHomePath } from "@/auth/onboardingResume";
 import { login } from "@/api/auth";
 import { apiFetch } from "@/api/client";
 import CaptchaModal from "@/components/CaptchaModal.vue";
@@ -22,6 +23,7 @@ const router = useRouter();
 const { t } = useI18n();
 const email = ref("");
 const password = ref("");
+const showPassword = ref(false);
 const showCaptchaModal = ref(false);
 const captchaCode = ref("");
 const captchaError = ref(""); // error shown inside the captcha modal
@@ -84,7 +86,8 @@ async function submit() {
     showCaptchaModal.value = false;
     authSession.user = user;
     authSession.loaded = true;
-    await router.push(withLang(user.role === "student" ? "/student" : "/app", route.query.lang));
+    // Mid-onboarding students resume at KYC / ID scan / liveness (no reactivation).
+    await router.push(withLang(studentHomePath(user), route.query.lang));
   } catch (exception) {
     const msg = exception instanceof Error ? exception.message : t("auth.signInFailed");
     // If the captcha modal is open, captcha-related errors stay inside the modal
@@ -235,10 +238,21 @@ onMounted(async () => {
               <Lock :size="17" class="absolute left-3 top-1/2 -translate-y-1/2 text-text-soft" />
               <input
                 v-model="password"
-                type="password"
+                :type="showPassword ? 'text' : 'password'"
                 :placeholder="t('common.password')"
-                class="h-10 w-full rounded-md border bg-[#f1f5fb] pl-10 pr-3 text-sm text-text shadow-inner shadow-slate-200/40"
+                autocomplete="current-password"
+                class="h-10 w-full rounded-md border bg-[#f1f5fb] pl-10 pr-10 text-sm text-text shadow-inner shadow-slate-200/40"
               />
+              <button
+                type="button"
+                class="absolute right-2 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded text-text-soft hover:text-text"
+                :aria-label="showPassword ? t('common.hidePassword') : t('common.showPassword')"
+                :aria-pressed="showPassword"
+                @click="showPassword = !showPassword"
+              >
+                <EyeOff v-if="showPassword" :size="16" />
+                <Eye v-else :size="16" />
+              </button>
             </div>
           </label>
           <p v-if="error" class="text-xs text-danger">{{ error }}</p>

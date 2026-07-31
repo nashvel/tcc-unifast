@@ -9,17 +9,12 @@ import {
   IconChevronRight,
   IconClock,
   IconFileCheck,
-  IconId,
-  IconLock,
-  IconPassword,
   IconSchool,
-  IconShieldCheck,
   IconUpload,
   IconWorld,
 } from "@tabler/icons-vue";
 import AppTour from "@/components/tour/AppTour.vue";
 import DiceBearAvatar from "@/components/ui/DiceBearAvatar.vue";
-import { studentVerification } from "@/auth/studentVerification";
 import { useSubmissionWindow } from "@/composables/useSubmissionWindow";
 import { useNotificationChannel } from "@/composables/useEcho";
 import { toast } from "@/composables/useToast";
@@ -130,62 +125,6 @@ const activityTabs = [
 
 <template>
   <div class="student-dashboard mx-auto max-w-[1280px] space-y-4">
-    <section
-      v-if="false && !studentVerification.verified"
-      class="rounded-2xl border bg-surface p-6 shadow-sm"
-    >
-      <div class="grid gap-5 lg:grid-cols-[1fr_340px]">
-        <div>
-          <span
-            class="inline-flex items-center gap-2 rounded-full bg-warning-soft px-3 py-1 text-xs font-semibold text-warning"
-          >
-            <IconLock :size="14" /> {{ t("dashboard.student.locked.limitedAccess") }}
-          </span>
-          <h1 class="mt-4 text-3xl font-semibold tracking-tight">
-            {{ t("dashboard.student.locked.title") }}
-          </h1>
-          <p class="mt-2 max-w-2xl text-sm text-text-muted">
-            {{ t("dashboard.student.locked.description") }}
-          </p>
-          <div class="mt-5 flex flex-wrap gap-2">
-            <RouterLink
-              :to="withLang('/student/verify', route.query.lang)"
-              class="inline-flex h-10 items-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-white"
-            >
-              <IconShieldCheck :size="16" /> {{ t("nav.verifyIdentity") }}
-            </RouterLink>
-            <RouterLink
-              :to="withLang('/student/settings', route.query.lang)"
-              class="inline-flex h-10 items-center gap-2 rounded-md border px-4 text-sm"
-            >
-              <IconPassword :size="16" /> {{ t("dashboard.student.changePassword") }}
-            </RouterLink>
-          </div>
-        </div>
-        <aside class="rounded-xl border bg-surface-muted p-4">
-          <h2 class="text-sm font-semibold">{{ t("dashboard.student.locked.checklist") }}</h2>
-          <ol class="mt-3 space-y-3 text-xs text-text-muted">
-            <li class="flex gap-2">
-              <IconId :size="15" class="text-primary" /> {{ t("dashboard.student.locked.uploadId") }}
-            </li>
-            <li class="flex gap-2">
-              <IconShieldCheck :size="15" class="text-primary" />
-              {{ t("dashboard.student.locked.faceMatch") }}
-            </li>
-            <li class="flex gap-2">
-              <IconUpload :size="15" class="text-primary" />
-              {{ t("dashboard.student.locked.courseHistory") }}
-            </li>
-            <li class="flex gap-2">
-              <IconFileCheck :size="15" class="text-primary" />
-              {{ t("dashboard.student.locked.cor") }}
-            </li>
-          </ol>
-        </aside>
-      </div>
-    </section>
-
-    <template v-else>
       <section class="rounded-xl border border-info/30 bg-info-soft p-3">
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -397,6 +336,5 @@ const activityTabs = [
           /></RouterLink>
         </aside>
       </section>
-    </template>
   </div>
 </template>

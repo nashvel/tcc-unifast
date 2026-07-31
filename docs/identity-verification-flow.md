@@ -314,16 +314,18 @@ Last updated: 2026-07-26
 ```
 OCR_SERVICE_URL=http://127.0.0.1:8001
 OCR_SERVICE_TIMEOUT=120
-OCR_SPACE_API_KEY=           # preferred for ID card OCR when set
+OCR_SPACE_API_KEY=           # leave empty in local/dev (free) so PHP always uses ocr-service :8001
 OCR_SPACE_TIMEOUT=60
 TCC_REGISTRAR_DOMAINS=registrar.tcc.edu.ph,sis.tcc.edu.ph,tcc.edu.ph
 VITE_TCC_REGISTRAR_DOMAINS=registrar.tcc.edu.ph,sis.tcc.edu.ph,tcc.edu.ph
 AUTHENTICITY_SERVICE_URL=    # optional Pillow/moire microservice
 IDENTITY_FACE_MATCH_THRESHOLD=0.5
-GRADESLIP_QR_PYTHON=         # optional; defaults to python/.venv then system python
+GRADESLIP_QR_PYTHON=         # optional; defaults to python/.venv then system python (same ZBar caveats as ocr-service)
 GRADESLIP_QR_TIMEOUT=60
 TCC_UNIFAST_N8N_WEBHOOK_URL= # optional post-confirm pipeline webhook
 TCC_UNIFAST_N8N_WEBHOOK_HEADER=X-TCC-UniFAST-Key
 TCC_UNIFAST_N8N_WEBHOOK_SECRET=
 ```
+
+**Dev ports:** Laravel `:8000`, Vite `:5173`, OCR uvicorn `:8001` only (never bind PHP on 8001). School ID back QR is best-effort via pyzbar/OpenCV and is not required to pass onboarding.
 

@@ -9,6 +9,7 @@ import {
 import { VueQueryPlugin } from "@tanstack/vue-query";
 import App from "./App.vue";
 import { authSession, loadAuthUser } from "@/auth/session";
+import { isStudentOnboardingRoute, studentHomePath } from "@/auth/onboardingResume";
 import { queryClient } from "@/lib/queryClient";
 import { i18n } from "@/i18n";
 import { installLanguageRouting, withLang } from "@/i18n/routeLang";
@@ -60,6 +61,11 @@ const appChildren: RouteRecordRaw[] = [
   { path: "academic", component: () => import("@/modules/academic/Index.vue") },
   { path: "academic/:id", component: () => import("@/modules/academic/Detail.vue") },
   { path: "documents", component: () => import("@/modules/documents/Index.vue") },
+  {
+    path: "documents/package/:granteeId/:batchId",
+    component: () => import("@/modules/documents/Detail.vue"),
+    meta: { breadcrumbLabel: "Package" },
+  },
   { path: "documents/:id", component: () => import("@/modules/documents/Detail.vue") },
   { path: "eligibility", component: () => import("@/modules/eligibility/Index.vue") },
   { path: "eligibility/:id", component: () => import("@/modules/eligibility/Detail.vue") },
@@ -72,7 +78,16 @@ const studentChildren: RouteRecordRaw[] = [
   { path: "onboarding", component: () => import("@/modules/identity/OnboardingIndex.vue") },
   { path: "onboarding/id-scan", component: () => import("@/modules/identity/OnboardingIdScan.vue") },
   { path: "onboarding/liveness", component: () => import("@/modules/identity/OnboardingLiveness.vue") },
-  { path: "verify", component: () => import("@/modules/verification/StudentVerification.vue") },
+  {
+    path: "verify",
+    redirect: (to) => {
+      // Legacy deep link: real identity is onboarding; vault liveness lives on documents.
+      if (authSession.user?.account_status === "pending_identity") {
+        return withLang("/student/onboarding", to.query.lang);
+      }
+      return withLang("/student/documents", to.query.lang);
+    },
+  },
   { path: "submissions", redirect: (to) => withLang("/student/documents", to.query.lang) },
   { path: "profile", component: () => import("@/modules/profile/Index.vue") },
   { path: "documents", component: () => import("@/modules/documents/StudentDocuments.vue") },
@@ -127,26 +142,36 @@ function createAppRouter(): Router {
     if (!protectedArea && to.path !== "/login") return true;
     const user = authSession.loaded ? authSession.user : await loadAuthUser();
     if (!user) return protectedArea ? withLang("/login", to.query.lang) : true;
-    if (to.path === "/login") return withLang(user.role === "student" ? "/student" : "/app", to.query.lang);
+    if (to.path === "/login") {
+      return withLang(studentHomePath(user), to.query.lang);
+    }
     if (user.role === "student" && to.path.startsWith("/app")) return withLang("/student", to.query.lang);
     if (user.role !== "student" && to.path.startsWith("/student")) return withLang("/app", to.query.lang);
+
+    const incompleteStatuses = ["unverified", "pending_kyc", "pending_identity"];
     if (
       user.role === "student" &&
       to.path.startsWith("/student") &&
-      ["unverified", "pending_kyc", "blocked"].includes(user.account_status ?? "") &&
-      !["/student/kyc", "/student/settings"].includes(to.path)
+      incompleteStatuses.includes(user.account_status ?? "") &&
+      !isStudentOnboardingRoute(to.path)
     ) {
+      return withLang(studentHomePath(user), to.query.lang);
+    }
+
+    // Keep students on the correct onboarding step (KYC vs ID scan vs liveness).
+    if (user.role === "student" && user.account_status === "pending_kyc" && to.path.startsWith("/student/onboarding")) {
       return withLang("/student/kyc", to.query.lang);
     }
     if (
       user.role === "student" &&
-      to.path.startsWith("/student") &&
       user.account_status === "pending_identity" &&
-      !to.path.startsWith("/student/onboarding") &&
-      !["/student/kyc", "/student/settings"].includes(to.path)
+      to.path === "/student/kyc" &&
+      user.onboarding_next_step &&
+      user.onboarding_next_step !== "kyc"
     ) {
-      return withLang("/student/onboarding", to.query.lang);
+      return withLang(studentHomePath(user), to.query.lang);
     }
+
     return true;
   });
 

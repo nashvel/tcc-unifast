@@ -2,9 +2,17 @@
 import { onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
-import { IconAlertTriangle, IconKey, IconMail, IconShieldCheck } from "@tabler/icons-vue";
+import {
+  IconAlertTriangle,
+  IconEye,
+  IconEyeOff,
+  IconKey,
+  IconMail,
+  IconShieldCheck,
+} from "@tabler/icons-vue";
 import AuthLayout from "./AuthLayout.vue";
 import { authSession } from "@/auth/session";
+import { setAuthToken } from "@/auth/session";
 import { withLang } from "@/i18n/routeLang";
 
 type ActivationPreview = {
@@ -23,6 +31,9 @@ const preview = ref<ActivationPreview | null>(null);
 const temporaryPassword = ref("");
 const password = ref("");
 const passwordConfirmation = ref("");
+const showTemporaryPassword = ref(false);
+const showPassword = ref(false);
+const showPasswordConfirmation = ref(false);
 const loading = ref(Boolean(token));
 const busy = ref(false);
 const error = ref("");
@@ -74,6 +85,11 @@ async function activate() {
         : payload.message;
       throw new Error(String(fieldError || t("auth.activationFailed")));
     }
+    if (!payload.token || typeof payload.token !== "string") {
+      throw new Error(t("auth.activationFailed") + " (missing auth token)");
+    }
+    // Sanctum Bearer must be set before any KYC / onboarding API call (LAN has no session cookies).
+    setAuthToken(payload.token);
     authSession.user = payload.user;
     authSession.loaded = true;
     await router.push(withLang("/student/kyc", route.query.lang));
@@ -119,22 +135,66 @@ async function activate() {
           <IconKey :size="15" class="absolute left-3 top-1/2 -translate-y-1/2 text-text-soft" />
           <input
             v-model="temporaryPassword"
+            :type="showTemporaryPassword ? 'text' : 'password'"
             placeholder="TCC-8F4K-29QZ"
-            class="h-10 w-full rounded-md border pl-9 pr-3 text-sm"
+            autocomplete="current-password"
+            class="h-10 w-full rounded-md border pl-9 pr-10 text-sm"
           />
+          <button
+            type="button"
+            class="absolute right-2 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded text-text-soft hover:text-text"
+            :aria-label="showTemporaryPassword ? t('common.hidePassword') : t('common.showPassword')"
+            :aria-pressed="showTemporaryPassword"
+            @click="showTemporaryPassword = !showTemporaryPassword"
+          >
+            <IconEyeOff v-if="showTemporaryPassword" :size="16" />
+            <IconEye v-else :size="16" />
+          </button>
         </span>
       </label>
       <label class="block">
         <span class="mb-1.5 block text-xs font-medium">{{ t("auth.newPassword") }} *</span>
-        <input v-model="password" type="password" class="h-10 w-full rounded-md border px-3" />
+        <span class="relative block">
+          <input
+            v-model="password"
+            :type="showPassword ? 'text' : 'password'"
+            autocomplete="new-password"
+            class="h-10 w-full rounded-md border px-3 pr-10"
+          />
+          <button
+            type="button"
+            class="absolute right-2 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded text-text-soft hover:text-text"
+            :aria-label="showPassword ? t('common.hidePassword') : t('common.showPassword')"
+            :aria-pressed="showPassword"
+            @click="showPassword = !showPassword"
+          >
+            <IconEyeOff v-if="showPassword" :size="16" />
+            <IconEye v-else :size="16" />
+          </button>
+        </span>
       </label>
       <label class="block">
         <span class="mb-1.5 block text-xs font-medium">{{ t("auth.confirmPassword") }} *</span>
-        <input
-          v-model="passwordConfirmation"
-          type="password"
-          class="h-10 w-full rounded-md border px-3"
-        />
+        <span class="relative block">
+          <input
+            v-model="passwordConfirmation"
+            :type="showPasswordConfirmation ? 'text' : 'password'"
+            autocomplete="new-password"
+            class="h-10 w-full rounded-md border px-3 pr-10"
+          />
+          <button
+            type="button"
+            class="absolute right-2 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded text-text-soft hover:text-text"
+            :aria-label="
+              showPasswordConfirmation ? t('common.hidePassword') : t('common.showPassword')
+            "
+            :aria-pressed="showPasswordConfirmation"
+            @click="showPasswordConfirmation = !showPasswordConfirmation"
+          >
+            <IconEyeOff v-if="showPasswordConfirmation" :size="16" />
+            <IconEye v-else :size="16" />
+          </button>
+        </span>
       </label>
       <p class="rounded-md border bg-surface-muted p-2.5 text-xs text-text-muted">
         {{ t("auth.activationKycNotice") }}

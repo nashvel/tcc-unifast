@@ -7,8 +7,15 @@ import argparse
 import json
 import sys
 from pathlib import Path
+from typing import Any
 
 import fitz
+
+
+def emit_json(payload: dict[str, Any]) -> None:
+    text = json.dumps(payload, ensure_ascii=False)
+    sys.stdout.buffer.write(text.encode("utf-8", errors="replace"))
+    sys.stdout.buffer.write(b"\n")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -17,13 +24,13 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     if not args.pdf.is_file():
-        print(json.dumps({"success": False, "error": f"File not found: {args.pdf}"}))
+        emit_json({"success": False, "error": f"File not found: {args.pdf}"})
         return 1
 
     try:
         doc = fitz.open(args.pdf)
     except Exception as exc:  # noqa: BLE001
-        print(json.dumps({"success": False, "error": str(exc)}))
+        emit_json({"success": False, "error": str(exc)})
         return 2
 
     try:
@@ -49,7 +56,7 @@ def main(argv: list[str] | None = None) -> int:
     finally:
         doc.close()
 
-    print(json.dumps(payload, ensure_ascii=False))
+    emit_json(payload)
     return 0
 
 

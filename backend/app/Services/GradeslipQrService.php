@@ -121,7 +121,7 @@ class GradeslipQrService
             return null;
         }
 
-        $decoded = json_decode($stdout, true);
+        $decoded = json_decode($stdout, true, 512, JSON_INVALID_UTF8_SUBSTITUTE);
 
         return is_array($decoded) ? $decoded : null;
     }

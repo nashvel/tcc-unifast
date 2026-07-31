@@ -140,10 +140,16 @@ $admin = User::factory()->create(['role' => 'admin', 'account_status' => 'active
             'password' => 'new-password',
             'password_confirmation' => 'new-password',
         ])->assertOk()
-            ->assertJsonPath('user.account_status', 'pending_kyc');
+            ->assertJsonPath('user.account_status', 'pending_kyc')
+            ->assertJsonStructure(['token', 'user' => ['id', 'email', 'account_status']]);
+
+        $this->assertDatabaseHas('personal_access_tokens', [
+            'tokenable_id' => $student->id,
+            'tokenable_type' => User::class,
+        ]);
     }
 
-    public function test_kyc_match_activates_and_mismatch_blocks_with_specific_errors(): void
+    public function test_kyc_cross_checks_typed_identity_against_masterlist(): void
     {
         $student = User::factory()->create([
             'role' => 'student',
@@ -183,34 +189,43 @@ $admin = User::factory()->create(['role' => 'admin', 'account_status' => 'active
             'status' => 'valid',
         ]);
 
-        $this->actingAs($student)->postJson('/api/student/kyc', [
-            'full_name' => 'Maria Santos',
-            'student_id' => 'STU-1',
-            'program' => 'Wrong Program',
-            'year_level' => '1',
-        ])->assertUnprocessable()
-            ->assertJsonPath('data.mismatches.program', 'Submitted program does not match the CHED masterlist record.');
+        $show = $this->actingAs($student)->getJson('/api/student/kyc');
+        $show->assertOk()
+            ->assertJsonPath('data.hint.student_id_last4', 'STU1')
+            ->assertJsonMissingPath('data.locked.full_name')
+            ->assertJsonMissingPath('data.reference.full_name');
 
-        $this->assertDatabaseHas('users', ['id' => $student->id, 'account_status' => 'blocked']);
-
+        // Spoofed identity must be rejected — user must type matching values.
         $this->actingAs($student)->postJson('/api/student/kyc', [
-            'full_name' => 'Maria Santos',
-            'student_id' => 'STU-1',
+            'first_name' => 'Attacker',
+            'last_name' => 'Name',
+            'student_id' => 'OTHER-99',
             'program' => 'BSIT',
-            'year_level' => '2',
+            'year_level' => '4',
+            'contact' => '+639171234567',
         ])->assertUnprocessable()
-            ->assertJsonPath('data.mismatches.year_level', 'Submitted year level does not match the CHED masterlist record.');
+            ->assertJsonValidationErrors(['full_name', 'student_id', 'year_level']);
 
         $this->actingAs($student)->postJson('/api/student/kyc', [
-            'full_name' => 'Maria Santos',
+            'first_name' => 'Maria',
+            'last_name' => 'Santos',
             'student_id' => 'STU-1',
             'program' => 'BSIT',
             'year_level' => '1',
             'contact' => '+639171234567',
         ])->assertOk()
-            ->assertJsonPath('data.account_status', 'pending_identity');
+            ->assertJsonPath('data.account_status', 'pending_identity')
+            ->assertJsonPath('data.next_step', 'id_scan');
 
         $this->assertDatabaseHas('users', ['id' => $student->id, 'account_status' => 'pending_identity']);
+        $this->assertDatabaseHas('kyc_profiles', [
+            'user_id' => $student->id,
+            'full_name' => 'Maria Santos',
+            'student_id' => 'STU-1',
+            'program' => 'BSIT',
+            'year_level' => '1',
+            'status' => 'verified',
+        ]);
 
         $this->actingAs($student->fresh())
             ->getJson('/api/student/requirement-vault')
@@ -237,5 +252,102 @@ $admin = User::factory()->create(['role' => 'admin', 'account_status' => 'active
             ->assertUnprocessable();
 
         $this->assertNotNull($grantee->fresh());
+    }
+
+    public function test_kyc_accepts_case_insensitive_name_and_student_id(): void
+    {
+        $student = User::factory()->create([
+            'role' => 'student',
+            'student_id' => 'STU-88',
+            'account_status' => 'pending_kyc',
+        ]);
+        $batch = $this->batchWithDeadline();
+        Grantee::create([
+            'user_id' => $student->id,
+            'batch_id' => $batch->id,
+            'student_id' => 'STU-88',
+            'student_number' => '2026-0088',
+            'full_name' => 'BRANDON NAGANGGA',
+            'email' => $student->email,
+            'program' => 'BSIT',
+            'year_level' => '2',
+            'status' => 'unverified',
+        ]);
+        $import = MasterlistImport::create([
+            'batch_id' => $batch->id,
+            'uploaded_by' => $student->id,
+            'original_name' => 'ched.csv',
+            'stored_path' => 'masterlist-imports/ched.csv',
+            'status' => 'imported',
+            'total_rows' => 1,
+            'valid_rows' => 1,
+            'imported_rows' => 1,
+        ]);
+        MasterlistRow::create([
+            'masterlist_import_id' => $import->id,
+            'row_number' => 2,
+            'student_id' => 'STU-88',
+            'full_name' => 'BRANDON NAGANGGA',
+            'email' => $student->email,
+            'program' => 'BSIT',
+            'year_level' => '2',
+            'status' => 'valid',
+        ]);
+
+        $this->actingAs($student)->postJson('/api/student/kyc', [
+            'first_name' => '  Brandon  ',
+            'last_name' => 'Nagangga',
+            'student_id' => 'stu-88',
+            'program' => 'BSIT',
+            'year_level' => '2',
+        ])->assertOk()
+            ->assertJsonPath('data.account_status', 'pending_identity');
+
+        $this->assertDatabaseHas('kyc_profiles', [
+            'user_id' => $student->id,
+            'full_name' => 'BRANDON NAGANGGA',
+            'student_id' => 'STU-88',
+            'status' => 'verified',
+        ]);
+    }
+
+    public function test_login_resumes_mid_onboarding_without_reactivation(): void
+    {
+        $student = User::factory()->create([
+            'role' => 'student',
+            'student_id' => 'STU-9',
+            'email' => 'resume@example.test',
+            'password' => Hash::make('password-after-activate'),
+            'account_status' => 'pending_identity',
+        ]);
+        $batch = $this->batchWithDeadline();
+        $grantee = Grantee::create([
+            'user_id' => $student->id,
+            'batch_id' => $batch->id,
+            'student_id' => 'STU-9',
+            'full_name' => 'Resume Student',
+            'email' => $student->email,
+            'program' => 'BSIT',
+            'year_level' => '2',
+            'status' => 'kyc_verified',
+        ]);
+        \App\Models\GranteeIdentityProfile::create([
+            'user_id' => $student->id,
+            'grantee_id' => $grantee->id,
+            'status' => 'pending_liveness',
+        ]);
+
+        $this->getJson('/api/auth/captcha'); // warm session for captcha bypass in tests if configured
+
+        config(['services.auth.dev_bypass_captcha' => true]);
+
+        $this->postJson('/api/auth/login', [
+            'email' => 'resume@example.test',
+            'password' => 'password-after-activate',
+            'captcha' => 'BYPASS',
+        ])->assertOk()
+            ->assertJsonPath('user.account_status', 'pending_identity')
+            ->assertJsonPath('user.onboarding_next_step', 'liveness')
+            ->assertJsonPath('user.onboarding_path', '/student/onboarding/liveness');
     }
 }

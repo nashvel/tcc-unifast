@@ -4,9 +4,11 @@ import { useRoute } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { ChevronRight, Home } from "lucide-vue-next";
 import { withLang } from "@/i18n/routeLang";
+import { useBreadcrumbTail } from "@/composables/useBreadcrumbTail";
 
 const route = useRoute();
 const { t } = useI18n();
+const { breadcrumbTailLabel } = useBreadcrumbTail();
 
 const labelKeys: Record<string, string> = {
   app: "common.dashboard",
@@ -15,6 +17,7 @@ const labelKeys: Record<string, string> = {
   onboarding: "nav.onboardingCenter",
   eligibility: "nav.eligibility",
   documents: "nav.documents",
+  package: "nav.package",
   batches: "nav.batches",
   announcements: "nav.announcements",
   academic: "nav.academicRecords",
@@ -37,19 +40,64 @@ const labelKeys: Record<string, string> = {
   edit: "nav.edit",
 };
 
+function isIdentifier(segment: string) {
+  return /^\d+$/.test(segment) || /^[0-9a-f-]{8,}$/i.test(segment);
+}
+
+function titleCase(segment: string) {
+  return segment
+    .replaceAll("-", " ")
+    .replace(/\b\w/g, (character) => character.toUpperCase());
+}
+
+/**
+ * Build crumbs from path segments, collapsing numeric/UUID params into the
+ * preceding resource so package/:granteeId/:batchId does not become
+ * "Details > Details".
+ */
 const crumbs = computed(() => {
   const segments = route.path.split("/").filter(Boolean);
-  return segments.map((segment, index) => {
-    const isIdentifier = /^\d+$/.test(segment) || /^[0-9a-f-]{8,}$/i.test(segment);
-    const fallback = segment
-      .replaceAll("-", " ")
-      .replace(/\b\w/g, (character) => character.toUpperCase());
+  const items: { label: string; href: string }[] = [];
+  const tail = breadcrumbTailLabel.value || route.meta.breadcrumbLabel || null;
+  let index = 0;
 
-    return {
-      label: isIdentifier ? t("common.details") : t(labelKeys[segment] ?? "", fallback),
-      href: `/${segments.slice(0, index + 1).join("/")}`,
-    };
-  });
+  if (segments[0] === "app") {
+    items.push({
+      label: t(labelKeys.app),
+      href: "/app",
+    });
+    index = 1;
+  }
+
+  while (index < segments.length) {
+    const segment = segments[index];
+
+    if (isIdentifier(segment)) {
+      let end = index;
+      while (end < segments.length && isIdentifier(segments[end])) end += 1;
+      items.push({
+        label: (typeof tail === "string" && tail) || t("common.details"),
+        href: `/${segments.slice(0, end).join("/")}`,
+      });
+      index = end;
+      continue;
+    }
+
+    let end = index + 1;
+    while (end < segments.length && isIdentifier(segments[end])) end += 1;
+    const isLast = end >= segments.length;
+    const fallback = titleCase(segment);
+    const key = labelKeys[segment];
+    items.push({
+      label:
+        (isLast && typeof tail === "string" && tail) ||
+        (key ? t(key) : fallback),
+      href: `/${segments.slice(0, end).join("/")}`,
+    });
+    index = end;
+  }
+
+  return items;
 });
 </script>
 

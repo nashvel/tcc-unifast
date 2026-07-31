@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\AuditLog;
+use App\Services\StudentOnboardingNavigator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -11,15 +12,17 @@ class AuthController extends Controller
 {
     private const CAPTCHA_SESSION_KEY = 'auth_captcha';
 
-    public function login(Request $request): JsonResponse
+    public function login(Request $request, StudentOnboardingNavigator $navigator): JsonResponse
     {
+        $bypassCaptcha = (bool) config('services.auth.dev_bypass_captcha', false);
+
         $credentials = $request->validate([
             'email'    => ['required', 'email'],
             'password' => ['required', 'string'],
-            'captcha'  => ['required', 'string'],
+            'captcha'  => $bypassCaptcha ? ['nullable', 'string'] : ['required', 'string'],
         ]);
 
-        if (! $this->captchaIsValid($request, $credentials['captcha'])) {
+        if (! $this->captchaIsValid($request, (string) ($credentials['captcha'] ?? ''))) {
             $request->session()->forget(self::CAPTCHA_SESSION_KEY);
 
             return response()->json([
@@ -37,13 +40,12 @@ class AuthController extends Controller
 
         $user = $request->user();
 
-        // Reject accounts that are not active
-        if ($user->account_status !== 'active') {
+        // Allow the post-activation funnel (KYC → identity onboarding) to sign in.
+        // Only block unverified / blocked accounts from the normal login form.
+        if (in_array($user->account_status, ['unverified', 'blocked'], true)) {
             $statusMessages = [
-                'unverified'       => 'Your account has not been verified yet. Please check your email for the activation link.',
-                'pending_kyc'      => 'Your account is pending KYC verification. Please complete the verification process.',
-                'pending_identity' => 'Your account is pending identity verification.',
-                'blocked'          => 'Your account has been blocked. Please contact the administrator.',
+                'unverified' => 'Your account has not been verified yet. Please check your email for the activation link.',
+                'blocked' => 'Your account has been blocked. Please contact the administrator.',
             ];
             $message = $statusMessages[$user->account_status]
                 ?? 'Your account is not active. Please contact the administrator.';
@@ -66,15 +68,15 @@ class AuthController extends Controller
         ]);
 
         return response()->json([
-            'user'  => $this->presentUser($user),
+            'user'  => $this->presentUser($user, $navigator),
             'token' => $token,
         ]);
     }
 
-    public function me(Request $request): JsonResponse
+    public function me(Request $request, StudentOnboardingNavigator $navigator): JsonResponse
     {
         return $request->user()
-            ? response()->json(['user' => $this->presentUser($request->user())])
+            ? response()->json(['user' => $this->presentUser($request->user(), $navigator)])
             : response()->json(['message' => 'Unauthenticated.'], 401);
     }
 
@@ -97,19 +99,27 @@ class AuthController extends Controller
         return response()->json(['message' => 'Signed out.']);
     }
 
-    private function presentUser(\App\Models\User $user): array
+    private function presentUser(\App\Models\User $user, StudentOnboardingNavigator $navigator): array
     {
-        $user->loadMissing('kycProfile');
+        $user->loadMissing(['kycProfile', 'grantee.identityProfile']);
 
-        return [
+        $payload = [
             ...$user->only('id', 'name', 'email', 'role', 'student_id', 'account_status'),
             'kyc_status' => $user->kycProfile?->status,
         ];
+
+        if ($user->role === 'student') {
+            $next = $navigator->nextStep($user, $user->grantee);
+            $payload['onboarding_next_step'] = $next;
+            $payload['onboarding_path'] = $navigator->frontendPath($next);
+        }
+
+        return $payload;
     }
 
     private function captchaIsValid(Request $request, string $input): bool
     {
-        if (env('DEV_BYPASS_CAPTCHA', false) === true) {
+        if ((bool) config('services.auth.dev_bypass_captcha', false)) {
             return true;
         }
 

@@ -40,20 +40,30 @@ class PdfDocumentService
         }
 
         $pymupdf = $this->extractWithPyMuPdf($absolutePath);
-        $text = trim((string) ($pymupdf['combined_text'] ?? $pymupdf['extracted_text'] ?? ''));
-        $hasUsefulText = (bool) ($pymupdf['has_useful_text'] ?? (strlen(preg_replace('/\W+/', '', $text) ?? '') >= 10));
+        $rawText = trim((string) ($pymupdf['combined_text'] ?? $pymupdf['extracted_text'] ?? ''));
+        $formatted = trim((string) ($pymupdf['formatted_table_text'] ?? ''));
+        $courses = is_array($pymupdf['courses'] ?? null) ? $pymupdf['courses'] : [];
+        $terms = is_array($pymupdf['terms'] ?? null) ? $pymupdf['terms'] : [];
+        // Prefer aligned course table for staff OCR panel; keep raw text for search/fallback.
+        $text = $formatted !== '' ? $formatted : $rawText;
+        $hasUsefulText = (bool) ($pymupdf['has_useful_text'] ?? (strlen(preg_replace('/\W+/', '', $rawText !== '' ? $rawText : $text) ?? '') >= 10));
         $metaPayload = is_array($pymupdf['pdf_metadata'] ?? null) ? $pymupdf['pdf_metadata'] : [];
         $analysis = $this->pdfMetadata->analyzeFromOcrOrFile(
             $metaPayload !== [] ? ['pdf_metadata' => $metaPayload] : [],
             $absolutePath,
         );
 
-        if ($hasUsefulText && $text !== '') {
+        if ($hasUsefulText && ($text !== '' || $courses !== [] || $terms !== [])) {
             return [
                 'status' => 'ok',
                 'provider' => 'pymupdf',
                 'method' => 'pymupdf_text_layer',
                 'text' => $text,
+                'raw_text' => $rawText,
+                'formatted_table_text' => $formatted !== '' ? $formatted : null,
+                'courses' => $courses,
+                'terms' => $terms,
+                'pdf_metadata' => $metaPayload !== [] ? $metaPayload : ($analysis['fields'] ?? []),
                 'pdf_metadata_analysis' => $analysis,
             ];
         }
@@ -65,13 +75,15 @@ class PdfDocumentService
                 $fallback['ocr_payload'] ?? [],
                 $absolutePath,
             );
+            $finalAnalysis = ($fallbackAnalysis['source'] ?? '') !== 'unavailable' ? $fallbackAnalysis : $analysis;
 
             return [
                 'status' => 'ok',
                 'provider' => 'tesseract_fallback',
                 'method' => 'tesseract_ocr',
                 'text' => $fallback['text'] ?? '',
-                'pdf_metadata_analysis' => $fallbackAnalysis['source'] !== 'unavailable' ? $fallbackAnalysis : $analysis,
+                'pdf_metadata' => $metaPayload !== [] ? $metaPayload : ($finalAnalysis['fields'] ?? []),
+                'pdf_metadata_analysis' => $finalAnalysis,
             ];
         }
 
@@ -81,6 +93,7 @@ class PdfDocumentService
             'method' => 'pymupdf_text_layer',
             'text' => $text,
             'error' => $fallback['error'] ?? 'No useful PDF text layer and Tesseract fallback unavailable',
+            'pdf_metadata' => $metaPayload !== [] ? $metaPayload : ($analysis['fields'] ?? []),
             'pdf_metadata_analysis' => $analysis,
         ];
     }
@@ -105,11 +118,22 @@ class PdfDocumentService
             return [];
         }
 
-        $payload = json_decode(trim($result->output()), true);
+        // Windows Python may emit cp1252 for ñ etc.; substitute invalid UTF-8 so text still parses.
+        // PyMuPDF may also append layout hints after JSON — isolate the object payload.
+        $rawOut = trim($result->output());
+        $start = strpos($rawOut, '{');
+        $end = strrpos($rawOut, '}');
+        if ($start !== false && $end !== false && $end >= $start) {
+            $rawOut = substr($rawOut, $start, $end - $start + 1);
+        }
+        $payload = json_decode($rawOut, true, 512, JSON_INVALID_UTF8_SUBSTITUTE);
         if (! is_array($payload) || ! ($payload['success'] ?? false)) {
             Log::warning('pdf_extract.failed', [
+                'python' => $python,
                 'exit' => $result->exitCode(),
                 'stderr' => Str::limit(trim($result->errorOutput()), 300),
+                'stdout_head' => Str::limit(trim($result->output()), 200),
+                'json_error' => json_last_error_msg(),
             ]);
 
             return [];
@@ -160,16 +184,17 @@ class PdfDocumentService
             return $configured;
         }
 
-        $venv = base_path('python/.venv/Scripts/python.exe');
-        if (is_file($venv)) {
-            return $venv;
+        foreach ([
+            base_path('python/.venv/Scripts/python.exe'),
+            base_path('python/.venv/bin/python'),
+            base_path('ocr-service/.venv/Scripts/python.exe'),
+            base_path('ocr-service/.venv/bin/python'),
+        ] as $candidate) {
+            if (is_file($candidate)) {
+                return $candidate;
+            }
         }
 
-        $ocrVenv = base_path('ocr-service/.venv/Scripts/python.exe');
-        if (is_file($ocrVenv)) {
-            return $ocrVenv;
-        }
-
-        return 'python';
+        return PHP_OS_FAMILY === 'Windows' ? 'python' : 'python3';
     }
 }

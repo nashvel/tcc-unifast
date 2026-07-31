@@ -261,8 +261,15 @@ class MasterlistImportController extends Controller
         Mail::to($user->email, $user->name)->send(new GranteeActivationInviteMail(
             $user,
             $temporaryPassword,
-            url('/activate/'.$plainToken),
+            $this->activationUrl($plainToken),
         ));
+    }
+
+    private function activationUrl(string $plainToken): string
+    {
+        $frontend = rtrim((string) (config('app.frontend_url') ?: env('FRONTEND_URL', 'http://localhost:5173')), '/');
+
+        return $frontend.'/activate/'.$plainToken.'?lang=en';
     }
 
     private function presentImport(MasterlistImport $import): array

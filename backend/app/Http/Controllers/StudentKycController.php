@@ -2,44 +2,88 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AcademicProgram;
 use App\Models\Grantee;
 use App\Models\GranteeIdentityProfile;
 use App\Models\KycProfile;
 use App\Services\MasterlistTruthService;
+use App\Services\StudentOnboardingNavigator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class StudentKycController extends Controller
 {
-    public function show(Request $request, MasterlistTruthService $truth): JsonResponse
-    {
+    /** @var list<string> */
+    private const YEAR_LEVEL_OPTIONS = ['1', '2', '3', '4'];
+
+    public function show(
+        Request $request,
+        MasterlistTruthService $truth,
+        StudentOnboardingNavigator $navigator,
+    ): JsonResponse {
         $grantee = $this->grantee($request);
         $reference = $truth->forGrantee($grantee);
         $profile = $request->user()->kycProfile;
+        $nameParts = $profile
+            ? $this->splitStoredName($truth, $profile->full_name)
+            : ['first_name' => null, 'middle_name' => null, 'last_name' => null];
 
         return response()->json([
             'data' => [
                 'status' => $profile?->status ?? 'not_submitted',
                 'mismatches' => $profile?->mismatches ?? [],
-                'reference' => [
-                    'full_name' => $reference['full_name'],
-                    'student_id' => $reference['student_id'],
-                    'program' => $reference['program'],
-                    'year_level' => $reference['year_level'],
+                // Masked hint only — never a full masterlist cheat sheet.
+                'hint' => [
+                    'student_id_last4' => $this->last4($reference['student_id']),
                 ],
-                'profile' => $profile,
-                'next_step' => $this->nextStep($request->user()->account_status, $grantee),
+                'programs' => $this->activePrograms(),
+                'year_level_options' => self::YEAR_LEVEL_OPTIONS,
+                'profile' => [
+                    'first_name' => $nameParts['first_name'],
+                    'middle_name' => $nameParts['middle_name'],
+                    'last_name' => $nameParts['last_name'],
+                    'full_name' => $profile?->full_name,
+                    'student_id' => $profile?->student_id,
+                    'program' => $profile?->program,
+                    'year_level' => $profile?->year_level,
+                    'birthdate' => $profile?->birthdate?->format('Y-m-d'),
+                    'contact' => $profile?->contact,
+                    'address' => $profile?->address,
+                    'guardian_name' => $profile?->guardian_name,
+                    'household_income' => $profile?->household_income,
+                    'status' => $profile?->status,
+                ],
+                'next_step' => $navigator->nextStep($request->user(), $grantee),
             ],
         ]);
     }
 
-    public function store(Request $request, MasterlistTruthService $truth): JsonResponse
-    {
+    public function store(
+        Request $request,
+        MasterlistTruthService $truth,
+        StudentOnboardingNavigator $navigator,
+    ): JsonResponse {
+        $user = $request->user();
+        $grantee = $this->grantee($request);
+        $reference = $truth->forGrantee($grantee);
+        $programs = $this->activePrograms();
+        $programValues = collect($programs)
+            ->flatMap(fn (array $row) => [$row['code'], $row['name']])
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
         $validated = $request->validate([
-            'full_name' => ['required', 'string', 'max:255'],
+            'first_name' => ['required', 'string', 'max:120'],
+            'middle_name' => ['nullable', 'string', 'max:120'],
+            'last_name' => ['required', 'string', 'max:120'],
             'student_id' => ['required', 'string', 'max:100'],
-            'program' => ['required', 'string', 'max:255'],
-            'year_level' => ['required', 'string', 'max:40'],
+            'program' => ['required', 'string', 'max:255', Rule::in($programValues)],
+            'year_level' => ['required', 'string', 'max:40', Rule::in(self::YEAR_LEVEL_OPTIONS)],
             'birthdate' => ['nullable', 'date'],
             'contact' => ['nullable', 'string', 'max:80'],
             'address' => ['nullable', 'string', 'max:1000'],
@@ -47,97 +91,119 @@ class StudentKycController extends Controller
             'household_income' => ['nullable', 'numeric', 'min:0'],
         ]);
 
-        $user = $request->user();
-        $grantee = $this->grantee($request);
-        $reference = $truth->forGrantee($grantee);
-        $mismatches = $this->mismatches($validated, $reference, $truth);
-        $matched = $mismatches === [];
+        $mismatches = [];
+        if (! $truth->namesMatch(
+            $validated['first_name'],
+            $validated['middle_name'] ?? null,
+            $validated['last_name'],
+            $reference['full_name'],
+        )) {
+            $mismatches['full_name'] = 'Name does not match the masterlist record for this account.';
+        }
+        if (! $truth->studentIdsMatch($validated['student_id'], $reference['student_id'])) {
+            $mismatches['student_id'] = 'Student ID does not match the masterlist record for this account.';
+        }
+        if (! $truth->programsMatch($validated['program'], $reference['program'], $programs)) {
+            $mismatches['program'] = 'Program does not match the masterlist record for this account.';
+        }
+        if (filled($reference['year_level'])
+            && ! $truth->valuesMatch($validated['year_level'], $reference['year_level'])) {
+            $mismatches['year_level'] = 'Year level does not match the masterlist record for this account.';
+        }
+
+        if ($mismatches !== []) {
+            throw ValidationException::withMessages($mismatches);
+        }
+
+        // Persist canonical masterlist identity after successful cross-check.
+        $bound = [
+            'full_name' => $reference['full_name'],
+            'student_id' => $reference['student_id'],
+            'program' => $reference['program'],
+            'year_level' => (string) $validated['year_level'],
+            'birthdate' => $validated['birthdate'] ?? null,
+            'contact' => $validated['contact'] ?? null,
+            'address' => $validated['address'] ?? null,
+            'guardian_name' => $validated['guardian_name'] ?? null,
+            'household_income' => $validated['household_income'] ?? null,
+        ];
 
         $profile = KycProfile::updateOrCreate(
             ['user_id' => $user->id, 'grantee_id' => $grantee->id],
             [
-                ...$validated,
-                'status' => $matched ? 'verified' : 'mismatch',
-                'mismatches' => $mismatches,
+                ...$bound,
+                'status' => 'verified',
+                'mismatches' => [],
             ],
         );
 
         // Identity onboarding (ID scan + liveness) must complete before account is fully active.
-        $accountStatus = $matched ? 'pending_identity' : 'blocked';
-        $user->forceFill(['account_status' => $accountStatus])->save();
+        $user->forceFill(['account_status' => 'pending_identity'])->save();
         $grantee->update([
-            'status' => $matched ? 'kyc_verified' : 'kyc_mismatch',
-            'year_level' => $matched ? $validated['year_level'] : $grantee->year_level,
+            'status' => 'kyc_verified',
+            'year_level' => (string) $validated['year_level'],
         ]);
 
-        if ($matched) {
-            GranteeIdentityProfile::firstOrCreate(
-                ['grantee_id' => $grantee->id],
-                ['user_id' => $user->id, 'status' => 'pending_id_scan'],
-            );
-        }
+        GranteeIdentityProfile::firstOrCreate(
+            ['grantee_id' => $grantee->id],
+            ['user_id' => $user->id, 'status' => 'pending_id_scan'],
+        );
 
         return response()->json([
             'data' => [
                 'status' => $profile->status,
-                'mismatches' => $mismatches,
+                'mismatches' => [],
                 'profile' => $profile,
                 'account_status' => $user->account_status,
-                'next_step' => $matched ? 'id_scan' : 'blocked',
+                'next_step' => 'id_scan',
+                'onboarding_path' => $navigator->frontendPath('id_scan'),
             ],
-        ], $matched ? 200 : 422);
+        ]);
     }
 
     private function grantee(Request $request): Grantee
     {
         return Grantee::query()
             ->where('user_id', $request->user()->id)
-            ->orWhere('student_id', $request->user()->student_id)
             ->firstOrFail();
     }
 
     /**
-     * @param  array<string, mixed>  $submitted
-     * @param  array{full_name: string, student_id: string, program: string, year_level: string|null}  $truth
-     * @return array<string, string>
+     * @return list<array{id: int, code: string, name: string}>
      */
-    private function mismatches(array $submitted, array $truth, MasterlistTruthService $service): array
+    private function activePrograms(): array
     {
-        $mismatches = [];
-        if ($service->key($submitted['full_name']) !== $service->key($truth['full_name'])) {
-            $mismatches['full_name'] = 'Submitted name does not match the CHED masterlist record.';
-        }
-        if ($service->key($submitted['student_id']) !== $service->key($truth['student_id'])) {
-            $mismatches['student_id'] = 'Submitted student ID does not match the CHED masterlist record.';
-        }
-        if ($service->key($submitted['program']) !== $service->key($truth['program'])) {
-            $mismatches['program'] = 'Submitted program does not match the CHED masterlist record.';
-        }
-        if ($service->key($submitted['year_level']) !== $service->key($truth['year_level'] ?? '')) {
-            $mismatches['year_level'] = 'Submitted year level does not match the CHED masterlist record.';
-        }
-
-        return $mismatches;
+        return AcademicProgram::query()
+            ->where('is_active', true)
+            ->orderBy('code')
+            ->get(['id', 'code', 'name'])
+            ->map(fn (AcademicProgram $program) => [
+                'id' => $program->id,
+                'code' => $program->code,
+                'name' => $program->name,
+            ])
+            ->values()
+            ->all();
     }
 
-    private function nextStep(?string $accountStatus, Grantee $grantee): string
+    private function last4(string $studentId): string
     {
-        if ($accountStatus === 'blocked') {
-            return 'blocked';
-        }
-        if (in_array($accountStatus, ['unverified', 'pending_kyc'], true)) {
-            return 'kyc';
-        }
-        if ($accountStatus === 'pending_identity') {
-            $identity = $grantee->identityProfile;
-            if (! $identity || $identity->status === 'pending_id_scan') {
-                return 'id_scan';
-            }
-            if ($identity->status === 'pending_liveness') {
-                return 'liveness';
-            }
-        }
+        $clean = preg_replace('/[^A-Za-z0-9]+/', '', $studentId) ?: $studentId;
 
-        return 'done';
+        return strlen($clean) <= 4 ? $clean : substr($clean, -4);
+    }
+
+    /**
+     * @return array{first_name: string, middle_name: string, last_name: string}
+     */
+    private function splitStoredName(MasterlistTruthService $truth, ?string $fullName): array
+    {
+        $parts = $truth->parseNameParts($fullName ?? '');
+
+        return [
+            'first_name' => $parts['first'] !== '' ? Str::title($parts['first']) : '',
+            'middle_name' => $parts['middle'] !== '' ? Str::title($parts['middle']) : '',
+            'last_name' => $parts['last'] !== '' ? Str::title($parts['last']) : '',
+        ];
     }
 }

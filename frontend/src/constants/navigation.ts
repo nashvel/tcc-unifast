@@ -124,10 +124,8 @@ export const studentNavigation: NavigationSection[] = [
   {
     items: [
       { labelKey: "common.dashboard", path: "/student", icon: IconDashboard },
-      { labelKey: "nav.verifyIdentity", path: "/student/verify", icon: IconShieldCheck },
-      { labelKey: "common.profile", path: "/student/profile", icon: IconUserCircle },
       { labelKey: "nav.requiredDocuments", path: "/student/documents", icon: IconFileCheck },
-      { labelKey: "nav.uploadDocuments", path: "/student/upload", icon: IconUpload },
+      { labelKey: "common.profile", path: "/student/profile", icon: IconUserCircle },
       { labelKey: "nav.announcements", path: "/student/announcements", icon: IconSpeakerphone },
       { labelKey: "shell.notifications", path: "/student/notifications", icon: IconBell },
       { labelKey: "common.settings", path: "/student/settings", icon: IconSettings },
@@ -138,9 +136,8 @@ export const studentNavigation: NavigationSection[] = [
 export const lockedStudentNavigation: NavigationSection[] = [
   {
     items: [
-      { labelKey: "common.dashboard", path: "/student", icon: IconDashboard },
-      { labelKey: "nav.verifyIdentity", path: "/student/verify", icon: IconShieldCheck },
-      { labelKey: "common.settings", path: "/student/settings", icon: IconSettings },
+      { labelKey: "nav.completeOnboarding", path: "/student/kyc", icon: IconShieldCheck },
+      { labelKey: "nav.helpSupport", path: "/help/support", icon: IconLifebuoy },
     ],
   },
 ];

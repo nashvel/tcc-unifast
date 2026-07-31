@@ -41,6 +41,10 @@ class PreprocessingInfo(BaseModel):
     processed_width: int
     processed_height: int
     deskew_angle: float = 0.0
+    perspective_warped: bool = False
+    inverted_pass: bool = False
+    region_ocr: bool = False
+    empty_text: bool = False
 
 
 class MetadataInfo(BaseModel):
@@ -57,7 +61,10 @@ class MetadataInfo(BaseModel):
 class QrResult(BaseModel):
     found: bool
     value: Optional[str] = None
+    type: Optional[str] = None
+    engine: Optional[str] = None
     bounding_box: list[list[float]] = Field(default_factory=list)
+    error: Optional[str] = None
 
 
 class OcrResult(BaseModel):

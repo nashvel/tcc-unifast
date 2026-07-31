@@ -17,8 +17,14 @@ export default defineConfig({
     },
   },
   server: {
+    allowedHosts: true,
+    host: "0.0.0.0",
     port: 5173,
     proxy: {
+      "/sanctum": {
+        target: "http://localhost:8000",
+        changeOrigin: true,
+      },
       "/api": {
         target: "http://localhost:8000",
         changeOrigin: true,
@@ -27,6 +33,8 @@ export default defineConfig({
         target: "http://localhost:8000",
         changeOrigin: true,
       },
+      // Do NOT proxy /models — face-api weights live in frontend/public/models
+      // and must be served as Vite static files (tunnel HTTPS + localhost/LAN).
     },
   },
 });

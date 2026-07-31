@@ -9,6 +9,7 @@ import {
   mockAcademicDetail,
   mockDocuments,
   mockDocumentDetail,
+  mockDocumentPackages,
   mockAuditLogs,
   mockNotifications,
   mockSubmissionWindow,
@@ -103,6 +104,24 @@ const handlers: Record<string, MockHandler> = {
     status: 200,
     body: { data: mockDocuments, meta: { current_page: 1, last_page: 1, per_page: 15, total: mockDocuments.length, from: 1, to: mockDocuments.length } },
   }),
+  "GET /api/document-submission-packages": () => ({
+    status: 200,
+    body: {
+      data: mockDocumentPackages,
+      meta: {
+        current_page: 1,
+        last_page: 1,
+        per_page: 15,
+        total: mockDocumentPackages.length,
+        from: 1,
+        to: mockDocumentPackages.length,
+      },
+    },
+  }),
+  "GET /api/document-submission-packages/1/1": () => ({
+    status: 200,
+    body: { data: mockDocumentPackages[0] },
+  }),
   "GET /api/document-submissions/1": () => ({ status: 200, body: { data: mockDocumentDetail } }),
   "POST /api/document-submissions/1/review": () => ({
     status: 200,
@@ -147,16 +166,32 @@ const handlers: Record<string, MockHandler> = {
     status: 200,
     body: {
       data: {
-        status: "verified",
-        reference: { full_name: "Maria Clara Dela Cruz", student_id: "2024-001", program: "BS Information Technology", year_level: "2nd Year" },
-        profile: { full_name: "Maria Clara Dela Cruz", student_id: "2024-001", program: "BS Information Technology", birthdate: "2003-05-14", contact: "+63 917 123 4567", address: "Tagoloan, Misamis Oriental", guardian_name: "Jose Dela Cruz", household_income: "15000" },
+        status: "not_submitted",
+        hint: { student_id_last4: "0001" },
+        programs: [{ id: 1, code: "BSIT", name: "BS Information Technology" }],
+        year_level_options: ["1", "2", "3", "4"],
+        profile: {
+          first_name: "",
+          middle_name: "",
+          last_name: "",
+          full_name: "",
+          student_id: "",
+          program: "",
+          year_level: "",
+          birthdate: "2003-05-14",
+          contact: "+63 917 123 4567",
+          address: "Tagoloan, Misamis Oriental",
+          guardian_name: "Jose Dela Cruz",
+          household_income: "15000",
+        },
         mismatches: {},
+        next_step: "kyc",
       },
     },
   }),
   "POST /api/student/kyc": () => ({
     status: 200,
-    body: { data: { status: "verified", account_status: "active" } },
+    body: { data: { status: "verified", account_status: "pending_identity", next_step: "id_scan" } },
   }),
   "GET /api/student/submission-window": () => ({
     status: 200,
@@ -311,6 +346,9 @@ export function handleMockRequest(method: string, path: string, body?: string): 
   if (path.match(/^\/api\/batches\/\d+/)) return handlers["GET /api/batches/1"]?.();
   if (path.match(/^\/api\/grantees\/\d+/)) return handlers["GET /api/grantees/1"]?.();
   if (path.match(/^\/api\/academic-records\/\d+/)) return handlers["GET /api/academic-records/1"]?.();
+  if (path.match(/^\/api\/document-submission-packages\/\d+\/\d+/)) {
+    return handlers["GET /api/document-submission-packages/1/1"]?.();
+  }
   if (path.match(/^\/api\/document-submissions\/\d+\/review/)) return handlers["POST /api/document-submissions/1/review"]?.();
   if (path.match(/^\/api\/document-submissions\/\d+/)) return handlers["GET /api/document-submissions/1"]?.();
   if (path.match(/^\/api\/terms\/\d+/)) return handlers["GET /api/terms/active"]?.();
