@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { apiUrl } from "@/api/client";
 import { nextTick, onBeforeUnmount, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import {
@@ -126,7 +127,7 @@ async function captureAndVerify() {
     body.append("student_id_document", idBlob, "live-id-capture.jpg");
     body.append("face_capture", faceBlob, "live-face-capture.jpg");
 
-    const response = await fetch("/api/student/identity/face-verify", {
+    const response = await fetch(apiUrl("/api/student/identity/face-verify"), {
       method: "POST",
       headers: { Authorization: `Bearer ${getAuthToken()}`, Accept: "application/json" },
       body,

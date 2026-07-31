@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { apiUrl } from "@/api/client";
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { IconAlertTriangle, IconCamera, IconCheck, IconId, IconRefresh } from "@tabler/icons-vue";
@@ -89,7 +90,7 @@ async function captureAndSubmit() {
     body.append("face_quality_score", String(face.quality));
     body.append("authenticity_skipped", "1");
 
-    const response = await fetch("/api/student/identity-onboarding/id-scan", {
+    const response = await fetch(apiUrl("/api/student/identity-onboarding/id-scan"), {
       method: "POST",
       headers: { Authorization: `Bearer ${getAuthToken()}`, Accept: "application/json" },
       body,
