@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { apiUrl } from "@/api/client";
 import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import PageHeader from "@/components/ui/PageHeader.vue";
@@ -14,7 +15,7 @@ onMounted(async () => {
     if (!token) {
       throw new Error("Unauthenticated. Activate or sign in again to continue identity onboarding.");
     }
-    const response = await fetch("/api/student/identity-onboarding", {
+    const response = await fetch(apiUrl("/api/student/identity-onboarding"), {
       headers: { Accept: "application/json", Authorization: `Bearer ${token}` },
     });
     const payload = await response.json();

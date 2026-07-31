@@ -6,7 +6,6 @@ use App\Http\Controllers\ActivationController;
 use App\Http\Controllers\AdminStudentIdSampleController;
 use App\Http\Controllers\AuditEventController;
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\AuthCaptchaController;
 use App\Http\Controllers\BatchActivationNotificationController;
 use App\Http\Controllers\BatchController;
 use App\Http\Controllers\BillingReportController;
@@ -45,7 +44,6 @@ Route::middleware([
     AddQueuedCookiesToResponse::class,
     StartSession::class,
 ])->group(function (): void {
-    Route::get('/auth/captcha', AuthCaptchaController::class)->middleware('throttle:30,1');
     Route::post('/auth/login', [AuthController::class, 'login'])
         ->middleware('throttle:'.config('services.auth.login_throttle_per_minute', 5).',1');
 });
@@ -126,6 +124,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('/masterlist/imports', [MasterlistImportController::class, 'index']);
         Route::post('/masterlist/imports/preview', [MasterlistImportController::class, 'preview'])->middleware('throttle:10,1');
         Route::get('/masterlist/imports/{import}', [MasterlistImportController::class, 'show']);
+        Route::delete('/masterlist/imports/{import}', [MasterlistImportController::class, 'destroy']);
         Route::get('/academic-records', [AcademicRecordController::class, 'index']);
         Route::get('/academic-records/{record}', [AcademicRecordController::class, 'show']);
         Route::get('/document-submissions', [DocumentSubmissionController::class, 'index']);
@@ -133,6 +132,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('/document-submission-packages/{granteeId}/{batchId}', [DocumentSubmissionController::class, 'packageShow'])
             ->whereNumber('granteeId')
             ->whereNumber('batchId');
+        Route::get('/files', [\App\Http\Controllers\FileManagerController::class, 'index']);
         Route::get('/document-submissions/{submission}', [DocumentSubmissionController::class, 'show']);
         Route::get('/document-submissions/{submission}/file/{variant?}', [DocumentFileController::class, 'showAuthenticated'])
             ->where('variant', 'primary|secondary')
@@ -150,8 +150,8 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('/distribution-reports/{report}/download', [DistributionReportController::class, 'download']);
     });
 
-    // Developer/Admin only routes (includes legacy head for batch ops)
-    Route::middleware('role:developer,admin,head')->group(function (): void {
+    // Developer/Admin/Head/Staff routes (for batch ops and masterlists)
+    Route::middleware('role:developer,admin,head,staff')->group(function (): void {
         Route::post('/batches', [BatchController::class, 'store'])->middleware('throttle:20,1');
         Route::patch('/batches/{batch}', [BatchController::class, 'update'])->middleware('throttle:20,1');
         Route::post('/batches/{batch}/activate', [BatchController::class, 'activate'])->middleware('throttle:10,1');

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { apiUrl } from "@/api/client";
 import { onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
@@ -46,7 +47,7 @@ onMounted(async () => {
   }
 
   try {
-    const response = await fetch(`/api/activation/${token}`, {
+    const response = await fetch(apiUrl(`/api/activation/${token}`), {
       headers: { Accept: "application/json" },
     });
     const payload = await response.json();
@@ -66,7 +67,7 @@ async function activate() {
   error.value = "";
 
   try {
-    const response = await fetch(`/api/activation/${token}`, {
+    const response = await fetch(apiUrl(`/api/activation/${token}`), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

@@ -11,7 +11,7 @@ import {
 import PageHeader from "@/components/ui/PageHeader.vue";
 import DataTable from "@/components/tables/DataTable.vue";
 import AppDialog from "@/components/dialogs/AppDialog.vue";
-import { apiFetch } from "@/api/client";
+import { apiFetch, apiUrl } from "@/api/client";
 import type { PaginatedResponse } from "@/api/types";
 import { queryKeys } from "@/api/queryKeys";
 import { getAuthToken } from "@/auth/session";
@@ -51,10 +51,21 @@ type ImportPreview = {
   batch: { id: number; name: string } | null;
 };
 
+type ImportSummary = {
+  id: number;
+  status: string;
+  original_name: string | null;
+  total_rows: number;
+  valid_rows: number;
+  invalid_rows: number;
+  imported_rows: number;
+  created_at: string | null;
+};
+
 const step = ref(1);
 const batchDialog = ref(false);
 const selectedBatchId = ref<number | null>(null);
-const selectedFile = ref<File | null>(null);
+const selectedImportId = ref<number | null>(null);
 const preview = ref<ImportPreview | null>(null);
 const busy = ref(false);
 const confirming = ref(false);
@@ -78,6 +89,17 @@ const batches = computed(() => batchesQuery.data.value?.data ?? []);
 const selectedBatch = computed(
   () => batches.value.find((batch) => batch.id === selectedBatchId.value) ?? null,
 );
+
+const importsQuery = useQuery({
+  queryKey: computed(() => ["masterlist_imports", { batch_id: selectedBatchId.value }]),
+  queryFn: () =>
+    apiFetch<PaginatedResponse<ImportSummary>>(
+      `/api/masterlist/imports?per_page=50&batch_id=${selectedBatchId.value}`,
+    ),
+  enabled: computed(() => selectedBatchId.value !== null),
+});
+
+const imports = computed(() => importsQuery.data.value?.data ?? []);
 
 async function createBatch() {
   busy.value = true;
@@ -106,43 +128,23 @@ async function createBatch() {
   }
 }
 
-function chooseFile(event: Event) {
-  const input = event.target as HTMLInputElement;
-  selectedFile.value = input.files?.[0] ?? null;
+function selectExistingBatch(id: number) {
+  selectedBatchId.value = id;
+  selectedImportId.value = null;
   preview.value = null;
+  step.value = 2;
 }
 
-async function previewImport() {
-  if (!selectedBatchId.value) {
-    error.value = "Select or create a batch with a submission deadline first.";
-    return;
-  }
-  if (!selectedFile.value) {
-    error.value = "Choose a CHED Excel/CSV masterlist file first.";
-    return;
-  }
-
+async function loadPreview(importId: number) {
+  selectedImportId.value = importId;
   busy.value = true;
   error.value = "";
-  const body = new FormData();
-  body.append("file", selectedFile.value);
-  body.append("batch_id", String(selectedBatchId.value));
-
   try {
-    const response = await fetch("/api/masterlist/imports/preview", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${getAuthToken()}`, Accept: "application/json" },
-      body,
-    });
-    const payload = await response.json();
-    if (!response.ok) {
-      const validation = payload.errors ? Object.values(payload.errors).flat().join(" ") : "";
-      throw new Error(validation || payload.message || "Unable to preview import.");
-    }
+    const payload = await apiFetch<{ data: ImportPreview }>(`/api/masterlist/imports/${importId}`);
     preview.value = payload.data;
     step.value = 3;
   } catch (exception) {
-    error.value = exception instanceof Error ? exception.message : "Unable to preview import.";
+    error.value = exception instanceof Error ? exception.message : "Unable to load import preview.";
     toast.error(error.value);
   } finally {
     busy.value = false;
@@ -154,7 +156,7 @@ async function confirmImport() {
   confirming.value = true;
   error.value = "";
   try {
-    const response = await fetch(`/api/masterlist/imports/${preview.value.id}/confirm`, {
+    const response = await fetch(apiUrl(`/api/masterlist/imports/${preview.value.id}/confirm`), {
       method: "POST",
       headers: { Authorization: `Bearer ${getAuthToken()}`, Accept: "application/json" },
     });
@@ -192,10 +194,9 @@ async function activateBatch() {
   }
 }
 
-function selectExistingBatch(id: number) {
-  selectedBatchId.value = id;
-  preview.value = null;
-  step.value = 2;
+
+function formatDate(date: string | null) {
+  return date ? new Date(date).toLocaleString() : "—";
 }
 </script>
 
@@ -210,7 +211,7 @@ function selectExistingBatch(id: number) {
       <li
         v-for="item in [
           [1, 'Create / select batch'],
-          [2, 'Upload Excel'],
+          [2, 'Select master list'],
           [3, 'Preview & confirm'],
           [4, 'Activate window'],
         ]"
@@ -247,12 +248,15 @@ function selectExistingBatch(id: number) {
           :key="batch.id"
           type="button"
           :class="[
-            'rounded-md border p-3 text-left text-xs',
+            'relative rounded-md border p-3 text-left text-xs',
             selectedBatchId === batch.id ? 'border-primary bg-primary/5' : 'hover:border-primary/40',
           ]"
           @click="selectExistingBatch(batch.id)"
         >
-          <p class="font-semibold">{{ batch.name }}</p>
+          <div v-if="selectedBatchId === batch.id" class="absolute right-2 top-2 text-primary">
+            <IconCheck :size="16" />
+          </div>
+          <p class="font-semibold pr-6">{{ batch.name }}</p>
           <p class="mt-1 text-text-muted">
             {{ batch.academic_year }} · {{ batch.semester }} · {{ batch.window_status }}
           </p>
@@ -269,19 +273,38 @@ function selectExistingBatch(id: number) {
     </section>
 
     <section class="mb-4 rounded-lg border bg-surface p-4">
-      <h2 class="mb-3 text-sm font-semibold">2. Upload CHED masterlist</h2>
-      <label class="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-md border border-dashed p-6 text-xs text-text-muted">
-        <IconUpload :size="18" />
-        <span>{{ selectedFile?.name || "Choose CSV or XLSX file" }}</span>
-        <input type="file" accept=".csv,.xlsx,.xls" class="hidden" @change="chooseFile" />
-      </label>
-      <button
-        class="mt-3 inline-flex h-9 items-center gap-1.5 rounded-md border px-3 text-xs disabled:opacity-60"
-        :disabled="busy || !selectedBatchId || !selectedFile"
-        @click="previewImport"
-      >
-        <IconFileSpreadsheet :size="14" />{{ busy ? "Parsing..." : "Preview import" }}
-      </button>
+      <h2 class="mb-3 text-sm font-semibold">2. Select a master list</h2>
+      <p class="mb-3 text-xs text-text-muted">
+        Select a masterlist that was uploaded to this batch. To upload a new one, go to the Masterlist menu.
+      </p>
+      
+      <div v-if="!selectedBatchId" class="text-xs text-text-muted">Select a batch first.</div>
+      <div v-else-if="importsQuery.isPending.value" class="text-xs text-text-muted">Loading imports...</div>
+      <div v-else-if="!imports.length" class="flex flex-col items-center gap-2 rounded-md border border-dashed p-6 text-center text-xs text-text-muted">
+        <IconFileSpreadsheet :size="24" class="text-text-soft" />
+        No masterlists uploaded to this batch yet.<br />
+        <RouterLink to="/app/masterlist" class="mt-1 font-semibold text-primary hover:underline">Go to Masterlist</RouterLink>
+      </div>
+      <div v-else class="grid gap-2">
+        <button
+          v-for="item in imports"
+          :key="item.id"
+          type="button"
+          :class="[
+            'flex items-center justify-between rounded-md border p-3 text-left text-xs transition-colors',
+            selectedImportId === item.id ? 'border-primary bg-primary/5' : 'hover:border-primary/40',
+          ]"
+          @click="loadPreview(item.id)"
+        >
+          <div>
+            <p class="font-semibold text-text">{{ item.original_name || `Import #${item.id}` }}</p>
+            <p class="mt-0.5 text-text-muted capitalize">
+              {{ item.status }} · {{ item.total_rows }} rows · Uploaded {{ formatDate(item.created_at) }}
+            </p>
+          </div>
+          <IconCheck v-if="selectedImportId === item.id" :size="16" class="text-primary" />
+        </button>
+      </div>
     </section>
 
     <section v-if="preview" class="mb-4 rounded-lg border bg-surface p-4">

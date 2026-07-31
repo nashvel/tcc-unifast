@@ -49,13 +49,20 @@ class MasterlistSpreadsheetParser
 
         $headers = null;
         $rows = [];
+        $importer = new MasterlistRowsImport;
+        
         while (($line = fgetcsv($handle)) !== false) {
             if ($headers === null) {
-                $headers = $this->normalizeHeaders($line);
-
+                $possibleHeaders = $this->normalizeHeaders($line);
+                if (in_array('award_number', $possibleHeaders) || in_array('student_id', $possibleHeaders) || in_array('last_name', $possibleHeaders) || in_array('full_name', $possibleHeaders)) {
+                    $headers = $possibleHeaders;
+                }
                 continue;
             }
-            $rows[] = $this->combineRow($headers, $line);
+            $row = $importer->mapRow($headers, $line);
+            if (!empty(array_filter($row))) {
+                $rows[] = $row;
+            }
         }
         fclose($handle);
 
@@ -109,9 +116,26 @@ class MasterlistSpreadsheetParser
             return [];
         }
 
-        $headers = $this->normalizeHeaders(array_shift($lines));
+        $headers = null;
+        $dataRows = [];
+        $importer = new MasterlistRowsImport;
+        
+        foreach ($lines as $line) {
+            if ($headers === null) {
+                $possibleHeaders = $this->normalizeHeaders($line);
+                if (in_array('award_number', $possibleHeaders) || in_array('student_id', $possibleHeaders) || in_array('last_name', $possibleHeaders) || in_array('full_name', $possibleHeaders)) {
+                    $headers = $possibleHeaders;
+                }
+                continue;
+            }
+            
+            $row = $importer->mapRow($headers, $line);
+            if (!empty(array_filter($row))) {
+                $dataRows[] = $row;
+            }
+        }
 
-        return array_map(fn (array $line) => $this->combineRow($headers, $line), $lines);
+        return $dataRows;
     }
 
     /**
@@ -173,6 +197,11 @@ class MasterlistSpreadsheetParser
                 'email', 'email_address', 'student_email' => 'email',
                 'course', 'degree_program', 'program' => 'program',
                 'year', 'year_level', 'level' => 'year_level',
+                'award_no', 'award_number' => 'award_number',
+                'last_name' => 'last_name',
+                'given_name', 'first_name' => 'given_name',
+                'ext', 'extension', 'extension_name' => 'ext',
+                'middle_name' => 'middle_name',
                 default => $key,
             };
         }, $headers);

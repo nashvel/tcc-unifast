@@ -90,9 +90,17 @@ class MasterlistImportController extends Controller
         $validRows = 0;
         $invalidRows = 0;
 
+        $validPrograms = \App\Models\AcademicProgram::query()
+            ->where('is_active', true)
+            ->get()
+            ->flatMap(fn ($p) => [strtoupper($p->name), strtoupper($p->code)])
+            ->unique()
+            ->values()
+            ->toArray();
+
         foreach ($parsedRows as $index => $row) {
             $normalized = $this->normalizeRow($row);
-            $errors = $this->rowErrors($normalized, $seenStudentIds, $seenStudentNumbers);
+            $errors = $this->rowErrors($normalized, $seenStudentIds, $seenStudentNumbers, $validPrograms);
             $status = $errors === [] ? 'valid' : 'invalid';
             $validRows += $status === 'valid' ? 1 : 0;
             $invalidRows += $status === 'invalid' ? 1 : 0;
@@ -130,7 +138,7 @@ class MasterlistImportController extends Controller
 
     public function confirm(Request $request, MasterlistImport $import): JsonResponse
     {
-        abort_unless(in_array($request->user()->role, ['developer', 'admin'], true), 403);
+        abort_unless(in_array($request->user()->role, ['developer', 'admin', 'head', 'staff'], true), 403);
 
         if ($import->status === 'imported') {
             return response()->json(['data' => $this->presentImport($import->load(['batch', 'rows']))]);
@@ -163,7 +171,7 @@ class MasterlistImportController extends Controller
                     'user_id' => $user->id,
                     'batch_id' => $import->batch_id,
                     'student_id' => $row->student_id,
-                    'student_number' => $row->student_number,
+                    'student_number' => trim($row->student_number) === '' ? null : $row->student_number,
                     'full_name' => $row->full_name,
                     'email' => $row->email,
                     'program' => $row->program,
@@ -219,14 +227,21 @@ class MasterlistImportController extends Controller
      * @param  array<string, string|null>  $row
      * @param  list<string>  $seenStudentIds
      * @param  list<string>  $seenStudentNumbers
+     * @param  list<string>  $validPrograms
      * @return list<string>
      */
-    private function rowErrors(array $row, array $seenStudentIds, array $seenStudentNumbers): array
+    private function rowErrors(array $row, array $seenStudentIds, array $seenStudentNumbers, array $validPrograms): array
     {
         $errors = [];
         foreach (['student_id', 'full_name', 'email', 'program', 'year_level'] as $field) {
             if (($row[$field] ?? '') === '') {
                 $errors[] = "Missing {$field}.";
+            }
+        }
+        if (($row['program'] ?? '') !== '') {
+            $progStr = strtoupper(trim($row['program']));
+            if (!in_array($progStr, $validPrograms, true)) {
+                $errors[] = 'Program not recognized in the system (Caution: update system first).';
             }
         }
         if (($row['email'] ?? '') !== '' && ! filter_var($row['email'], FILTER_VALIDATE_EMAIL)) {
@@ -249,6 +264,17 @@ class MasterlistImportController extends Controller
         }
 
         return $errors;
+    }
+
+    public function destroy(Request $request, MasterlistImport $import): JsonResponse
+    {
+        // Only allow deleting imports that haven't been completed yet (e.g. pending/failed)
+        if ($import->status === 'completed') {
+            return response()->json(['message' => 'Completed imports cannot be deleted.'], 403);
+        }
+
+        $import->delete();
+        return response()->json(['message' => 'Import deleted successfully.']);
     }
 
     private function temporaryPassword(): string

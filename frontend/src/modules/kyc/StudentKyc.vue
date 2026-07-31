@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { apiUrl } from "@/api/client";
 import { onMounted, reactive, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { IconAlertTriangle, IconCheck, IconSchool, IconUser } from "@tabler/icons-vue";
@@ -40,7 +41,7 @@ async function loadKyc() {
     if (!token) {
       throw new Error("Unauthenticated. Activate or sign in again, then retry KYC.");
     }
-    const response = await fetch("/api/student/kyc", {
+    const response = await fetch(apiUrl("/api/student/kyc"), {
       headers: { Accept: "application/json", Authorization: `Bearer ${token}` },
     });
     const payload = await response.json();
@@ -96,7 +97,7 @@ async function submit() {
     if (!form.first_name.trim() || !form.last_name.trim() || !form.student_id.trim() || !form.program || !form.year_level) {
       throw new Error("Enter your first name, last name, student ID, program, and year level.");
     }
-    const response = await fetch("/api/student/kyc", {
+    const response = await fetch(apiUrl("/api/student/kyc"), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

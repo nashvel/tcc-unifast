@@ -1,12 +1,13 @@
 <script setup lang="ts">
+import { apiUrl } from "@/api/client";
 import { computed, onMounted, ref, watch } from "vue";
 import {
   IconAlertTriangle,
   IconCheck,
   IconFileSpreadsheet,
-  IconMail,
   IconSearch,
   IconUpload,
+  IconTrash,
 } from "@tabler/icons-vue";
 import DataTable from "@/components/tables/DataTable.vue";
 import TablePagination from "@/components/tables/TablePagination.vue";
@@ -204,7 +205,7 @@ async function previewImport() {
   body.append("batch_id", String(uploadBatchId.value));
 
   try {
-    const response = await fetch("/api/masterlist/imports/preview", {
+    const response = await fetch(apiUrl("/api/masterlist/imports/preview"), {
       method: "POST",
       headers: { Authorization: `Bearer ${getAuthToken()}`, Accept: "application/json" },
       body,
@@ -230,7 +231,7 @@ async function confirmImport(close: () => void) {
   error.value = "";
 
   try {
-    const response = await fetch(`/api/masterlist/imports/${preview.value.id}/confirm`, {
+    const response = await fetch(apiUrl(`/api/masterlist/imports/${preview.value.id}/confirm`), {
       method: "POST",
       headers: { Authorization: `Bearer ${getAuthToken()}`, Accept: "application/json" },
     });
@@ -247,6 +248,40 @@ async function confirmImport(close: () => void) {
     error.value = exception instanceof Error ? exception.message : "Unable to confirm import.";
   } finally {
     confirming.value = false;
+  }
+}
+
+const deleteDialogOpen = ref(false);
+const deletingImport = ref<ImportSummary | null>(null);
+
+function openDeleteDialog(item: ImportSummary) {
+  deletingImport.value = item;
+  deleteDialogOpen.value = true;
+}
+
+async function deleteImport() {
+  if (!deletingImport.value) return;
+  busy.value = true;
+  try {
+    const response = await fetch(apiUrl(`/api/masterlist/imports/${deletingImport.value.id}`), {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${getAuthToken()}`, Accept: "application/json" },
+    });
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.message || "Unable to delete import.");
+    
+    // Clear preview if we deleted the currently selected one
+    if (selectedImportId.value === deletingImport.value.id) {
+      selectedImportId.value = null;
+      preview.value = null;
+    }
+    
+    await loadImports();
+    deleteDialogOpen.value = false;
+  } catch (exception) {
+    error.value = exception instanceof Error ? exception.message : "Unable to delete import.";
+  } finally {
+    busy.value = false;
   }
 }
 
@@ -284,12 +319,12 @@ function formatDate(value: string | null) {
         </label>
       </div>
 
-      <DataTable :headings="['File', 'Batch', 'Status', 'Rows', 'Imported', 'Uploaded']">
+      <DataTable :headings="['File', 'Batch', 'Status', 'Rows', 'Imported', 'Uploaded', '']">
         <tr
           v-for="item in imports"
           :key="item.id"
           :class="[
-            'cursor-pointer hover:bg-primary/5',
+            'group cursor-pointer hover:bg-primary/5',
             selectedImportId === item.id ? 'bg-primary/5' : '',
           ]"
           @click="selectImport(item.id)"
@@ -308,6 +343,16 @@ function formatDate(value: string | null) {
           </td>
           <td class="px-3 py-3 tabular-nums">{{ item.imported_rows }}</td>
           <td class="px-3 py-3 text-text-muted">{{ formatDate(item.created_at) }}</td>
+          <td class="px-3 py-3 text-right">
+            <button
+              v-if="item.status !== 'completed'"
+              class="text-text-muted hover:text-danger opacity-0 group-hover:opacity-100 transition-opacity"
+              title="Delete import"
+              @click.stop="openDeleteDialog(item)"
+            >
+              <IconTrash :size="16" />
+            </button>
+          </td>
         </tr>
         <tr v-if="!loadingList && !imports.length">
           <td colspan="6" class="p-8 text-center text-text-muted">
@@ -335,45 +380,54 @@ function formatDate(value: string | null) {
           to create/update grantee accounts.
         </p>
       </div>
-      <label class="block">
-        <span class="mb-1.5 block text-xs font-medium">Batch (with deadline)</span>
-        <select v-model.number="uploadBatchId" class="h-9 w-full rounded-md border px-3 text-sm">
-          <option :value="null" disabled>Select a batch</option>
-          <option v-for="batch in deadlineBatches" :key="batch.id" :value="batch.id">
-            {{ batch.name }} · {{ batch.academic_year }} · {{ batch.semester }}
-          </option>
-        </select>
-      </label>
-      <div class="block">
-        <span class="mb-1.5 block text-xs font-medium">CHED file</span>
-        <input
-          ref="fileInput"
-          type="file"
-          accept=".csv,.xlsx,.xls"
-          class="hidden"
-          data-tour="masterlist-upload"
-          @change="chooseFile"
-        />
-        <button
-          type="button"
-          class="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-md bg-primary px-3 text-xs font-medium text-white"
-          @click="openFilePicker"
-        >
-          <IconFileSpreadsheet :size="14" /> Upload Excel or CSV file
-        </button>
-        <p class="mt-1.5 truncate text-xs text-text-muted">
-          {{ selectedFile?.name || "No file selected" }}
-        </p>
+      
+      <div v-if="!deadlineBatches.length" class="lg:col-span-2 flex items-center gap-3 rounded-md border border-warning/30 bg-warning-soft p-4">
+        <IconAlertTriangle :size="20" class="text-warning" />
+        <div>
+          <p class="text-sm font-medium text-warning">No active batch detected</p>
+          <p class="mt-0.5 text-xs text-warning/80">You must <RouterLink to="/app/batches?create=true" class="underline font-semibold hover:text-warning-dark">create a batch</RouterLink> or activate a submission deadline before you can upload a masterlist.</p>
+        </div>
       </div>
-      <div class="flex items-end lg:col-span-2">
-        <button
-          :disabled="busy"
-          class="inline-flex h-9 items-center gap-1.5 rounded-md bg-primary px-3 text-xs font-medium text-white disabled:opacity-60"
-          @click="previewImport"
-        >
-          <IconUpload :size="14" />{{ busy ? "Processing..." : "Preview import" }}
-        </button>
-      </div>
+
+      <template v-else>
+        <label class="block">
+          <span class="mb-1.5 block text-xs font-medium">Batch (with deadline)</span>
+          <select v-model.number="uploadBatchId" class="h-9 w-full rounded-md border px-3 text-sm">
+            <option :value="null" disabled>Select a batch</option>
+            <option v-for="batch in deadlineBatches" :key="batch.id" :value="batch.id">
+              {{ batch.name }} · {{ batch.academic_year }} · {{ batch.semester }}
+            </option>
+          </select>
+        </label>
+
+        <div class="flex items-end gap-2">
+          <input
+            ref="fileInput"
+            type="file"
+            accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
+            class="hidden"
+            @change="chooseFile"
+          />
+          <button
+            class="flex h-9 w-full items-center justify-center gap-2 rounded-md border bg-surface px-4 text-xs font-medium hover:bg-surface-muted"
+            data-tour="masterlist-upload"
+            @click="openFilePicker"
+          >
+            <IconFileSpreadsheet :size="14" /> Upload Excel or CSV file
+          </button>
+        </div>
+
+        <div v-if="selectedFile" class="lg:col-span-2 flex items-center justify-between rounded-md border bg-surface-muted px-3 py-2">
+          <span class="text-xs font-medium">{{ selectedFile.name }}</span>
+          <button
+            class="flex items-center gap-1 rounded bg-primary px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50"
+            :disabled="busy || !uploadBatchId"
+            @click="previewImport"
+          >
+            <IconUpload :size="14" />{{ busy ? "Processing..." : "Preview import" }}
+          </button>
+        </div>
+      </template>
     </section>
 
     <p
@@ -461,14 +515,7 @@ function formatDate(value: string | null) {
         </tr>
       </DataTable>
 
-      <section v-if="mailResult" class="rounded-lg border bg-surface p-4">
-        <h2 class="flex items-center gap-2 text-sm font-semibold">
-          <IconMail :size="16" class="text-primary" /> Invitation emails
-        </h2>
-        <p class="mt-1 text-xs text-text-muted">
-          {{ mailResult.sent }} activation emails sent. {{ mailResult.failed.length }} failed.
-        </p>
-      </section>
+
 
       <div v-if="preview.status !== 'imported'" class="flex justify-end">
         <button
@@ -516,6 +563,30 @@ function formatDate(value: string | null) {
           {{ confirming ? "Importing..." : "Confirm import" }}
         </button>
       </template>
+    </AppDialog>
+
+    <AppDialog
+      v-model="deleteDialogOpen"
+      title="Delete import record"
+      description="Are you sure you want to delete this masterlist import? This action cannot be undone."
+    >
+      <div class="flex justify-end gap-2 pt-4">
+        <button
+          type="button"
+          class="rounded-md border px-4 py-2 text-xs font-medium hover:bg-surface-muted"
+          @click="deleteDialogOpen = false"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          class="rounded-md bg-danger px-4 py-2 text-xs font-medium text-white disabled:opacity-50"
+          :disabled="busy"
+          @click="deleteImport"
+        >
+          {{ busy ? "Deleting..." : "Delete record" }}
+        </button>
+      </div>
     </AppDialog>
   </div>
 </template>

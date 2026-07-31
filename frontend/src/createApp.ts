@@ -58,6 +58,7 @@ const appChildren: RouteRecordRaw[] = [
   { path: "grantees/:id", component: () => import("@/modules/grantees/Detail.vue") },
   { path: "batches", component: () => import("@/modules/batches/Index.vue") },
   { path: "batches/:id", component: () => import("@/modules/batches/Detail.vue") },
+  { path: "programs", component: () => import("@/modules/programs/Index.vue") },
   { path: "academic", component: () => import("@/modules/academic/Index.vue") },
   { path: "academic/:id", component: () => import("@/modules/academic/Detail.vue") },
   { path: "documents", component: () => import("@/modules/documents/Index.vue") },

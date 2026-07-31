@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { ref, watch, onMounted } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import { IconCalendarDue, IconPlus, IconUsers } from "@tabler/icons-vue";
 import AppDialog from "@/components/dialogs/AppDialog.vue";
 import PageHeader from "@/components/ui/PageHeader.vue";
@@ -7,6 +8,9 @@ import CardSkeleton from "@/components/ui/CardSkeleton.vue";
 import EmptyState from "@/components/ui/EmptyState.vue";
 import { useBatchList, useCreateBatch } from "@/composables/useBatches";
 import { toast } from "@/composables/useToast";
+
+const route = useRoute();
+const router = useRouter();
 
 const batchDialog = ref(false);
 const page = ref(1);
@@ -45,6 +49,13 @@ function statusClass(status: string) {
   if (status === "closed") return "bg-warning-soft text-warning";
   return "bg-surface-muted text-text-muted";
 }
+
+onMounted(() => {
+  if (route.query.create) {
+    batchDialog.value = true;
+    router.replace({ query: { ...route.query, create: undefined } });
+  }
+});
 </script>
 
 <template>
@@ -185,7 +196,6 @@ function statusClass(status: string) {
           >
             <option>1st Semester</option>
             <option>2nd Semester</option>
-            <option>Summer</option>
           </select>
         </label>
         <label class="text-xs font-medium sm:col-span-2">

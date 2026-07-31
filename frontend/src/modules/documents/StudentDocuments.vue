@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { apiUrl } from "@/api/client";
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from "vue";
 import {
   IconCamera,
@@ -201,7 +202,7 @@ async function loadVault(options: { quiet?: boolean } = {}) {
   if (!options.quiet) loading.value = true;
   error.value = "";
   try {
-    const response = await fetch("/api/student/requirement-vault", {
+    const response = await fetch(apiUrl("/api/student/requirement-vault"), {
       headers: {
         Accept: "application/json",
         Authorization: `Bearer ${getAuthToken()}`,
@@ -443,7 +444,7 @@ async function confirmSubmission() {
   error.value = "";
   success.value = "";
   try {
-    const response = await fetch("/api/student/requirement-vault/confirm", {
+    const response = await fetch(apiUrl("/api/student/requirement-vault/confirm"), {
       method: "POST",
       headers: {
         Accept: "application/json",
@@ -545,7 +546,7 @@ async function captureIdScan() {
     body.append("consent_accepted", "1");
     body.append("precheck_accepted", "1");
 
-    const response = await fetch("/api/student/requirement-vault/id", {
+    const response = await fetch(apiUrl("/api/student/requirement-vault/id"), {
       method: "POST",
       headers: { Authorization: `Bearer ${getAuthToken()}`, Accept: "application/json" },
       body,
@@ -598,7 +599,7 @@ async function uploadDocument(
     const body = new FormData();
     body.append("slot_key", slotKey);
     body.append("file", file);
-    const response = await fetch("/api/student/requirement-vault/document", {
+    const response = await fetch(apiUrl("/api/student/requirement-vault/document"), {
       method: "POST",
       headers: { Authorization: `Bearer ${getAuthToken()}`, Accept: "application/json" },
       body,
@@ -639,7 +640,7 @@ async function resubmitSlot(
   error.value = "";
   success.value = "";
   try {
-    const response = await fetch("/api/student/requirement-vault/resubmit-slot", {
+    const response = await fetch(apiUrl("/api/student/requirement-vault/resubmit-slot"), {
       method: "POST",
       headers: {
         Accept: "application/json",

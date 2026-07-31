@@ -22,7 +22,8 @@
     "vue": "^3.5.13",
     "vue-i18n": "^11.4.6",
     "vue-router": "^4.5.0",
-    "vue-sonner": "^2.0.9"
+    "vue-sonner": "^2.0.9",
+    "vue3-recaptcha2": "^1.8.0"
   },
   "overrides": {
     "node-fetch": "^2.7.0"

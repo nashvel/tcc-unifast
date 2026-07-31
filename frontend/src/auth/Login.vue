@@ -3,15 +3,15 @@ import { onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { ArrowRight, ChevronDown, ChevronUp, Eye, EyeOff, HelpCircle, Lock, Mail, ShieldCheck, UserRound } from "lucide-vue-next";
-import logo from "@/assets/system-logo.png";
-import studentsCutout from "@/assets/auth/tcc-students-cutout.png";
+import logo from "@/assets/system-logo.webp";
+import studentsCutout from "@/assets/auth/tcc-students-cutout.webp";
 import { authSession } from "@/auth/session";
 import { studentHomePath } from "@/auth/onboardingResume";
 import { login } from "@/api/auth";
 import { apiFetch } from "@/api/client";
-import CaptchaModal from "@/components/CaptchaModal.vue";
 import LanguageSwitcher from "@/components/LanguageSwitcher.vue";
 import { withLang } from "@/i18n/routeLang";
+import VueRecaptcha from "vue3-recaptcha2";
 
 // Force light mode on login page - never use dark mode here
 onMounted(() => {
@@ -26,7 +26,7 @@ const password = ref("");
 const showPassword = ref(false);
 const showCaptchaModal = ref(false);
 const captchaCode = ref("");
-const captchaError = ref(""); // error shown inside the captcha modal
+const recaptcha = ref<any>(null); // Ref to reset captcha
 const error = ref("");
 const busy = ref(false);
 const mode = route.path.includes("forgot")
@@ -39,6 +39,9 @@ type Term = { id: number; title: string; content: string; version: string };
 
 const terms = ref<Term | null>(null);
 const showTerms = ref(false);
+
+const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY || "";
+const bypassCaptcha = import.meta.env.VITE_DEV_BYPASS_CAPTCHA === 'true';
 
 const demoAccounts: Record<string, string> = {
   Developer: "admin@unifast.gov.ph",
@@ -53,22 +56,22 @@ function openCaptchaModal() {
     return;
   }
   
-  // Local development bypass using Vite env flag
-  if (import.meta.env.VITE_DEV_BYPASS_CAPTCHA === 'true') {
-    captchaCode.value = "BYPASS"; // Dummy value for the backend to receive
+  if (bypassCaptcha) {
     submit();
     return;
   }
   
-  captchaError.value = "";
+  error.value = "";
   showCaptchaModal.value = true;
 }
 
-// Called when the user clicks Verify inside the modal.
-// We do NOT close the modal here — submit() decides based on the API response.
-async function handleCaptchaVerify(code: string) {
-  captchaCode.value = code;
-  await submit();
+function onCaptchaVerify(response: string) {
+  captchaCode.value = response;
+  submit();
+}
+
+function onCaptchaExpired() {
+  captchaCode.value = "";
 }
 
 async function submit() {
@@ -77,30 +80,32 @@ async function submit() {
     return;
   }
 
+  // If bypassing, provide dummy value
+  if (bypassCaptcha && !captchaCode.value) {
+    captchaCode.value = "BYPASS";
+  }
+
   busy.value = true;
   error.value = "";
-  captchaError.value = "";
   try {
     const user = await login(email.value, password.value, captchaCode.value);
-    // Success — close the modal and navigate
+    // Success — close modal and navigate
     showCaptchaModal.value = false;
     authSession.user = user;
     authSession.loaded = true;
     // Mid-onboarding students resume at KYC / ID scan / liveness (no reactivation).
     await router.push(withLang(studentHomePath(user), route.query.lang));
   } catch (exception) {
-    const msg = exception instanceof Error ? exception.message : t("auth.signInFailed");
-    // If the captcha modal is open, captcha-related errors stay inside the modal
-    if (showCaptchaModal.value) {
-      captchaError.value = msg;
-      captchaCode.value = "";
-      // Reload captcha image for a fresh attempt
-    } else {
-      error.value = msg;
+    error.value = exception instanceof Error ? exception.message : t("auth.signInFailed");
+    // Reset captcha on failure since tokens are single-use
+    captchaCode.value = "";
+    if (recaptcha.value) {
+      recaptcha.value.reset();
     }
+    // If login failed (e.g. wrong password), close the modal so they can fix it
+    showCaptchaModal.value = false;
   } finally {
     busy.value = false;
-    if (!showCaptchaModal.value) captchaCode.value = "";
   }
 }
 
@@ -255,7 +260,8 @@ onMounted(async () => {
               </button>
             </div>
           </label>
-          <p v-if="error" class="text-xs text-danger">{{ error }}</p>
+          <p v-if="error" class="text-xs text-danger mb-2">{{ error }}</p>
+
           <button
             type="button"
             :disabled="busy"
@@ -315,11 +321,35 @@ onMounted(async () => {
     </main>
   </div>
 
-  <CaptchaModal
-    :show="showCaptchaModal"
-    :submit-error="captchaError"
-    :loading="busy"
-    @close="showCaptchaModal = false; captchaError = ''"
-    @verify="handleCaptchaVerify"
-  />
+  <!-- reCAPTCHA Modal Overlay -->
+  <div v-if="showCaptchaModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+    <div class="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl relative">
+      <h3 class="mb-4 text-center text-lg font-semibold tracking-tight text-text">
+        Security Verification
+      </h3>
+      <p class="mb-5 text-center text-sm text-text-muted">
+        Please complete the CAPTCHA to continue signing in.
+      </p>
+      
+      <div class="flex justify-center mb-6">
+        <VueRecaptcha
+          ref="recaptcha"
+          :sitekey="siteKey"
+          size="normal"
+          theme="light"
+          @verify="onCaptchaVerify"
+          @expired="onCaptchaExpired"
+          @error="onCaptchaExpired"
+        />
+      </div>
+
+      <button
+        type="button"
+        class="w-full rounded-md border py-2 text-sm font-medium hover:bg-surface-muted"
+        @click="showCaptchaModal = false"
+      >
+        Cancel
+      </button>
+    </div>
+  </div>
 </template>

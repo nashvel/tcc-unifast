@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { apiUrl } from "@/api/client";
 import { onMounted, ref } from "vue";
 import { useRoute } from "vue-router";
 import { ChevronDown, HelpCircle, ArrowLeft, Mail, Phone, MessageCircle } from "lucide-vue-next";
@@ -21,8 +22,8 @@ async function loadData() {
   loading.value = true;
   try {
     const [faqsRes, termsRes] = await Promise.all([
-      fetch("/api/faqs").then((r) => r.json()),
-      fetch("/api/terms/active").then((r) => r.json()),
+      fetch(apiUrl("/api/faqs")).then((r) => r.json()),
+      fetch(apiUrl("/api/terms/active")).then((r) => r.json()),
     ]);
     faqs.value = faqsRes.data || [];
     terms.value = termsRes.data;
