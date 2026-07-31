@@ -1,3 +1,17 @@
+# Allow the storage/ symlink to be served (points at storage/app/public).
+Options +FollowSymLinks
+
+# Stored documents and identity photos are served statically by the web server,
+# so config/cors.php never runs on them. face-api.js fetchImage() reads these
+# cross-origin from the SPA, which requires an explicit CORS header.
+<IfModule mod_headers.c>
+    SetEnvIf Origin "^https://tcc-unifast\.vercel\.app$" CORS_ORIGIN=$0
+    <FilesMatch "\.(jpe?g|png|webp|pdf)$">
+        Header set Access-Control-Allow-Origin %{CORS_ORIGIN}e env=CORS_ORIGIN
+        Header append Vary Origin
+    </FilesMatch>
+</IfModule>
+
 <IfModule mod_rewrite.c>
     <IfModule mod_negotiation.c>
         Options -MultiViews -Indexes
