@@ -16,6 +16,11 @@ dist-ssr/
 *.local
 
 # Laravel
+backend/database/*.sqlite
+backend/database/*.sqlite-journal
+backend/database/*.sqlite-wal
+backend/database/*.sqlite-shm
+database/*.sqlite*
 backend/storage/*.key
 backend/storage/framework/cache/data/*
 backend/storage/framework/sessions/*
