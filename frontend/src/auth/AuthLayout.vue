@@ -2,7 +2,7 @@
 import { IconShieldCheck } from "@tabler/icons-vue";
 import { useI18n } from "vue-i18n";
 import LanguageSwitcher from "@/components/LanguageSwitcher.vue";
-import studentsCutout from "@/assets/auth/forgot-password-students.webp";
+import studentsCutout from "@/assets/auth/TCC_UNIFAST_OFFICE.webp";
 
 const { t } = useI18n();
 </script>
@@ -61,7 +61,7 @@ const { t } = useI18n();
       <img
         :src="studentsCutout"
         alt="Students"
-        class="absolute bottom-16 left-1/2 z-0 w-[94%] max-w-none -translate-x-1/2 object-contain xl:w-[90%]"
+        class="absolute bottom-16 left-1/2 z-0 w-[94%] max-w-none -translate-x-1/2 object-contain drop-shadow-2xl brightness-105 contrast-105 transition-all duration-700 hover:scale-[1.02] hover:brightness-110 xl:w-[90%]"
       />
     </aside>
     <main class="flex flex-1 items-center justify-center p-6">
