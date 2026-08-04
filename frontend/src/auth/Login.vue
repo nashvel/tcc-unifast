@@ -4,7 +4,7 @@ import { useRoute, useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { ArrowRight, ChevronDown, ChevronUp, Eye, EyeOff, HelpCircle, Lock, Mail, ShieldCheck, UserRound } from "lucide-vue-next";
 import logo from "@/assets/system-logo.webp";
-import studentsCutout from "@/assets/auth/tcc-students-cutout.webp";
+import studentsCutout from "@/assets/auth/TCC_UNIFAST_OFFICE.webp";
 import { authSession } from "@/auth/session";
 import { studentHomePath } from "@/auth/onboardingResume";
 import { login } from "@/api/auth";
@@ -180,7 +180,7 @@ onMounted(async () => {
       <img
         :src="studentsCutout"
         alt="Tagoloan Community College students"
-        class="absolute bottom-0 left-1/2 z-10 w-[94%] max-w-none -translate-x-1/2 object-contain xl:w-[90%]"
+        class="absolute bottom-0 left-1/2 z-10 w-[94%] max-w-none -translate-x-1/2 object-contain drop-shadow-2xl brightness-105 contrast-105 transition-all duration-700 hover:scale-[1.02] hover:brightness-110 xl:w-[90%]"
       />
     </section>
 
