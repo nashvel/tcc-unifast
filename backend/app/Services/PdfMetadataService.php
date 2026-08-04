@@ -23,8 +23,12 @@ class PdfMetadataService
         $fromOcr = data_get($ocrPayload, 'pdf_metadata');
         if (is_array($fromOcr) && $fromOcr !== []) {
             $analysis = $this->analyzer->analyze($fromOcr);
+            // Caller may pass metadata from pdf_extract.py or the OCR microservice.
+            $source = (string) ($fromOcr['engine'] ?? '') === 'pymupdf'
+                ? 'pymupdf'
+                : 'ocr_service';
 
-            return [...$analysis, 'source' => 'ocr_service'];
+            return [...$analysis, 'source' => $source, 'fields' => $this->mergeFields($analysis['fields'], $fromOcr)];
         }
 
         if ($absolutePath && is_file($absolutePath)) {
@@ -32,11 +36,27 @@ class PdfMetadataService
             if ($local !== []) {
                 $analysis = $this->analyzer->analyze($local);
 
-                return [...$analysis, 'source' => 'pymupdf_local'];
+                return [
+                    ...$analysis,
+                    'source' => 'pymupdf_local',
+                    'fields' => $this->mergeFields($analysis['fields'], $local),
+                ];
             }
         }
 
         return ['suspicious' => false, 'reasons' => [], 'fields' => [], 'source' => 'unavailable'];
+    }
+
+    /**
+     * Keep analyzer risk fields plus full PyMuPDF payload (page_count, engine, etc.).
+     *
+     * @param  array<string, mixed>  $analyzed
+     * @param  array<string, mixed>  $raw
+     * @return array<string, mixed>
+     */
+    private function mergeFields(array $analyzed, array $raw): array
+    {
+        return array_merge($raw, $analyzed);
     }
 
     /**
@@ -58,11 +78,19 @@ class PdfMetadataService
             return [];
         }
 
-        $payload = json_decode(trim($result->output()), true, 512, JSON_INVALID_UTF8_SUBSTITUTE);
+        $rawOut = trim($result->output());
+        $start = strpos($rawOut, '{');
+        $end = strrpos($rawOut, '}');
+        if ($start !== false && $end !== false && $end >= $start) {
+            $rawOut = substr($rawOut, $start, $end - $start + 1);
+        }
+        $payload = json_decode($rawOut, true, 512, JSON_INVALID_UTF8_SUBSTITUTE);
         if (! is_array($payload) || ! ($payload['success'] ?? false)) {
             Log::warning('pdf_metadata.failed', [
+                'python' => $python,
                 'exit' => $result->exitCode(),
                 'stderr' => Str::limit(trim($result->errorOutput()), 300),
+                'stdout_head' => Str::limit(trim($result->output()), 200),
                 'json_error' => json_last_error_msg(),
             ]);
 

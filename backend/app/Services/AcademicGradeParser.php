@@ -9,30 +9,35 @@ use Illuminate\Support\Str;
 
 class AcademicGradeParser
 {
-    /** Current term + this many immediately preceding terms: CH blanks → pending. */
-    public const PENDING_TERM_WINDOW = 3;
+    /**
+     * CH-only fallback: newest term + optional 2nd-newest (when it has blanks).
+     * Prefer Grade Slip academic_term anchor when available.
+     */
+    public const PENDING_TERM_WINDOW = 2;
 
     /**
      * Parse Course History / Grade Slip OCR text or structured courses/terms.
      *
      * Document-type blank policy:
      * - grade_slip: blank grades are informational only (blank_count); not retention.
-     * - course_history: blank / INC / NG / — grades are pending when the term is within
-     *   the pending window (newest term on the document + 2 prior semesters, including
-     *   Summer/Midyear). Older-term blanks count as dropped toward retention.
+     * - course_history: blanks are Pending on the Grade Slip term and any CH term
+     *   strictly newer than that GS term (current enrollment). Older CH blanks count
+     *   as Dropped. Without GS: newest term (+ 2nd-newest if it has blanks) = Pending.
      *   Explicit Dropped/DRP remarks always count as dropped.
      *
      * Multi-program (shift): when terms[] carry per-term program, each course is scored
      * against that term's program pass grade (BSED vs BSIT may differ).
      *
      * Failed = numeric grades worse than program pass grade.
-     * Retention = numeric fails + dropped (pending ignored).
+     * Retention = overall numeric fails + dropped across full Course History
+     * (pending blanks ignored). Not a per-semester cap.
      *
-     * Threshold: Settings `max_failed_subjects_per_semester`.
+     * Threshold: Settings `max_failed_subjects_per_semester` (overall max; default 3).
      *
      * @param  list<array<string, mixed>>|null  $courses
      * @param  'course_history'|'grade_slip'|null  $documentType
      * @param  list<array<string, mixed>>|null  $terms
+     * @param  string|null  $gradeSlipTerm  Academic term from uploaded Grade Slip (e.g. "2025-2026 Summer")
      * @return array<string, mixed>
      */
     public function parse(
@@ -41,13 +46,20 @@ class AcademicGradeParser
         ?array $courses = null,
         ?string $documentType = null,
         ?array $terms = null,
+        ?string $gradeSlipTerm = null,
     ): array {
         $documentType = $this->normalizeDocumentType($documentType);
         $defaultPass = (float) PolicySetting::defaultPassGrade();
 
         $structuredTerms = $this->normalizeTermsInput($terms, $courses, $text, $fallbackProgram);
         if ($structuredTerms !== []) {
-            $summary = $this->summarizeTerms($structuredTerms, $documentType, $fallbackProgram, $defaultPass);
+            $summary = $this->summarizeTerms(
+                $structuredTerms,
+                $documentType,
+                $fallbackProgram,
+                $defaultPass,
+                $gradeSlipTerm,
+            );
         } elseif (is_array($courses) && $courses !== []) {
             $programCode = $this->resolveProgramCodeFromLabel(
                 $this->extractProgramCode($text) ?: $fallbackProgram
@@ -120,12 +132,16 @@ class AcademicGradeParser
             'document_type' => $documentType,
             'source' => $documentType,
             'pending_term_window' => self::PENDING_TERM_WINDOW,
+            'grade_slip_term' => $gradeSlipTerm !== null && trim($gradeSlipTerm) !== ''
+                ? trim(preg_replace('/\s+/', ' ', $gradeSlipTerm) ?? $gradeSlipTerm)
+                : null,
+            'terms_detected' => is_array($summary['terms'] ?? null) && ($summary['terms'] ?? []) !== [],
         ];
     }
 
     /**
      * Score each term with its own program pass grade, then aggregate retention.
-     * CH blanks in the pending window (newest term + 2 prior) → pending; older → dropped.
+     * CH blanks: Pending on GS term + newer CH terms; older → Dropped.
      *
      * @param  list<array<string, mixed>>  $terms
      * @param  'course_history'|'grade_slip'|null  $documentType
@@ -136,6 +152,7 @@ class AcademicGradeParser
         ?string $documentType = null,
         ?string $fallbackProgram = null,
         ?float $defaultPass = null,
+        ?string $gradeSlipTerm = null,
     ): array {
         $documentType = $this->normalizeDocumentType($documentType);
         $defaultPass ??= (float) PolicySetting::defaultPassGrade();
@@ -149,7 +166,7 @@ class AcademicGradeParser
         $latestProgram = $this->resolveProgramCodeFromLabel($fallbackProgram);
         $anyMatched = false;
 
-        $pendingKeys = $this->pendingTermKeys($terms);
+        $pendingKeys = $this->pendingTermKeys($terms, $gradeSlipTerm);
 
         foreach ($terms as $term) {
             if (! is_array($term)) {
@@ -384,12 +401,15 @@ class AcademicGradeParser
     }
 
     /**
-     * Newest distinct academic_term keys that fall in the pending window.
+     * Academic terms whose CH blanks count as Pending (not Dropped).
+     *
+     * With Grade Slip term: that term + any CH term strictly newer.
+     * Without GS: newest term always; 2nd-newest only if it has any blank/INC grades.
      *
      * @param  list<array<string, mixed>>  $terms
      * @return list<string>
      */
-    public function pendingTermKeys(array $terms): array
+    public function pendingTermKeys(array $terms, ?string $gradeSlipTerm = null): array
     {
         $byKey = [];
         foreach ($terms as $term) {
@@ -413,9 +433,299 @@ class AcademicGradeParser
             return [];
         }
         arsort($byKey, SORT_NUMERIC);
-        $newest = array_keys($byKey);
 
-        return array_slice($newest, 0, self::PENDING_TERM_WINDOW);
+        $gsLabel = is_string($gradeSlipTerm) ? trim(preg_replace('/\s+/', ' ', $gradeSlipTerm) ?? '') : '';
+        if ($gsLabel !== '') {
+            $gsSort = $this->termSortKey($gsLabel);
+            $pending = [];
+            foreach ($byKey as $canon => $sort) {
+                if (strcasecmp($canon, $gsLabel) === 0 || ($gsSort > 0 && $sort > $gsSort)) {
+                    $pending[] = $canon;
+                }
+            }
+            // GS term not found on CH labels — still treat GS label as pending anchor.
+            if ($pending === [] || ! in_array($gsLabel, $pending, true)) {
+                $matched = false;
+                foreach ($pending as $p) {
+                    if (strcasecmp($p, $gsLabel) === 0) {
+                        $matched = true;
+                        break;
+                    }
+                }
+                if (! $matched) {
+                    array_unshift($pending, $gsLabel);
+                }
+            }
+
+            return array_values(array_unique($pending));
+        }
+
+        // CH-only fallback: newest always; 2nd-newest when it has blanks (assumed last graded slip).
+        $newestFirst = array_keys($byKey);
+        $pending = [];
+        if (isset($newestFirst[0])) {
+            $pending[] = $newestFirst[0];
+        }
+        if (isset($newestFirst[1]) && $this->termHasBlankGrades($terms, $newestFirst[1])) {
+            $pending[] = $newestFirst[1];
+        }
+
+        return $pending;
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $terms
+     */
+    public function termHasBlankGrades(array $terms, string $academicTermCanon): bool
+    {
+        foreach ($terms as $term) {
+            if (! is_array($term)) {
+                continue;
+            }
+            $label = trim(preg_replace('/\s+/', ' ', (string) ($term['academic_term'] ?? '')) ?? '');
+            if ($label === '' || strcasecmp($label, $academicTermCanon) !== 0) {
+                continue;
+            }
+            $courses = is_array($term['courses'] ?? null) ? $term['courses'] : [];
+            foreach ($courses as $course) {
+                if (! is_array($course)) {
+                    continue;
+                }
+                $grade = isset($course['grade']) ? trim((string) $course['grade']) : '';
+                if ($grade === '' || preg_match('/^(?:—|-|–|inc|ng|n\/a)$/i', $grade) === 1) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Best academic_term label from a Grade Slip parse / OCR summary.
+     *
+     * When GS has no year/semester (common for table-only OCR), optionally infer
+     * the term by matching GS course codes against Course History terms[].
+     *
+     * @param  array<string, mixed>  $gradeSlipParsed
+     * @param  list<array<string, mixed>>|null  $courseHistoryTerms
+     */
+    public function resolveGradeSlipTerm(array $gradeSlipParsed, ?array $courseHistoryTerms = null): ?string
+    {
+        $terms = $gradeSlipParsed['terms'] ?? null;
+        if (is_array($terms) && $terms !== []) {
+            $best = null;
+            $bestSort = -1;
+            foreach ($terms as $term) {
+                if (! is_array($term)) {
+                    continue;
+                }
+                $label = trim((string) ($term['academic_term'] ?? ''));
+                if ($label === '') {
+                    continue;
+                }
+                $sort = $this->termSortKey($label);
+                if ($sort > $bestSort) {
+                    $bestSort = $sort;
+                    $best = preg_replace('/\s+/', ' ', $label) ?? $label;
+                }
+            }
+            if (is_string($best) && $best !== '') {
+                return $best;
+            }
+        }
+
+        $year = isset($gradeSlipParsed['academic_year']) ? trim((string) $gradeSlipParsed['academic_year']) : '';
+        $sem = isset($gradeSlipParsed['semester_label']) ? trim((string) $gradeSlipParsed['semester_label']) : '';
+        // semester_label may already be a full term ("2025-2026 Summer") from extractSemesterLabel.
+        if ($sem !== '' && $this->termSortKey($sem) > 0) {
+            return preg_replace('/\s+/', ' ', $sem) ?? $sem;
+        }
+        if ($year !== '' && $sem !== '') {
+            return trim(preg_replace('/\s+/', ' ', $year.' '.$sem) ?? ($year.' '.$sem));
+        }
+
+        $gsCourses = is_array($gradeSlipParsed['courses'] ?? null) ? $gradeSlipParsed['courses'] : [];
+        if ($gsCourses !== [] && is_array($courseHistoryTerms) && $courseHistoryTerms !== []) {
+            return $this->inferGradeSlipTermFromCourseOverlap($gsCourses, $courseHistoryTerms);
+        }
+
+        return null;
+    }
+
+    /**
+     * Infer GS academic term by maximizing course-code overlap with a CH term.
+     * Used when Grade Slip OCR has courses but no year/semester header.
+     *
+     * @param  list<array<string, mixed>>  $gsCourses
+     * @param  list<array<string, mixed>>  $chTerms
+     */
+    public function inferGradeSlipTermFromCourseOverlap(array $gsCourses, array $chTerms): ?string
+    {
+        $gsCodes = [];
+        foreach ($gsCourses as $course) {
+            if (! is_array($course)) {
+                continue;
+            }
+            $code = Str::upper(trim((string) ($course['code'] ?? '')));
+            if ($code !== '') {
+                $gsCodes[$code] = true;
+            }
+        }
+        if ($gsCodes === []) {
+            return null;
+        }
+        $gsCount = count($gsCodes);
+
+        $bestLabel = null;
+        $bestScore = 0;
+        $bestSort = -1;
+        foreach ($chTerms as $term) {
+            if (! is_array($term)) {
+                continue;
+            }
+            $label = trim(preg_replace('/\s+/', ' ', (string) ($term['academic_term'] ?? '')) ?? '');
+            if ($label === '' || $this->termSortKey($label) <= 0) {
+                continue;
+            }
+            $termCourses = is_array($term['courses'] ?? null) ? $term['courses'] : [];
+            $hits = 0;
+            foreach ($termCourses as $course) {
+                if (! is_array($course)) {
+                    continue;
+                }
+                $code = Str::upper(trim((string) ($course['code'] ?? '')));
+                if ($code !== '' && isset($gsCodes[$code])) {
+                    $hits++;
+                }
+            }
+            if ($hits === 0) {
+                continue;
+            }
+            // Require majority of GS codes (or at least 2 when GS has 3+ courses).
+            $minHits = $gsCount >= 3 ? 2 : 1;
+            if ($hits < $minHits) {
+                continue;
+            }
+            $sort = $this->termSortKey($label);
+            if ($hits > $bestScore || ($hits === $bestScore && $sort > $bestSort)) {
+                $bestScore = $hits;
+                $bestSort = $sort;
+                $bestLabel = $label;
+            }
+        }
+
+        return $bestLabel;
+    }
+
+    /**
+     * True when Grade Slip looks like current-enrollment (no graded rows).
+     *
+     * @param  array<string, mixed>  $gradeSlipParsed
+     */
+    public function gradeSlipLooksLikeEmptyEnrollment(array $gradeSlipParsed): bool
+    {
+        $grades = $gradeSlipParsed['grades'] ?? null;
+        $numeric = is_array($grades) ? count(array_filter($grades, 'is_numeric')) : 0;
+        $blank = (int) ($gradeSlipParsed['blank_count'] ?? 0);
+        $pending = (int) ($gradeSlipParsed['pending_count'] ?? 0);
+        $failed = (int) ($gradeSlipParsed['failed_count'] ?? 0);
+        $dropped = (int) ($gradeSlipParsed['dropped_count'] ?? 0);
+
+        return $numeric === 0 && $failed === 0 && $dropped === 0 && ($blank + $pending) > 0;
+    }
+
+    /**
+     * CH blank on GS term while Grade Slip has a numeric grade for the same course code.
+     *
+     * @param  list<array<string, mixed>>|null  $chTerms
+     * @param  list<array<string, mixed>>|null  $chCourses
+     * @param  list<array<string, mixed>>|null  $gsCourses
+     * @return list<array{code: string, ch_grade: mixed, gs_grade: mixed}>
+     */
+    public function crossCheckChBlanksAgainstGradeSlip(
+        ?array $chTerms,
+        ?array $chCourses,
+        ?array $gsCourses,
+        ?string $gradeSlipTerm,
+    ): array {
+        $gsLabel = is_string($gradeSlipTerm) ? trim(preg_replace('/\s+/', ' ', $gradeSlipTerm) ?? '') : '';
+        if ($gsLabel === '' || ! is_array($gsCourses) || $gsCourses === []) {
+            return [];
+        }
+
+        $gsByCode = [];
+        foreach ($gsCourses as $course) {
+            if (! is_array($course)) {
+                continue;
+            }
+            $code = Str::upper(trim((string) ($course['code'] ?? '')));
+            if ($code === '') {
+                continue;
+            }
+            $grade = isset($course['grade']) ? trim((string) $course['grade']) : '';
+            if ($grade === '' || preg_match('/^(?:—|-|–|inc|ng|n\/a)$/i', $grade) === 1) {
+                continue;
+            }
+            if (! is_numeric($grade) && ! preg_match('/^[1-5](?:\.\d{1,2})?$/', $grade)) {
+                continue;
+            }
+            $gsByCode[$code] = $course['grade'];
+        }
+        if ($gsByCode === []) {
+            return [];
+        }
+
+        $chRows = [];
+        if (is_array($chTerms)) {
+            foreach ($chTerms as $term) {
+                if (! is_array($term)) {
+                    continue;
+                }
+                $label = trim(preg_replace('/\s+/', ' ', (string) ($term['academic_term'] ?? '')) ?? '');
+                if ($label === '' || strcasecmp($label, $gsLabel) !== 0) {
+                    continue;
+                }
+                $termCourses = is_array($term['courses'] ?? null) ? $term['courses'] : [];
+                foreach ($termCourses as $course) {
+                    if (is_array($course)) {
+                        $chRows[] = $course;
+                    }
+                }
+            }
+        }
+        if ($chRows === [] && is_array($chCourses)) {
+            foreach ($chCourses as $course) {
+                if (! is_array($course)) {
+                    continue;
+                }
+                $term = trim(preg_replace('/\s+/', ' ', (string) ($course['academic_term'] ?? '')) ?? '');
+                if ($term !== '' && strcasecmp($term, $gsLabel) !== 0) {
+                    continue;
+                }
+                $chRows[] = $course;
+            }
+        }
+
+        $mismatches = [];
+        foreach ($chRows as $course) {
+            $code = Str::upper(trim((string) ($course['code'] ?? '')));
+            if ($code === '' || ! isset($gsByCode[$code])) {
+                continue;
+            }
+            $chGrade = isset($course['grade']) ? trim((string) $course['grade']) : '';
+            $isBlank = $chGrade === '' || preg_match('/^(?:—|-|–|inc|ng|n\/a)$/i', $chGrade) === 1;
+            if (! $isBlank) {
+                continue;
+            }
+            $mismatches[] = [
+                'code' => $code,
+                'ch_grade' => $course['grade'] ?? null,
+                'gs_grade' => $gsByCode[$code],
+            ];
+        }
+
+        return $mismatches;
     }
 
     /**
@@ -683,8 +993,75 @@ class AcademicGradeParser
             }
         }
 
-        // Text-only headers (no structured courses) — not useful alone for scoring.
+        // Recover term headers from linear OCR text when Python omitted terms[].
+        // Never return header-only terms without courses — that would wipe grades in summarizeTerms.
+        $fromText = $this->termsFromLinearText($text);
+        if ($fromText === []) {
+            return [];
+        }
+
+        $flatCourses = (is_array($courses) && $courses !== [])
+            ? array_values(array_filter($courses, 'is_array'))
+            : $this->coursesFromLinearText($text);
+
+        if ($flatCourses === []) {
+            return [];
+        }
+
+        $grouped = $this->groupCoursesIntoTerms($flatCourses, $fallbackProgram);
+        if ($grouped !== []) {
+            return $this->enrichGroupedTermsWithHeaders($grouped, $fromText);
+        }
+
+        // Single header: attach all linear courses (common CH extract without per-row terms).
+        if (count($fromText) === 1) {
+            $fromText[0]['courses'] = $flatCourses;
+
+            return $fromText;
+        }
+
+        // Multiple headers without per-course term keys: keep grades via flat parse path.
         return [];
+    }
+
+    /**
+     * Copy year_level / enrollment_status from text headers onto grouped terms.
+     *
+     * @param  list<array<string, mixed>>  $grouped
+     * @param  list<array<string, mixed>>  $headers
+     * @return list<array<string, mixed>>
+     */
+    private function enrichGroupedTermsWithHeaders(array $grouped, array $headers): array
+    {
+        $byTerm = [];
+        foreach ($headers as $header) {
+            $key = trim((string) ($header['academic_term'] ?? ''));
+            if ($key !== '') {
+                $byTerm[Str::lower($key)] = $header;
+            }
+        }
+        foreach ($grouped as &$term) {
+            $key = Str::lower(trim((string) ($term['academic_term'] ?? '')));
+            if ($key === '' || ! isset($byTerm[$key])) {
+                continue;
+            }
+            $header = $byTerm[$key];
+            if (empty($term['year_level']) && ! empty($header['year_level'])) {
+                $term['year_level'] = $header['year_level'];
+            }
+            if (empty($term['enrollment_status']) && ! empty($header['enrollment_status'])) {
+                $term['enrollment_status'] = $header['enrollment_status'];
+            }
+            if (empty($term['program_raw']) && ! empty($header['program_raw'])) {
+                $term['program_raw'] = $header['program_raw'];
+            }
+            if (empty($term['program_code']) && ! empty($header['program_code'])) {
+                $term['program_code'] = $header['program_code'];
+            }
+        }
+        unset($term);
+
+        return $grouped;
     }
 
     /**

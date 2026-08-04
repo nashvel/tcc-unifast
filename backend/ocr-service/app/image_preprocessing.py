@@ -134,6 +134,59 @@ def enhance_for_ocr(image: np.ndarray) -> tuple[np.ndarray, float]:
     return _deskew(thresholded)
 
 
+def enhance_grayscale_contrast(image: np.ndarray) -> np.ndarray:
+    """Denoise + strong CLAHE contrast without adaptive threshold (keeps light-on-dark text)."""
+    if len(image.shape) == 3:
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    else:
+        gray = image
+    denoised = cv2.fastNlMeansDenoising(gray, h=10)
+    clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
+    return clahe.apply(denoised)
+
+
+def enhance_inverted_light_text(image: np.ndarray) -> tuple[np.ndarray, float]:
+    """
+    Invert color first (white-on-purple → dark-on-light), then standard enhance.
+    Adaptive threshold runs after invert so light name text becomes dark strokes.
+    """
+    inverted = cv2.bitwise_not(image)
+    return enhance_for_ocr(inverted)
+
+
+def name_band_crop(warped_bgr: np.ndarray) -> np.ndarray | None:
+    """
+    Mid/upper band where TCC School ID prints the white name on purple.
+    Returns None when the crop would be too small.
+    """
+    h, w = warped_bgr.shape[:2]
+    if h < 40 or w < 40:
+        return None
+    y0 = int(h * 0.16)
+    y1 = int(h * 0.52)
+    crop = warped_bgr[y0:y1, 0:w]
+    if crop.size == 0 or min(crop.shape[:2]) < 24:
+        return None
+    return crop
+
+
+def id_number_band_crop(warped_bgr: np.ndarray) -> np.ndarray | None:
+    """
+    Mid band where TCC School ID prints 'ID Number' / student digits (often below the name).
+    Prefer left/center text column — barcode may sit lower-right.
+    """
+    h, w = warped_bgr.shape[:2]
+    if h < 40 or w < 40:
+        return None
+    y0 = int(h * 0.22)
+    y1 = int(h * 0.68)
+    x1 = int(w * 0.78)
+    crop = warped_bgr[y0:y1, 0:x1]
+    if crop.size == 0 or min(crop.shape[:2]) < 24:
+        return None
+    return crop
+
+
 def region_crops(warped_bgr: np.ndarray) -> list[tuple[str, np.ndarray]]:
     """
     Relative ROI heuristics for TCC School ID (after perspective warp).

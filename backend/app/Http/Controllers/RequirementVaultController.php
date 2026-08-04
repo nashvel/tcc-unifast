@@ -7,7 +7,9 @@ use App\Models\AuditLog;
 use App\Models\DocumentSubmission;
 use App\Models\Grantee;
 use App\Models\GranteeIdentityProfile;
+use App\Models\PolicySetting;
 use App\Models\RequirementIdentityCheck;
+use App\Models\User;
 use App\Services\BatchWindowService;
 use App\Services\IdCardOcrService;
 use App\Services\MasterlistTruthService;
@@ -17,6 +19,8 @@ use App\Support\SecureUpload;
 use App\Support\VaultFileStorage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -61,11 +65,56 @@ class RequirementVaultController extends Controller
                 'id_reference_face_url' => $identity->id_reference_face_path
                     ? VaultFileStorage::authIdentityUrl('id_reference_face.jpg')
                     : null,
+                'id_onboarding_frame_url' => is_string(data_get($identity->id_ocr_payload, 'frame_path'))
+                    && data_get($identity->id_ocr_payload, 'frame_path') !== ''
+                    ? VaultFileStorage::authIdentityUrl('id_onboarding_frame.jpg')
+                    : null,
                 'onboarding_selfie_url' => $identity->onboarding_selfie_path
                     ? VaultFileStorage::authIdentityUrl('onboarding_selfie.jpg')
                     : null,
                 'completed' => $identity->isComplete(),
             ] : null,
+        ]);
+    }
+
+    public function validateFrontIdOcr(
+        Request $request,
+        BatchWindowService $windows,
+        IdCardOcrService $ocr,
+        MasterlistTruthService $truth,
+    ): JsonResponse {
+        $context = $this->studentContext($request, $windows);
+        $grantee = $context['grantee'];
+        $this->assertCanMutateVault($grantee, self::SCHOOL_ID_SLOT);
+
+        $identity = GranteeIdentityProfile::query()->where('grantee_id', $grantee->id)->first();
+        if (! $identity?->isComplete()) {
+            throw ValidationException::withMessages([
+                'onboarding' => 'Complete identity onboarding (ID scan + liveness) before submitting requirements.',
+            ]);
+        }
+
+        $validated = $request->validate([
+            'id_frame' => ['required', 'file', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
+        ]);
+
+        SecureUpload::assertAllowedMime($validated['id_frame'], self::IMAGE_MIMES, 'id_frame');
+
+        $front = $this->assertFrontOcrMatches(
+            $validated['id_frame'],
+            $request->user(),
+            $grantee,
+            $ocr,
+            $truth,
+        );
+
+        return response()->json([
+            'data' => [
+                'ok' => true,
+                'extracted_name' => $front['match']['extracted_name'],
+                'extracted_student_id' => $front['match']['extracted_student_id'],
+                'ocr_provider' => $front['ocr']['provider'] ?? null,
+            ],
         ]);
     }
 
@@ -91,8 +140,9 @@ class RequirementVaultController extends Controller
         $validated = $request->validate([
             'id_frame' => ['required', 'file', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
             'id_face_crop' => ['required', 'file', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
-            'id_back' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
-            'qr_payload' => ['required', 'string', 'max:2000'],
+            'id_back' => ['required', 'file', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
+            // QR is best-effort for Slot 1 — store flags for staff; never hard-block submit.
+            'qr_payload' => ['nullable', 'string', 'max:2000'],
             'face_descriptor' => ['required', 'array', 'size:128'],
             'face_descriptor.*' => ['required', 'numeric'],
             'face_quality_score' => ['required', 'numeric', 'min:0', 'max:1'],
@@ -105,9 +155,7 @@ class RequirementVaultController extends Controller
 
         SecureUpload::assertAllowedMime($validated['id_frame'], self::IMAGE_MIMES, 'id_frame');
         $faceMime = SecureUpload::assertAllowedMime($validated['id_face_crop'], self::IMAGE_MIMES, 'id_face_crop');
-        if (isset($validated['id_back'])) {
-            SecureUpload::assertAllowedMime($validated['id_back'], self::IMAGE_MIMES, 'id_back');
-        }
+        SecureUpload::assertAllowedMime($validated['id_back'], self::IMAGE_MIMES, 'id_back');
 
         $probe = FaceDescriptorMath::normalize($validated['face_descriptor']);
         if (! is_array($identity->id_reference_face_descriptor) || ! is_array($identity->onboarding_selfie_descriptor)) {
@@ -132,23 +180,46 @@ class RequirementVaultController extends Controller
             ]);
         }
 
-        if (! $qr->isValid($validated['qr_payload'])) {
+        $front = $this->assertFrontOcrMatches(
+            $validated['id_frame'],
+            $request->user(),
+            $grantee,
+            $ocr,
+            $truth,
+        );
+        $ocrResult = $front['ocr'];
+        $match = $front['match'];
+
+        // Back OCR always runs. Service down → hard fail. Empty/sparse text → accept + soft AY flags.
+        try {
+            $backOcr = $ocr->extractTextAllowEmpty($validated['id_back']);
+        } catch (\RuntimeException $exception) {
             throw ValidationException::withMessages([
-                'qr_payload' => 'School ID QR code must resolve to the TCC registrar domain.',
+                'id_back' => 'Back ID OCR is unavailable. Retry when the OCR service is online.',
             ]);
         }
 
-        try {
-            $ocrResult = $ocr->extractText($validated['id_frame']);
-        } catch (\RuntimeException $exception) {
-            throw ValidationException::withMessages(['id_frame' => $exception->getMessage()]);
-        }
+        $backFields = $ocr->parseBackFields((string) ($backOcr['text'] ?? ''));
+        $backQr = is_array($backOcr['qr'] ?? null) ? $backOcr['qr'] : $ocr->emptyQr();
+        $frontQr = is_array($ocrResult['qr'] ?? null) ? $ocrResult['qr'] : $ocr->emptyQr();
 
-        $expected = $truth->expectedIdentity($grantee, $request->user()->kycProfile);
-        $match = $ocr->matchAgainstExpected($ocrResult, $expected);
-        if (! $match['ok']) {
-            throw ValidationException::withMessages($match['errors']);
+        $clientQr = isset($validated['qr_payload']) ? trim((string) $validated['qr_payload']) : '';
+        $decodedQr = ($backQr['found'] ?? false) ? (string) ($backQr['value'] ?? '') : '';
+        if ($decodedQr === '' && ($frontQr['found'] ?? false)) {
+            $decodedQr = (string) ($frontQr['value'] ?? '');
         }
+        $qrPayload = $clientQr !== '' ? $clientQr : $decodedQr;
+        $qrFound = $qrPayload !== '';
+        $qrValid = $qrFound && $qr->isValid($qrPayload);
+        $qrExtraction = $qrFound ? $qr->extract($qrPayload) : $qr->emptyExtraction();
+
+        $expectedAy = PolicySetting::organizationAcademicYear();
+        $ocrAyRaw = is_string($backFields['school_year'] ?? null) ? $backFields['school_year'] : null;
+        $ocrAy = $ocr->normalizeSchoolYear($ocrAyRaw);
+        $expectedAyNorm = $ocr->normalizeSchoolYear($expectedAy);
+        $academicYearMatch = ($ocrAy !== null && $expectedAyNorm !== null)
+            ? $ocrAy === $expectedAyNorm
+            : null;
 
         $quality = (float) $validated['face_quality_score'];
         $manualReview = $quality < 0.7;
@@ -159,9 +230,7 @@ class RequirementVaultController extends Controller
             'id_scan_submission',
         );
         $framePath = VaultFileStorage::storeDocument($validated['id_frame'], $grantee->id, $batchId);
-        $backPath = isset($validated['id_back'])
-            ? VaultFileStorage::storeDocument($validated['id_back'], $grantee->id, $batchId)
-            : null;
+        $backPath = VaultFileStorage::storeDocument($validated['id_back'], $grantee->id, $batchId);
 
         $prior = DocumentSubmission::query()
             ->where('student_id', $request->user()->student_id)
@@ -172,6 +241,19 @@ class RequirementVaultController extends Controller
         $slotStatus = (! $prior && $this->packageAlreadySentToStaff($grantee))
             ? 'pending_review'
             : 'draft';
+
+        $ocrPayload = [
+            'provider' => $ocrResult['provider'],
+            'extracted_name' => $match['extracted_name'],
+            'extracted_student_id' => $match['extracted_student_id'],
+            'back_fields' => $backFields,
+            'qr_found' => $qrFound,
+            'qr_valid' => $qrValid,
+            'qr_extraction' => $qrExtraction,
+            'academic_year_match' => $academicYearMatch,
+            'academic_year_expected' => $expectedAyNorm,
+            'academic_year_ocr' => $ocrAy,
+        ];
 
         $submission = DocumentSubmission::updateOrCreate(
             [
@@ -187,32 +269,46 @@ class RequirementVaultController extends Controller
                 'stored_path' => $facePath,
                 'mime_type' => $faceMime,
                 'file_size' => $validated['id_face_crop']->getSize(),
-                'secondary_original_name' => $backPath
-                    ? SecureUpload::sanitizeOriginalName($validated['id_back']->getClientOriginalName(), 'id_back')
-                    : 'id_frame.jpg',
-                'secondary_stored_path' => $backPath ?: $framePath,
-                'secondary_mime_type' => $backPath
-                    ? SecureUpload::detectMime($validated['id_back']->getRealPath())
-                    : SecureUpload::detectMime($validated['id_frame']->getRealPath()),
-                'secondary_file_size' => $backPath ? $validated['id_back']->getSize() : $validated['id_frame']->getSize(),
+                'secondary_original_name' => SecureUpload::sanitizeOriginalName(
+                    $validated['id_back']->getClientOriginalName(),
+                    'id_back',
+                ),
+                'secondary_stored_path' => $backPath,
+                'secondary_mime_type' => SecureUpload::detectMime($validated['id_back']->getRealPath()),
+                'secondary_file_size' => $validated['id_back']->getSize(),
                 'status' => $slotStatus,
                 'risk_level' => $manualReview ? 'medium' : 'low',
                 'face_descriptor_payload' => $probe,
                 'face_quality_score' => $quality,
                 'identity_review_required' => $manualReview,
                 'identity_review_reason' => $manualReview ? 'School ID face quality is below 0.70.' : null,
+                'ocr_payload' => $ocrPayload,
                 'metadata_payload' => [
-                    'qr_payload' => $validated['qr_payload'],
+                    'qr_payload' => $qrFound ? $qrPayload : null,
+                    'qr_found' => $qrFound,
+                    'qr_valid' => $qrValid,
+                    'qr_extraction' => $qrExtraction,
                     'ocr' => [
                         'provider' => $ocrResult['provider'],
                         'extracted_name' => $match['extracted_name'],
                         'extracted_student_id' => $match['extracted_student_id'],
                     ],
+                    'back_fields' => $backFields,
+                    'back_ocr' => [
+                        'provider' => $backOcr['provider'],
+                        'text_empty' => $backOcr['text_empty'],
+                        'warning' => $backOcr['warning'],
+                        'qr' => $backQr,
+                    ],
+                    'academic_year_match' => $academicYearMatch,
+                    'academic_year_expected' => $expectedAyNorm,
+                    'academic_year_ocr' => $ocrAy,
                     'face_distances' => [
                         'vs_id_reference' => $vsReference,
                         'vs_onboarding_selfie' => $vsSelfie,
                     ],
                     'frame_path' => $framePath,
+                    'back_path' => $backPath,
                     'authenticity' => 'disabled', // Pillow moiré off until AUTHENTICITY_SERVICE_URL is set
                 ],
             ],
@@ -228,6 +324,9 @@ class RequirementVaultController extends Controller
             'vs_onboarding_selfie' => $vsSelfie,
             'manual_review_required' => $manualReview,
             'status' => $slotStatus,
+            'qr_found' => $qrFound,
+            'qr_valid' => $qrValid,
+            'academic_year_match' => $academicYearMatch,
         ]);
 
         return response()->json(['data' => $this->presentVaultDocument($submission)]);
@@ -1076,5 +1175,51 @@ class RequirementVaultController extends Controller
             'context' => $context,
             'ip_address' => $request->ip(),
         ]);
+    }
+
+    /**
+     * @return array{ocr: array<string, mixed>, match: array<string, mixed>}
+     */
+    private function assertFrontOcrMatches(
+        UploadedFile $idFrame,
+        User $user,
+        Grantee $grantee,
+        IdCardOcrService $ocr,
+        MasterlistTruthService $truth,
+    ): array {
+        try {
+            $ocrResult = $ocr->extractText($idFrame);
+        } catch (\RuntimeException $exception) {
+            throw ValidationException::withMessages([
+                'id_frame' => $this->frontOcrFailMessage($exception->getMessage()),
+            ]);
+        }
+
+        $expected = $truth->expectedIdentity($grantee, $user->kycProfile);
+        $match = $ocr->matchAgainstExpected($ocrResult, $expected);
+        if (! $match['ok']) {
+            Log::warning('requirement_vault.id_scan_ocr_mismatch', [
+                'user_id' => $user->id,
+                'grantee_id' => $grantee->id,
+                'expected_name' => $expected['full_name'],
+                'expected_student_id' => $expected['student_id'],
+                'extracted_name' => $match['extracted_name'],
+                'extracted_student_id' => $match['extracted_student_id'],
+                'ocr_provider' => $ocrResult['provider'] ?? null,
+                'errors' => $match['errors'],
+            ]);
+            throw ValidationException::withMessages($match['errors']);
+        }
+
+        return ['ocr' => $ocrResult, 'match' => $match];
+    }
+
+    private function frontOcrFailMessage(string $detail): string
+    {
+        if (stripos($detail, 'unavailable') !== false || stripos($detail, 'No OCR provider') !== false) {
+            return 'Front of School ID: Local OCR (:8001) is unavailable. Start ocr-service, then retry.';
+        }
+
+        return 'Front of School ID: '.$detail;
     }
 }

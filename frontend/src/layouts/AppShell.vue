@@ -114,9 +114,11 @@ const sections = computed(() => {
     if (authSession.user?.account_status === "active") return studentNavigation;
     const onboardingPath =
       authSession.user?.onboarding_path ||
-      (authSession.user?.account_status === "pending_identity"
-        ? "/student/onboarding"
-        : "/student/kyc");
+      (authSession.user?.account_status === "pending_face_review"
+        ? "/student/onboarding/pending-review"
+        : authSession.user?.account_status === "pending_identity"
+          ? "/student/onboarding"
+          : "/student/kyc");
     return [
       {
         items: [

@@ -29,11 +29,39 @@ class PolicySetting extends Model
 
     public static function maxFailedSubjects(): int
     {
-        return max(0, (int) static::getValue('max_failed_subjects_per_semester', '1'));
+        return max(0, (int) static::getValue('max_failed_subjects_per_semester', '3'));
     }
 
     public static function defaultPassGrade(): float
     {
         return (float) static::getValue('default_pass_grade', '3.0');
+    }
+
+    public static function facePassMax(): float
+    {
+        $override = static::getValue('identity_face_pass_max');
+        if ($override !== null && $override !== '') {
+            return max(0.0, (float) $override);
+        }
+
+        return max(0.0, (float) config('services.identity.face_pass_max', 0.45));
+    }
+
+    public static function faceReviewMax(): float
+    {
+        $override = static::getValue('identity_face_review_max');
+        if ($override !== null && $override !== '') {
+            return max(0.0, (float) $override);
+        }
+
+        return max(0.0, (float) config('services.identity.face_review_max', 0.60));
+    }
+
+    /** Organization academic year used for soft School ID back OCR comparison (e.g. 2026-2027). */
+    public static function organizationAcademicYear(): string
+    {
+        $value = trim((string) static::getValue('organization_academic_year', '2026-2027'));
+
+        return $value !== '' ? $value : '2026-2027';
     }
 }

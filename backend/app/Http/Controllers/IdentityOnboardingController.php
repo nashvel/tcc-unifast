@@ -5,13 +5,20 @@ namespace App\Http\Controllers;
 use App\Models\AuditLog;
 use App\Models\Grantee;
 use App\Models\GranteeIdentityProfile;
+use App\Models\User;
 use App\Services\IdCardOcrService;
 use App\Services\MasterlistTruthService;
+use App\Services\StudentOnboardingNavigator;
 use App\Support\FaceDescriptorMath;
 use App\Support\SecureUpload;
 use App\Support\VaultFileStorage;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -20,24 +27,70 @@ class IdentityOnboardingController extends Controller
     /** @var list<string> */
     private const IMAGE_MIMES = ['image/jpeg', 'image/png', 'image/webp'];
 
-    public function show(Request $request): JsonResponse
+    public function show(Request $request, StudentOnboardingNavigator $navigator): JsonResponse
     {
+        $user = $request->user();
         $grantee = $this->grantee($request);
-        $profile = GranteeIdentityProfile::query()->firstOrCreate(
-            ['grantee_id' => $grantee->id],
-            ['user_id' => $request->user()->id, 'status' => 'pending_id_scan'],
+        $next = $navigator->nextStep($user, $grantee);
+
+        // Do not create an identity row until KYC has moved the account to pending_identity.
+        $profile = null;
+        if (in_array($user->account_status, ['pending_identity', 'active', 'pending_face_review'], true)) {
+            $profile = GranteeIdentityProfile::query()->firstOrCreate(
+                ['grantee_id' => $grantee->id],
+                ['user_id' => $user->id, 'status' => 'pending_id_scan'],
+            );
+        } else {
+            $profile = GranteeIdentityProfile::query()->where('grantee_id', $grantee->id)->first();
+        }
+
+        return response()->json([
+            'data' => [
+                'account_status' => $user->account_status,
+                'identity' => $profile ? $this->present($profile) : null,
+                // Navigator enforces KYC → ID scan → liveness (ignore stale profile alone).
+                'next_step' => $next,
+            ],
+        ]);
+    }
+
+    /**
+     * Front-only OCR gate: match name & student ID before the client collects the back.
+     * Does not persist identity profile state — full id-scan still completes both sides.
+     */
+    public function validateFrontIdOcr(
+        Request $request,
+        IdCardOcrService $ocr,
+        MasterlistTruthService $truth,
+    ): JsonResponse {
+        $user = $request->user();
+        if (! in_array($user->account_status, ['pending_identity', 'active'], true)) {
+            throw ValidationException::withMessages([
+                'account_status' => 'Complete KYC validation before scanning your School ID.',
+            ]);
+        }
+
+        $grantee = $this->grantee($request);
+        $validated = $request->validate([
+            'id_frame' => ['required', 'file', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
+        ]);
+
+        SecureUpload::assertAllowedMime($validated['id_frame'], self::IMAGE_MIMES, 'id_frame');
+
+        $front = $this->assertFrontOcrMatches(
+            $validated['id_frame'],
+            $user,
+            $grantee,
+            $ocr,
+            $truth,
         );
 
         return response()->json([
             'data' => [
-                'account_status' => $request->user()->account_status,
-                'identity' => $this->present($profile),
-                'next_step' => match ($profile->status) {
-                    'pending_id_scan' => 'id_scan',
-                    'pending_liveness' => 'liveness',
-                    'completed' => 'done',
-                    default => 'id_scan',
-                },
+                'ok' => true,
+                'extracted_name' => $front['match']['extracted_name'],
+                'extracted_student_id' => $front['match']['extracted_student_id'],
+                'ocr_provider' => $front['ocr']['provider'] ?? null,
             ],
         ]);
     }
@@ -72,19 +125,15 @@ class IdentityOnboardingController extends Controller
         SecureUpload::assertAllowedMime($validated['id_face_crop'], self::IMAGE_MIMES, 'id_face_crop');
         $referenceDescriptor = FaceDescriptorMath::normalize($validated['face_descriptor']);
 
-        try {
-            $ocrResult = $ocr->extractText($validated['id_frame']);
-        } catch (\RuntimeException $exception) {
-            throw ValidationException::withMessages([
-                'id_frame' => 'Front of School ID: '.$exception->getMessage(),
-            ]);
-        }
-
-        $expected = $truth->expectedIdentity($grantee, $user->kycProfile);
-        $match = $ocr->matchAgainstExpected($ocrResult, $expected);
-        if (! $match['ok']) {
-            throw ValidationException::withMessages($match['errors']);
-        }
+        $front = $this->assertFrontOcrMatches(
+            $validated['id_frame'],
+            $user,
+            $grantee,
+            $ocr,
+            $truth,
+        );
+        $ocrResult = $front['ocr'];
+        $match = $front['match'];
 
         // Back OCR always runs. Service down → hard fail. Empty/sparse text → accept + store.
         // QR from local OCR is best-effort and never required to pass.
@@ -92,9 +141,11 @@ class IdentityOnboardingController extends Controller
             $backOcr = $ocr->extractTextAllowEmpty($validated['id_back']);
         } catch (\RuntimeException $exception) {
             throw ValidationException::withMessages([
-                'id_back' => 'Back of School ID: '.$exception->getMessage(),
+                'id_back' => $this->backOcrUnavailableMessage($exception->getMessage()),
             ]);
         }
+
+        $backFields = $ocr->parseBackFields((string) ($backOcr['text'] ?? ''));
 
         $quality = (float) $validated['face_quality_score'];
         if ($quality < 0.5) {
@@ -168,6 +219,7 @@ class IdentityOnboardingController extends Controller
                         'warning' => $backOcr['warning'],
                         'qr' => $backQr,
                     ],
+                    'back_fields' => $backFields,
                     'front_qr' => $frontQr,
                     'qr_found' => $qrPayload !== '',
                     'qr_deferred' => $qrPayload === '',
@@ -196,10 +248,71 @@ class IdentityOnboardingController extends Controller
             'ip_address' => $request->ip(),
         ]);
 
+        $qrTruncated = $qrPayload !== '' ? mb_substr($qrPayload, 0, 120) : null;
+
         return response()->json([
             'data' => [
                 'identity' => $this->present($profile),
                 'next_step' => 'liveness',
+                'qr_found' => $qrPayload !== '',
+                'qr_payload' => $qrTruncated,
+                'back_fields' => $backFields,
+            ],
+        ]);
+    }
+
+    /**
+     * Proxy local OCR service /health so the browser avoids CORS to :8001.
+     */
+    public function ocrHealth(): JsonResponse
+    {
+        $baseUrl = rtrim((string) config('services.ocr.url', 'http://127.0.0.1:8001'), '/');
+        if ($baseUrl === '') {
+            return response()->json([
+                'data' => [
+                    'ok' => false,
+                    'status' => 'unconfigured',
+                    'url' => null,
+                    'message' => 'OCR_SERVICE_URL is not configured.',
+                ],
+            ]);
+        }
+
+        try {
+            $response = Http::acceptJson()->timeout(5)->get($baseUrl.'/health');
+        } catch (ConnectionException $exception) {
+            return response()->json([
+                'data' => [
+                    'ok' => false,
+                    'status' => 'unavailable',
+                    'url' => $baseUrl,
+                    'message' => 'Local OCR (:8001) is unavailable',
+                    'detail' => $exception->getMessage(),
+                ],
+            ]);
+        }
+
+        if ($response->failed()) {
+            return response()->json([
+                'data' => [
+                    'ok' => false,
+                    'status' => 'error',
+                    'url' => $baseUrl,
+                    'message' => 'Local OCR (:8001) is unavailable',
+                    'http_status' => $response->status(),
+                ],
+            ]);
+        }
+
+        $payload = $response->json() ?? [];
+
+        return response()->json([
+            'data' => [
+                'ok' => true,
+                'status' => (string) (data_get($payload, 'status') ?: 'healthy'),
+                'url' => $baseUrl,
+                'tesseract_available' => (bool) data_get($payload, 'tesseract_available', true),
+                'message' => 'Local OCR is reachable',
             ],
         ]);
     }
@@ -207,6 +320,11 @@ class IdentityOnboardingController extends Controller
     public function storeLiveness(Request $request): JsonResponse
     {
         $user = $request->user();
+        if ($user->account_status === 'pending_face_review') {
+            throw ValidationException::withMessages([
+                'account_status' => 'Under staff review (not blocked) — wait for a face-match decision before retrying liveness.',
+            ]);
+        }
         if (! in_array($user->account_status, ['pending_identity', 'active'], true)) {
             throw ValidationException::withMessages([
                 'account_status' => 'Complete KYC validation before the liveness challenge.',
@@ -220,9 +338,18 @@ class IdentityOnboardingController extends Controller
                 'id_scan' => 'Complete the School ID scan before the liveness challenge.',
             ]);
         }
+        if ($profile->status === 'pending_face_review') {
+            throw ValidationException::withMessages([
+                'account_status' => 'Under staff review (not blocked) — wait for a face-match decision before retrying liveness.',
+            ]);
+        }
 
         $validated = $request->validate([
             'selfie' => ['required', 'file', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'challenge_still_1' => ['required', 'file', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'challenge_still_2' => ['required', 'file', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'challenge_still_labels' => ['required', 'array', 'size:2'],
+            'challenge_still_labels.*' => ['required', Rule::in(['blink', 'turn_left', 'turn_right'])],
             'challenge_sequence' => ['required', 'array', 'size:3'],
             'challenge_sequence.*' => ['required', Rule::in(['blink', 'turn_left', 'turn_right'])],
             'face_descriptor' => ['required', 'array', 'size:128'],
@@ -233,13 +360,15 @@ class IdentityOnboardingController extends Controller
         ]);
 
         SecureUpload::assertAllowedMime($validated['selfie'], self::IMAGE_MIMES, 'selfie');
+        SecureUpload::assertAllowedMime($validated['challenge_still_1'], self::IMAGE_MIMES, 'challenge_still_1');
+        SecureUpload::assertAllowedMime($validated['challenge_still_2'], self::IMAGE_MIMES, 'challenge_still_2');
         $liveDescriptor = FaceDescriptorMath::normalize($validated['face_descriptor']);
         $referenceDescriptor = FaceDescriptorMath::normalize(
             $profile->id_reference_face_descriptor,
             'id_reference_face_descriptor',
         );
         $distance = FaceDescriptorMath::euclidean($referenceDescriptor, $liveDescriptor);
-        $matched = $distance < FaceDescriptorMath::threshold();
+        $zone = FaceDescriptorMath::classify($distance);
 
         $previousSelfie = $profile->onboarding_selfie_path;
         $selfiePath = VaultFileStorage::storeIdentity(
@@ -251,12 +380,24 @@ class IdentityOnboardingController extends Controller
             VaultFileStorage::deleteIfOwned($previousSelfie);
         }
 
-        if (! $matched) {
+        $challengePaths = $this->storeChallengeStills(
+            $profile,
+            $grantee->id,
+            $validated['challenge_still_1'],
+            $validated['challenge_still_2'],
+        );
+        $challengeLabels = array_values($validated['challenge_still_labels']);
+
+        if ($zone === FaceDescriptorMath::ZONE_MISMATCH) {
+            // Hard mismatch: keep onboarding open for retry (do not block / identity_mismatch).
             $profile->update([
                 'onboarding_selfie_path' => $selfiePath,
                 'onboarding_selfie_descriptor' => $liveDescriptor,
                 'onboarding_face_distance' => $distance,
                 'onboarding_challenge_sequence' => $validated['challenge_sequence'],
+                'liveness_challenge_1_path' => $challengePaths[0],
+                'liveness_challenge_2_path' => $challengePaths[1],
+                'liveness_challenge_labels' => $challengeLabels,
                 'last_liveness_ip' => $request->ip(),
                 'status' => 'pending_liveness',
             ]);
@@ -270,17 +411,65 @@ class IdentityOnboardingController extends Controller
                 'context' => [
                     'distance' => $distance,
                     'distance_source' => 'server',
+                    'zone' => $zone,
+                    'pass_max' => FaceDescriptorMath::passMax(),
+                    'review_max' => FaceDescriptorMath::reviewMax(),
                     'liveness_confirmed' => true,
-                    'result' => 'no_match',
+                    'result' => 'no_match_retry',
+                    'account_status' => $user->account_status,
                 ],
                 'ip_address' => $request->ip(),
             ]);
 
-            $user->forceFill(['account_status' => 'blocked'])->save();
-            $grantee->update(['status' => 'identity_mismatch']);
-
             throw ValidationException::withMessages([
-                'face_descriptor' => 'Live face does not match the School ID reference. Account blocked for review.',
+                'face_descriptor' => 'Face did not match — try again. Live face does not match the School ID reference.',
+            ]);
+        }
+
+        if ($zone === FaceDescriptorMath::ZONE_UNCERTAIN) {
+            $profile->update([
+                'status' => 'pending_face_review',
+                'onboarding_selfie_path' => $selfiePath,
+                'onboarding_selfie_descriptor' => $liveDescriptor,
+                'onboarding_face_distance' => $distance,
+                'onboarding_challenge_sequence' => $validated['challenge_sequence'],
+                'liveness_challenge_1_path' => $challengePaths[0],
+                'liveness_challenge_2_path' => $challengePaths[1],
+                'liveness_challenge_labels' => $challengeLabels,
+                'last_liveness_ip' => $request->ip(),
+            ]);
+
+            $user->forceFill(['account_status' => 'pending_face_review'])->save();
+            $grantee->update(['status' => 'pending_face_review']);
+
+            AuditLog::create([
+                'actor' => $user->name,
+                'role' => 'Student',
+                'action' => 'onboarding_liveness_uncertain',
+                'module' => 'Identity Onboarding',
+                'target' => "Grantee #{$grantee->id}",
+                'context' => [
+                    'distance' => $distance,
+                    'distance_source' => 'server',
+                    'zone' => $zone,
+                    'pass_max' => FaceDescriptorMath::passMax(),
+                    'review_max' => FaceDescriptorMath::reviewMax(),
+                    'liveness_confirmed' => true,
+                    'result' => 'uncertain',
+                    'account_status' => 'pending_face_review',
+                ],
+                'ip_address' => $request->ip(),
+            ]);
+
+            return response()->json([
+                'data' => [
+                    'identity' => $this->present($profile->fresh()),
+                    'account_status' => $user->account_status,
+                    'face_zone' => $zone,
+                    'onboarding_face_distance' => $distance,
+                    'next_step' => 'face_review',
+                    'message' => 'Uncertain face match — under staff review (not blocked). Staff will compare your ID photo and selfie. You can sign out and return later.',
+                ],
             ]);
         }
 
@@ -290,6 +479,9 @@ class IdentityOnboardingController extends Controller
             'onboarding_selfie_descriptor' => $liveDescriptor,
             'onboarding_face_distance' => $distance,
             'onboarding_challenge_sequence' => $validated['challenge_sequence'],
+            'liveness_challenge_1_path' => $challengePaths[0],
+            'liveness_challenge_2_path' => $challengePaths[1],
+            'liveness_challenge_labels' => $challengeLabels,
             'onboarding_completed_at' => now(),
             'last_liveness_ip' => $request->ip(),
         ]);
@@ -306,6 +498,9 @@ class IdentityOnboardingController extends Controller
             'context' => [
                 'distance' => $distance,
                 'distance_source' => 'server',
+                'zone' => $zone,
+                'pass_max' => FaceDescriptorMath::passMax(),
+                'review_max' => FaceDescriptorMath::reviewMax(),
                 'liveness_confirmed' => true,
                 'result' => 'match',
                 'account_status' => 'active',
@@ -317,6 +512,7 @@ class IdentityOnboardingController extends Controller
             'data' => [
                 'identity' => $this->present($profile->fresh()),
                 'account_status' => $user->account_status,
+                'face_zone' => $zone,
                 'next_step' => 'done',
             ],
         ]);
@@ -333,11 +529,41 @@ class IdentityOnboardingController extends Controller
         return response()->json([
             'data' => [
                 'id_reference_face_url' => VaultFileStorage::authIdentityUrl('id_reference_face.jpg'),
+                'id_onboarding_frame_url' => is_string(data_get($profile->id_ocr_payload, 'frame_path'))
+                    && data_get($profile->id_ocr_payload, 'frame_path') !== ''
+                    ? VaultFileStorage::authIdentityUrl('id_onboarding_frame.jpg')
+                    : null,
                 'onboarding_selfie_url' => $profile->onboarding_selfie_path
                     ? VaultFileStorage::authIdentityUrl('onboarding_selfie.jpg')
                     : null,
             ],
         ]);
+    }
+
+    /**
+     * Store the two review-only challenge stills; replace prior paths if present.
+     *
+     * @return array{0: string, 1: string}
+     */
+    private function storeChallengeStills(
+        GranteeIdentityProfile $profile,
+        int $granteeId,
+        UploadedFile $still1,
+        UploadedFile $still2,
+    ): array {
+        $path1 = VaultFileStorage::storeIdentity($still1, $granteeId, 'liveness_challenge_1');
+        $path2 = VaultFileStorage::storeIdentity($still2, $granteeId, 'liveness_challenge_2');
+
+        $previous1 = $profile->liveness_challenge_1_path;
+        $previous2 = $profile->liveness_challenge_2_path;
+        if (is_string($previous1) && $previous1 !== '' && $previous1 !== $path1) {
+            VaultFileStorage::deleteIfOwned($previous1);
+        }
+        if (is_string($previous2) && $previous2 !== '' && $previous2 !== $path2) {
+            VaultFileStorage::deleteIfOwned($previous2);
+        }
+
+        return [$path1, $path2];
     }
 
     private function grantee(Request $request): Grantee
@@ -360,6 +586,8 @@ class IdentityOnboardingController extends Controller
 
     private function present(GranteeIdentityProfile $profile): array
     {
+        $framePath = data_get($profile->id_ocr_payload, 'frame_path');
+
         return [
             'status' => $profile->status,
             'id_scan_completed_at' => $profile->id_scan_completed_at,
@@ -367,10 +595,75 @@ class IdentityOnboardingController extends Controller
             'id_reference_face_url' => $profile->id_reference_face_path
                 ? VaultFileStorage::authIdentityUrl('id_reference_face.jpg')
                 : null,
+            'id_onboarding_frame_url' => is_string($framePath) && $framePath !== ''
+                ? VaultFileStorage::authIdentityUrl('id_onboarding_frame.jpg')
+                : null,
             'onboarding_selfie_url' => $profile->onboarding_selfie_path
                 ? VaultFileStorage::authIdentityUrl('onboarding_selfie.jpg')
                 : null,
             'onboarding_face_distance' => $profile->onboarding_face_distance,
+            'qr_found' => (bool) data_get($profile->id_ocr_payload, 'qr_found', false),
         ];
+    }
+
+    /**
+     * @return array{ocr: array<string, mixed>, match: array<string, mixed>}
+     */
+    private function assertFrontOcrMatches(
+        UploadedFile $idFrame,
+        User $user,
+        Grantee $grantee,
+        IdCardOcrService $ocr,
+        MasterlistTruthService $truth,
+    ): array {
+        try {
+            $ocrResult = $ocr->extractText($idFrame);
+        } catch (\RuntimeException $exception) {
+            throw ValidationException::withMessages([
+                'id_frame' => $this->frontOcrFailMessage($exception->getMessage()),
+            ]);
+        }
+
+        $expected = $truth->expectedIdentity($grantee, $user->kycProfile);
+        $match = $ocr->matchAgainstExpected($ocrResult, $expected);
+        if (! $match['ok']) {
+            Log::warning('identity_onboarding.id_scan_ocr_mismatch', [
+                'user_id' => $user->id,
+                'grantee_id' => $grantee->id,
+                'expected_name' => $expected['full_name'],
+                'expected_student_id' => $expected['student_id'],
+                'extracted_name' => $match['extracted_name'],
+                'extracted_student_id' => $match['extracted_student_id'],
+                'ocr_provider' => $ocrResult['provider'] ?? null,
+                'ocr_text_length' => strlen((string) ($ocrResult['text'] ?? '')),
+                'ocr_digit_stream_length' => strlen(preg_replace('/\D+/', '', (string) ($ocrResult['text'] ?? '')) ?? ''),
+                'ocr_text_snippet' => Str::limit(
+                    preg_replace('/\s+/u', ' ', (string) ($ocrResult['text'] ?? '')) ?? '',
+                    240,
+                ),
+                'errors' => $match['errors'],
+            ]);
+            throw ValidationException::withMessages($match['errors']);
+        }
+
+        return ['ocr' => $ocrResult, 'match' => $match];
+    }
+
+    private function frontOcrFailMessage(string $detail): string
+    {
+        if (stripos($detail, 'unavailable') !== false || stripos($detail, 'No OCR provider') !== false) {
+            return 'Front of School ID: Local OCR (:8001) is unavailable. Start ocr-service, then retry.';
+        }
+
+        return 'Front of School ID: '.$detail;
+    }
+
+    private function backOcrUnavailableMessage(string $detail): string
+    {
+        if (stripos($detail, 'unavailable') !== false || stripos($detail, 'No OCR provider') !== false) {
+            return 'Back of School ID: Local OCR (:8001) is unavailable. Start ocr-service, then retry. (This is not a Front OCR name mismatch.)';
+        }
+
+        return 'Back of School ID: '.$detail;
     }
 }

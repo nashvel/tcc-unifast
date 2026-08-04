@@ -34,7 +34,12 @@ def _clean_text(value: str) -> str:
 
 def emit_json(payload: dict[str, Any], *, pretty: bool = False) -> None:
     """Write UTF-8 JSON to stdout (Windows cp1252 consoles corrupt ensure_ascii=False)."""
-    text = json.dumps(payload, indent=2 if pretty else None, ensure_ascii=False)
+    text = json.dumps(
+        payload,
+        indent=2 if pretty else None,
+        ensure_ascii=False,
+        allow_nan=False,
+    )
     sys.stdout.buffer.write(text.encode("utf-8", errors="replace"))
     sys.stdout.buffer.write(b"\n")
 
@@ -317,15 +322,30 @@ def _pick_term_for_y(
     headers: list[tuple[float, dict[str, Any]]],
     y0: float,
     fallback: dict[str, Any] | None,
+    *,
+    tolerance: float = 28.0,
 ) -> dict[str, Any] | None:
-    """Nearest preceding term header by Y (header above the table/row)."""
+    """Nearest term header for a table/row Y.
+
+    find_tables bboxes usually include the term header as the first row, so the
+    header's y0 is a few pixels *below* the table top — allow a small downward
+    tolerance (not only headers strictly above the table).
+    """
     chosen = fallback
     for hy, term in headers:
-        if hy <= y0 + 2.0:
+        if hy <= y0 + tolerance:
             chosen = term
         else:
             break
     return chosen
+
+
+def _term_header_from_row(row: list[Any] | None) -> dict[str, Any] | None:
+    """Parse a find_tables row that is a CH semester banner (not a course)."""
+    if not row:
+        return None
+    line = " ".join(_cell_str(cell) for cell in row if cell not in (None, ""))
+    return _parse_term_header(line) if line else None
 
 
 def _normalize_grade(raw: str) -> str | None:
@@ -454,12 +474,38 @@ def _rows_from_find_tables(page: fitz.Page) -> list[dict[str, Any]]:
         if header_idx is None or not mapping:
             continue
 
+        # Prefer an in-table semester banner (usually row 0) over Y-proximity.
+        # Y-pick alone mis-assigns when the next term's table top sits above that
+        # term's header y (header is inside the bbox) — e.g. Summer electives +
+        # following 1st-semester majors land in one Summer bucket.
+        in_table_term: dict[str, Any] | None = None
+        for prow in raw_rows[: header_idx + 1]:
+            parsed = _term_header_from_row(list(prow or []))
+            if parsed:
+                in_table_term = parsed
+                break
+
         table_y0 = float(getattr(table, "bbox", [0, 0, 0, 0])[1] or 0)
-        active_term = _pick_term_for_y(term_headers, table_y0, None)
+        active_term = in_table_term or _pick_term_for_y(term_headers, table_y0, None)
         term_bucket = ensure_term(active_term)
 
         for row in raw_rows[header_idx + 1 :]:
             cells = list(row or [])
+            # Mid-table semester banner (merged multi-term tables).
+            mid_term = _term_header_from_row(cells)
+            if mid_term:
+                active_term = mid_term
+                term_bucket = ensure_term(active_term)
+                continue
+            # Column header repeated after a new term banner.
+            remapped = _map_table_headers(cells)
+            remapped_fields = set(remapped.values())
+            if remapped and (
+                {"code", "description"}.issubset(remapped_fields)
+                or ("code" in remapped_fields and "units" in remapped_fields)
+            ):
+                mapping = remapped
+                continue
             keyed = {field: _cell_str(cells[idx]) if idx < len(cells) else "" for idx, field in mapping.items()}
             # find_tables may glue remarks into instructor ("Alex Pa" / "ssed" → Passed).
             instructor = keyed.get("instructor", "")

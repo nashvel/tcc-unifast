@@ -5,7 +5,9 @@ Soft-fails when ZBar DLLs are missing on Windows — never blocks OCR.
 
 from __future__ import annotations
 
+import importlib.util
 import os
+import sys
 from pathlib import Path
 
 import cv2
@@ -30,32 +32,64 @@ def _looks_like_native_dep_error(message: str) -> bool:
     return any(n in lowered for n in _NATIVE_DEP_NEEDLES)
 
 
-def _ensure_zbar_dll_path() -> None:
-    """Prefer bundled / local ZBar DLLs under ocr-service/native when present."""
-    root = Path(__file__).resolve().parents[1]
-    candidates = [
-        root / "native",
-        root / "zbar",
-        Path(os.environ.get("ZBAR_DLL_PATH", "")),
-    ]
-    # Also add the installed pyzbar package dir (ships libzbar-64.dll + libiconv.dll).
+def _pyzbar_package_dirs() -> list[Path]:
+    """Locate site-packages/pyzbar without importing the C extension."""
+    dirs: list[Path] = []
     try:
-        import pyzbar as _pyzbar_pkg
-
-        candidates.insert(0, Path(_pyzbar_pkg.__file__).resolve().parent)
+        spec = importlib.util.find_spec("pyzbar")
+        if spec is not None:
+            if spec.origin:
+                dirs.append(Path(spec.origin).resolve().parent)
+            if spec.submodule_search_locations:
+                for loc in spec.submodule_search_locations:
+                    dirs.append(Path(loc).resolve())
     except Exception:  # noqa: BLE001
         pass
 
+    for entry in sys.path:
+        candidate = Path(entry) / "pyzbar"
+        if candidate.is_dir():
+            dirs.append(candidate.resolve())
+
+    # Dedupe while preserving order.
+    seen: set[str] = set()
+    unique: list[Path] = []
+    for path in dirs:
+        key = str(path)
+        if key not in seen:
+            seen.add(key)
+            unique.append(path)
+    return unique
+
+
+def _ensure_zbar_dll_path() -> None:
+    """Add pyzbar / native dirs to PATH and os.add_dll_directory before decode import."""
+    root = Path(__file__).resolve().parents[1]
+    candidates: list[Path] = [
+        *_pyzbar_package_dirs(),
+        root / "native",
+        root / "zbar",
+    ]
+    env_path = Path(os.environ.get("ZBAR_DLL_PATH", "") or "")
+    if env_path:
+        candidates.append(env_path)
+
     for path in candidates:
-        if path and path.is_dir():
-            path_str = str(path)
-            if path_str not in os.environ.get("PATH", ""):
-                os.environ["PATH"] = path_str + os.pathsep + os.environ.get("PATH", "")
-            if hasattr(os, "add_dll_directory"):
-                try:
-                    os.add_dll_directory(path_str)
-                except (OSError, FileNotFoundError):
-                    pass
+        if not path or not path.is_dir():
+            continue
+        path_str = str(path)
+        current_path = os.environ.get("PATH", "")
+        if path_str not in current_path.split(os.pathsep):
+            os.environ["PATH"] = path_str + os.pathsep + current_path
+        if hasattr(os, "add_dll_directory"):
+            try:
+                os.add_dll_directory(path_str)
+            except (OSError, FileNotFoundError):
+                pass
+
+
+# Register DLL dirs once at import so later pyzbar loads see them.
+_ensure_zbar_dll_path()
 
 
 def _decode_pyzbar(image: np.ndarray) -> QrResult | None:

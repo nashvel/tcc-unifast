@@ -16,6 +16,8 @@ const labelKeys: Record<string, string> = {
   masterlist: "nav.masterlist",
   onboarding: "nav.onboardingCenter",
   eligibility: "nav.eligibility",
+  faceReviews: "nav.faceReviews",
+  "face-reviews": "nav.faceReviews",
   documents: "nav.documents",
   package: "nav.package",
   batches: "nav.batches",

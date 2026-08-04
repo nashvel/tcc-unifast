@@ -2,11 +2,18 @@
 
 namespace App\Support;
 
+use App\Models\PolicySetting;
 use Illuminate\Validation\ValidationException;
 
 class FaceDescriptorMath
 {
     public const SIZE = 128;
+
+    public const ZONE_CONFIDENT = 'confident';
+
+    public const ZONE_UNCERTAIN = 'uncertain';
+
+    public const ZONE_MISMATCH = 'mismatch';
 
     /**
      * @param  mixed  $raw
@@ -80,13 +87,66 @@ class FaceDescriptorMath
      */
     public static function matches(array $first, array $second, ?float $threshold = null): bool
     {
-        $threshold ??= (float) config('services.identity.face_match_threshold', 0.5);
+        $threshold ??= self::threshold();
 
         return self::euclidean($first, $second) < $threshold;
     }
 
+    /** Vault / legacy single threshold (pass if distance < threshold). */
     public static function threshold(): float
     {
         return (float) config('services.identity.face_match_threshold', 0.5);
+    }
+
+    /** Onboarding: activate when distance < pass_max. */
+    public static function passMax(): float
+    {
+        return PolicySetting::facePassMax();
+    }
+
+    /** Onboarding: hard mismatch (retry) when distance >= review_max. */
+    public static function reviewMax(): float
+    {
+        return PolicySetting::faceReviewMax();
+    }
+
+    /**
+     * Three-tier onboarding classification.
+     *
+     * @return self::ZONE_*
+     */
+    public static function classify(float $distance, ?float $passMax = null, ?float $reviewMax = null): string
+    {
+        $passMax ??= self::passMax();
+        $reviewMax ??= self::reviewMax();
+
+        if ($reviewMax < $passMax) {
+            $reviewMax = $passMax;
+        }
+
+        if ($distance < $passMax) {
+            return self::ZONE_CONFIDENT;
+        }
+
+        if ($distance < $reviewMax) {
+            return self::ZONE_UNCERTAIN;
+        }
+
+        return self::ZONE_MISMATCH;
+    }
+
+    public static function isConfident(float $distance, ?float $passMax = null, ?float $reviewMax = null): bool
+    {
+        return self::classify($distance, $passMax, $reviewMax) === self::ZONE_CONFIDENT;
+    }
+
+    public static function isUncertain(float $distance, ?float $passMax = null, ?float $reviewMax = null): bool
+    {
+        return self::classify($distance, $passMax, $reviewMax) === self::ZONE_UNCERTAIN;
+    }
+
+    public static function isMismatch(float $distance, ?float $passMax = null, ?float $reviewMax = null): bool
+    {
+        return self::classify($distance, $passMax, $reviewMax) === self::ZONE_MISMATCH;
     }
 }

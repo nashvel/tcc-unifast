@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { apiUrl } from "@/api/client";
-import { computed, nextTick, onBeforeUnmount, onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
+import { useRouter } from "vue-router";
 import {
   IconCamera,
   IconCheck,
@@ -17,12 +18,10 @@ import PageHeader from "@/components/ui/PageHeader.vue";
 import CardSkeleton from "@/components/ui/CardSkeleton.vue";
 import { getAuthToken } from "@/auth/session";
 import { toast } from "@/composables/useToast";
-import { getUserMediaSafe } from "@/modules/requirements/cameraAccess";
-import { decodeQrFromBlob, decodeQrFromVideo, isTccRegistrarQr } from "@/modules/requirements/idQr";
+import { withLang } from "@/i18n/routeLang";
+import { markVaultSchoolIdScanReady } from "@/modules/documents/vaultSchoolIdScanGate";
 
-async function faceApi() {
-  return import("@/modules/requirements/faceApi");
-}
+const router = useRouter();
 
 type VaultDocument = {
   id: number;
@@ -56,6 +55,7 @@ type VaultResponse = {
   identity_check: IdentityCheck | null;
   onboarding_refs: {
     id_reference_face_url: string | null;
+    id_onboarding_frame_url?: string | null;
     onboarding_selfie_url: string | null;
     completed: boolean;
   } | null;
@@ -88,14 +88,7 @@ const precheck = ref<Record<string, boolean>>({
   permission: false,
 });
 const consent = ref(false);
-const idDialog = ref(false);
 const confirmDialog = ref(false);
-const idVideo = ref<HTMLVideoElement | null>(null);
-const cameraReady = ref(false);
-const qrHint = ref("Hold your School ID vertically inside the portrait frame.");
-const lastQr = ref("");
-let stream: MediaStream | null = null;
-let qrTimer: number | null = null;
 
 const schoolIdUploaded = computed(() => Boolean(slots.value.school_id));
 const packageLocked = computed(() =>
@@ -186,10 +179,6 @@ const precheckItems = [
 ] as const;
 
 onMounted(loadVault);
-onBeforeUnmount(() => {
-  if (qrTimer) window.clearInterval(qrTimer);
-  stopCamera();
-});
 
 function payloadMessage(payload: unknown, fallback: string) {
   if (!payload || typeof payload !== "object") return fallback;
@@ -423,14 +412,11 @@ function onFilePicked(event: Event, target: "course" | "grade" | "specimen") {
   void uploadDocument(slotKey, file, { replace: replacing });
 }
 
-async function openIdDialog() {
+function openSchoolIdScan() {
   if (!canOpenIdScan.value) return;
-  idDialog.value = true;
-  lastQr.value = "";
-  qrHint.value = "Hold your School ID vertically inside the portrait frame.";
-  await nextTick();
-  await startCamera("environment");
-  qrTimer = window.setInterval(pollQr, 700);
+  markVaultSchoolIdScanReady();
+  // Full-page capture (same SchoolIdCaptureFlow as onboarding) — not the old one-shot modal.
+  void router.push(withLang({ name: "student-documents-school-id-scan" }));
 }
 
 function openConfirmDialog() {
@@ -439,7 +425,9 @@ function openConfirmDialog() {
 }
 
 async function confirmSubmission() {
-  if (!canSubmitPackage.value) return;
+  // Guard before setting busy — button :disabled alone still allows a double-click
+  // race before Vue re-renders, which burns the confirm throttle.
+  if (!canSubmitPackage.value || busy.value === "confirm") return;
   busy.value = "confirm";
   error.value = "";
   success.value = "";
@@ -462,105 +450,6 @@ async function confirmSubmission() {
     await loadVault({ quiet: true });
   } catch (exception) {
     error.value = exception instanceof Error ? exception.message : "Unable to submit requirements.";
-    toast.error(error.value);
-  } finally {
-    busy.value = "";
-  }
-}
-
-async function startCamera(facing: "user" | "environment" = "environment") {
-  stopCamera();
-  cameraReady.value = false;
-  const target = idVideo.value;
-  try {
-    stream = await getUserMediaSafe({
-      video: { facingMode: facing === "user" ? "user" : { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } },
-      audio: false,
-    });
-    if (target) {
-      target.srcObject = stream;
-      await target.play();
-      cameraReady.value = true;
-    }
-  } catch (exception) {
-    error.value = exception instanceof Error ? exception.message : "Unable to open camera.";
-  }
-}
-
-function stopCamera() {
-  if (qrTimer) {
-    window.clearInterval(qrTimer);
-    qrTimer = null;
-  }
-  stream?.getTracks().forEach((track) => track.stop());
-  stream = null;
-  cameraReady.value = false;
-  if (idVideo.value) idVideo.value.srcObject = null;
-}
-
-function pollQr() {
-  if (!idVideo.value || busy.value) return;
-  const payload = decodeQrFromVideo(idVideo.value);
-  if (!payload) {
-    qrHint.value = "Searching for School ID QR…";
-    return;
-  }
-  lastQr.value = payload;
-  qrHint.value = isTccRegistrarQr(payload)
-    ? "TCC registrar QR detected — ready to capture."
-    : "QR found but domain is not TCC registrar.";
-}
-
-async function captureIdScan() {
-  if (!idVideo.value) return;
-  if (!onboardingRefs.value?.id_reference_face_url || !onboardingRefs.value?.onboarding_selfie_url) {
-    error.value = "Onboarding reference photos are missing. Complete identity onboarding first.";
-    return;
-  }
-
-  busy.value = "id";
-  error.value = "";
-  success.value = "";
-  try {
-    const api = await faceApi();
-    const frameBlob = await api.captureVideoFrame(idVideo.value, 0.92);
-    const qrPayload = lastQr.value || (await decodeQrFromBlob(frameBlob));
-    if (!qrPayload || !isTccRegistrarQr(qrPayload)) {
-      throw new Error("Valid TCC registrar QR code not found. Retry with the QR visible.");
-    }
-
-    const face = await api.cropFaceFromImage(new File([frameBlob], "id_frame.jpg", { type: "image/jpeg" }));
-    const refDesc = await api.descriptorFromUrl(onboardingRefs.value.id_reference_face_url);
-    const selfieDesc = await api.descriptorFromUrl(onboardingRefs.value.onboarding_selfie_url);
-    const vsReference = api.euclideanDistance(face.descriptor, refDesc.descriptor);
-    const vsSelfie = api.euclideanDistance(face.descriptor, selfieDesc.descriptor);
-
-    const body = new FormData();
-    body.append("id_frame", new File([frameBlob], "id_frame.jpg", { type: "image/jpeg" }));
-    body.append("id_face_crop", new File([face.blob], "id_scan_submission.jpg", { type: "image/jpeg" }));
-    body.append("qr_payload", qrPayload);
-    face.descriptor.forEach((value, index) => body.append(`face_descriptor[${index}]`, String(value)));
-    body.append("face_quality_score", String(face.quality));
-    body.append("distance_vs_reference", String(vsReference));
-    body.append("distance_vs_onboarding_selfie", String(vsSelfie));
-    body.append("consent_accepted", "1");
-    body.append("precheck_accepted", "1");
-
-    const response = await fetch(apiUrl("/api/student/requirement-vault/id"), {
-      method: "POST",
-      headers: { Authorization: `Bearer ${getAuthToken()}`, Accept: "application/json" },
-      body,
-    });
-    const payload = await response.json();
-    if (!response.ok) throw new Error(payloadMessage(payload, "School ID scan failed."));
-    slots.value = { ...slots.value, school_id: payload.data };
-    idDialog.value = false;
-    stopCamera();
-    success.value = "School ID scan confirmed. Slots 2–4 are unlocked.";
-    toast.success(success.value);
-    await loadVault({ quiet: true });
-  } catch (exception) {
-    error.value = exception instanceof Error ? exception.message : "School ID scan failed.";
     toast.error(error.value);
   } finally {
     busy.value = "";
@@ -761,7 +650,7 @@ async function resubmitSlot(
             <span class="grid h-10 w-10 place-items-center rounded-lg bg-primary-soft text-primary"><IconId :size="20" /></span>
             <div>
               <h2 class="text-sm font-semibold">Slot 1: School ID Scan</h2>
-              <p class="text-xs text-text-muted">Live camera + QR / OCR / face match</p>
+              <p class="text-xs text-text-muted">Live camera · OCR / face match · QR best-effort</p>
             </div>
           </div>
           <div v-if="slots.school_id" class="mt-4 space-y-2" :class="slotFilePanelClass('school_id')">
@@ -792,8 +681,8 @@ async function resubmitSlot(
           <button
             v-if="!schoolIdUploaded || canEditSlot('school_id')"
             class="mt-4 inline-flex h-9 items-center gap-2 rounded-md bg-primary px-3 text-xs font-medium text-white disabled:opacity-50"
-            :disabled="!canOpenIdScan || busy === 'id'"
-            @click="openIdDialog"
+            :disabled="!canOpenIdScan"
+            @click="openSchoolIdScan"
           >
             <IconCamera :size="14" />
             {{ canEditSlot("school_id") ? "Re-scan School ID" : "Start live ID scan" }}
@@ -903,7 +792,9 @@ async function resubmitSlot(
             <span class="grid h-10 w-10 place-items-center rounded-lg bg-info-soft text-info"><IconFileText :size="20" /></span>
             <div>
               <h2 class="text-sm font-semibold">Slot 3: Grade Slip</h2>
-              <p class="text-xs text-text-muted">PDF only</p>
+              <p class="text-xs text-text-muted">
+                PDF — last Grade Slip that already has grades (not current-enrollment empty slip)
+              </p>
             </div>
           </div>
           <div v-if="slots.grade_slip" class="mt-4 space-y-3">
@@ -1145,39 +1036,6 @@ async function resubmitSlot(
         </div>
       </aside>
     </template>
-
-    <AppDialog
-      v-model="idDialog"
-      title="Live School ID scan"
-      description="Hold your physical School ID vertically in the portrait frame. QR, OCR, and face matches run on capture."
-      size="xl"
-      @update:model-value="(open) => !open && stopCamera()"
-    >
-      <div class="space-y-4">
-        <div class="relative mx-auto max-w-sm overflow-hidden rounded-xl border bg-black sm:max-w-md">
-          <video ref="idVideo" class="aspect-[3/4] h-auto max-h-[min(58vh,34rem)] min-h-[20rem] w-full object-cover" autoplay playsinline muted />
-          <div class="pointer-events-none absolute inset-0 flex items-center justify-center">
-            <div
-              class="aspect-[2.125/3.375] h-[78%] max-w-[72%] rounded-xl border-[3px] border-white/80"
-              style="box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.4)"
-            />
-          </div>
-          <p class="absolute bottom-3 left-3 right-3 rounded-md bg-black/55 px-3 py-2 text-center text-xs text-white">
-            {{ qrHint || "Hold your School ID vertically inside the portrait frame." }}
-          </p>
-        </div>
-      </div>
-      <template #footer="{ close }">
-        <button class="rounded-md border px-4 py-2 text-xs" @click="close">Cancel</button>
-        <button
-          class="rounded-md bg-primary px-4 py-2 text-xs text-white disabled:opacity-50"
-          :disabled="!cameraReady || busy === 'id'"
-          @click="captureIdScan"
-        >
-          {{ busy === "id" ? "Verifying…" : "Capture & verify" }}
-        </button>
-      </template>
-    </AppDialog>
 
     <AppDialog
       v-model="confirmDialog"

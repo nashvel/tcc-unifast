@@ -63,7 +63,7 @@ export function useStudentKyc() {
           last_name: form.last_name.trim(),
           student_id: form.student_id.trim(),
           program: form.program,
-          year_level: form.year_level,
+          year_level: form.year_level || null,
           birthdate: form.birthdate || null,
           contact: form.contact || null,
           address: form.address || null,
@@ -79,6 +79,7 @@ export function useStudentKyc() {
               | "unverified"
               | "pending_kyc"
               | "pending_identity"
+              | "pending_face_review"
               | "blocked",
             kyc_status: payload.data.status,
             onboarding_next_step: "id_scan",

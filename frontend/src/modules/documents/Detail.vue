@@ -13,6 +13,7 @@ import { getAuthToken } from "@/auth/session";
 import { toast } from "@/composables/useToast";
 import { scheduleUndo } from "@/composables/useUndo";
 import { useBreadcrumbTail } from "@/composables/useBreadcrumbTail";
+import { extractQrPayload, type QrExtraction } from "@/modules/requirements/idQr";
 
 function documentStatusClass(status: string) {
   if (status === "pending_review") {
@@ -125,6 +126,73 @@ const metadataDisplay = computed(() => {
   return JSON.stringify(payload, null, 2);
 });
 
+type PdfMetaFields = {
+  format?: string | null;
+  title?: string | null;
+  author?: string | null;
+  creator?: string | null;
+  producer?: string | null;
+  creationDate?: string | null;
+  modDate?: string | null;
+  encryption?: string | null;
+  is_encrypted?: boolean;
+  page_count?: number;
+  engine?: string;
+};
+
+const pdfMetadataScan = computed(() => {
+  const payload = item.value?.metadata_payload;
+  if (!payload || typeof payload !== "object") return null;
+
+  const analysis =
+    (payload.pdf_metadata_analysis as Record<string, unknown> | undefined) ??
+    ((payload.pdf_document as Record<string, unknown> | undefined)?.pdf_metadata_analysis as
+      | Record<string, unknown>
+      | undefined);
+  const fieldsRaw =
+    (payload.pdf_metadata as PdfMetaFields | undefined) ??
+    ((payload.pdf_document as Record<string, unknown> | undefined)?.pdf_metadata as
+      | PdfMetaFields
+      | undefined) ??
+    (analysis?.fields as PdfMetaFields | undefined);
+
+  if (!fieldsRaw && !analysis) return null;
+
+  const fields = (fieldsRaw && typeof fieldsRaw === "object" ? fieldsRaw : {}) as PdfMetaFields;
+  const reasons = Array.isArray(analysis?.reasons)
+    ? (analysis.reasons as string[])
+    : [];
+  const notes = Array.isArray(analysis?.notes)
+    ? (analysis.notes as string[])
+    : [];
+  const suspicious = Boolean(analysis?.suspicious);
+  const source = typeof analysis?.source === "string" ? analysis.source : "unknown";
+  const hasAnyField = Object.values(fields).some(
+    (value) => value !== null && value !== undefined && value !== "",
+  );
+
+  if (!hasAnyField && source === "unavailable") return null;
+
+  return { fields, reasons, notes, suspicious, source };
+});
+
+const pdfMetadataLines = computed(() => {
+  const scan = pdfMetadataScan.value;
+  if (!scan) return [];
+  const { fields } = scan;
+  return [
+    ["Format", fields.format],
+    ["Title", fields.title],
+    ["Author", fields.author],
+    ["Creator", fields.creator],
+    ["Producer", fields.producer],
+    ["Created", fields.creationDate],
+    ["Modified", fields.modDate],
+    ["Pages", fields.page_count != null ? String(fields.page_count) : null],
+    ["Engine", fields.engine],
+  ].filter(([, value]) => value != null && String(value).trim() !== "") as [string, string][];
+});
+
 const ocrCourses = computed(() => {
   const courses = item.value?.ocr_payload?.result?.courses;
   return Array.isArray(courses) ? courses : [];
@@ -167,26 +235,52 @@ const gradeSummary = computed(() => {
   const failed = Number(summary.numeric_failed_count ?? summary.failed_count ?? 0);
   const dropped = Number(summary.dropped_count ?? 0);
   const retention = Number(summary.retention_count ?? failed + dropped);
-  return { blank, pending, failed, dropped, retention };
+  const maxFailed = Number(summary.max_failed ?? 0);
+  const overLimit = Boolean(summary.over_limit) || (maxFailed > 0 && retention >= maxFailed);
+  const message = typeof summary.message === "string" ? summary.message : null;
+  const gradeSlipTerm =
+    typeof summary.grade_slip_term === "string" ? summary.grade_slip_term : null;
+  const termsMissing = Boolean(summary.terms_missing_warning);
+  const enrollmentSlipWarning = Boolean(summary.enrollment_slip_warning);
+  const gradeMismatchCount = Number(summary.grade_mismatch_count ?? 0);
+  const gradeMismatches = Array.isArray(summary.grade_mismatches)
+    ? (summary.grade_mismatches as Array<{ code?: string }>).map((m) => String(m.code ?? "")).filter(Boolean)
+    : [];
+  return {
+    blank,
+    pending,
+    failed,
+    dropped,
+    retention,
+    maxFailed,
+    overLimit,
+    message,
+    gradeSlipTerm,
+    termsMissing,
+    enrollmentSlipWarning,
+    gradeMismatchCount,
+    gradeMismatches,
+  };
 });
 
 const gradeBlankHelp = computed(() => {
   if (!isGradeDocument.value || !gradeSummary.value) return "";
   if (isCourseHistory.value) {
-    return "Course History blanks in the current term and 2 prior semesters (including Summer) are Pending (not retention). Older-term blanks count as Dropped. Eligibility uses full Course History (all terms/programs).";
+    return "Course History blanks on the Grade Slip term and any newer enrollment term are Pending (not retention). Older-term blanks count as Dropped. Upload the last graded Grade Slip (not an empty current-enrollment slip) so pending terms are anchored correctly.";
   }
-  return "Blank grades on Grade Slip are shown for review only and are not counted toward eligibility.";
+  return "Upload the last Grade Slip that already has grades. Blank grades on Grade Slip are review-only and are not counted toward eligibility.";
 });
 
 const gradeCountsLine = computed(() => {
   if (!gradeSummary.value) return "";
-  const { failed, dropped, blank, pending } = gradeSummary.value;
+  const { failed, dropped, blank, pending, gradeSlipTerm } = gradeSummary.value;
   if (isCourseHistory.value) {
     const termHint =
       ocrTerms.value.length > 1
         ? ` · ${ocrTerms.value.length} program/term blocks`
         : "";
-    return `Grade counts: ${failed} failed · ${dropped} dropped · ${pending} pending${termHint}`;
+    const gsHint = gradeSlipTerm ? ` · GS term ${gradeSlipTerm}` : "";
+    return `Grade counts: ${failed} failed · ${dropped} dropped · ${pending} pending${termHint}${gsHint}`;
   }
   return `Grade counts: ${failed} failed · ${dropped} dropped · ${blank} blank (blanks ignored for eligibility)`;
 });
@@ -198,24 +292,51 @@ function termHeaderLabel(term: {
   year_level?: string | null;
   enrollment_status?: string | null;
 }): string {
-  const bits = [
-    term.academic_term,
-    term.program_raw || term.program_code,
-    term.year_level,
-    term.enrollment_status,
-  ].filter((v) => typeof v === "string" && v.trim() !== "");
-  return bits.join(" · ") || "Term";
+  const termPart = [term.academic_term, term.program_raw || term.program_code]
+    .filter((v) => typeof v === "string" && v.trim() !== "")
+    .join(" ");
+  const yearPart =
+    typeof term.year_level === "string" && term.year_level.trim() !== ""
+      ? term.year_level.trim().startsWith("Year")
+        ? term.year_level.trim()
+        : `Year ${term.year_level.trim()}`
+      : "";
+  const status =
+    typeof term.enrollment_status === "string" && term.enrollment_status.trim() !== ""
+      ? term.enrollment_status.trim()
+      : "";
+  if (termPart && yearPart) {
+    return [termPart, "—", yearPart, status].filter(Boolean).join(" ");
+  }
+  return [termPart || yearPart || "Term", status].filter(Boolean).join(" · ");
 }
 
 function courseRemarkDisplay(row: {
   remarks?: string | null;
   fail_reason?: string | null;
   grade?: string | null;
+  pass_grade?: number | string | null;
 }): string {
   if (row.remarks) return row.remarks;
   if (row.fail_reason === "dropped") return "Dropped";
   if (row.fail_reason === "pending") return "Pending";
+  if (row.fail_reason === "numeric_fail") return "Failed";
   if (row.fail_reason === "blank") return "—";
+
+  // TCC SIS CH often omits Remarks; derive Passed/Failed for staff UI only.
+  const gradeText = String(row.grade ?? "").trim();
+  if (gradeText !== "" && !Number.isNaN(Number(gradeText))) {
+    const grade = Number(gradeText);
+    const pass =
+      row.pass_grade !== null &&
+      row.pass_grade !== undefined &&
+      row.pass_grade !== "" &&
+      !Number.isNaN(Number(row.pass_grade))
+        ? Number(row.pass_grade)
+        : 3.0;
+    return grade <= pass ? "Passed" : "Failed";
+  }
+
   return "—";
 }
 
@@ -259,6 +380,109 @@ const formattedOcrText = computed(() => {
     item.value?.extracted_text ||
     "No readable text detected."
   );
+});
+
+const isSchoolId = computed(() => item.value?.slot_key === "school_id");
+
+function coalesceStoredQrExtraction(
+  stored: unknown,
+  fallbackPayload: string | null,
+): QrExtraction {
+  const parsed = extractQrPayload(fallbackPayload);
+  if (!stored || typeof stored !== "object") return parsed;
+
+  const row = stored as Record<string, unknown>;
+  const queryRaw = row.query;
+  const query: Record<string, string> = {};
+  if (queryRaw && typeof queryRaw === "object" && !Array.isArray(queryRaw)) {
+    for (const [key, value] of Object.entries(queryRaw as Record<string, unknown>)) {
+      if (typeof value === "string" && value.trim()) query[key] = value;
+    }
+  }
+
+  const kind =
+    row.kind === "url" || row.kind === "text" ? row.kind : parsed.kind;
+  const host = typeof row.host === "string" ? row.host : parsed.host;
+  const path = typeof row.path === "string" ? row.path : parsed.path;
+  const studentId =
+    typeof row.student_id === "string" ? row.student_id : parsed.student_id;
+  const raw = typeof row.raw === "string" ? row.raw : parsed.raw;
+  const parseable =
+    typeof row.parseable === "boolean" ? row.parseable : parsed.parseable;
+
+  return {
+    parseable,
+    kind,
+    raw,
+    scheme: typeof row.scheme === "string" ? row.scheme : parsed.scheme,
+    host,
+    path,
+    query: Object.keys(query).length ? query : parsed.query,
+    student_id: studentId,
+  };
+}
+
+const schoolIdOcrPanel = computed(() => {
+  if (!isSchoolId.value || !item.value) return null;
+  const meta = (item.value.metadata_payload ?? {}) as Record<string, unknown>;
+  const ocrMeta = (meta.ocr ?? {}) as Record<string, unknown>;
+  const ocrPayload = (item.value.ocr_payload ?? {}) as Record<string, unknown>;
+
+  const extractedName =
+    (typeof ocrMeta.extracted_name === "string" && ocrMeta.extracted_name) ||
+    (typeof ocrPayload.extracted_name === "string" && ocrPayload.extracted_name) ||
+    null;
+  const extractedStudentId =
+    (typeof ocrMeta.extracted_student_id === "string" && ocrMeta.extracted_student_id) ||
+    (typeof ocrPayload.extracted_student_id === "string" && ocrPayload.extracted_student_id) ||
+    null;
+
+  const qrPayload = typeof meta.qr_payload === "string" ? meta.qr_payload : null;
+  const qrFound = meta.qr_found === true || Boolean(qrPayload);
+  const qrValid = meta.qr_valid === true;
+  const storedExtraction =
+    meta.qr_extraction ??
+    (ocrPayload.qr_extraction as unknown) ??
+    null;
+  const qrExtraction = coalesceStoredQrExtraction(storedExtraction, qrPayload);
+  const qrQueryEntries = Object.entries(qrExtraction.query);
+  const hasExtractedFields =
+    qrFound &&
+    Boolean(
+      qrExtraction.host ||
+        qrExtraction.path ||
+        qrExtraction.student_id ||
+        qrQueryEntries.length,
+    );
+
+  const ayOcr =
+    (typeof meta.academic_year_ocr === "string" && meta.academic_year_ocr) ||
+    (typeof ocrPayload.academic_year_ocr === "string" && ocrPayload.academic_year_ocr) ||
+    null;
+  const ayExpected =
+    (typeof meta.academic_year_expected === "string" && meta.academic_year_expected) ||
+    (typeof ocrPayload.academic_year_expected === "string" && ocrPayload.academic_year_expected) ||
+    null;
+  const ayMatch =
+    typeof meta.academic_year_match === "boolean"
+      ? meta.academic_year_match
+      : typeof ocrPayload.academic_year_match === "boolean"
+        ? ocrPayload.academic_year_match
+        : null;
+
+  return {
+    extractedName,
+    extractedStudentId,
+    qrPayload,
+    qrFound,
+    qrValid,
+    qrExtraction,
+    qrQueryEntries,
+    hasExtractedFields,
+    ayOcr,
+    ayExpected,
+    ayMatch,
+  };
 });
 
 function selectSlot(slotKey: string | null) {
@@ -507,6 +731,191 @@ watch(
             Average confidence: {{ item.ocr_confidence.toFixed(1) }}%
           </p>
           <div
+            v-if="schoolIdOcrPanel"
+            class="mt-3 space-y-3"
+            aria-label="School ID OCR summary"
+          >
+            <div class="flex flex-wrap gap-2">
+              <span class="inline-flex items-center rounded-md bg-surface-muted px-2 py-1 text-xs">
+                Name:
+                <span class="ml-1 font-medium text-text">{{ schoolIdOcrPanel.extractedName || "—" }}</span>
+              </span>
+              <span class="inline-flex items-center rounded-md bg-surface-muted px-2 py-1 text-xs">
+                Student ID:
+                <span class="ml-1 font-medium text-text">{{ schoolIdOcrPanel.extractedStudentId || "—" }}</span>
+              </span>
+            </div>
+            <div
+              class="rounded-md border border-black/5 bg-surface-muted/50 p-3"
+              aria-label="QR extraction"
+            >
+              <p class="text-xs font-semibold text-text">QR extraction</p>
+              <template v-if="!schoolIdOcrPanel.qrFound">
+                <p class="mt-2 text-xs text-text-muted">No QR extracted</p>
+                <p class="mt-1 text-micro text-text-muted">
+                  Soft flag only — students can submit without a readable QR.
+                </p>
+              </template>
+              <template v-else>
+                <div class="mt-2 flex flex-wrap items-center gap-2">
+                  <span
+                    class="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium"
+                    :class="
+                      schoolIdOcrPanel.qrValid
+                        ? 'bg-success-soft text-success'
+                        : 'bg-warning-soft text-warning'
+                    "
+                  >
+                    {{ schoolIdOcrPanel.qrValid ? "Valid TCC domain" : "Non-TCC domain" }}
+                  </span>
+                  <span
+                    v-if="schoolIdOcrPanel.qrExtraction.kind"
+                    class="inline-flex items-center rounded-md bg-surface px-2 py-1 text-xs text-text-muted"
+                  >
+                    {{ schoolIdOcrPanel.qrExtraction.kind === "url" ? "URL payload" : "Text payload" }}
+                  </span>
+                </div>
+                <div class="mt-3 space-y-2">
+                  <div>
+                    <p class="text-micro font-medium uppercase tracking-wide text-text-muted">Raw payload</p>
+                    <p
+                      class="mt-1 break-all font-mono text-xs text-text"
+                      :title="schoolIdOcrPanel.qrPayload || undefined"
+                    >
+                      {{ schoolIdOcrPanel.qrPayload || "—" }}
+                    </p>
+                  </div>
+                  <div v-if="schoolIdOcrPanel.hasExtractedFields" class="space-y-2">
+                    <p class="text-micro font-medium uppercase tracking-wide text-text-muted">
+                      Extracted fields
+                    </p>
+                    <div class="flex flex-wrap gap-2">
+                      <span
+                        v-if="schoolIdOcrPanel.qrExtraction.host"
+                        class="inline-flex items-center rounded-md bg-surface px-2 py-1 text-xs"
+                      >
+                        Host:
+                        <span class="ml-1 font-medium text-text">{{ schoolIdOcrPanel.qrExtraction.host }}</span>
+                      </span>
+                      <span
+                        v-if="schoolIdOcrPanel.qrExtraction.path"
+                        class="inline-flex max-w-full items-center rounded-md bg-surface px-2 py-1 text-xs"
+                      >
+                        Path:
+                        <span
+                          class="ml-1 truncate font-mono font-medium text-text"
+                          :title="schoolIdOcrPanel.qrExtraction.path"
+                        >
+                          {{ schoolIdOcrPanel.qrExtraction.path }}
+                        </span>
+                      </span>
+                      <span
+                        v-if="schoolIdOcrPanel.qrExtraction.student_id"
+                        class="inline-flex items-center rounded-md bg-surface px-2 py-1 text-xs"
+                      >
+                        Student ID (QR):
+                        <span class="ml-1 font-medium text-text">
+                          {{ schoolIdOcrPanel.qrExtraction.student_id }}
+                        </span>
+                      </span>
+                      <span
+                        v-for="[key, value] in schoolIdOcrPanel.qrQueryEntries"
+                        :key="`qr-q-${key}`"
+                        class="inline-flex max-w-full items-center rounded-md bg-surface px-2 py-1 text-xs"
+                      >
+                        {{ key }}:
+                        <span class="ml-1 truncate font-medium text-text" :title="value">{{ value }}</span>
+                      </span>
+                    </div>
+                  </div>
+                  <p
+                    v-else
+                    class="text-xs text-text-muted"
+                  >
+                    Payload stored, but no structured fields could be parsed.
+                  </p>
+                </div>
+              </template>
+            </div>
+            <div class="rounded-md border border-black/5 bg-surface-muted/50 p-3">
+              <p class="text-xs font-semibold text-text">Academic year</p>
+              <div class="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                <span class="inline-flex items-center rounded-md bg-surface px-2 py-1">
+                  OCR:
+                  <span class="ml-1 font-medium">{{ schoolIdOcrPanel.ayOcr || "—" }}</span>
+                </span>
+                <span class="inline-flex items-center rounded-md bg-surface px-2 py-1">
+                  Organization:
+                  <span class="ml-1 font-medium">{{ schoolIdOcrPanel.ayExpected || "—" }}</span>
+                </span>
+                <span
+                  class="inline-flex items-center rounded-md px-2 py-1 font-medium"
+                  :class="
+                    schoolIdOcrPanel.ayMatch === true
+                      ? 'bg-success-soft text-success'
+                      : schoolIdOcrPanel.ayMatch === false
+                        ? 'bg-danger-soft text-danger'
+                        : 'bg-warning-soft text-warning'
+                  "
+                >
+                  {{
+                    schoolIdOcrPanel.ayMatch === true
+                      ? "Match"
+                      : schoolIdOcrPanel.ayMatch === false
+                        ? "Mismatch"
+                        : "Incomplete"
+                  }}
+                </span>
+              </div>
+              <p class="mt-2 text-micro text-text-muted">
+                Soft flag only — use Return if QR or academic year needs correction.
+              </p>
+            </div>
+          </div>
+          <div
+            v-if="isCourseHistory && gradeSummary && gradeSummary.gradeMismatchCount > 0"
+            class="mt-3 rounded-md border border-warning/40 bg-warning-soft p-3 text-xs text-warning"
+            role="status"
+          >
+            Staff flag: Course History blank but Grade Slip has a grade for
+            {{ gradeSummary.gradeMismatches.join(", ") || `${gradeSummary.gradeMismatchCount} course(s)` }}.
+          </div>
+          <div
+            v-if="isGradeDocument && gradeSummary?.overLimit"
+            class="mt-3 rounded-md border border-danger/40 bg-danger-soft p-3 text-sm text-danger"
+            role="alert"
+          >
+            <p class="font-semibold">
+              Does not pass retention
+              <span v-if="item.student_name"> — {{ item.student_name }}</span>
+            </p>
+            <p class="mt-1 text-xs">
+              {{
+                gradeSummary.message ||
+                `Retention count ${gradeSummary.retention} (failed ${gradeSummary.failed} + dropped ${gradeSummary.dropped})${
+                  gradeSummary.maxFailed ? ` meets or exceeds max ${gradeSummary.maxFailed}` : ""
+                }.`
+              }}
+            </p>
+          </div>
+          <div
+            v-else-if="isGradeDocument && gradeSummary?.enrollmentSlipWarning"
+            class="mt-3 rounded-md border border-warning/40 bg-warning-soft p-3 text-xs text-warning"
+            role="status"
+          >
+            {{
+              gradeSummary.message ||
+              "This Grade Slip looks like a current-enrollment slip with no grades. Ask for the last graded Grade Slip."
+            }}
+          </div>
+          <div
+            v-else-if="isCourseHistory && gradeSummary?.termsMissing"
+            class="mt-3 rounded-md border border-warning/40 bg-warning-soft p-3 text-xs text-warning"
+            role="status"
+          >
+            Term headers not detected — blanks treated as pending; re-check the Course History PDF.
+          </div>
+          <div
             v-if="isGradeDocument && gradeSummary"
             class="mt-3 flex flex-wrap gap-2"
             aria-label="Grade summary indicators"
@@ -649,7 +1058,7 @@ watch(
             </table>
           </div>
           <pre
-            v-else
+            v-else-if="!isSchoolId"
             class="mt-3 max-h-72 overflow-auto whitespace-pre rounded bg-surface-muted p-3 font-mono text-xs"
             >{{ formattedOcrText }}</pre
           >
@@ -674,6 +1083,42 @@ watch(
               Manual identity review: {{ item.identity_review_reason || "Required" }}
             </p>
           </div>
+          <div v-if="pdfMetadataScan" class="mt-3 rounded-md border border-black/5 bg-surface-muted p-3">
+            <p class="text-xs font-semibold text-text">
+              PDF metadata
+              <span class="ml-1 font-normal text-text-muted">({{ pdfMetadataScan.source }})</span>
+            </p>
+            <p
+              v-if="pdfMetadataScan.suspicious"
+              class="mt-1 text-xs text-warning"
+            >
+              Suspicious: {{ pdfMetadataScan.reasons.join(" · ") || "Flagged by analyzer" }}
+            </p>
+            <p v-else class="mt-1 text-xs text-text-muted">No tampering signals from creator/producer/dates.</p>
+            <p
+              v-if="pdfMetadataScan.notes.length"
+              class="mt-1 text-xs text-text-muted"
+            >
+              {{ pdfMetadataScan.notes.join(" · ") }}
+            </p>
+            <dl v-if="pdfMetadataLines.length" class="mt-2 grid gap-1 text-micro text-text-muted">
+              <div
+                v-for="[label, value] in pdfMetadataLines"
+                :key="label"
+                class="grid grid-cols-[7rem_1fr] gap-2"
+              >
+                <dt class="font-medium text-text">{{ label }}</dt>
+                <dd class="break-all">{{ value }}</dd>
+              </div>
+            </dl>
+            <p v-else class="mt-2 text-micro text-text-muted">Metadata scanned; fields were empty.</p>
+          </div>
+          <p
+            v-else-if="isGradeDocument"
+            class="mt-3 text-xs text-text-muted"
+          >
+            PDF metadata not scanned yet — wait for the queue pipeline, or re-submit the package.
+          </p>
           <pre class="mt-3 max-h-40 overflow-auto whitespace-pre-wrap text-micro text-text-muted">{{
             metadataDisplay
           }}</pre>

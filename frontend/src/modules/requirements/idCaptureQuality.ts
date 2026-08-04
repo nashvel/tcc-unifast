@@ -1,6 +1,7 @@
 /**
  * Blur / glare checks on the School ID guide ROI (dev-phase capture gates).
- * Samples the guide rectangle from the live video (object-cover aware via caller mapping).
+ * Samples the guide rectangle from the live video (object-cover aware via caller mapping),
+ * or analyzes a saved still (ImageBitmap / canvas / blob).
  */
 
 import { mapGuideRectToVideoPixels } from "./faceApi";
@@ -23,44 +24,18 @@ const MIN_SHARPNESS = 28;
 /** Above this fraction of hot pixels → glare / flash. */
 const MAX_GLARE_RATIO = 0.12;
 
-export function analyzeGuideQuality(
-  video: HTMLVideoElement,
-  guideEl: HTMLElement,
-): GuideQualityHit {
-  if (video.readyState < 2) {
-    return {
-      ok: false,
-      blurry: true,
-      glare: false,
-      sharpness: 0,
-      glareRatio: 0,
-      reason: "Camera not ready",
-    };
-  }
+function emptyHit(reason: string, blurry = true): GuideQualityHit {
+  return {
+    ok: false,
+    blurry,
+    glare: false,
+    sharpness: 0,
+    glareRatio: 0,
+    reason,
+  };
+}
 
-  const guide = mapGuideRectToVideoPixels(video, guideEl);
-  const sx = Math.max(0, Math.floor(guide.x));
-  const sy = Math.max(0, Math.floor(guide.y));
-  const sw = Math.max(8, Math.floor(guide.width));
-  const sh = Math.max(8, Math.floor(guide.height));
-  const canvas = document.createElement("canvas");
-  canvas.width = SAMPLE_W;
-  canvas.height = SAMPLE_H;
-  const ctx = canvas.getContext("2d", { willReadFrequently: true });
-  if (!ctx) {
-    return {
-      ok: false,
-      blurry: true,
-      glare: false,
-      sharpness: 0,
-      glareRatio: 0,
-      reason: "Unable to sample frame",
-    };
-  }
-
-  ctx.drawImage(video, sx, sy, sw, sh, 0, 0, SAMPLE_W, SAMPLE_H);
-  const { data } = ctx.getImageData(0, 0, SAMPLE_W, SAMPLE_H);
-
+function scoreSample(data: Uint8ClampedArray): GuideQualityHit {
   const gray = new Float32Array(SAMPLE_W * SAMPLE_H);
   let hot = 0;
   for (let i = 0, p = 0; i < data.length; i += 4, p += 1) {
@@ -101,4 +76,80 @@ export function analyzeGuideQuality(
     glareRatio: Number(glareRatio.toFixed(3)),
     reason,
   };
+}
+
+function sampleFromSource(
+  source: CanvasImageSource,
+  sx: number,
+  sy: number,
+  sw: number,
+  sh: number,
+): GuideQualityHit {
+  const canvas = document.createElement("canvas");
+  canvas.width = SAMPLE_W;
+  canvas.height = SAMPLE_H;
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  if (!ctx) return emptyHit("Unable to sample frame");
+
+  ctx.drawImage(source, sx, sy, sw, sh, 0, 0, SAMPLE_W, SAMPLE_H);
+  const { data } = ctx.getImageData(0, 0, SAMPLE_W, SAMPLE_H);
+  return scoreSample(data);
+}
+
+export function analyzeGuideQuality(
+  video: HTMLVideoElement,
+  guideEl: HTMLElement,
+): GuideQualityHit {
+  if (video.readyState < 2) {
+    return emptyHit("Camera not ready");
+  }
+
+  const guide = mapGuideRectToVideoPixels(video, guideEl);
+  const sx = Math.max(0, Math.floor(guide.x));
+  const sy = Math.max(0, Math.floor(guide.y));
+  const sw = Math.max(8, Math.floor(guide.width));
+  const sh = Math.max(8, Math.floor(guide.height));
+  return sampleFromSource(video, sx, sy, sw, sh);
+}
+
+/** Analyze blur/glare on a saved still (full frame or already cropped to guide). */
+export function analyzeStillQuality(
+  source: ImageBitmap | HTMLCanvasElement | HTMLImageElement,
+): GuideQualityHit {
+  const width =
+    "width" in source && typeof source.width === "number"
+      ? source.width
+      : (source as HTMLImageElement).naturalWidth || 0;
+  const height =
+    "height" in source && typeof source.height === "number"
+      ? source.height
+      : (source as HTMLImageElement).naturalHeight || 0;
+  if (width < 8 || height < 8) {
+    return emptyHit("Still too small to analyze");
+  }
+  return sampleFromSource(source, 0, 0, width, height);
+}
+
+export async function analyzeBlobQuality(blob: Blob): Promise<GuideQualityHit> {
+  if (typeof createImageBitmap === "function") {
+    const bitmap = await createImageBitmap(blob);
+    try {
+      return analyzeStillQuality(bitmap);
+    } finally {
+      bitmap.close();
+    }
+  }
+
+  const url = URL.createObjectURL(blob);
+  try {
+    const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error("Unable to decode still for quality check."));
+      img.src = url;
+    });
+    return analyzeStillQuality(image);
+  } finally {
+    URL.revokeObjectURL(url);
+  }
 }

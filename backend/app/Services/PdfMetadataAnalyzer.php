@@ -7,7 +7,12 @@ namespace App\Services;
  */
 class PdfMetadataAnalyzer
 {
-    /** @var list<string> */
+    /**
+     * Editor / online-converter signatures that suggest the PDF was not a direct
+     * SIS browser export (Office, Acrobat, Smallpdf, etc.).
+     *
+     * @var list<string>
+     */
     private const SUSPICIOUS_CREATOR_PRODUCER = [
         'microsoft word',
         'libreoffice',
@@ -22,11 +27,24 @@ class PdfMetadataAnalyzer
         'foxit',
         'google docs',
         'wordpress',
+    ];
+
+    /**
+     * Browser Print-to-PDF / Skia signatures are normal for TCC SIS exports
+     * (Chrome, Edge, Safari, macOS Preview). Do not treat as tampering.
+     *
+     * @var list<string>
+     */
+    private const BROWSER_EXPORT_SIGNATURES = [
         'chrome',
+        'chromium',
+        'mozilla',
         'edge',
         'safari',
         'macos quartz',
         'preview',
+        'skia',
+        'webkit',
     ];
 
     /**
@@ -34,16 +52,18 @@ class PdfMetadataAnalyzer
      * @return array{
      *   suspicious: bool,
      *   reasons: list<string>,
+     *   notes: list<string>,
      *   fields: array<string, mixed>
      * }
      */
     public function analyze(array $metadata): array
     {
         if ($metadata === []) {
-            return ['suspicious' => false, 'reasons' => [], 'fields' => []];
+            return ['suspicious' => false, 'reasons' => [], 'notes' => [], 'fields' => []];
         }
 
         $reasons = [];
+        $notes = [];
         $creator = strtolower(trim((string) ($metadata['creator'] ?? '')));
         $producer = strtolower(trim((string) ($metadata['producer'] ?? '')));
         $encryption = trim((string) ($metadata['encryption'] ?? ''));
@@ -53,17 +73,29 @@ class PdfMetadataAnalyzer
             $reasons[] = 'PDF is encrypted (unexpected for SIS grade documents).';
         }
 
-        foreach (self::SUSPICIOUS_CREATOR_PRODUCER as $needle) {
-            if ($creator !== '' && str_contains($creator, $needle)) {
-                $reasons[] = "Suspicious creator tool: {$metadata['creator']}";
-                break;
+        $creatorIsBrowser = $this->matchesAny($creator, self::BROWSER_EXPORT_SIGNATURES);
+        $producerIsBrowser = $this->matchesAny($producer, self::BROWSER_EXPORT_SIGNATURES);
+
+        if ($creatorIsBrowser || $producerIsBrowser) {
+            $notes[] = 'Browser-exported PDF (Chrome/Skia or similar) — common for TCC SIS print/export.';
+        }
+
+        // Only flag editor/converter tools; skip browser print signatures.
+        if ($creator !== '' && ! $creatorIsBrowser) {
+            foreach (self::SUSPICIOUS_CREATOR_PRODUCER as $needle) {
+                if (str_contains($creator, $needle)) {
+                    $reasons[] = "Suspicious creator tool: {$metadata['creator']}";
+                    break;
+                }
             }
         }
 
-        foreach (self::SUSPICIOUS_CREATOR_PRODUCER as $needle) {
-            if ($producer !== '' && str_contains($producer, $needle)) {
-                $reasons[] = "Suspicious producer tool: {$metadata['producer']}";
-                break;
+        if ($producer !== '' && ! $producerIsBrowser) {
+            foreach (self::SUSPICIOUS_CREATOR_PRODUCER as $needle) {
+                if (str_contains($producer, $needle)) {
+                    $reasons[] = "Suspicious producer tool: {$metadata['producer']}";
+                    break;
+                }
             }
         }
 
@@ -84,6 +116,7 @@ class PdfMetadataAnalyzer
         return [
             'suspicious' => $reasons !== [],
             'reasons' => array_values(array_unique($reasons)),
+            'notes' => array_values(array_unique($notes)),
             'fields' => [
                 'format' => $metadata['format'] ?? null,
                 'title' => $metadata['title'] ?? null,
@@ -96,6 +129,24 @@ class PdfMetadataAnalyzer
                 'is_encrypted' => $isEncrypted,
             ],
         ];
+    }
+
+    /**
+     * @param  list<string>  $needles
+     */
+    private function matchesAny(string $haystack, array $needles): bool
+    {
+        if ($haystack === '') {
+            return false;
+        }
+
+        foreach ($needles as $needle) {
+            if (str_contains($haystack, $needle)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function parsePdfDate(string $value): ?\DateTimeImmutable

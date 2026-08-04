@@ -19,7 +19,7 @@ export async function submitStudentKyc(data: {
   last_name: string;
   student_id: string;
   program: string;
-  year_level: string;
+  year_level?: string | null;
   birthdate?: string | null;
   contact?: string | null;
   address?: string | null;

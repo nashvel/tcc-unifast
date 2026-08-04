@@ -45,6 +45,7 @@
     "communication": "Komunikasyon",
     "distributionReport": "Ulat sa Distribusyon",
     "documentValidation": "Pag-validate ng Dokumento",
+    "faceReviews": "Pagsusuri ng Face Match",
     "documents": "Mga Dokumento",
     "package": "Package",
     "eligibility": "Pagiging Kwalipikado",
@@ -468,7 +469,7 @@
       "description": "I-activate ang iyong UniFAST TES portal account."
     },
     "adminDashboard": {
-      "title": "Developer Dashboard - UniFAST TES",
+      "title": "Admin Dashboard - UniFAST TES",
       "description": "Pamahalaan ang TES grantees, dokumento, batch, ulat, at eligibility."
     },
     "developerDashboard": {

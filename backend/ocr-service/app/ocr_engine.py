@@ -12,7 +12,15 @@ from pytesseract import Output, TesseractError
 
 from app.config import Settings
 from app.errors import OCR_PROCESSING_FAILURE, TESSERACT_UNAVAILABLE, OcrServiceError
-from app.image_preprocessing import enhance_for_ocr, preprocess_image, region_crops
+from app.image_preprocessing import (
+    enhance_for_ocr,
+    enhance_grayscale_contrast,
+    enhance_inverted_light_text,
+    id_number_band_crop,
+    name_band_crop,
+    preprocess_image,
+    region_crops,
+)
 from app.schemas import BoundingBox, OcrResult, OcrWord, PreprocessingInfo
 from app.text_cleaner import clean_text
 
@@ -85,20 +93,33 @@ def _extract_words(data: dict[str, list]) -> tuple[list[OcrWord], float]:
     return words, calculate_average_confidence(confidences)
 
 
-def _tesseract_pass(processed_image: np.ndarray, settings: Settings) -> tuple[str, list[OcrWord], float]:
+def _tesseract_pass(
+    processed_image: np.ndarray,
+    settings: Settings,
+    config: str | None = None,
+) -> tuple[str, list[OcrWord], float]:
+    tess_config = config or settings.tesseract_config
     raw_text = pytesseract.image_to_string(
         processed_image,
         lang="eng",
-        config=settings.tesseract_config,
+        config=tess_config,
     )
     data = pytesseract.image_to_data(
         processed_image,
         lang="eng",
-        config=settings.tesseract_config,
+        config=tess_config,
         output_type=Output.DICT,
     )
     words, average_confidence = _extract_words(data)
     return raw_text, words, average_confidence
+
+
+def _digits_ocr_config(settings: Settings) -> str:
+    """PSM 6 + digit-heavy whitelist — recovers student ID lines missed by full OCR."""
+    return (
+        f"--oem 3 --psm {settings.tesseract_psm} "
+        "-c tessedit_char_whitelist=0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz:-./ "
+    )
 
 
 def run_tesseract_on_processed_image(
@@ -204,6 +225,57 @@ def ocr_image_array(image: np.ndarray, settings: Settings) -> tuple[OcrResult, n
                 word_passes.append(region_words)
                 if region_conf > 0:
                     confidences.append(region_conf)
+
+        # Dedicated white-on-purple name band: contrast-only + invert-before-threshold.
+        name_band = name_band_crop(warped)
+        if name_band is not None:
+            contrast = enhance_grayscale_contrast(name_band)
+            contrast_raw, contrast_words, contrast_conf = _tesseract_pass(contrast, settings)
+            if clean_text(contrast_raw).strip():
+                preprocessing.region_ocr = True
+                raw_parts.append(contrast_raw)
+                word_passes.append(contrast_words)
+                if contrast_conf > 0:
+                    confidences.append(contrast_conf)
+
+            inv_band, _ = enhance_inverted_light_text(name_band)
+            inv_band_raw, inv_band_words, inv_band_conf = _tesseract_pass(inv_band, settings)
+            if clean_text(inv_band_raw).strip():
+                preprocessing.inverted_pass = True
+                preprocessing.region_ocr = True
+                raw_parts.append(inv_band_raw)
+                word_passes.append(inv_band_words)
+                if inv_band_conf > 0:
+                    confidences.append(inv_band_conf)
+
+        # Student ID band: contrast-only + digit-heavy config (adaptive threshold often wipes thin digits).
+        id_band = id_number_band_crop(warped)
+        if id_band is not None:
+            digits_config = _digits_ocr_config(settings)
+            id_contrast = enhance_grayscale_contrast(id_band)
+            # Upscale thin printed digits for Tesseract.
+            if min(id_contrast.shape[:2]) < 900:
+                id_contrast = cv2.resize(id_contrast, None, fx=1.6, fy=1.6, interpolation=cv2.INTER_CUBIC)
+            id_raw, id_words, id_conf = _tesseract_pass(id_contrast, settings, config=digits_config)
+            if clean_text(id_raw).strip():
+                preprocessing.region_ocr = True
+                raw_parts.append(id_raw)
+                word_passes.append(id_words)
+                if id_conf > 0:
+                    confidences.append(id_conf)
+
+            id_bin, _ = enhance_for_ocr(id_band)
+            if min(id_bin.shape[:2]) < 900:
+                id_bin = cv2.resize(id_bin, None, fx=1.6, fy=1.6, interpolation=cv2.INTER_CUBIC)
+            id_bin_raw, id_bin_words, id_bin_conf = _tesseract_pass(
+                id_bin, settings, config=digits_config
+            )
+            if clean_text(id_bin_raw).strip():
+                preprocessing.region_ocr = True
+                raw_parts.append(id_bin_raw)
+                word_passes.append(id_bin_words)
+                if id_bin_conf > 0:
+                    confidences.append(id_bin_conf)
 
     except (TesseractError, RuntimeError, OSError) as exc:
         raise OcrServiceError(OCR_PROCESSING_FAILURE, "Tesseract OCR processing failed.") from exc

@@ -118,13 +118,13 @@ export const TOURS: Record<string, Tour> = {
     steps: [
       {
         target: H,
-        title: "All uploaded files",
-        body: "Every uploaded requirement across grantees in one searchable table.",
+        title: "Organized scholarship files",
+        body: "Requirement files are grouped by batch and student. Masterlist CSV imports sit in a separate tab.",
       },
       {
         target: C,
-        title: "Upload, preview, reassign",
-        body: "Staff can upload on behalf of a grantee, preview files, download, or reassign a document type.",
+        title: "Preview and download",
+        body: "Open a preview or download a file. Use Open validation to jump to Document Validation for review.",
       },
     ],
   },

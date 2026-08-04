@@ -15,4 +15,5 @@ eligibility: (params?: unknown) => ["eligibility", params] as const,
   eligibilityDetail: (id: string | number) => ["eligibility", String(id)] as const,
   auditLogs: ["audit-logs"] as const,
   submissionWindow: ["submission-window"] as const,
+  faceReviews: ["face-reviews"] as const,
 };

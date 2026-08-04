@@ -38,7 +38,7 @@ return new class extends Migration {
         DB::table('policy_settings')->insert([
             [
                 'key' => 'max_failed_subjects_per_semester',
-                'value' => '1',
+                'value' => '3',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],

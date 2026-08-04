@@ -81,6 +81,21 @@ class DocumentFileController extends Controller
         return $this->streamFile($absolute, $mime, $filename);
     }
 
+    public function showStaffIdentityPhoto(Request $request, Grantee $grantee, string $filename): BinaryFileResponse
+    {
+        $filename = basename($filename);
+        abort_unless(in_array($filename, VaultFileStorage::IDENTITY_FILENAMES, true), 404);
+        abort_unless(in_array($request->user()->role, ['developer', 'admin', 'head', 'staff'], true), 403);
+
+        $path = VaultFileStorage::resolveIdentityRelativePath($grantee->id, $filename);
+        abort_unless(is_string($path) && VaultFileStorage::exists($path), 404);
+
+        $absolute = VaultFileStorage::absolutePath($path);
+        $mime = SecureUpload::detectMime($absolute);
+
+        return $this->streamFile($absolute, $mime, $filename);
+    }
+
     private function streamSubmission(DocumentSubmission $submission, string $variant): BinaryFileResponse
     {
         $variant = $variant === 'secondary' ? 'secondary' : 'primary';

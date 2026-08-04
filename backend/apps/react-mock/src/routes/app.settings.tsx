@@ -278,7 +278,7 @@ function SettingsPage() {
                   <FormField label="Auto-approve risk threshold" helper="Documents with risk below this score may be auto-approved.">
                     <Selectish defaultValue="20"><option>10</option><option>20</option><option>30</option><option>40</option></Selectish>
                   </FormField>
-                  <FormField label="Max failed subjects per semester"><TextInput defaultValue="1" type="number" /></FormField>
+                  <FormField label="Max failed/dropped subjects (overall)"><TextInput defaultValue="3" type="number" /></FormField>
                 </div>
               </ChartCard>
               <div className="lg:col-span-2 flex justify-end gap-2">

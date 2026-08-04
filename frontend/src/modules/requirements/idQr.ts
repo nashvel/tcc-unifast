@@ -2,6 +2,26 @@ import jsQR from "jsqr";
 
 const DEFAULT_DOMAINS = ["registrar.tcc.edu.ph", "sis.tcc.edu.ph", "tcc.edu.ph"];
 
+const STUDENT_ID_QUERY_KEYS = [
+  "sid",
+  "student_id",
+  "studentid",
+  "student-id",
+  "student_number",
+  "studentnumber",
+];
+
+export type QrExtraction = {
+  parseable: boolean;
+  kind: "url" | "text" | null;
+  raw: string | null;
+  scheme: string | null;
+  host: string | null;
+  path: string | null;
+  query: Record<string, string>;
+  student_id: string | null;
+};
+
 function configuredDomains(): string[] {
   const fromEnv = String(import.meta.env.VITE_TCC_REGISTRAR_DOMAINS || "")
     .split(",")
@@ -27,6 +47,116 @@ export function isTccRegistrarQr(payload: string): boolean {
     if (host && (host === domain || host.endsWith(`.${domain}`))) return true;
     return value.includes(domain);
   });
+}
+
+export function emptyQrExtraction(): QrExtraction {
+  return {
+    parseable: false,
+    kind: null,
+    raw: null,
+    scheme: null,
+    host: null,
+    path: null,
+    query: {},
+    student_id: null,
+  };
+}
+
+function looksLikeStudentId(value: string): boolean {
+  const trimmed = value.trim();
+  if (!trimmed || trimmed.length > 40) return false;
+  const lower = trimmed.toLowerCase();
+  if (["verify", "student", "id", "login", "home", "fake"].includes(lower)) return false;
+  // Compact IDs only (e.g. STU-42, STU-VAULT-3) — reject sentence-like strings.
+  if ((trimmed.match(/-/g) || []).length > 2) return false;
+  return /^[A-Za-z0-9][A-Za-z0-9._-]{1,38}$/.test(trimmed);
+}
+
+function studentIdFromUrl(path: string | null, query: Record<string, string>): string | null {
+  for (const key of STUDENT_ID_QUERY_KEYS) {
+    for (const [queryKey, value] of Object.entries(query)) {
+      if (queryKey.toLowerCase() === key && looksLikeStudentId(value)) {
+        return value;
+      }
+    }
+  }
+
+  if (!path || path === "/") return null;
+  const segments = path.split("/").map((part) => part.trim()).filter(Boolean);
+  if (!segments.length) return null;
+
+  const verifyIndex = segments.findIndex((segment) => segment.toLowerCase() === "verify");
+  if (verifyIndex >= 0 && segments[verifyIndex + 1] && looksLikeStudentId(segments[verifyIndex + 1])) {
+    return segments[verifyIndex + 1];
+  }
+
+  const last = segments[segments.length - 1];
+  if (last && last.toLowerCase() !== "verify" && looksLikeStudentId(last)) {
+    return last;
+  }
+
+  return null;
+}
+
+function guessStudentIdFromText(raw: string): string | null {
+  const matches = raw.matchAll(/\b([A-Za-z]{2,8}-[A-Za-z0-9]{1,24}(?:-[A-Za-z0-9]{1,20})?)\b/g);
+  for (const match of matches) {
+    const candidate = match[1];
+    if (candidate && looksLikeStudentId(candidate) && /\d/.test(candidate)) {
+      return candidate;
+    }
+  }
+  return looksLikeStudentId(raw) ? raw : null;
+}
+
+/** Best-effort parse for staff UI; mirrors TccRegistrarQrService::extract. */
+export function extractQrPayload(payload: string | null | undefined): QrExtraction {
+  const raw = String(payload ?? "").trim();
+  if (!raw) return emptyQrExtraction();
+
+  try {
+    if (!/^https?:\/\//i.test(raw)) {
+      return {
+        parseable: false,
+        kind: "text",
+        raw,
+        scheme: null,
+        host: null,
+        path: null,
+        query: {},
+        student_id: guessStudentIdFromText(raw),
+      };
+    }
+
+    const url = new URL(raw);
+    const query: Record<string, string> = {};
+    url.searchParams.forEach((value, key) => {
+      query[key] = value;
+    });
+    const path = url.pathname || null;
+
+    return {
+      parseable: true,
+      kind: "url",
+      raw,
+      scheme: url.protocol.replace(/:$/, "").toLowerCase() || null,
+      host: url.hostname.toLowerCase() || null,
+      path: path && path !== "" ? path : null,
+      query,
+      student_id: studentIdFromUrl(path, query),
+    };
+  } catch {
+    return {
+      parseable: false,
+      kind: "text",
+      raw,
+      scheme: null,
+      host: null,
+      path: null,
+      query: {},
+      student_id: guessStudentIdFromText(raw),
+    };
+  }
 }
 
 export function decodeQrFromVideo(video: HTMLVideoElement): string | null {

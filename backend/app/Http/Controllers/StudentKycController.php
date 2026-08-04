@@ -83,7 +83,8 @@ class StudentKycController extends Controller
             'last_name' => ['required', 'string', 'max:120'],
             'student_id' => ['required', 'string', 'max:100'],
             'program' => ['required', 'string', 'max:255', Rule::in($programValues)],
-            'year_level' => ['required', 'string', 'max:40', Rule::in(self::YEAR_LEVEL_OPTIONS)],
+            // Optional for display only — not part of masterlist cross-check.
+            'year_level' => ['nullable', 'string', 'max:40', Rule::in(self::YEAR_LEVEL_OPTIONS)],
             'birthdate' => ['nullable', 'date'],
             'contact' => ['nullable', 'string', 'max:80'],
             'address' => ['nullable', 'string', 'max:1000'],
@@ -106,21 +107,21 @@ class StudentKycController extends Controller
         if (! $truth->programsMatch($validated['program'], $reference['program'], $programs)) {
             $mismatches['program'] = 'Program does not match the masterlist record for this account.';
         }
-        if (filled($reference['year_level'])
-            && ! $truth->valuesMatch($validated['year_level'], $reference['year_level'])) {
-            $mismatches['year_level'] = 'Year level does not match the masterlist record for this account.';
-        }
 
         if ($mismatches !== []) {
             throw ValidationException::withMessages($mismatches);
         }
+
+        $yearLevel = filled($validated['year_level'] ?? null)
+            ? (string) $validated['year_level']
+            : null;
 
         // Persist canonical masterlist identity after successful cross-check.
         $bound = [
             'full_name' => $reference['full_name'],
             'student_id' => $reference['student_id'],
             'program' => $reference['program'],
-            'year_level' => (string) $validated['year_level'],
+            'year_level' => $yearLevel,
             'birthdate' => $validated['birthdate'] ?? null,
             'contact' => $validated['contact'] ?? null,
             'address' => $validated['address'] ?? null,
@@ -139,11 +140,11 @@ class StudentKycController extends Controller
 
         // Identity onboarding (ID scan + liveness) must complete before account is fully active.
         $user->forceFill(['account_status' => 'pending_identity'])->save();
-        $grantee->update([
-            'status' => 'kyc_verified',
-            'year_level' => (string) $validated['year_level'],
-        ]);
-
+        $granteePayload = ['status' => 'kyc_verified'];
+        if ($yearLevel !== null) {
+            $granteePayload['year_level'] = $yearLevel;
+        }
+        $grantee->update($granteePayload);
         GranteeIdentityProfile::firstOrCreate(
             ['grantee_id' => $grantee->id],
             ['user_id' => $user->id, 'status' => 'pending_id_scan'],

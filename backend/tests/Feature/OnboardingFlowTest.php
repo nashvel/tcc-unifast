@@ -196,6 +196,7 @@ $admin = User::factory()->create(['role' => 'admin', 'account_status' => 'active
             ->assertJsonMissingPath('data.reference.full_name');
 
         // Spoofed identity must be rejected — user must type matching values.
+        // Year level is optional and is not part of the masterlist cross-check.
         $this->actingAs($student)->postJson('/api/student/kyc', [
             'first_name' => 'Attacker',
             'last_name' => 'Name',
@@ -204,7 +205,8 @@ $admin = User::factory()->create(['role' => 'admin', 'account_status' => 'active
             'year_level' => '4',
             'contact' => '+639171234567',
         ])->assertUnprocessable()
-            ->assertJsonValidationErrors(['full_name', 'student_id', 'year_level']);
+            ->assertJsonValidationErrors(['full_name', 'student_id'])
+            ->assertJsonMissingValidationErrors(['year_level']);
 
         $this->actingAs($student)->postJson('/api/student/kyc', [
             'first_name' => 'Maria',
@@ -216,7 +218,6 @@ $admin = User::factory()->create(['role' => 'admin', 'account_status' => 'active
         ])->assertOk()
             ->assertJsonPath('data.account_status', 'pending_identity')
             ->assertJsonPath('data.next_step', 'id_scan');
-
         $this->assertDatabaseHas('users', ['id' => $student->id, 'account_status' => 'pending_identity']);
         $this->assertDatabaseHas('kyc_profiles', [
             'user_id' => $student->id,
@@ -252,6 +253,109 @@ $admin = User::factory()->create(['role' => 'admin', 'account_status' => 'active
             ->assertUnprocessable();
 
         $this->assertNotNull($grantee->fresh());
+    }
+
+    public function test_kyc_accepts_mismatched_or_missing_year_level(): void
+    {
+        $student = User::factory()->create([
+            'role' => 'student',
+            'student_id' => 'STU-77',
+            'account_status' => 'pending_kyc',
+        ]);
+        $batch = $this->batchWithDeadline();
+        Grantee::create([
+            'user_id' => $student->id,
+            'batch_id' => $batch->id,
+            'student_id' => 'STU-77',
+            'student_number' => '2026-0077',
+            'full_name' => 'Ana Reyes',
+            'email' => $student->email,
+            'program' => 'BSIT',
+            'year_level' => '1',
+            'status' => 'unverified',
+        ]);
+        $import = MasterlistImport::create([
+            'batch_id' => $batch->id,
+            'uploaded_by' => $student->id,
+            'original_name' => 'ched.csv',
+            'stored_path' => 'masterlist-imports/ched.csv',
+            'status' => 'imported',
+            'total_rows' => 1,
+            'valid_rows' => 1,
+            'imported_rows' => 1,
+        ]);
+        MasterlistRow::create([
+            'masterlist_import_id' => $import->id,
+            'row_number' => 2,
+            'student_id' => 'STU-77',
+            'full_name' => 'Ana Reyes',
+            'email' => $student->email,
+            'program' => 'BSIT',
+            'year_level' => '1',
+            'status' => 'valid',
+        ]);
+
+        // Mismatched year must not block KYC when name / student ID / program match.
+        $this->actingAs($student)->postJson('/api/student/kyc', [
+            'first_name' => 'Ana',
+            'last_name' => 'Reyes',
+            'student_id' => 'STU-77',
+            'program' => 'BSIT',
+            'year_level' => '4',
+        ])->assertOk()
+            ->assertJsonPath('data.account_status', 'pending_identity');
+
+        $this->assertDatabaseHas('kyc_profiles', [
+            'user_id' => $student->id,
+            'full_name' => 'Ana Reyes',
+            'student_id' => 'STU-77',
+            'program' => 'BSIT',
+            'year_level' => '4',
+            'status' => 'verified',
+        ]);
+
+        $other = User::factory()->create([
+            'role' => 'student',
+            'student_id' => 'STU-78',
+            'account_status' => 'pending_kyc',
+        ]);
+        Grantee::create([
+            'user_id' => $other->id,
+            'batch_id' => $batch->id,
+            'student_id' => 'STU-78',
+            'student_number' => '2026-0078',
+            'full_name' => 'Ben Cruz',
+            'email' => $other->email,
+            'program' => 'BSIT',
+            'year_level' => '2',
+            'status' => 'unverified',
+        ]);
+        MasterlistRow::create([
+            'masterlist_import_id' => $import->id,
+            'row_number' => 3,
+            'student_id' => 'STU-78',
+            'full_name' => 'Ben Cruz',
+            'email' => $other->email,
+            'program' => 'BSIT',
+            'year_level' => null,
+            'status' => 'valid',
+        ]);
+
+        // Omitting year_level must also succeed.
+        $this->actingAs($other)->postJson('/api/student/kyc', [
+            'first_name' => 'Ben',
+            'last_name' => 'Cruz',
+            'student_id' => 'STU-78',
+            'program' => 'BSIT',
+        ])->assertOk()
+            ->assertJsonPath('data.account_status', 'pending_identity');
+
+        $this->assertDatabaseHas('kyc_profiles', [
+            'user_id' => $other->id,
+            'student_id' => 'STU-78',
+            'year_level' => null,
+            'status' => 'verified',
+        ]);
     }
 
     public function test_kyc_accepts_case_insensitive_name_and_student_id(): void

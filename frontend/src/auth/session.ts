@@ -7,9 +7,15 @@ export type AuthUser = {
   email: string;
   role: "developer" | "admin" | "staff" | "student";
   student_id: string | null;
-  account_status?: "active" | "unverified" | "pending_kyc" | "pending_identity" | "blocked";
+  account_status?:
+    | "active"
+    | "unverified"
+    | "pending_kyc"
+    | "pending_identity"
+    | "pending_face_review"
+    | "blocked";
   kyc_status?: string | null;
-  onboarding_next_step?: "blocked" | "kyc" | "id_scan" | "liveness" | "done";
+  onboarding_next_step?: "blocked" | "kyc" | "id_scan" | "liveness" | "face_review" | "done";
   onboarding_path?: string;
 };
 
