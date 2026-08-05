@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { onMounted, onUnmounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { ArrowRight, ChevronDown, ChevronUp, Eye, EyeOff, HelpCircle, Lock, Mail, ShieldCheck, UserRound } from "lucide-vue-next";
 import logo from "@/assets/system-logo.webp";
-import studentsCutout from "@/assets/auth/TCC_UNIFAST_OFFICE.webp";
+import studentsCutout from "@/assets/auth/Faculties_UNifast1.webp";
 import { authSession } from "@/auth/session";
 import { studentHomePath } from "@/auth/onboardingResume";
 import { login } from "@/api/auth";
@@ -13,8 +13,15 @@ import LanguageSwitcher from "@/components/LanguageSwitcher.vue";
 import { withLang } from "@/i18n/routeLang";
 import VueRecaptcha from "vue3-recaptcha2";
 
+const activeSlide = ref<'text' | 'image'>('text');
+let slideInterval: number | ReturnType<typeof setInterval>;
+
 // Force light mode on login page - never use dark mode here
 onMounted(() => {
+  slideInterval = setInterval(() => {
+    activeSlide.value = activeSlide.value === 'text' ? 'image' : 'text';
+  }, 5000);
+
   document.documentElement.classList.remove("dark", "dev-dark");
 });
 
@@ -131,15 +138,27 @@ onMounted(async () => {
     terms.value = termsRes.data;
   } catch {}
 });
+
+onUnmounted(() => {
+  clearInterval(slideInterval);
+});
 </script>
 
 <template>
   <div class="grid h-screen overflow-hidden bg-surface lg:h-[80vh] lg:grid-cols-[1.08fr_.92fr]">
     <section
-      class="relative hidden h-screen overflow-hidden bg-[#57151f] p-8 text-white lg:flex lg:h-[80vh] lg:flex-col xl:p-10"
+      class="relative hidden h-screen overflow-hidden px-8 py-5 lg:flex lg:h-[80vh] lg:flex-col xl:px-10 xl:py-6 transition-colors duration-1000"
+      :class="activeSlide === 'text' ? 'bg-[#57151f]' : 'bg-white'"
     >
+      <!-- Dynamic Header Bar -->
+      <div 
+        class="absolute top-0 left-0 w-full h-[76px] xl:h-[84px] transition-colors duration-1000 z-40"
+        :class="activeSlide === 'image' ? 'bg-[#57151f]' : 'bg-white'"
+      ></div>
+
       <div
-        class="absolute inset-0"
+        class="absolute inset-0 transition-opacity duration-1000 z-0"
+        :class="activeSlide === 'text' ? 'opacity-100' : 'opacity-0'"
         style="
           background:
             radial-gradient(circle at 41% 44%, rgba(126, 31, 44, 0.9), transparent 34%),
@@ -149,23 +168,36 @@ onMounted(async () => {
         "
       />
       <div
-        class="absolute bottom-32 right-10 h-36 w-36 opacity-20"
+        class="absolute bottom-32 right-10 h-36 w-36 transition-opacity duration-1000 z-0"
+        :class="activeSlide === 'text' ? 'opacity-20' : 'opacity-0'"
         style="
           background-image: radial-gradient(rgba(255, 255, 255, 0.48) 1px, transparent 1px);
           background-size: 14px 14px;
         "
       />
-      <div class="relative z-10 flex items-center gap-3">
-        <div class="h-10 w-10 rounded-lg bg-white p-1.5 shadow-sm">
+      
+      <div 
+        class="relative z-50 flex items-center gap-3 transition-all duration-1000 w-full"
+        :class="activeSlide === 'image' ? 'justify-center mt-3 text-white' : 'justify-start mt-0 text-[#57151f]'"
+      >
+        <div class="h-10 w-10 rounded-lg p-1.5 shadow-sm border border-transparent transition-colors duration-1000"
+             :class="activeSlide === 'image' ? 'bg-white shadow-sm' : 'bg-[#57151f]'">
           <img :src="logo" class="h-full w-full object-contain" alt="UniFAST TES" />
         </div>
-        <div>
-          <p class="text-base font-semibold">UniFAST TES</p>
-          <p class="text-xs text-white/65">{{ t("app.granteeManagement") }}</p>
+        <div class="transition-colors duration-1000">
+          <p class="text-base font-semibold transition-all duration-1000" :class="activeSlide === 'image' ? 'text-xl uppercase tracking-widest' : ''">
+            {{ activeSlide === 'image' ? 'Meet the Faculties' : 'UniFAST TES' }}
+          </p>
+          <p v-show="activeSlide === 'text'" class="text-xs transition-opacity duration-1000" :class="activeSlide === 'image' ? 'text-white/80' : 'text-[#57151f]/80'">
+            {{ t("app.granteeManagement") }}
+          </p>
         </div>
       </div>
-      <div class="relative z-10 mt-16 max-w-xl xl:mt-20">
-        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-[#f2bd4c]">
+      <div 
+        class="relative z-10 mt-16 max-w-xl xl:mt-20 transition-all duration-1000 absolute text-white"
+        :class="activeSlide === 'text' ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-8 pointer-events-none absolute'"
+      >
+        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-white/90">
           {{ t("app.college") }}
         </p>
         <h1
@@ -180,7 +212,8 @@ onMounted(async () => {
       <img
         :src="studentsCutout"
         alt="Tagoloan Community College students"
-        class="absolute bottom-0 left-1/2 z-10 w-[94%] max-w-none -translate-x-1/2 object-contain drop-shadow-2xl brightness-105 contrast-105 transition-all duration-700 hover:scale-[1.02] hover:brightness-110 xl:w-[90%]"
+        class="absolute bottom-0 left-1/2 z-10 w-[94%] max-w-none -translate-x-1/2 object-contain drop-shadow-2xl brightness-105 contrast-105 transition-all duration-1000 hover:scale-[1.02] hover:brightness-110 xl:w-[90%]"
+        :class="activeSlide === 'image' ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12 pointer-events-none'"
       />
     </section>
 
