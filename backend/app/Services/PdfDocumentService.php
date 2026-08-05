@@ -12,6 +12,10 @@ use Illuminate\Support\Str;
  * Course History / Grade Slip PDFs: PyMuPDF text + metadata first.
  * Tesseract (/ocr/pdf) only if the PDF has no useful text layer (scanned rare case).
  * School ID images use IdCardOcrService (Tesseract), not this class.
+ *
+ * Metadata is always scanned via PdfMetadataService (pdf_metadata.py) even when
+ * the large pdf_extract.py JSON payload fails to parse — text and metadata are
+ * independent so staff Document Validation still gets creator/producer/dates.
  */
 class PdfDocumentService
 {
@@ -26,6 +30,7 @@ class PdfDocumentService
      *   provider?: string,
      *   method?: string,
      *   error?: string,
+     *   pdf_metadata?: array<string, mixed>,
      *   pdf_metadata_analysis?: array<string, mixed>
      * }
      */
@@ -35,9 +40,14 @@ class PdfDocumentService
             return [
                 'status' => 'skipped',
                 'error' => 'PDF file missing',
-                'pdf_metadata_analysis' => ['suspicious' => false, 'reasons' => [], 'fields' => [], 'source' => 'unavailable'],
+                'pdf_metadata' => [],
+                'pdf_metadata_analysis' => ['suspicious' => false, 'reasons' => [], 'notes' => [], 'fields' => [], 'source' => 'unavailable'],
             ];
         }
+
+        // Metadata first — must not depend on pdf_extract.py JSON succeeding.
+        $analysis = $this->pdfMetadata->analyzeFromOcrOrFile([], $absolutePath);
+        $metaPayload = is_array($analysis['fields'] ?? null) ? $analysis['fields'] : [];
 
         $pymupdf = $this->extractWithPyMuPdf($absolutePath);
         $rawText = trim((string) ($pymupdf['combined_text'] ?? $pymupdf['extracted_text'] ?? ''));
@@ -47,11 +57,22 @@ class PdfDocumentService
         // Prefer aligned course table for staff OCR panel; keep raw text for search/fallback.
         $text = $formatted !== '' ? $formatted : $rawText;
         $hasUsefulText = (bool) ($pymupdf['has_useful_text'] ?? (strlen(preg_replace('/\W+/', '', $rawText !== '' ? $rawText : $text) ?? '') >= 10));
-        $metaPayload = is_array($pymupdf['pdf_metadata'] ?? null) ? $pymupdf['pdf_metadata'] : [];
-        $analysis = $this->pdfMetadata->analyzeFromOcrOrFile(
-            $metaPayload !== [] ? ['pdf_metadata' => $metaPayload] : [],
-            $absolutePath,
-        );
+
+        $extractMeta = is_array($pymupdf['pdf_metadata'] ?? null) ? $pymupdf['pdf_metadata'] : [];
+        if ($extractMeta !== []) {
+            // Prefer fuller extract metadata (page_count/engine) when text extract succeeded.
+            $fromExtract = $this->pdfMetadata->analyzeFromOcrOrFile(
+                ['pdf_metadata' => $extractMeta],
+                null,
+            );
+            if (($fromExtract['source'] ?? '') !== 'unavailable') {
+                $analysis = $fromExtract;
+                $metaPayload = $extractMeta;
+            }
+        } elseif ($metaPayload === [] && ($analysis['source'] ?? '') === 'unavailable') {
+            // Last resort already attempted via analyzeFromOcrOrFile above.
+            $metaPayload = is_array($analysis['fields'] ?? null) ? $analysis['fields'] : [];
+        }
 
         if ($hasUsefulText && ($text !== '' || $courses !== [] || $terms !== [])) {
             return [
@@ -76,13 +97,16 @@ class PdfDocumentService
                 $absolutePath,
             );
             $finalAnalysis = ($fallbackAnalysis['source'] ?? '') !== 'unavailable' ? $fallbackAnalysis : $analysis;
+            $finalMeta = is_array($fallbackAnalysis['fields'] ?? null) && $fallbackAnalysis['fields'] !== []
+                ? $fallbackAnalysis['fields']
+                : ($metaPayload !== [] ? $metaPayload : ($finalAnalysis['fields'] ?? []));
 
             return [
                 'status' => 'ok',
                 'provider' => 'tesseract_fallback',
                 'method' => 'tesseract_ocr',
                 'text' => $fallback['text'] ?? '',
-                'pdf_metadata' => $metaPayload !== [] ? $metaPayload : ($finalAnalysis['fields'] ?? []),
+                'pdf_metadata' => $finalMeta,
                 'pdf_metadata_analysis' => $finalAnalysis,
             ];
         }
@@ -118,15 +142,7 @@ class PdfDocumentService
             return [];
         }
 
-        // Windows Python may emit cp1252 for ñ etc.; substitute invalid UTF-8 so text still parses.
-        // PyMuPDF may also append layout hints after JSON — isolate the object payload.
-        $rawOut = trim($result->output());
-        $start = strpos($rawOut, '{');
-        $end = strrpos($rawOut, '}');
-        if ($start !== false && $end !== false && $end >= $start) {
-            $rawOut = substr($rawOut, $start, $end - $start + 1);
-        }
-        $payload = json_decode($rawOut, true, 512, JSON_INVALID_UTF8_SUBSTITUTE);
+        $payload = $this->decodeJsonObject(trim($result->output()));
         if (! is_array($payload) || ! ($payload['success'] ?? false)) {
             Log::warning('pdf_extract.failed', [
                 'python' => $python,
@@ -140,6 +156,38 @@ class PdfDocumentService
         }
 
         return is_array($payload['result'] ?? null) ? $payload['result'] : [];
+    }
+
+    /**
+     * Parse PyMuPDF CLI JSON. Windows/PyMuPDF may prepend/append non-JSON noise;
+     * isolate the outermost object and tolerate invalid UTF-8 sequences.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function decodeJsonObject(string $rawOut): ?array
+    {
+        if ($rawOut === '') {
+            return null;
+        }
+
+        $candidates = [$rawOut];
+        $start = strpos($rawOut, '{');
+        $end = strrpos($rawOut, '}');
+        if ($start !== false && $end !== false && $end >= $start) {
+            $sliced = substr($rawOut, $start, $end - $start + 1);
+            if ($sliced !== $rawOut) {
+                $candidates[] = $sliced;
+            }
+        }
+
+        foreach ($candidates as $candidate) {
+            $payload = json_decode($candidate, true, 512, JSON_INVALID_UTF8_SUBSTITUTE);
+            if (is_array($payload)) {
+                return $payload;
+            }
+        }
+
+        return null;
     }
 
     /**

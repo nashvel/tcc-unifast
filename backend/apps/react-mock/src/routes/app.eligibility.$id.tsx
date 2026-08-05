@@ -11,14 +11,14 @@ export const Route = createFileRoute("/app/eligibility/$id")({
   component: EvalDetail,
 });
 
-/** Matches Settings → Max failed subjects per semester. */
-const maxFailedSubjectsPerSemester = 1;
+/** Matches Settings → Max failed/dropped subjects (overall). */
+const maxFailedSubjectsOverall = 3;
 
 const criteria = [
   { label: "Enrolled in current activation batch", pass: true },
   { label: "Required documents submitted for current batch", pass: true },
   {
-    label: `Academic retention (max ${maxFailedSubjectsPerSemester} failed subject(s) per semester)`,
+    label: `Academic retention (max ${maxFailedSubjectsOverall} failed/dropped subjects overall)`,
     pass: true,
   },
 ];

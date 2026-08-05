@@ -124,14 +124,15 @@ class SubmissionRiskScoringService
     /**
      * Evaluate eligibility from OCR grades / structured courses.
      *
-     * Setting `max_failed_subjects_per_semester`: not eligible when
-     * failed + dropped count >= that value.
+     * Setting `max_failed_subjects_per_semester` (overall retention max, default 3):
+     * not eligible when overall failed + dropped count >= that value.
+     * Failed and dropped each count 1; pending blanks do not count.
      * Grade-slip blank grades are ignored for eligibility (blank_count for staff).
-     * Course-history blanks in the pending window (current + 2 prior terms) are
+     * Course-history blanks on the Grade Slip term and any newer enrollment term are
      * pending (ignored); older-term blanks count as dropped toward retention.
      *
-     * Retention decision is driven by Course History (full history) when present;
-     * Grade Slip is supplemental (current-term review) and only used when CH is missing.
+     * Retention decision is driven by Course History (full history, all terms) when present;
+     * Grade Slip anchors the pending window and is only used as retention fallback when CH is missing.
      *
      * @param  array<string, array<string, mixed>>  $ocrSummary
      * @return array<string, mixed>
@@ -176,12 +177,21 @@ class SubmissionRiskScoringService
             ];
         }
 
+        $gradeSlipTerm = null;
+        if ($documentType === 'course_history' && isset($ocrSummary['grade_slip']) && is_array($ocrSummary['grade_slip'])) {
+            $gradeSlipTerm = $this->gradeParser->resolveGradeSlipTerm(
+                $ocrSummary['grade_slip'],
+                $terms !== [] ? $terms : null,
+            );
+        }
+
         $parsed = $this->gradeParser->parse(
             $text,
             $grantee->program,
             $courses !== [] ? $courses : null,
             $documentType,
             $terms !== [] ? $terms : null,
+            $gradeSlipTerm,
         );
         $maxFailed = PolicySetting::maxFailedSubjects();
         $failedCount = (int) $parsed['failed_count'];
@@ -202,11 +212,11 @@ class SubmissionRiskScoringService
                 : '');
 
         $blankNote = $pendingCount > 0
-            ? sprintf(' Pending grades ignored for eligibility (%d pending in current/recent terms).', $pendingCount)
+            ? sprintf(' Pending grades ignored for eligibility (%d pending on GS term / current enrollment).', $pendingCount)
             : ($blankCount > 0
                 ? sprintf(' Blank grades ignored for eligibility (%d blank noted for staff).', $blankCount)
                 : ($documentType === 'course_history'
-                    ? ' Older-term Course History blanks counted as dropped; recent blanks are pending.'
+                    ? ' Older Course History blanks counted as dropped; GS term and newer enrollment blanks are pending.'
                     : ' Blank grades ignored for eligibility.'));
 
         $note = match ($status) {

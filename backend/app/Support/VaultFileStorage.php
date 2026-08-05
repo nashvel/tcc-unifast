@@ -20,16 +20,29 @@ class VaultFileStorage
     public const IDENTITY_FILENAMES = [
         'id_reference_face.jpg',
         'onboarding_selfie.jpg',
+        'liveness_challenge_1.jpg',
+        'liveness_challenge_2.jpg',
         'id_onboarding_frame.jpg',
         'id_onboarding_back.jpg',
         'id_scan_submission.jpg',
         'submission_selfie.jpg',
     ];
 
+    /** Regex alternation for route `{filename}` constraints — keep in sync with IDENTITY_FILENAMES. */
+    public static function identityFilenameRoutePattern(): string
+    {
+        return implode('|', array_map(
+            static fn (string $name): string => preg_quote($name, '/'),
+            self::IDENTITY_FILENAMES,
+        ));
+    }
+
     /** @var list<string> */
     public const IDENTITY_ROLES = [
         'id_reference_face',
         'onboarding_selfie',
+        'liveness_challenge_1',
+        'liveness_challenge_2',
         'id_onboarding_frame',
         'id_onboarding_back',
         'id_scan_submission',
@@ -261,6 +274,11 @@ class VaultFileStorage
         return '/api/student/identity-onboarding/photos/'.basename($filename);
     }
 
+    public static function authStaffIdentityUrl(int $granteeId, string $filename): string
+    {
+        return '/api/grantees/'.$granteeId.'/identity-photos/'.basename($filename);
+    }
+
     public static function normalizeRelativePath(string $relativePath): string
     {
         $normalized = self::tryNormalizeRelativePath($relativePath);
@@ -334,6 +352,8 @@ class VaultFileStorage
         return match ($filename) {
             'id_reference_face.jpg' => $profile?->id_reference_face_path,
             'onboarding_selfie.jpg' => $profile?->onboarding_selfie_path,
+            'liveness_challenge_1.jpg' => $profile?->liveness_challenge_1_path,
+            'liveness_challenge_2.jpg' => $profile?->liveness_challenge_2_path,
             'id_onboarding_frame.jpg' => is_string(data_get($profile?->id_ocr_payload, 'frame_path'))
                 ? (string) data_get($profile->id_ocr_payload, 'frame_path')
                 : null,

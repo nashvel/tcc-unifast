@@ -340,7 +340,7 @@ TXT;
         $this->assertCount(2, $parsed['terms']);
         $this->assertSame('BSED', $parsed['terms'][0]['program_code']);
         $this->assertSame('BSIT', $parsed['terms'][1]['program_code']);
-        // Both terms in pending window (current + 1 prior): blank → pending, not dropped.
+        // CH-only: newest + 2nd-newest (has blanks) → blank Pending, not Dropped.
         $this->assertSame(1, $parsed['terms'][0]['failed_count']);
         $this->assertSame(1, $parsed['terms'][0]['pending_count']);
         $this->assertSame(0, $parsed['terms'][0]['dropped_count']);
@@ -428,6 +428,7 @@ TXT;
             $terms,
         );
 
+        // CH-only: newest + 2nd-newest (Summer has blanks) = pending; older blank = dropped.
         $this->assertSame(0, $parsed['blank_count']);
         $this->assertSame(4, $parsed['pending_count']); // Summer 1 + current 3
         $this->assertSame(1, $parsed['dropped_count']); // 2024-2025 1st blank
@@ -437,7 +438,7 @@ TXT;
         $byTerm = collect($parsed['terms'])->keyBy('academic_term');
         $this->assertSame('dropped', $byTerm['2024-2025 1st']['blank_mode']);
         $this->assertSame(1, $byTerm['2024-2025 1st']['dropped_count']);
-        $this->assertSame('pending', $byTerm['2025-2026 2nd']['blank_mode']);
+        $this->assertSame('dropped', $byTerm['2025-2026 2nd']['blank_mode']);
         $this->assertSame('pending', $byTerm['2025-2026 Summer']['blank_mode']);
         $this->assertSame(1, $byTerm['2025-2026 Summer']['pending_count']);
         $this->assertSame('pending', $byTerm['2026-2027 1st']['blank_mode']);
@@ -452,6 +453,93 @@ TXT;
         $parser = new AcademicGradeParser;
         $this->assertTrue($parser->termSortKey('2025-2026 Summer') > $parser->termSortKey('2025-2026 2nd'));
         $this->assertTrue($parser->termSortKey('2026-2027 1st') > $parser->termSortKey('2025-2026 Summer'));
+
+        // With Grade Slip term Summer: same pending set (Summer + newer).
+        $anchored = (new AcademicGradeParser)->parse(
+            'COURSE HISTORY',
+            'BSIT',
+            null,
+            'course_history',
+            $terms,
+            '2025-2026 Summer',
+        );
+        $this->assertSame('2025-2026 Summer', $anchored['grade_slip_term']);
+        $this->assertSame(4, $anchored['pending_count']);
+        $this->assertSame(1, $anchored['dropped_count']);
+        $anchoredByTerm = collect($anchored['terms'])->keyBy('academic_term');
+        $this->assertSame('dropped', $anchoredByTerm['2025-2026 2nd']['blank_mode']);
+        $this->assertSame('pending', $anchoredByTerm['2025-2026 Summer']['blank_mode']);
+    }
+
+    #[Test]
+    public function summer_as_current_gs_term_keeps_blank_pending(): void
+    {
+        AcademicProgram::query()->updateOrCreate(
+            ['code' => 'BSIT'],
+            ['name' => 'BSIT', 'pass_grade' => 3.0, 'is_active' => true],
+        );
+
+        $terms = [
+            [
+                'academic_term' => '2025-2026 2nd',
+                'program_code' => 'BSIT',
+                'courses' => [
+                    ['code' => 'OLD 1', 'description' => 'Old blank', 'units' => '3', 'grade' => null, 'remarks' => null],
+                ],
+            ],
+            [
+                'academic_term' => '2025-2026 Summer',
+                'program_code' => 'BSIT',
+                'courses' => [
+                    ['code' => 'IT Elec 4', 'description' => 'DW', 'units' => '3', 'grade' => null, 'remarks' => null],
+                    ['code' => 'IT Elec 5', 'description' => 'Multimedia', 'units' => '3', 'grade' => '1.6', 'remarks' => 'Passed'],
+                ],
+            ],
+        ];
+
+        $parsed = (new AcademicGradeParser)->parse(
+            'COURSE HISTORY',
+            'BSIT',
+            null,
+            'course_history',
+            $terms,
+            '2025-2026 Summer',
+        );
+
+        $this->assertSame(1, $parsed['pending_count']);
+        $this->assertSame(1, $parsed['dropped_count']);
+        $this->assertSame(1, $parsed['retention_count']);
+        $byTerm = collect($parsed['terms'])->keyBy('academic_term');
+        $this->assertSame('pending', $byTerm['2025-2026 Summer']['blank_mode']);
+        $this->assertSame('dropped', $byTerm['2025-2026 2nd']['blank_mode']);
+    }
+
+    #[Test]
+    public function resolve_grade_slip_term_and_empty_enrollment_detection(): void
+    {
+        $parser = new AcademicGradeParser;
+        $this->assertSame(
+            '2025-2026 Summer',
+            $parser->resolveGradeSlipTerm([
+                'terms' => [['academic_term' => '2025-2026 Summer', 'courses' => []]],
+                'academic_year' => '2025-2026',
+                'semester_label' => 'Summer',
+            ]),
+        );
+        $this->assertTrue($parser->gradeSlipLooksLikeEmptyEnrollment([
+            'grades' => [],
+            'blank_count' => 5,
+            'pending_count' => 0,
+            'failed_count' => 0,
+            'dropped_count' => 0,
+        ]));
+        $this->assertFalse($parser->gradeSlipLooksLikeEmptyEnrollment([
+            'grades' => [1.5, 1.6],
+            'blank_count' => 1,
+            'pending_count' => 0,
+            'failed_count' => 0,
+            'dropped_count' => 0,
+        ]));
     }
 
     #[Test]
@@ -500,6 +588,28 @@ TXT;
     }
 
     #[Test]
+    public function graded_rows_keep_null_remarks_when_sis_omits_remarks_column(): void
+    {
+        // TCC SIS CH often has no Remarks cell; do not invent OCR remarks.
+        // Staff UI (Detail.vue courseRemarkDisplay) derives Passed/Failed from grade.
+        $summary = (new AcademicGradeParser)->summarizeCourses([
+            ['code' => 'IT 201', 'description' => 'Pass', 'units' => '3', 'grade' => '1.5', 'remarks' => null],
+            ['code' => 'IT 202', 'description' => 'Fail', 'units' => '3', 'grade' => '5.0', 'remarks' => null],
+            ['code' => 'IT 203', 'description' => 'OCR Passed', 'units' => '3', 'grade' => '2.0', 'remarks' => 'Passed'],
+        ], 3.0, 'course_history');
+
+        $this->assertNull($summary['courses'][0]['remarks']);
+        $this->assertNull($summary['courses'][0]['fail_reason']);
+        $this->assertSame(3.0, $summary['courses'][0]['pass_grade']);
+
+        $this->assertNull($summary['courses'][1]['remarks']);
+        $this->assertSame('numeric_fail', $summary['courses'][1]['fail_reason']);
+
+        $this->assertSame('Passed', $summary['courses'][2]['remarks']);
+        $this->assertSame(1, $summary['failed_count']);
+    }
+
+    #[Test]
     public function structured_course_history_blank_row_can_be_forced_dropped(): void
     {
         $summary = (new AcademicGradeParser)->summarizeCourses([
@@ -510,5 +620,124 @@ TXT;
         $this->assertTrue($summary['courses'][0]['counts_as_fail']);
         $this->assertSame(1, $summary['dropped_count']);
         $this->assertSame(1, $summary['retention_count']);
+    }
+
+    #[Test]
+    public function cross_check_flags_ch_blank_when_gs_has_grade(): void
+    {
+        $parser = new AcademicGradeParser;
+        $mismatches = $parser->crossCheckChBlanksAgainstGradeSlip(
+            [
+                [
+                    'academic_term' => '2025-2026 Summer',
+                    'courses' => [
+                        ['code' => 'IT Elec 4', 'grade' => null],
+                        ['code' => 'IT Elec 5', 'grade' => '1.6'],
+                    ],
+                ],
+            ],
+            null,
+            [
+                ['code' => 'IT Elec 4', 'grade' => '2.0'],
+                ['code' => 'IT Elec 5', 'grade' => '1.6'],
+            ],
+            '2025-2026 Summer',
+        );
+
+        $this->assertCount(1, $mismatches);
+        $this->assertSame('IT ELEC 4', $mismatches[0]['code']);
+        $this->assertSame('2.0', (string) $mismatches[0]['gs_grade']);
+    }
+
+    /**
+     * Ready-tester-like fixture: GS has no year/semester metadata, only course rows.
+     * Infer GS term from CH Summer electives (IT Elec 4/5/6), then pending =
+     * GS term + newer enrollment; older blanks = dropped.
+     */
+    #[Test]
+    public function ready_tester_fixture_infers_summer_gs_term_and_anchors_pending(): void
+    {
+        AcademicProgram::query()->updateOrCreate(
+            ['code' => 'BSIT'],
+            ['name' => 'BSIT', 'pass_grade' => 3.0, 'is_active' => true],
+        );
+
+        $chTerms = [
+            [
+                'academic_term' => '2024-2025 2nd',
+                'program_code' => 'BSIT',
+                'courses' => [
+                    ['code' => 'OLD BLANK', 'description' => 'Older blank', 'units' => '3', 'grade' => null, 'remarks' => null],
+                    ['code' => 'OLD PASS', 'description' => 'Older pass', 'units' => '3', 'grade' => '1.5', 'remarks' => 'Passed'],
+                ],
+            ],
+            [
+                'academic_term' => '2025-2026 Summer',
+                'program_code' => 'BSIT',
+                'courses' => [
+                    ['code' => 'IT Elec 4', 'description' => 'DW', 'units' => '3', 'grade' => null, 'remarks' => null],
+                    ['code' => 'IT Elec 5', 'description' => 'Multimedia', 'units' => '3', 'grade' => null, 'remarks' => null],
+                    ['code' => 'IT Elec 6', 'description' => 'MIS', 'units' => '3', 'grade' => '1.5', 'remarks' => 'Passed'],
+                ],
+            ],
+            [
+                'academic_term' => '2026-2027 1st',
+                'program_code' => 'BSIT',
+                'courses' => [
+                    ['code' => 'IT 128', 'description' => 'Current 1', 'units' => '3', 'grade' => null, 'remarks' => null],
+                    ['code' => 'IT 129', 'description' => 'Current 2', 'units' => '3', 'grade' => null, 'remarks' => null],
+                    ['code' => 'IT 130', 'description' => 'Current 3', 'units' => '3', 'grade' => null, 'remarks' => null],
+                    ['code' => 'IT 131', 'description' => 'Current 4', 'units' => '3', 'grade' => null, 'remarks' => null],
+                    ['code' => 'IT 132', 'description' => 'Current 5', 'units' => '3', 'grade' => null, 'remarks' => null],
+                ],
+            ],
+        ];
+
+        $gsCourses = [
+            ['code' => 'IT Elec 4', 'description' => 'Fundamentals', 'units' => '3', 'grade' => null, 'remarks' => null],
+            ['code' => 'IT Elec 5', 'description' => 'Multimedia', 'units' => '3', 'grade' => null, 'remarks' => null],
+            ['code' => 'IT Elec 6', 'description' => 'MIS', 'units' => '3', 'grade' => '1.5', 'remarks' => 'Passed'],
+        ];
+
+        $parser = new AcademicGradeParser;
+
+        // GS OCR often has no academic_year / semester_label — infer from CH overlap.
+        $inferred = $parser->resolveGradeSlipTerm(
+            ['courses' => $gsCourses, 'academic_year' => null, 'semester_label' => null, 'terms' => []],
+            $chTerms,
+        );
+        $this->assertSame('2025-2026 Summer', $inferred);
+
+        $anchored = $parser->parse(
+            'COURSE HISTORY',
+            'BSIT',
+            null,
+            'course_history',
+            $chTerms,
+            $inferred,
+        );
+
+        $this->assertSame('2025-2026 Summer', $anchored['grade_slip_term']);
+        // Summer 2 blanks + current 5 blanks = 7 pending; older 1 blank = dropped.
+        $this->assertSame(7, $anchored['pending_count']);
+        $this->assertSame(1, $anchored['dropped_count']);
+        $this->assertSame(0, $anchored['failed_count']);
+        $this->assertSame(1, $anchored['retention_count']);
+
+        $byTerm = collect($anchored['terms'])->keyBy('academic_term');
+        $this->assertSame('dropped', $byTerm['2024-2025 2nd']['blank_mode']);
+        $this->assertSame('pending', $byTerm['2025-2026 Summer']['blank_mode']);
+        $this->assertSame('pending', $byTerm['2026-2027 1st']['blank_mode']);
+        $this->assertSame(2, $byTerm['2025-2026 Summer']['pending_count']);
+        $this->assertSame(5, $byTerm['2026-2027 1st']['pending_count']);
+
+        // No mismatch: CH IT Elec 6 already graded like GS.
+        $mismatches = $parser->crossCheckChBlanksAgainstGradeSlip(
+            $chTerms,
+            null,
+            $gsCourses,
+            $inferred,
+        );
+        $this->assertSame([], $mismatches);
     }
 }

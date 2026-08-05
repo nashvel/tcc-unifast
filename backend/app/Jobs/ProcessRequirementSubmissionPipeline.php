@@ -57,6 +57,9 @@ class ProcessRequirementSubmissionPipeline implements ShouldQueue
             $ocrSummary[$slot] = $this->processPdfSlot($doc, $pdfDocuments);
         }
 
+        // Re-classify Course History blanks using Grade Slip academic term as pending anchor.
+        $ocrSummary = $this->applyGradeSlipAnchorToCourseHistory($ocrSummary, $slots, $gradeParser);
+
         $gradeSlipDoc = $slots->get('grade_slip');
         $gradeslipQrResult = $gradeSlipDoc
             ? $this->runGradeslipQr($gradeSlipDoc, $gradeslipQr)
@@ -64,6 +67,18 @@ class ProcessRequirementSubmissionPipeline implements ShouldQueue
 
         if ($gradeSlipDoc && isset($ocrSummary['grade_slip']) && is_array($ocrSummary['grade_slip'])) {
             $ocrSummary['grade_slip']['gradeslip_qr'] = $gradeslipQrResult;
+            if ($gradeParser->gradeSlipLooksLikeEmptyEnrollment($ocrSummary['grade_slip'])) {
+                $ocrSummary['grade_slip']['enrollment_slip_warning'] = true;
+                $ocrSummary['grade_slip']['grade_summary'] = array_merge(
+                    is_array($ocrSummary['grade_slip']['grade_summary'] ?? null)
+                        ? $ocrSummary['grade_slip']['grade_summary']
+                        : [],
+                    [
+                        'enrollment_slip_warning' => true,
+                        'message' => 'This Grade Slip looks like a current-enrollment slip with no grades. Upload the last Grade Slip that already has grades (usually the 2nd-to-last term on Course History).',
+                    ],
+                );
+            }
         }
 
         $combinedText = collect($ocrSummary)
@@ -75,6 +90,13 @@ class ProcessRequirementSubmissionPipeline implements ShouldQueue
         $retentionCourses = [];
         $retentionTerms = [];
         $retentionSlot = null;
+        $gradeSlipTerm = null;
+        if (isset($ocrSummary['grade_slip']) && is_array($ocrSummary['grade_slip'])) {
+            $chTermsForResolve = is_array($ocrSummary['course_history']['terms'] ?? null)
+                ? $ocrSummary['course_history']['terms']
+                : null;
+            $gradeSlipTerm = $gradeParser->resolveGradeSlipTerm($ocrSummary['grade_slip'], $chTermsForResolve);
+        }
         foreach (['course_history', 'grade_slip'] as $slot) {
             $slotCourses = $ocrSummary[$slot]['courses'] ?? null;
             $slotTerms = $ocrSummary[$slot]['terms'] ?? null;
@@ -97,6 +119,7 @@ class ProcessRequirementSubmissionPipeline implements ShouldQueue
             $retentionCourses !== [] ? $retentionCourses : null,
             $retentionSlot,
             $retentionTerms !== [] ? $retentionTerms : null,
+            $retentionSlot === 'course_history' ? $gradeSlipTerm : null,
         );
         $ocrSummary['_academics'] = $academics;
 
@@ -187,6 +210,9 @@ class ProcessRequirementSubmissionPipeline implements ShouldQueue
             'pdf_metadata' => $rawMeta,
             'pdf_metadata_analysis' => $analysis,
         ];
+        // Top-level aliases for staff Document Detail / API consumers.
+        $meta['pdf_metadata'] = $rawMeta;
+        $meta['pdf_metadata_analysis'] = $analysis;
         $maxFailed = \App\Models\PolicySetting::maxFailedSubjects();
         $retention = (int) $gradeSummary['retention_count'];
         $pendingCount = (int) ($gradeSummary['pending_count'] ?? 0);
@@ -205,25 +231,34 @@ class ProcessRequirementSubmissionPipeline implements ShouldQueue
             'blanks_count_as_fails' => false,
             'blanks_count_as_dropped' => $blanksAsDropped,
             'pending_term_window' => AcademicGradeParser::PENDING_TERM_WINDOW,
+            'grade_slip_term' => $gradeSummary['grade_slip_term'] ?? null,
+            'terms_detected' => (bool) ($gradeSummary['terms_detected'] ?? false),
             'over_limit' => $retention >= $maxFailed,
             'term_count' => is_array($gradeSummary['terms'] ?? null) ? count($gradeSummary['terms']) : 0,
             'message' => $retention >= $maxFailed
                 ? sprintf(
-                    'Not eligible: %d failed + %d dropped = %d (max %d).%s',
+                    'Not eligible under retention: %d failed + %d dropped = %d (max %d).%s',
                     $gradeSummary['failed_count'],
                     $gradeSummary['dropped_count'],
                     $retention,
                     $maxFailed,
                     $blanksAsDropped
                         ? ($pendingCount > 0
-                            ? sprintf(' %d pending blank(s) ignored; older-term blanks count as dropped.', $pendingCount)
-                            : ' Older-term Course History blanks counted as dropped; recent blanks are pending.')
+                            ? sprintf(' %d pending blank(s) ignored (Grade Slip term + current enrollment).', $pendingCount)
+                            : ' Older Course History blanks count as dropped; GS term and newer enrollment blanks are pending.')
                         : ' Grade-slip blanks ignored for eligibility.',
                 )
                 : ($pendingCount > 0
                     ? sprintf('%d pending grade(s) noted (not counted toward retention).', $pendingCount)
                     : null),
         ];
+        if ($slotKey === 'course_history' && empty($gradeSummary['terms_detected'])) {
+            $meta['grade_summary']['terms_missing_warning'] = true;
+            $meta['grade_summary']['message'] = trim(
+                ($meta['grade_summary']['message'] ? $meta['grade_summary']['message'].' ' : '')
+                .'Term headers not detected — blanks treated as pending; re-check the Course History PDF.'
+            );
+        }
 
         // Prefer normalized course rows (blank grade cells preserved) for staff OCR table.
         $coursesForUi = is_array($gradeSummary['courses'] ?? null) && $gradeSummary['courses'] !== []
@@ -243,12 +278,15 @@ class ProcessRequirementSubmissionPipeline implements ShouldQueue
             'ocr_payload' => [
                 'engine' => $result['provider'] ?? 'pymupdf',
                 'method' => $result['method'] ?? 'pymupdf_text_layer',
+                'pdf_metadata' => $rawMeta,
+                'pdf_metadata_analysis' => $analysis,
                 'result' => [
                     'combined_text' => $result['raw_text'] ?? $result['text'] ?? '',
                     'formatted_table_text' => $result['formatted_table_text'] ?? null,
                     'courses' => $coursesForUi,
                     'terms' => $termsForUi,
                     'grade_summary' => $meta['grade_summary'],
+                    'pdf_metadata' => $rawMeta,
                 ],
             ],
             'metadata_payload' => $meta,
@@ -260,6 +298,127 @@ class ProcessRequirementSubmissionPipeline implements ShouldQueue
         $result['grade_summary'] = $meta['grade_summary'];
 
         return $result;
+    }
+
+    /**
+     * Re-parse Course History with Grade Slip academic_term so pending blanks follow
+     * GS term + newer CH terms (not newest+2-prior).
+     *
+     * @param  array<string, mixed>  $ocrSummary
+     * @param  \Illuminate\Support\Collection<string, DocumentSubmission>  $slots
+     * @return array<string, mixed>
+     */
+    private function applyGradeSlipAnchorToCourseHistory(
+        array $ocrSummary,
+        $slots,
+        AcademicGradeParser $gradeParser,
+    ): array {
+        $ch = $ocrSummary['course_history'] ?? null;
+        $gs = $ocrSummary['grade_slip'] ?? null;
+        if (! is_array($ch) || ! is_array($gs)) {
+            return $ocrSummary;
+        }
+
+        $chText = (string) ($ch['raw_text'] ?? $ch['text'] ?? $ch['combined_text'] ?? '');
+        $chCourses = is_array($ch['courses'] ?? null) ? $ch['courses'] : null;
+        $chTerms = is_array($ch['terms'] ?? null) ? $ch['terms'] : null;
+        // Pass CH terms so GS without year/semester can still infer Summer (etc.) via course overlap.
+        $gsTerm = $gradeParser->resolveGradeSlipTerm($gs, $chTerms);
+        if ($gsTerm === null || $gsTerm === '') {
+            return $ocrSummary;
+        }
+        $reparsed = $gradeParser->parse(
+            $chText,
+            null,
+            $chCourses,
+            'course_history',
+            $chTerms,
+            $gsTerm,
+        );
+
+        $maxFailed = \App\Models\PolicySetting::maxFailedSubjects();
+        $retention = (int) $reparsed['retention_count'];
+        $pendingCount = (int) ($reparsed['pending_count'] ?? 0);
+        $gsCourses = is_array($gs['courses'] ?? null) ? $gs['courses'] : [];
+        $mismatches = $gradeParser->crossCheckChBlanksAgainstGradeSlip(
+            $chTerms,
+            $chCourses,
+            $gsCourses,
+            $gsTerm,
+        );
+        $gradeSummary = [
+            'blank_count' => $reparsed['blank_count'],
+            'pending_count' => $pendingCount,
+            'failed_count' => $reparsed['failed_count'],
+            'dropped_count' => $reparsed['dropped_count'],
+            'numeric_failed_count' => $reparsed['numeric_failed_count'] ?? 0,
+            'retention_count' => $retention,
+            'pass_grade' => $reparsed['pass_grade'],
+            'program_code' => $reparsed['program_code'],
+            'max_failed' => $maxFailed,
+            'document_type' => 'course_history',
+            'blanks_count_as_fails' => false,
+            'blanks_count_as_dropped' => true,
+            'pending_term_window' => AcademicGradeParser::PENDING_TERM_WINDOW,
+            'grade_slip_term' => $gsTerm,
+            'terms_detected' => (bool) ($reparsed['terms_detected'] ?? false),
+            'over_limit' => $retention >= $maxFailed,
+            'term_count' => is_array($reparsed['terms'] ?? null) ? count($reparsed['terms']) : 0,
+            'cross_check' => 'grade_slip_term',
+            'grade_mismatches' => $mismatches,
+            'grade_mismatch_count' => count($mismatches),
+            'message' => $retention >= $maxFailed
+                ? sprintf(
+                    'Not eligible under retention: %d failed + %d dropped = %d (max %d). Pending blanks use Grade Slip term "%s" plus any newer Course History enrollment.',
+                    $reparsed['failed_count'],
+                    $reparsed['dropped_count'],
+                    $retention,
+                    $maxFailed,
+                    $gsTerm,
+                )
+                : sprintf(
+                    'Pending blanks anchored to Grade Slip term "%s"%s.',
+                    $gsTerm,
+                    $pendingCount > 0 ? sprintf(' (%d pending)', $pendingCount) : '',
+                ),
+        ];
+        if ($mismatches !== []) {
+            $codes = implode(', ', array_column($mismatches, 'code'));
+            $gradeSummary['message'] = trim(
+                ($gradeSummary['message'] ?? '').
+                ' Staff flag: Course History blank but Grade Slip has a grade for: '.$codes.'.'
+            );
+        }
+
+        $coursesForUi = is_array($reparsed['courses'] ?? null) && $reparsed['courses'] !== []
+            ? $reparsed['courses']
+            : ($chCourses ?? []);
+        $termsForUi = is_array($reparsed['terms'] ?? null) && $reparsed['terms'] !== []
+            ? $reparsed['terms']
+            : ($chTerms ?? []);
+
+        $ocrSummary['course_history']['courses'] = $coursesForUi;
+        $ocrSummary['course_history']['terms'] = $termsForUi;
+        $ocrSummary['course_history']['grade_summary'] = $gradeSummary;
+        $ocrSummary['course_history']['grade_slip_term'] = $gsTerm;
+
+        $chDoc = $slots->get('course_history');
+        if ($chDoc instanceof DocumentSubmission) {
+            $meta = is_array($chDoc->metadata_payload) ? $chDoc->metadata_payload : [];
+            $meta['grade_summary'] = $gradeSummary;
+            $payload = is_array($chDoc->ocr_payload) ? $chDoc->ocr_payload : [];
+            $result = is_array($payload['result'] ?? null) ? $payload['result'] : [];
+            $result['courses'] = $coursesForUi;
+            $result['terms'] = $termsForUi;
+            $result['grade_summary'] = $gradeSummary;
+            $payload['result'] = $result;
+            $chDoc->update([
+                'ocr_payload' => $payload,
+                'metadata_payload' => $meta,
+            ]);
+        }
+
+        return $ocrSummary;
     }
 
     /**
@@ -281,6 +440,9 @@ class ProcessRequirementSubmissionPipeline implements ShouldQueue
         $absolute = VaultFileStorage::absolutePath($doc->stored_path);
         $result = $gradeslipQr->decode($absolute);
 
+        // Soft-fail: refresh so QR merge never wipes pdf_document / pdf_metadata
+        // written by processPdfSlot (even when pyzbar DLL / QR decode fails).
+        $doc->refresh();
         $meta = is_array($doc->metadata_payload) ? $doc->metadata_payload : [];
         $meta['gradeslip_qr'] = [
             'status' => $result['status'] ?? null,

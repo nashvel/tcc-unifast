@@ -23,6 +23,7 @@ import {
   IconUserCog,
   IconUsersGroup,
   IconUserPlus,
+  IconUserCheck,
 } from "@tabler/icons-vue";
 
 export type NavigationSection = {
@@ -97,6 +98,7 @@ export const staffNavigation: NavigationSection[] = [
     labelKey: "nav.validation",
     items: [
       { labelKey: "nav.documentValidation", path: "/app/documents", icon: IconFileCheck },
+      { labelKey: "nav.faceReviews", path: "/app/face-reviews", icon: IconUserCheck },
       { labelKey: "nav.fileManager", path: "/app/files", icon: IconFolder },
       { labelKey: "nav.academicRecords", path: "/app/academic", icon: IconSchool },
       { labelKey: "nav.eligibility", path: "/app/eligibility", icon: IconChecklist },

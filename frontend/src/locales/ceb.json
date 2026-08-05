@@ -45,6 +45,7 @@
     "communication": "Komunikasyon",
     "distributionReport": "Distribution Report",
     "documentValidation": "Pag-validate sa Dokumento",
+    "faceReviews": "Pagsusi sa Face Match",
     "documents": "Mga Dokumento",
     "package": "Package",
     "eligibility": "Eligibility",
@@ -468,7 +469,7 @@
       "description": "I-activate ang imong UniFAST TES portal account."
     },
     "adminDashboard": {
-      "title": "Developer Dashboard - UniFAST TES",
+      "title": "Admin Dashboard - UniFAST TES",
       "description": "Dumala ang TES grantees, dokumento, batch, report, ug eligibility."
     },
     "developerDashboard": {

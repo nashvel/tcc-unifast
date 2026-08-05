@@ -13,7 +13,7 @@ import fitz
 
 
 def emit_json(payload: dict[str, Any]) -> None:
-    text = json.dumps(payload, ensure_ascii=False)
+    text = json.dumps(payload, ensure_ascii=False, allow_nan=False)
     sys.stdout.buffer.write(text.encode("utf-8", errors="replace"))
     sys.stdout.buffer.write(b"\n")
 

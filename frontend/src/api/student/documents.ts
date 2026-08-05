@@ -12,6 +12,15 @@ export async function uploadSchoolId(formData: FormData): Promise<{ data: VaultD
   });
 }
 
+export async function validateVaultFrontIdOcr(formData: FormData): Promise<{
+  data: { ok: boolean; extracted_name?: string; extracted_student_id?: string };
+}> {
+  return apiFetch("/api/student/requirement-vault/id/ocr-front", {
+    method: "POST",
+    body: formData,
+  });
+}
+
 export async function uploadVaultDocument(formData: FormData): Promise<{ data: VaultDocument }> {
   return apiFetch("/api/student/requirement-vault/document", {
     method: "POST",

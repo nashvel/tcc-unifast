@@ -94,8 +94,8 @@ async function submit() {
     if (!token) {
       throw new Error("Unauthenticated. Activate or sign in again, then retry KYC.");
     }
-    if (!form.first_name.trim() || !form.last_name.trim() || !form.student_id.trim() || !form.program || !form.year_level) {
-      throw new Error("Enter your first name, last name, student ID, program, and year level.");
+    if (!form.first_name.trim() || !form.last_name.trim() || !form.student_id.trim() || !form.program) {
+      throw new Error("Enter your first name, last name, student ID, and program.");
     }
     const response = await fetch(apiUrl("/api/student/kyc"), {
       method: "POST",
@@ -110,7 +110,7 @@ async function submit() {
         last_name: form.last_name.trim(),
         student_id: form.student_id.trim(),
         program: form.program,
-        year_level: form.year_level,
+        year_level: form.year_level || null,
         birthdate: form.birthdate || null,
         contact: form.contact || null,
         address: form.address || null,
@@ -142,7 +142,13 @@ async function submit() {
   }
 }
 
-type AuthAccountStatus = "active" | "unverified" | "pending_kyc" | "pending_identity" | "blocked";
+type AuthAccountStatus =
+  | "active"
+  | "unverified"
+  | "pending_kyc"
+  | "pending_identity"
+  | "pending_face_review"
+  | "blocked";
 </script>
 
 <template>
@@ -251,9 +257,9 @@ type AuthAccountStatus = "active" | "unverified" | "pending_kyc" | "pending_iden
               </select>
             </label>
             <label class="block">
-              <span class="mb-1.5 block text-xs font-medium">Year level *</span>
-              <select v-model="form.year_level" required class="h-9 w-full rounded-md border px-3 text-sm">
-                <option value="" disabled>Select year level</option>
+              <span class="mb-1.5 block text-xs font-medium">Year level</span>
+              <select v-model="form.year_level" class="h-9 w-full rounded-md border px-3 text-sm">
+                <option value="">Optional</option>
                 <option v-for="year in yearOptions" :key="year" :value="year">Year {{ year }}</option>
               </select>
             </label>

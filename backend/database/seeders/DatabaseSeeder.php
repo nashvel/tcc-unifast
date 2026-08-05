@@ -13,6 +13,8 @@ class DatabaseSeeder extends Seeder
             DemoUserSeeder::class,
             UserRoleSeeder::class,
             ReadyToSubmitStudentSeeder::class,
+            BrandonStudentSeeder::class,
+            // MobileActivationSeeder::class, // Rhio / Rafael / Richard activation links
         ]);
     }
 }

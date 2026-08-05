@@ -45,6 +45,7 @@
     "communication": "Communication",
     "distributionReport": "Distribution Report",
     "documentValidation": "Document Validation",
+    "faceReviews": "Face Match Reviews",
     "documents": "Documents",
     "package": "Package",
     "eligibility": "Eligibility",
@@ -478,7 +479,7 @@
       "description": "Activate your UniFAST TES portal account."
     },
     "adminDashboard": {
-      "title": "Developer Dashboard - UniFAST TES",
+      "title": "Admin Dashboard - UniFAST TES",
       "description": "Manage TES grantees, documents, batches, reports, and eligibility."
     },
     "developerDashboard": {

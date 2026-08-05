@@ -88,9 +88,8 @@ Using rules-based scoring logic and automated policy thresholds — UniFAST TES 
    - 50–79 = High (red)
    - 80+ = Block (dark red)
 3. System automatically runs eligibility checks against admin-configured policy thresholds:
-   - GWA must not exceed maximum allowed (default 2.50)
-   - Failed subjects must not exceed maximum allowed per semester (default 2)
-   - Dropped subjects must not exceed maximum allowed per semester (default 1)
+   - Overall retention across full Course History: failed + dropped subjects must stay
+     below max (default 3). Each Failed and each Dropped counts 1; Pending blanks do not.
 4. If any threshold is exceeded — submission is automatically flagged as Non-Compliant
 5. Staff opens the Grantee Directory / Eligibility queue and sees evaluation results
 6. Staff clicks View on any grantee — opens the three-section detail modal:
@@ -189,14 +188,15 @@ Using multi-step vault (ID → documents → identity → confirm) — Requireme
 **Steps:**
 
 1. Student opens Required Documents while a batch window is open
-2. Student uploads school ID images to the vault
+2. Student completes Slot 1 live School ID scan (front OCR + face match required; QR and back academic year are best-effort soft flags for staff)
 3. Student uploads grade slip and course history (PDF/image)
 4. Optional OCR runs on PDFs to extract name, student ID, GWA, semester, school year
 5. Student completes identity check (face/liveness)
 6. Student confirms the vault — creates a submission for staff
 7. If the window is closed — confirm/upload is rejected with a clear message
 8. Student can track status (pending, returned, approved, rejected) afterward
-9. Files are stored with metadata (size, mime, original name, EXIF flags where applicable)
+9. Files are stored with metadata (size, mime, original name, QR/AY soft flags, EXIF flags where applicable)
+10. Staff review School ID in Document Validation with structured OCR chips (name, student ID, QR, Organization academic year vs OCR) and may Return without auto-reject on AY mismatch
 
 ---
 
@@ -346,7 +346,7 @@ Using role-aware menus and permission matrix UI — Users module
 
 Using settings screens and `policy_settings` keys — admin configuration
 
-**Description:** This module holds operational knobs — max failed subjects per semester, default pass grade, and per-program pass grades (e.g. BSIT = 3.0). Pass rule: fail if grade > pass_grade; blank grades ignored. Curriculum checks are skipped in v1. Appearance/style-guide pages keep the UI consistent.
+**Description:** This module holds operational knobs — max failed/dropped subjects overall (default 3; API key `max_failed_subjects_per_semester`), default pass grade, and per-program pass grades (e.g. BSIT = 3.0). Pass rule: fail if grade > pass_grade. Retention is overall across Course History (not per semester): Failed=1, Dropped=1, Pending blanks ignored. Course History blanks on the Grade Slip term and newer enrollment terms are Pending; older-term blanks count as Dropped. Curriculum checks are skipped in v1. Appearance/style-guide pages keep the UI consistent.
 
 **Steps:**
 

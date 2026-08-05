@@ -10,7 +10,7 @@ class StudentOnboardingNavigator
     /**
      * Resume step after login or deep-link for a student mid-onboarding.
      *
-     * @return 'blocked'|'kyc'|'id_scan'|'liveness'|'done'
+     * @return 'blocked'|'kyc'|'id_scan'|'liveness'|'face_review'|'done'
      */
     public function nextStep(User $user, ?Grantee $grantee = null): string
     {
@@ -24,6 +24,10 @@ class StudentOnboardingNavigator
             return 'kyc';
         }
 
+        if ($status === 'pending_face_review') {
+            return 'face_review';
+        }
+
         if ($status === 'pending_identity') {
             $grantee ??= $user->grantee;
             $identity = $grantee?->identityProfile;
@@ -32,8 +36,17 @@ class StudentOnboardingNavigator
                 return 'id_scan';
             }
 
+            if ($identity->status === 'pending_face_review') {
+                return 'face_review';
+            }
+
             if ($identity->status === 'pending_liveness') {
                 return 'liveness';
+            }
+
+            // Stale "completed" profile without finishing onboarding (e.g. re-seed left old row).
+            if ($identity->status === 'completed' && $identity->onboarding_completed_at === null) {
+                return $identity->id_scan_completed_at ? 'liveness' : 'id_scan';
             }
         }
 
@@ -46,6 +59,7 @@ class StudentOnboardingNavigator
             'kyc' => '/student/kyc',
             'id_scan' => '/student/onboarding/id-scan',
             'liveness' => '/student/onboarding/liveness',
+            'face_review' => '/student/onboarding/pending-review',
             'blocked' => '/locked',
             default => '/student',
         };

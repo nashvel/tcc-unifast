@@ -14,6 +14,7 @@ class GranteeIdentityProfile extends Model
         return [
             'id_ocr_payload' => 'array',
             'onboarding_challenge_sequence' => 'array',
+            'liveness_challenge_labels' => 'array',
             'onboarding_face_distance' => 'float',
             'id_reference_face_descriptor' => 'encrypted:array',
             'onboarding_selfie_descriptor' => 'encrypted:array',
