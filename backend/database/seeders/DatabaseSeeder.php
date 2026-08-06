@@ -12,6 +12,9 @@ class DatabaseSeeder extends Seeder
             RolePermissionSeeder::class,
             DemoUserSeeder::class,
             UserRoleSeeder::class,
+            ReadyToSubmitStudentSeeder::class,
+            BrandonStudentSeeder::class,
+            // MobileActivationSeeder::class, // Rhio / Rafael / Richard activation links
         ]);
     }
 }

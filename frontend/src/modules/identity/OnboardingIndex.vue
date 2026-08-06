@@ -4,17 +4,32 @@ import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import PageHeader from "@/components/ui/PageHeader.vue";
 import CardSkeleton from "@/components/ui/CardSkeleton.vue";
+import { authSession, getAuthToken } from "@/auth/session";
 
 const router = useRouter();
 const error = ref("");
 
 onMounted(async () => {
   try {
-    const response = await fetch(apiUrl("/api/student/identity-onboarding"), { headers: { Accept: "application/json" } });
+    const accountStatus = authSession.user?.account_status;
+    if (accountStatus === "unverified" || accountStatus === "pending_kyc") {
+      await router.replace("/student/kyc");
+      return;
+    }
+
+    const token = getAuthToken();
+    if (!token) {
+      throw new Error("Unauthenticated. Activate or sign in again to continue identity onboarding.");
+    }
+    const response = await fetch(apiUrl("/api/student/identity-onboarding"), {
+      headers: { Accept: "application/json", Authorization: `Bearer ${token}` },
+    });
     const payload = await response.json();
     if (!response.ok) throw new Error(payload.message || "Unable to load identity onboarding.");
     const next = payload.data.next_step as string;
-    if (next === "liveness") await router.replace("/student/onboarding/liveness");
+    if (next === "kyc") await router.replace("/student/kyc");
+    else if (next === "liveness") await router.replace("/student/onboarding/liveness");
+    else if (next === "face_review") await router.replace("/student/onboarding/pending-review");
     else if (next === "done") await router.replace("/student");
     else await router.replace("/student/onboarding/id-scan");
   } catch (exception) {
@@ -30,3 +45,4 @@ onMounted(async () => {
     <p v-else class="rounded-md border border-danger/30 bg-danger-soft p-3 text-xs text-danger">{{ error }}</p>
   </div>
 </template>
+

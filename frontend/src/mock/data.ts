@@ -10,6 +10,7 @@ export {
   mockAcademicDetail,
   mockDocuments,
   mockDocumentDetail,
+  mockDocumentPackages,
   mockAuditLogs,
   mockNotifications,
   mockSubmissionWindow,

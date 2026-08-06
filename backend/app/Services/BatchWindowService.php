@@ -14,9 +14,16 @@ class BatchWindowService
 {
     public function windowForStudent(User $user): array
     {
-        $grantee = Grantee::query()->with('batch')->where('user_id', $user->id)
-            ->orWhere('student_id', $user->student_id)
+        $grantee = Grantee::query()->with('batch')
+            ->where('user_id', $user->id)
             ->first();
+
+        if (! $grantee && $user->student_id) {
+            $grantee = Grantee::query()->with('batch')
+                ->where('student_id', $user->student_id)
+                ->whereNull('user_id')
+                ->first();
+        }
 
         if (! $grantee || ! $grantee->batch) {
             return [

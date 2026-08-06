@@ -16,16 +16,32 @@ export function useRequirementVault() {
 
   const schoolIdUploaded = computed(() => Boolean(slots.value.school_id));
   const allDocumentsUploaded = computed(
-    () => Boolean(slots.value.school_id) && Boolean(slots.value.course_history) && Boolean(slots.value.grade_slip),
+    () =>
+      Boolean(slots.value.school_id) &&
+      Boolean(slots.value.course_history) &&
+      Boolean(slots.value.grade_slip) &&
+      Boolean(slots.value.specimen_signatures),
   );
-  const canConfirm = computed(() => allDocumentsUploaded.value && identityCheck.value);
+  const canConfirm = computed(
+    () =>
+      allDocumentsUploaded.value &&
+      !["docs_submitted", "under_review", "verified", "resubmission_requested"].includes(granteeStatus.value),
+  );
   const progress = computed(() => {
-    const complete = [slots.value.school_id, slots.value.course_history, slots.value.grade_slip, identityCheck.value].filter(Boolean).length;
-    return Math.round((complete / 4) * 100);
+    const locked = ["docs_submitted", "under_review", "verified"].includes(granteeStatus.value);
+    const complete = [
+      slots.value.school_id,
+      slots.value.course_history,
+      slots.value.grade_slip,
+      slots.value.specimen_signatures,
+      locked,
+    ].filter(Boolean).length;
+    return Math.round((complete / 5) * 100);
   });
 
-  function canOpenIdentity(precheck: Record<string, boolean>, consent: boolean) {
-    return allDocumentsUploaded.value && Object.values(precheck).every(Boolean) && consent;
+  function canOpenIdentity(_precheck: Record<string, boolean>, _consent: boolean) {
+    // Submission liveness is no longer on the critical path.
+    return false;
   }
 
   async function loadVault() {
@@ -105,11 +121,18 @@ export function useRequirementVault() {
     confidence_score: number;
     consent_accepted: boolean;
   }) {
-    const payload = await apiFetch<{ data: IdentityCheck }>("/api/student/requirement-vault/identity-check", {
+    const payload = await apiFetch<{
+      data: IdentityCheck;
+      grantee?: { submission_status: string };
+      submitted?: boolean;
+    }>("/api/student/requirement-vault/identity-check", {
       method: "POST",
       body: JSON.stringify(data),
     });
     identityCheck.value = payload.data;
+    if (payload.grantee?.submission_status) {
+      granteeStatus.value = payload.grantee.submission_status;
+    }
     return payload.data;
   }
 
@@ -122,7 +145,7 @@ export function useRequirementVault() {
         method: "POST",
       });
       granteeStatus.value = payload.grantee.submission_status;
-      success.value = "Requirements confirmed. Status updated to Docs Submitted.";
+      success.value = "All four documents submitted to staff Document Validation.";
       return true;
     } catch (exception) {
       error.value = exception instanceof Error ? exception.message : "Unable to confirm submission.";

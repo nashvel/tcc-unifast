@@ -20,6 +20,8 @@
     "login": "Pag-login",
     "logout": "Pag-logout",
     "password": "Password",
+    "showPassword": "Ipakita ang password",
+    "hidePassword": "Itago ang password",
     "profile": "Profile",
     "save": "I-save",
     "search": "Pangita",
@@ -43,7 +45,9 @@
     "communication": "Komunikasyon",
     "distributionReport": "Distribution Report",
     "documentValidation": "Pag-validate sa Dokumento",
+    "faceReviews": "Pagsusi sa Face Match",
     "documents": "Mga Dokumento",
+    "package": "Package",
     "eligibility": "Eligibility",
     "fileManager": "File Manager",
     "files": "Mga File",
@@ -51,6 +55,10 @@
     "logs": "Mga Log",
     "masterlist": "Masterlist",
     "onboardingCenter": "Onboarding Center",
+    "completeOnboarding": "Kompletoha ang onboarding",
+    "helpSupport": "Tabang ug support",
+    "completeOnboarding": "Tapuson ang onboarding",
+    "helpSupport": "Tabang ug support",
     "monitoringReports": "Monitoring ug Reports",
     "new": "Bag-o",
     "openMenu": "Ablihi ang menu",
@@ -461,7 +469,7 @@
       "description": "I-activate ang imong UniFAST TES portal account."
     },
     "adminDashboard": {
-      "title": "Developer Dashboard - UniFAST TES",
+      "title": "Admin Dashboard - UniFAST TES",
       "description": "Dumala ang TES grantees, dokumento, batch, report, ug eligibility."
     },
     "developerDashboard": {

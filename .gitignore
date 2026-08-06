@@ -55,3 +55,8 @@ backend/ocr-service/.venv/
 *.njsproj
 *.sln
 *.sw?
+
+# Cloudflare tunnel binary (large; keep local only)
+tools/cloudflared.exe
+**/cloudflared.exe
+tools/cloudflared*

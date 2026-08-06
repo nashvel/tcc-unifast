@@ -14,7 +14,7 @@ export async function fetchCurrentUser(): Promise<AuthUser | null> {
 export async function login(email: string, password: string, captcha?: string): Promise<AuthUser> {
   const payload = await apiFetch<{ user: AuthUser; token: string }>("/api/auth/login", {
     method: "POST",
-    body: JSON.stringify({ email, password, captcha }),
+    body: JSON.stringify({ email, password, captcha: captcha ?? "" }),
   });
   setAuthToken(payload.token);
   return payload.user;

@@ -65,13 +65,37 @@ return [
         'ocr_space_api_key' => env('OCR_SPACE_API_KEY'),
         'ocr_space_timeout' => (int) env('OCR_SPACE_TIMEOUT', 60),
         'authenticity_service_url' => env('AUTHENTICITY_SERVICE_URL'),
+        // Vault / legacy single-threshold face match (pass if distance < threshold).
         'face_match_threshold' => (float) env('IDENTITY_FACE_MATCH_THRESHOLD', 0.5),
+        // Onboarding three-tier zones (Policy Settings may override when set).
+        // distance < pass_max → activate; pass_max <= distance < review_max → staff review; else retry (no block).
+        'face_pass_max' => (float) env('IDENTITY_FACE_PASS_MAX', 0.45),
+        'face_review_max' => (float) env('IDENTITY_FACE_REVIEW_MAX', 0.60),
     ],
 
     'gradeslip_qr' => [
         // Optional override; default resolves python/.venv then system `python`.
         'python' => env('GRADESLIP_QR_PYTHON'),
         'timeout' => (int) env('GRADESLIP_QR_TIMEOUT', 60),
+    ],
+
+    'auth' => [
+        // Local/dev only: skip captcha verification when true.
+        'dev_bypass_captcha' => filter_var(env('DEV_BYPASS_CAPTCHA', false), FILTER_VALIDATE_BOOLEAN),
+        // Login attempts per minute per IP (use a higher value locally).
+        'login_throttle_per_minute' => max(1, (int) env(
+            'LOGIN_THROTTLE_PER_MINUTE',
+            env('APP_ENV') === 'local' ? 60 : 5
+        )),
+    ],
+
+    'requirement_vault' => [
+        // Confirm is a rare action, but failed validation still counts toward the
+        // limiter — keep prod protective while leaving local/dev room for QA retries.
+        'confirm_throttle_per_minute' => max(1, (int) env(
+            'VAULT_CONFIRM_THROTTLE_PER_MINUTE',
+            env('APP_ENV') === 'local' ? 60 : 20
+        )),
     ],
 
 ];

@@ -33,6 +33,12 @@ DEFAULT_DOMAINS = "registrar.tcc.edu.ph,sis.tcc.edu.ph,tcc.edu.ph"
 STUDENT_ID_RE = re.compile(r"\b(?:20\d{2}[-–]?\d{4,}|\d{4,}[-–]\d{4,})\b")
 
 
+def emit_json(payload: dict[str, Any], *, pretty: bool = False) -> None:
+    text = json.dumps(payload, indent=2 if pretty else None, ensure_ascii=False)
+    sys.stdout.buffer.write(text.encode("utf-8", errors="replace"))
+    sys.stdout.buffer.write(b"\n")
+
+
 def allowed_domains() -> list[str]:
     raw = os.environ.get("TCC_REGISTRAR_DOMAINS", DEFAULT_DOMAINS)
     return [d.strip().lower() for d in raw.split(",") if d.strip()]
@@ -117,7 +123,13 @@ def _looks_like_native_dep_error(message: str) -> bool:
 
 
 def decode_pil_image(image: Any) -> list[dict[str, Any]]:
-    from pyzbar.pyzbar import decode as pyzbar_decode
+    try:
+        from pyzbar.pyzbar import decode as pyzbar_decode
+    except Exception as exc:  # noqa: BLE001 — ImportError or DLL load failures on Windows
+        message = str(exc)
+        if isinstance(exc, ImportError) or _looks_like_native_dep_error(message):
+            raise ImportError(message) from exc
+        raise
 
     codes: list[dict[str, Any]] = []
     for item in pyzbar_decode(image):
@@ -144,57 +156,113 @@ def decode_image_path(path: Path) -> list[dict[str, Any]]:
         return decode_pil_image(img.convert("RGB"))
 
 
+def decode_pdf_pymupdf_barcode(path: Path) -> tuple[list[dict[str, Any]], str] | None:
+    """Optional PyMuPDF barcode API (when built with barcode support); None if unavailable."""
+    try:
+        import fitz
+    except ImportError:
+        return None
+
+    if not hasattr(fitz.Page, "get_barcodes") and not hasattr(fitz.Page, "find_barcodes"):
+        return None
+
+    doc = fitz.open(path)
+    try:
+        codes: list[dict[str, Any]] = []
+        for page_index, page in enumerate(doc):
+            finder = getattr(page, "get_barcodes", None) or getattr(page, "find_barcodes", None)
+            if finder is None:
+                continue
+            try:
+                found = finder()
+            except Exception:  # noqa: BLE001
+                continue
+            for item in found or []:
+                raw = ""
+                if isinstance(item, dict):
+                    raw = str(item.get("text") or item.get("data") or "")
+                else:
+                    raw = str(getattr(item, "text", None) or getattr(item, "data", "") or "")
+                if not raw:
+                    continue
+                codes.append(
+                    {
+                        "type": "QRCODE",
+                        "raw_payload": raw,
+                        "page": page_index,
+                        "source": "pymupdf_barcode",
+                    }
+                )
+        if codes:
+            return codes, "pymupdf_barcode"
+        return [], "pymupdf_barcode"
+    finally:
+        doc.close()
+
+
 def decode_pdf(path: Path) -> tuple[list[dict[str, Any]], str]:
     import fitz  # PyMuPDF
     from PIL import Image
     import io
 
-    doc = fitz.open(path)
+    # Prefer pyzbar; if ZBar DLL is missing on Windows, try PyMuPDF barcode then soft-fail.
     try:
-        # Prefer embedded images (often the QR asset itself).
-        for page_index, page in enumerate(doc):
-            for img in page.get_images(full=True):
-                xref = img[0]
-                try:
-                    extracted = doc.extract_image(xref)
-                except Exception:  # noqa: BLE001
-                    continue
-                data = extracted.get("image")
-                if not data:
-                    continue
-                try:
-                    pil = Image.open(io.BytesIO(data)).convert("RGB")
-                except Exception:  # noqa: BLE001
-                    continue
-                codes = decode_pil_image(pil)
-                if codes:
-                    for code in codes:
-                        code["page"] = page_index
-                        code["source"] = "embedded_image"
-                    return codes, "embedded_image"
+        doc = fitz.open(path)
+        try:
+            # Prefer embedded images (often the QR asset itself).
+            for page_index, page in enumerate(doc):
+                for img in page.get_images(full=True):
+                    xref = img[0]
+                    try:
+                        extracted = doc.extract_image(xref)
+                    except Exception:  # noqa: BLE001
+                        continue
+                    data = extracted.get("image")
+                    if not data:
+                        continue
+                    try:
+                        pil = Image.open(io.BytesIO(data)).convert("RGB")
+                    except Exception:  # noqa: BLE001
+                        continue
+                    codes = decode_pil_image(pil)
+                    if codes:
+                        for code in codes:
+                            code["page"] = page_index
+                            code["source"] = "embedded_image"
+                        return codes, "embedded_image"
 
-        # Fallback: rasterize first page at 2x for small printed QR codes.
-        if len(doc) == 0:
-            return [], "empty_pdf"
-        page = doc[0]
-        pix = page.get_pixmap(matrix=fitz.Matrix(2, 2), alpha=False)
-        pil = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
-        codes = decode_pil_image(pil)
-        for code in codes:
-            code["page"] = 0
-            code["source"] = "page_render"
-        return codes, "page_render"
-    finally:
-        doc.close()
+            # Fallback: rasterize first page at 2x for small printed QR codes.
+            if len(doc) == 0:
+                return [], "empty_pdf"
+            page = doc[0]
+            pix = page.get_pixmap(matrix=fitz.Matrix(2, 2), alpha=False)
+            pil = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
+            codes = decode_pil_image(pil)
+            for code in codes:
+                code["page"] = 0
+                code["source"] = "page_render"
+            return codes, "page_render"
+        finally:
+            doc.close()
+    except Exception as exc:  # noqa: BLE001
+        message = str(exc)
+        if isinstance(exc, ImportError) or _looks_like_native_dep_error(message):
+            alt = decode_pdf_pymupdf_barcode(path)
+            if alt is not None:
+                return alt
+        raise
 
 
 def build_result(path: Path) -> dict[str, Any]:
     domains = allowed_domains()
     suffix = path.suffix.lower()
+    engine = "pyzbar"
 
     try:
         if suffix == ".pdf":
             codes, source = decode_pdf(path)
+            if source == "pymupdf_barcode":
+                engine = "pymupdf"
         elif suffix in IMAGE_SUFFIXES:
             codes = decode_image_path(path)
             source = "image"
@@ -208,7 +276,7 @@ def build_result(path: Path) -> dict[str, Any]:
                 "codes": [],
                 "error": f"Unsupported file type: {suffix or '(none)'}",
                 "source_path": str(path),
-                "engine": "pyzbar",
+                "engine": engine,
             }
     except Exception as exc:  # noqa: BLE001
         message = str(exc)
@@ -222,13 +290,14 @@ def build_result(path: Path) -> dict[str, Any]:
             "codes": [],
             "error": (
                 f"Missing dependency: {message}. Install pyzbar and Pillow "
-                "(Windows: Visual C++ Redistributable; libiconv/zlib often required for libzbar)."
+                "(Windows: Visual C++ Redistributable; libiconv/zlib often required for libzbar). "
+                "QR decode is optional — PDF text extraction still runs independently."
                 if missing
                 else message
             ),
             "error_code": "dependency_missing" if missing else "decode_failed",
             "source_path": str(path),
-            "engine": "pyzbar",
+            "engine": engine,
         }
 
     raw = codes[0]["raw_payload"] if codes else None
@@ -252,7 +321,7 @@ def build_result(path: Path) -> dict[str, Any]:
             "qr_not_found" if not codes else "domain_mismatch"
         ),
         "source_path": str(path),
-        "engine": "pyzbar",
+        "engine": engine,
     }
 
 
@@ -265,11 +334,11 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     if not args.path.is_file():
-        print(json.dumps({"success": False, "found": False, "error": f"File not found: {args.path}"}))
+        emit_json({"success": False, "found": False, "error": f"File not found: {args.path}"})
         return 1
 
     payload = build_result(args.path)
-    print(json.dumps(payload, indent=2 if args.pretty else None, ensure_ascii=False))
+    emit_json(payload, pretty=args.pretty)
     return 0 if payload.get("success") else 2
 
 

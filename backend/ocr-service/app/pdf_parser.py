@@ -69,7 +69,7 @@ def parse_pdf_bytes(content: bytes, settings: Settings) -> tuple[PdfResult, dict
 
             pixmap = page.get_pixmap(matrix=fitz.Matrix(2, 2), alpha=False)
             image = render_pixmap_to_bgr(pixmap.samples, pixmap.width, pixmap.height, pixmap.n)
-            ocr = ocr_image_array(image, settings)
+            ocr, _warped = ocr_image_array(image, settings)
             pages.append(
                 PdfPageResult(
                     page=page_index + 1,

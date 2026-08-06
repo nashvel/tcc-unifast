@@ -32,8 +32,9 @@ return [
 
         'local' => [
             'driver' => 'local',
+            // Private app storage (NOT storage/app/public). Rel paths: documents/, identity/, …
             'root' => storage_path('app/private'),
-            'serve' => true,
+            'serve' => false,
             'throw' => false,
             'report' => false,
         ],

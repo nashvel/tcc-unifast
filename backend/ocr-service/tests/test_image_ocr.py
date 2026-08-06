@@ -17,8 +17,11 @@ def test_valid_image_upload(client, sample_png_bytes, mocked_tesseract):
     assert payload["document_type"] == "image"
     assert payload["result"]["cleaned_text"] == "TCC STUDENT ID\nJUAN"
     assert payload["result"]["word_count"] == 4
+    assert payload["result"]["preprocessing"]["perspective_warped"] in {True, False}
+    assert "empty_text" in payload["result"]["preprocessing"]
     assert payload["metadata"]["width"] == 900
     assert payload["qr_code"]["found"] is False
+    assert "engine" in payload["qr_code"]
 
 
 def test_unsupported_image_type(client):
@@ -61,6 +64,7 @@ def test_qr_detector_no_result_behavior(sample_png_bytes):
 
     assert result.found is False
     assert result.bounding_box == []
+    assert result.engine in {"opencv", "unavailable", "pyzbar", "error"}
 
 
 def test_text_cleaner_preserves_ids_and_grades():

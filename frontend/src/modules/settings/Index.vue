@@ -35,6 +35,9 @@ type PolicySettings = {
   auto_approve_risk_threshold: number;
   default_pass_grade: number;
   default_pass_grade_display?: string;
+  identity_face_pass_max: number;
+  identity_face_review_max: number;
+  organization_academic_year: string;
 };
 
 type ProgramFormRow = AcademicProgram & { pass_grade_input: string };
@@ -48,10 +51,13 @@ const loadingOrg = ref(false);
 const savingOrg = ref(false);
 const programs = ref<ProgramFormRow[]>([]);
 const policy = ref<PolicySettings>({
-  max_failed_subjects_per_semester: 1,
+  max_failed_subjects_per_semester: 3,
   auto_approve_risk_threshold: 20,
   default_pass_grade: 3.0,
   default_pass_grade_display: "3.0",
+  identity_face_pass_max: 0.45,
+  identity_face_review_max: 0.6,
+  organization_academic_year: "2026-2027",
 });
 const defaultPassGradeInput = ref("3.0");
 const newProgram = ref({ code: "", name: "", pass_grade_input: "3.0" });
@@ -168,6 +174,9 @@ async function savePolicy() {
         max_failed_subjects_per_semester: Number(policy.value.max_failed_subjects_per_semester),
         auto_approve_risk_threshold: Number(policy.value.auto_approve_risk_threshold),
         default_pass_grade: defaultPass,
+        identity_face_pass_max: Number(policy.value.identity_face_pass_max),
+        identity_face_review_max: Number(policy.value.identity_face_review_max),
+        organization_academic_year: String(policy.value.organization_academic_year || "").trim(),
       }),
     });
     policy.value = res.data;
@@ -316,7 +325,7 @@ onMounted(() => {
               /></label>
               <label class="block"
                 ><span class="mb-1.5 block text-xs font-medium"
-                  >Max failed subjects per semester</span
+                  >Max failed/dropped subjects (overall)</span
                 ><input
                   v-model.number="policy.max_failed_subjects_per_semester"
                   type="number"
@@ -335,10 +344,50 @@ onMounted(() => {
                   class="h-9 w-full rounded-md border px-3 text-sm"
                   @blur="defaultPassGradeInput = toPassGradeDisplay(defaultPassGradeInput)"
               /></label>
+              <label class="block"
+                ><span class="mb-1.5 block text-xs font-medium"
+                  >Identity face pass max (activate below)</span
+                ><input
+                  v-model.number="policy.identity_face_pass_max"
+                  type="number"
+                  min="0"
+                  max="2"
+                  step="0.01"
+                  class="h-9 w-full rounded-md border px-3 text-sm"
+              /></label>
+              <label class="block"
+                ><span class="mb-1.5 block text-xs font-medium"
+                  >Identity face review max (block at/above)</span
+                ><input
+                  v-model.number="policy.identity_face_review_max"
+                  type="number"
+                  min="0"
+                  max="2"
+                  step="0.01"
+                  class="h-9 w-full rounded-md border px-3 text-sm"
+              /></label>
+              <label class="block"
+                ><span class="mb-1.5 block text-xs font-medium">Organization academic year</span
+                ><input
+                  v-model="policy.organization_academic_year"
+                  type="text"
+                  placeholder="2026-2027"
+                  class="h-9 w-full rounded-md border px-3 text-sm"
+              /></label>
             </div>
             <div class="flex items-center justify-between gap-3 border-t px-4 py-3">
               <p class="text-xs text-text-muted">
-                Pass if grade ≤ pass grade; fail if higher. Blank grades ignored.
+                Pass if grade ≤ pass grade; fail if higher. Retention is overall across full
+                Course History (not per semester): each Failed and each Dropped counts 1 toward
+                the max (default 3). Pending blanks do not count. Course History blanks on the
+                Grade Slip term and any newer enrollment term are Pending; older-term blanks
+                count as Dropped. Upload the last graded Grade Slip (not an empty
+                current-enrollment slip). Grade Slip blanks are review-only. Not eligible when
+                failed+dropped ≥ max (API key still max_failed_subjects_per_semester). Onboarding
+                face: distance &lt; pass max activates; between pass and review max goes to staff
+                Face Match Reviews; ≥ review max blocks. Vault still uses
+                IDENTITY_FACE_MATCH_THRESHOLD. Organization academic year is compared to School ID
+                back OCR (soft flag for staff Return — students are not blocked).
               </p>
               <button
                 class="shrink-0 rounded-md bg-primary px-3 py-2 text-xs text-white disabled:opacity-60"
@@ -355,7 +404,8 @@ onMounted(() => {
               <div>
                 <h2 class="text-sm font-semibold">Program list</h2>
                 <p class="mt-0.5 text-xs text-text-muted">
-                  OCR matches Course History headers (e.g. BSIT — Year 1st) to these codes.
+                  OCR matches Course History term headers (e.g. BSED Filipino — Year 1st, BSIT —
+                  Year 2nd) to these codes for per-term pass grades.
                 </p>
               </div>
               <button

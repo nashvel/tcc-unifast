@@ -99,17 +99,17 @@ export const TOURS: Record<string, Tour> = {
       {
         target: H,
         title: "Validation queue",
-        body: "Submitted documents awaiting review, sorted by priority.",
+        body: "One row per grantee submission package, with slot progress and overall status.",
       },
       {
         target: '[data-tour="documents-filters"]',
         title: "Narrow the queue",
-        body: "Search or filter by status and risk level to focus on what needs attention now.",
+        body: "Search by grantee name or student ID to focus on packages that need attention.",
       },
       {
         target: '[data-tour="documents-queue"]',
-        title: "Review a document",
-        body: "Open Review on any row to approve, reject, resubmit, or flag. Every action is audit-logged.",
+        title: "Open a package",
+        body: "Click View to open tabs for School ID, Course History, Grade Slip, and Specimen. Approve or return each active document.",
       },
     ],
   },
@@ -118,13 +118,13 @@ export const TOURS: Record<string, Tour> = {
     steps: [
       {
         target: H,
-        title: "All uploaded files",
-        body: "Every uploaded requirement across grantees in one searchable table.",
+        title: "Organized scholarship files",
+        body: "Requirement files are grouped by batch and student. Masterlist CSV imports sit in a separate tab.",
       },
       {
         target: C,
-        title: "Upload, preview, reassign",
-        body: "Staff can upload on behalf of a grantee, preview files, download, or reassign a document type.",
+        title: "Preview and download",
+        body: "Open a preview or download a file. Use Open validation to jump to Document Validation for review.",
       },
     ],
   },

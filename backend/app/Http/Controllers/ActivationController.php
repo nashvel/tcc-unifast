@@ -3,9 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\ActivationToken;
+use App\Services\StudentOnboardingNavigator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 
@@ -27,7 +27,7 @@ class ActivationController extends Controller
         ]);
     }
 
-    public function activate(Request $request, string $token): JsonResponse
+    public function activate(Request $request, string $token, StudentOnboardingNavigator $navigator): JsonResponse
     {
         $validated = $request->validate([
             'temporary_password' => ['required', 'string'],
@@ -51,14 +51,19 @@ class ActivationController extends Controller
         ])->save();
 
         $activation->update(['used_at' => now()]);
-        Auth::login($user);
-        $request->session()->regenerate();
+
+        // SPA + LAN: issue Sanctum Bearer token only (no session middleware on this route).
+        $plainToken = $user->createToken('auth-token')->plainTextToken;
+        $next = $navigator->nextStep($user->fresh());
 
         return response()->json([
             'user' => [
                 ...$user->only('id', 'name', 'email', 'role', 'student_id', 'account_status'),
                 'kyc_status' => null,
+                'onboarding_next_step' => $next,
+                'onboarding_path' => $navigator->frontendPath($next),
             ],
+            'token' => $plainToken,
         ]);
     }
 

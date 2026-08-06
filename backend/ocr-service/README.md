@@ -9,7 +9,8 @@ This prototype performs OCR only. It does not make authenticity conclusions and 
 - Python 3.11
 - Tesseract OCR
 - pytesseract
-- OpenCV
+- OpenCV (perspective card warp + CLAHE / denoise)
+- pyzbar (School ID back QR; OpenCV fallback)
 - PyMuPDF
 - Pillow
 - FastAPI
@@ -28,26 +29,38 @@ $env:TESSERACT_CMD="C:\Program Files\Tesseract-OCR\tesseract.exe"
 4. Create and activate a virtual environment:
 
 ```powershell
-cd C:\Users\user\Documents\tcc-unifast\tcc-unifast\ocr-service
+cd backend\ocr-service
 py -3.11 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-5. Run tests:
+5. **pyzbar / ZBar (School ID back QR):** pip installs `libzbar-64.dll`. If decode fails with missing DLL / `libiconv`:
+
+```powershell
+# Install Microsoft Visual C++ Redistributable, then:
+mkdir native -ErrorAction SilentlyContinue
+# Place libiconv.dll (and zlib1.dll if needed) into .\native\
+$env:ZBAR_DLL_PATH=(Resolve-Path .\native).Path
+.\.venv\Scripts\pip install --force-reinstall pyzbar Pillow
+```
+
+OCR still succeeds when QR is missing or pyzbar is unavailable (`qr_code.found=false`, optional `error`).
+
+6. Run tests:
 
 ```powershell
 pytest
 ```
 
-6. Start FastAPI:
+7. Start FastAPI on **8001 only** (never bind Laravel/PHP on 8001):
 
 ```powershell
 uvicorn app.main:app --host 127.0.0.1 --port 8001 --reload
 ```
 
-7. Open Swagger:
+8. Open Swagger:
 
 <http://127.0.0.1:8001/docs>
 
@@ -57,13 +70,13 @@ Install Tesseract:
 
 ```bash
 sudo apt update
-sudo apt install tesseract-ocr tesseract-ocr-eng
+sudo apt install tesseract-ocr tesseract-ocr-eng libzbar0
 ```
 
 Create a virtual environment and install dependencies:
 
 ```bash
-cd /path/to/tcc-unifast/ocr-service
+cd /path/to/tcc-unifast/backend/ocr-service
 python3.11 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
@@ -94,9 +107,12 @@ Copy `.env.example` to `.env` when local overrides are needed.
 TESSERACT_CMD=
 TESSERACT_PSM=6
 SAVE_DEBUG_IMAGES=false
+ZBAR_DLL_PATH=
 ```
 
 `TESSERACT_CMD` is optional and should point to the Tesseract executable only when it is not available on `PATH`. `SAVE_DEBUG_IMAGES=true` saves processed images under `outputs/debug/`.
+
+Keep Laravel `OCR_SPACE_API_KEY` unset in local/dev so PHP always calls this service at `OCR_SERVICE_URL=http://127.0.0.1:8001`.
 
 ## API
 
@@ -115,6 +131,8 @@ POST /ocr/image
 ```
 
 Upload a multipart file using field name `file`. Supported types are JPEG, PNG, and WebP. Maximum size is 10 MB.
+
+Response includes `result` (merged full + inverted + region OCR), `result.preprocessing` flags (`perspective_warped`, `inverted_pass`, `region_ocr`, `empty_text`), and `qr_code` (`found`, `value`, `type`, `engine`).
 
 ### PDF OCR
 
@@ -148,6 +166,7 @@ It prints readable JSON to the terminal.
 - OCR quality depends heavily on image resolution, lighting, blur, skew, and scan quality.
 - Only English OCR (`eng`) is configured.
 - Tesseract must be installed separately as a system dependency.
+- QR decode is best-effort (glare may still miss); onboarding does not require QR.
 - Structured field extraction is intentionally not implemented yet.
 - No authenticity scoring or forensic conclusions are produced.
 

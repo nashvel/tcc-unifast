@@ -10,7 +10,20 @@ python -m venv .venv
 ..\python\.venv\Scripts\python.exe gradeslip_qr.py path\to\grade-slip.pdf --pretty
 ```
 
-Laravel `ProcessRequirementSubmissionPipeline` shells out to `gradeslip_qr.py` for `grade_slip` slots (domains from `TCC_REGISTRAR_DOMAINS`). Text OCR still prefers `OCR_SERVICE_URL` (`/ocr/pdf`); `pdf_extract.py` remains a local CLI helper.
+Laravel `ProcessRequirementSubmissionPipeline` shells out to `pdf_extract.py` for Course History / Grade Slip text (PyMuPDF) and `gradeslip_qr.py` for `grade_slip` QR (domains from `TCC_REGISTRAR_DOMAINS`). QR is optional: a pyzbar DLL failure must not clear `extracted_text`.
+
+### Queue worker (required after submit)
+
+OCR runs asynchronously. With `QUEUE_CONNECTION=database`, keep a worker running or staff OCR stays empty:
+
+```bash
+cd backend
+C:\php84\php.exe artisan queue:work --queue=default
+```
+
+Set `GRADESLIP_QR_PYTHON` (or rely on auto-detect) to `backend/python/.venv/Scripts/python.exe`. The pipeline stores `pending_count` / failed / dropped in `metadata_payload.grade_summary` and OCR course rows for the staff Document Detail panel.
+
+Scripts write JSON as UTF-8 bytes on stdout so Windows cp1252 consoles do not corrupt ñ and other characters (PHP `json_decode` previously failed with empty OCR).
 
 ### Windows / pyzbar
 

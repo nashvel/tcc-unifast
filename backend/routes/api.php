@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 use App\Http\Controllers\AcademicProgramController;
 use App\Http\Controllers\AcademicRecordController;
@@ -14,7 +14,9 @@ use App\Http\Controllers\CollaboratorController;
 use App\Http\Controllers\DatabaseController;
 use App\Http\Controllers\DistributionReportController;
 use App\Http\Controllers\DocumentSubmissionController;
+use App\Http\Controllers\DocumentFileController;
 use App\Http\Controllers\EligibilityController;
+use App\Http\Controllers\FaceReviewController;
 use App\Http\Controllers\FaqController;
 use App\Http\Controllers\GranteeController;
 use App\Http\Controllers\IdentityOnboardingController;
@@ -32,6 +34,7 @@ use App\Http\Controllers\StudentNotificationController;
 use App\Http\Controllers\StudentSubmissionWindowController;
 use App\Http\Controllers\TccUnifastStudentsController;
 use App\Http\Controllers\TccUnifastSyncController;
+use App\Support\VaultFileStorage;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Session\Middleware\StartSession;
@@ -43,7 +46,8 @@ Route::middleware([
     AddQueuedCookiesToResponse::class,
     StartSession::class,
 ])->group(function (): void {
-    Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
+    Route::post('/auth/login', [AuthController::class, 'login'])
+        ->middleware('throttle:'.config('services.auth.login_throttle_per_minute', 5).',1');
 });
 Route::get('/activation/{token}', [ActivationController::class, 'show'])->middleware('throttle:20,1');
 Route::post('/activation/{token}', [ActivationController::class, 'activate'])->middleware('throttle:10,1');
@@ -52,6 +56,16 @@ Route::post('/activation/{token}', [ActivationController::class, 'activate'])->m
 Route::get('/terms/active', [TermController::class, 'active']);
 Route::get('/faqs', [FaqController::class, 'index']);
 
+// Time-limited signed file access (no bearer token; HMAC signature required)
+Route::get('/signed/document-files/{submission}/{variant}', [DocumentFileController::class, 'showSigned'])
+    ->middleware(['signed', 'throttle:120,1'])
+    ->where('variant', 'primary|secondary')
+    ->name('signed.document-files.show');
+Route::get('/signed/identity-photos/{grantee}/{filename}', [DocumentFileController::class, 'showIdentityPhoto'])
+    ->middleware(['signed', 'throttle:120,1'])
+    ->where('filename', VaultFileStorage::identityFilenameRoutePattern())
+    ->name('signed.identity-photos.show');
+
 // Authenticated routes (Sanctum token required)
 Route::middleware('auth:sanctum')->group(function (): void {
     Route::get('/auth/me', [AuthController::class, 'me']);
@@ -59,18 +73,29 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
     // Student routes
     Route::middleware('role:student')->group(function (): void {
-        Route::get('/student/kyc', [StudentKycController::class, 'show']);
-        Route::post('/student/kyc', [StudentKycController::class, 'store'])->middleware('throttle:20,1');
+        Route::get('/student/kyc', [StudentKycController::class, 'show'])->middleware('throttle:30,1');
+        Route::post('/student/kyc', [StudentKycController::class, 'store'])->middleware('throttle:5,1');
         Route::get('/student/identity-onboarding', [IdentityOnboardingController::class, 'show']);
-        Route::post('/student/identity-onboarding/id-scan', [IdentityOnboardingController::class, 'storeIdScan'])->middleware('throttle:10,1');
+        Route::get('/student/identity-onboarding/ocr-health', [IdentityOnboardingController::class, 'ocrHealth'])->middleware('throttle:30,1');
+        Route::post('/student/identity-onboarding/id-scan/ocr-front', [IdentityOnboardingController::class, 'validateFrontIdOcr'])->middleware('throttle:30,1');
+        Route::post('/student/identity-onboarding/id-scan', [IdentityOnboardingController::class, 'storeIdScan'])->middleware('throttle:30,1');
         Route::post('/student/identity-onboarding/liveness', [IdentityOnboardingController::class, 'storeLiveness'])->middleware('throttle:10,1');
         Route::get('/student/identity-onboarding/references', [IdentityOnboardingController::class, 'referenceFace']);
+        Route::get('/student/identity-onboarding/photos/{filename}', [DocumentFileController::class, 'showOwnIdentityPhoto'])
+            ->where('filename', VaultFileStorage::identityFilenameRoutePattern())
+            ->middleware('throttle:60,1');
         Route::get('/student/submission-window', StudentSubmissionWindowController::class);
         Route::get('/student/requirement-vault', [RequirementVaultController::class, 'show']);
+        Route::post('/student/requirement-vault/id/ocr-front', [RequirementVaultController::class, 'validateFrontIdOcr'])->middleware('throttle:30,1');
         Route::post('/student/requirement-vault/id', [RequirementVaultController::class, 'storeId'])->middleware('throttle:20,1');
         Route::post('/student/requirement-vault/document', [RequirementVaultController::class, 'storeDocument'])->middleware('throttle:20,1');
         Route::post('/student/requirement-vault/identity-check', [RequirementVaultController::class, 'storeIdentityCheck'])->middleware('throttle:10,1');
-        Route::post('/student/requirement-vault/confirm', [RequirementVaultController::class, 'confirm'])->middleware('throttle:10,1');
+        Route::post('/student/requirement-vault/confirm', [RequirementVaultController::class, 'confirm'])
+            ->middleware('throttle:'.config('services.requirement_vault.confirm_throttle_per_minute', 20).',1');
+        Route::post('/student/requirement-vault/resubmit-slot', [RequirementVaultController::class, 'resubmitSlot'])->middleware('throttle:10,1');
+        Route::get('/student/requirement-vault/files/{submission}/{variant?}', [DocumentFileController::class, 'showAuthenticated'])
+            ->where('variant', 'primary|secondary')
+            ->middleware('throttle:60,1');
         Route::get('/student/notifications', [StudentNotificationController::class, 'index']);
         Route::post('/student/notifications/{notification}/read', [StudentNotificationController::class, 'markRead']);
         Route::post('/student/notifications/read-all', [StudentNotificationController::class, 'markAllRead']);
@@ -109,8 +134,24 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('/academic-records', [AcademicRecordController::class, 'index']);
         Route::get('/academic-records/{record}', [AcademicRecordController::class, 'show']);
         Route::get('/document-submissions', [DocumentSubmissionController::class, 'index']);
+        Route::get('/document-submission-packages', [DocumentSubmissionController::class, 'packages']);
+        Route::get('/document-submission-packages/{granteeId}/{batchId}', [DocumentSubmissionController::class, 'packageShow'])
+            ->whereNumber('granteeId')
+            ->whereNumber('batchId');
+        Route::get('/face-reviews', [FaceReviewController::class, 'index']);
+        Route::get('/face-reviews/{faceReview}', [FaceReviewController::class, 'show']);
+        Route::post('/face-reviews/{faceReview}/approve', [FaceReviewController::class, 'approve'])->middleware('throttle:30,1');
+        Route::post('/face-reviews/{faceReview}/reject', [FaceReviewController::class, 'reject'])->middleware('throttle:30,1');
+        Route::get('/grantees/{grantee}/identity-photos/{filename}', [DocumentFileController::class, 'showStaffIdentityPhoto'])
+            ->where('filename', VaultFileStorage::identityFilenameRoutePattern())
+            ->middleware('throttle:60,1');
         Route::get('/files', [\App\Http\Controllers\FileManagerController::class, 'index']);
+        Route::get('/files/imports/{import}/download', [\App\Http\Controllers\FileManagerController::class, 'downloadImport'])
+            ->middleware('throttle:60,1');
         Route::get('/document-submissions/{submission}', [DocumentSubmissionController::class, 'show']);
+        Route::get('/document-submissions/{submission}/file/{variant?}', [DocumentFileController::class, 'showAuthenticated'])
+            ->where('variant', 'primary|secondary')
+            ->middleware('throttle:60,1');
         Route::get('/audit-logs', [AuditEventController::class, 'index']);
 
         Route::get('/billing-reports', [BillingReportController::class, 'index']);

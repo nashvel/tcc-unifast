@@ -52,7 +52,7 @@ class BatchActivationNotificationController extends Controller
                 Mail::to($student->email, $student->full_name)->send(new GranteeActivationInviteMail(
                     $student->user,
                     $temporaryPassword,
-                    url('/activate/'.$plainToken),
+                    $this->activationUrl($plainToken),
                     $intro,
                     $validated['subject'] ?? null,
                 ));
@@ -74,5 +74,12 @@ class BatchActivationNotificationController extends Controller
     private function temporaryPassword(): string
     {
         return 'TCC-'.Str::upper(Str::random(4)).'-'.Str::upper(Str::random(4));
+    }
+
+    private function activationUrl(string $plainToken): string
+    {
+        $frontend = rtrim((string) (config('app.frontend_url') ?: env('FRONTEND_URL', 'http://localhost:5173')), '/');
+
+        return $frontend.'/activate/'.$plainToken.'?lang=en';
     }
 }

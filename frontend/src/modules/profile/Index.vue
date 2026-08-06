@@ -1,26 +1,79 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { IconCheck, IconClock, IconId, IconPencil, IconUser } from "@tabler/icons-vue";
 import PageHeader from "@/components/ui/PageHeader.vue";
 import DiceBearAvatar from "@/components/ui/DiceBearAvatar.vue";
+import { apiFetch } from "@/api/client";
+import { authSession, loadAuthUser } from "@/auth/session";
 
-const completedAt =
-  typeof localStorage !== "undefined"
-    ? localStorage.getItem("unifast.mock.onboarding_completed_at")
-    : null;
-const onboardingDone = computed(() => Boolean(completedAt));
-const personal = [
-  ["Full name", "Maria Clara Dela Cruz"],
-  ["Birthdate", "May 14, 2003"],
-  ["Email", "mc.delacruz@tcc.edu.ph"],
-  ["Contact", "+63 917 123 4567"],
-];
-const academic = [
+type KycProfile = {
+  full_name?: string | null;
+  first_name?: string | null;
+  middle_name?: string | null;
+  last_name?: string | null;
+  student_id?: string | null;
+  program?: string | null;
+  year_level?: string | null;
+  birthdate?: string | null;
+  contact?: string | null;
+  address?: string | null;
+};
+
+const kycLoading = ref(true);
+const kyc = ref<KycProfile | null>(null);
+
+const user = computed(() => authSession.user);
+
+/** Server onboarding completion — not localStorage mock flags. */
+const onboardingDone = computed(() => {
+  const u = user.value;
+  if (!u) return false;
+  return u.account_status === "active" || u.onboarding_next_step === "done";
+});
+
+const displayName = computed(() => {
+  const fromKyc = kyc.value?.full_name?.trim();
+  if (fromKyc) return fromKyc;
+  return user.value?.name?.trim() || "—";
+});
+
+const displayEmail = computed(() => user.value?.email?.trim() || "—");
+
+function formatBirthdate(raw: string | null | undefined): string {
+  if (!raw) return "—";
+  const d = new Date(`${raw}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return raw;
+  return d.toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
+}
+
+const personal = computed(() => [
+  ["Full name", displayName.value],
+  ["Birthdate", formatBirthdate(kyc.value?.birthdate)],
+  ["Email", displayEmail.value],
+  ["Contact", kyc.value?.contact?.trim() || "—"],
+]);
+
+const academic = computed(() => [
   ["University", "Tagoloan Community College"],
-  ["Program", "BS Information Technology"],
-  ["Year level", "2"],
-  ["Student #", "2024-00182"],
-];
+  ["Program", kyc.value?.program?.trim() || "—"],
+  ["Year level", kyc.value?.year_level?.trim() || "—"],
+  ["Student #", kyc.value?.student_id?.trim() || user.value?.student_id?.trim() || "—"],
+]);
+
+onMounted(async () => {
+  if (!authSession.loaded) {
+    await loadAuthUser();
+  }
+  kycLoading.value = true;
+  try {
+    const payload = await apiFetch<{ data: { profile: KycProfile | null } }>("/api/student/kyc");
+    kyc.value = payload.data.profile;
+  } catch {
+    kyc.value = null;
+  } finally {
+    kycLoading.value = false;
+  }
+});
 </script>
 
 <template>
@@ -38,10 +91,10 @@ const academic = [
       >
     </PageHeader>
     <section class="mb-4 flex items-center gap-3 rounded-lg border bg-surface p-4">
-      <DiceBearAvatar seed="mc.delacruz@tcc.edu.ph" alt="Maria Clara Dela Cruz" :size="56" />
+      <DiceBearAvatar :seed="displayEmail" :alt="displayName" :size="56" />
       <div>
-        <p class="text-sm font-semibold">Maria Clara Dela Cruz</p>
-        <p class="text-xs text-text-muted">mc.delacruz@tcc.edu.ph</p>
+        <p class="text-sm font-semibold">{{ displayName }}</p>
+        <p class="text-xs text-text-muted">{{ displayEmail }}</p>
       </div>
     </section>
     <section class="mb-4 rounded-lg border bg-surface p-4">
@@ -93,13 +146,16 @@ const academic = [
         class="space-y-3 rounded-lg border bg-surface p-4"
       >
         <h2 class="text-sm font-semibold">{{ group.title }}</h2>
-        <label v-for="field in group.fields" :key="field[0]" class="block"
-          ><span class="mb-1.5 block text-xs font-medium">{{ field[0] }}</span
-          ><input
-            :value="field[1]"
-            disabled
-            class="h-9 w-full rounded-md border bg-surface-muted px-3 text-sm text-text-muted"
-        /></label>
+        <p v-if="kycLoading" class="text-xs text-text-muted">Loading profile…</p>
+        <template v-else>
+          <label v-for="field in group.fields" :key="field[0]" class="block"
+            ><span class="mb-1.5 block text-xs font-medium">{{ field[0] }}</span
+            ><input
+              :value="field[1]"
+              disabled
+              class="h-9 w-full rounded-md border bg-surface-muted px-3 text-sm text-text-muted"
+          /></label>
+        </template>
       </section>
     </div>
   </div>

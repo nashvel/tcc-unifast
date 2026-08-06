@@ -265,18 +265,28 @@ class EligibilityController extends Controller
      */
     private function retentionNote(array $eligibility, int $maxFailed, bool $passed): string
     {
+        $source = (string) ($eligibility['source'] ?? $eligibility['document_type'] ?? '');
+        $sourceLabel = $source === 'course_history'
+            ? ' from Course History'
+            : ($source === 'grade_slip' ? ' from Grade Slip (CH missing)' : '');
+
         if ($passed) {
             $failed = $eligibility['failed_subjects'] ?? $eligibility['failed_count'] ?? '0';
+            $dropped = $eligibility['dropped_count'] ?? $eligibility['dropped_subjects'] ?? '0';
+            $retention = $eligibility['retention_count'] ?? null;
+            $counts = $retention !== null
+                ? "{$failed} failed + {$dropped} dropped = {$retention}"
+                : "Failed subjects: {$failed}";
 
-            return "Within Settings limit (max {$maxFailed} failed subject(s) per semester). Failed subjects: {$failed}.";
+            return "Within Settings limit (max {$maxFailed} failed+dropped subject(s)){$sourceLabel}. {$counts}.";
         }
 
         if (($eligibility['status'] ?? '') === 'pending' || $eligibility === []) {
-            return "Academic retention pending OCR/pipeline results. Settings allow up to {$maxFailed} failed subject(s) per semester.";
+            return "Academic retention pending OCR/pipeline results. Settings allow up to {$maxFailed} failed+dropped subject(s). Course History drives eligibility when available.";
         }
 
         return (string) ($eligibility['note']
-            ?: "Settings allow up to {$maxFailed} failed subject(s) per semester. This grantee exceeded the limit.");
+            ?: "Settings allow up to {$maxFailed} failed+dropped subject(s). This grantee exceeded the limit{$sourceLabel}.");
     }
 
     /**

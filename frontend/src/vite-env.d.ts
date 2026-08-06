@@ -1,5 +1,13 @@
 /// <reference types="vite/client" />
 
+import "vue-router";
+
+declare module "vue-router" {
+  interface RouteMeta {
+    breadcrumbLabel?: string;
+  }
+}
+
 interface ImportMetaEnv {
   readonly VITE_APP_NAME?: string;
   readonly VITE_TCC_REGISTRAR_DOMAINS?: string;

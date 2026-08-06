@@ -13,13 +13,13 @@
   - Full name
   - Student ID number
   - Program / course
-  - Year level
+  - Year level (optional; collected for display only — not used in masterlist match)
   - Contact number
   - Address
   - Socio-economic details
 - System cross-checks submitted name, student ID, and program against the imported CHED masterlist
-- If any field does not match the masterlist → account blocked, error shown, cannot proceed
-- If all fields match → proceed to Step 2
+- If any of those matched fields does not match the masterlist → account blocked, error shown, cannot proceed
+- If name, student ID, and program match → proceed to Step 2
 
 ### Step 2 — Scan School ID (live camera)
 
@@ -43,14 +43,37 @@
 - Order is randomized each session
 - Grantee performs each action when prompted
 - After all three steps pass:
-  - Live selfie frame is captured → saved as `onboarding_selfie.jpg`
-  - **face-api.js** computes descriptor from `id_reference_face.jpg` on-the-fly
-  - **face-api.js** computes descriptor from live camera feed
-  - Euclidean distance computed between the two
-  - Below **0.5** → same person confirmed → ID belongs to this grantee
-  - Above **0.5** → account blocked → person does not match the ID
-  - Both descriptors discarded immediately after comparison
-- Result logged: distance score, liveness confirmed, timestamp, IP address
+  - Short frontal gate: prompt **Look straight at the camera** (face centered in oval, not turned left/right)
+  - Only then is the live match selfie captured → saved as `onboarding_selfie.jpg` (avoids capturing a leftover turn pose)
+  - **face-api.js** computes descriptor from the live frontal camera feed
+  - Euclidean distance vs stored ID reference descriptor (**server recomputes**; client distance is ignored)
+  - **Three-tier onboarding zones** (defaults; overridable via env / Policy Settings):
+
+| Zone | Distance rule | Outcome |
+| --- | --- | --- |
+| Confident | `distance < 0.45` (`IDENTITY_FACE_PASS_MAX`) | Auto-activate account (`active`) |
+| Uncertain | `0.45 ≤ distance < 0.60` (`IDENTITY_FACE_REVIEW_MAX`) | Flag for staff review — **do not** auto-block |
+| Mismatch | `distance ≥ 0.60` | Reject attempt — student may **retry** liveness (stay `pending_identity` / profile `pending_liveness`; **do not** auto-block) |
+
+```mermaid
+flowchart TD
+  Liveness[Liveness selfie + descriptors] --> ServerDist[Server Euclidean distance]
+  ServerDist --> Zone{classify distance}
+  Zone -->|"< pass_max"| Activate[account_status active]
+  Zone -->|"pass_max ≤ d < review_max"| Review[pending_face_review]
+  Zone -->|">= review_max"| Retry[Stay pending_liveness — retry]
+  Review --> StaffUI[Staff Face Match Reviews]
+  StaffUI -->|Approve| Activate
+  StaffUI -->|Reject| Block[account_status blocked]
+```
+
+  - While challenges run, the client captures **two challenge stills** (frames from the first two successful challenges — typically turn poses when order allows; blink is captured if it is among the first two)
+  - Hard mismatch stores the latest selfie + distance for audit, keeps profile `pending_liveness`, leaves user `pending_identity`, and returns a clear validation error so the student can retry on the same screen
+  - Uncertain path stores selfie + descriptors + challenge stills, sets profile `pending_face_review` and user `pending_face_review`, and shows the student a waiting screen (not “blocked” language)
+  - Staff queue: `/app/face-reviews` — ID reference + onboarding selfie + **2 labeled challenge stills**; approve → activate; reject → block
+  - After staff approve **or** reject: challenge still files are **deleted** (review-only evidence). `id_reference_face`, `onboarding_selfie`, and encrypted descriptors are **kept** as vault match anchors
+  - Both descriptors discarded from the client after comparison; server retains encrypted descriptors for audit/review and Requirements Slot 1 matching
+- Result logged: distance score, zone, liveness confirmed, timestamp, IP address
 
 ### Step 4 — Account activated
 
@@ -59,22 +82,27 @@ All four layers confirmed:
 - KYC form matches CHED masterlist ✓
 - ID card name and student ID match masterlist ✓
 - ID QR code verified as legitimate TCC ID ✓
-- Live onboarding face matches ID card face ✓
+- Live onboarding face matches ID card face ✓ (confident auto-pass **or** staff-approved uncertain review)
 
 Then:
 
-- Account status → **KYC Verified**
+- Account status → **active** (`KYC Verified` / portal access)
 - Grantee can now access the portal
 - Requirement Vault remains locked until their batch window opens
+
+> **Onboarding vs Requirements Slot 1:** Onboarding liveness uses **three-tier** zones (confident / uncertain→staff review / mismatch). Requirements Slot 1 stays **binary**: distance must be below `IDENTITY_FACE_MATCH_THRESHOLD` (default ~0.5) vs **both** stored ID reference and onboarding selfie descriptors, else hard reject. Slot 1 does not use the onboarding uncertain band.
 
 ### Photos stored after onboarding
 
 
-| Photo             | Filename                | Purpose                                        |
-| ----------------- | ----------------------- | ---------------------------------------------- |
-| ID reference face | `id_reference_face.jpg` | Cropped face from the physical ID card         |
-| Onboarding selfie | `onboarding_selfie.jpg` | Live selfie captured during liveness challenge |
+| Photo             | Filename                     | Purpose                                                                 | Retention |
+| ----------------- | ---------------------------- | ----------------------------------------------------------------------- | --------- |
+| ID reference face | `id_reference_face.jpg`      | Cropped face from the physical ID card (Slot 1 / vault match anchor)    | Kept after face-review decision |
+| Onboarding selfie | `onboarding_selfie.jpg`      | Frontal live selfie after challenges + look-straight gate (match anchor) | Kept after face-review decision |
+| Challenge still 1 | `liveness_challenge_1.jpg`   | Review-only frame from first successful challenge                       | Deleted after approve/reject |
+| Challenge still 2 | `liveness_challenge_2.jpg`   | Review-only frame from second successful challenge                      | Deleted after approve/reject |
 
+Encrypted descriptors (`id_reference_face_descriptor`, `onboarding_selfie_descriptor`) are kept with the anchors so Requirements Slot 1 matching continues to work after staff decision.
 
 ---
 
@@ -102,17 +130,18 @@ Then:
   - Allow camera permission
   - Data Privacy Act consent checkbox
 - Proceed button disabled until all items ticked and consent accepted
-- Camera activates with card-shaped guide frame
-- Grantee holds their physical School ID inside the frame
-- System runs these checks simultaneously:
-  - **jsQR** reads QR code → verifies TCC registrar domain
-  - **OCR.space** extracts name and student ID → cross-checks against masterlist
-  - **face-api.js** detects and crops face from ID card → saves as new `id_scan_submission.jpg`
-  - **face-api.js** retrieves `id_reference_face.jpg` from onboarding → computes descriptor on-the-fly → computes descriptor from new ID scan → Euclidean distance computed → both discarded immediately
-  - **face-api.js** retrieves `onboarding_selfie.jpg` → computes descriptor on-the-fly → computes descriptor from new ID scan → Euclidean distance computed → both discarded immediately
-  - **Pillow** pixel noise check on captured frame
-- All checks pass → Slot 1 confirmed → green tick shown
-- Slots 2, 3, and 4 unlock
+- **Start live ID scan** opens a **full page** (`/student/documents/school-id-scan`) with the same front→OCR gate→back capture UX as onboarding (not a modal; not the onboarding route)
+- Camera activates with card-shaped guide frame; front auto-captures when green; back is tap Capture; TCC registrar QR is **best-effort** (never hard-blocks submit)
+- System runs these checks:
+  - Front OCR gate (`POST /api/student/requirement-vault/id/ocr-front`) before unlocking back
+  - Final submit (`POST /api/student/requirement-vault/id`) with front + back + face crop + optional `qr_payload`
+  - **jsQR** reads QR when present → stores `qr_found` / `qr_valid` / `qr_payload` for staff (invalid/missing is soft)
+  - Front OCR extracts name and student ID → cross-checks against masterlist
+  - Back OCR extracts `school_year` and compares (normalized) to Organization `organization_academic_year` → soft `academic_year_match` / expected / OCR flags
+  - **face-api.js** crops face from ID card → saves as new `id_scan_submission.jpg`
+  - Server compares face descriptor vs onboarding ID reference **and** selfie (binary threshold)
+- Hard checks pass → centered success overlay → return to documents → Slot 1 confirmed → Slots 2, 3, and 4 unlock
+- Staff Document Validation shows a structured School ID OCR panel (name, student ID, QR, AY vs Organization) and can **Return** on bad QR or AY mismatch
 
 ### Step 7 — Slot 2: Upload Course History PDF
 
@@ -123,9 +152,10 @@ Then:
 
 ### Step 8 — Slot 3: Upload Grade Slip PDF
 
-- Grantee uploads their Grade Slip PDF
+- Grantee uploads their Grade Slip PDF — the **last graded** slip (matches the last CH term that already has grades; often 2nd-to-last on Course History), **not** an all-blank current-enrollment slip
 - Must be PDF format only
 - Upload confirmed → green tick shown on Slot 3
+- Pipeline soft-warns if the slip looks like empty current enrollment; CH pending blanks are anchored to the GS academic term
 
 ### Step 8b — Slot 4: Upload 3 Specimen Signatures
 
@@ -262,13 +292,13 @@ Last updated: 2026-07-26
 
 | Area                                                                                                                               | Status                                                                                                                                                  |
 | ---------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Step 1 KYC + masterlist cross-check (name, student ID, program, year level)                                                        | Done — mismatch blocks; match → `pending_identity` (not full active)                                                                                    |
+| Step 1 KYC + masterlist cross-check (name, student ID, program; year level optional / not matched)                                 | Done — mismatch blocks; match → `pending_identity` (not full active)                                                                                    |
 | Step 2 live School ID scan UI (card frame, camera)                                                                                 | Done — `/student/onboarding/id-scan`                                                                                                                    |
 | jsQR + TCC registrar domain check                                                                                                  | Done — client `idQr.ts` + server `TccRegistrarQrService`                                                                                                |
 | OCR name/student ID vs KYC/masterlist                                                                                              | Done — `IdCardOcrService` (OCR.space if key set, else local `OCR_SERVICE_URL`)                                                                          |
 | face-api crop → `id_reference_face.jpg`                                                                                            | Done — stored under `storage/app/public/identity/{grantee_id}/`                                                                                         |
 | Step 3 onboarding liveness (blink / turn L/R randomized)                                                                           | Done — `/student/onboarding/liveness`                                                                                                                   |
-| Live vs ID face Euclidean < 0.5; block on fail; log distance/IP                                                                    | Done                                                                                                                                                    |
+| Live vs ID face Euclidean three-tier (pass / review / block); staff Face Match Reviews | Done — `IDENTITY_FACE_PASS_MAX` / `IDENTITY_FACE_REVIEW_MAX`; vault keeps `IDENTITY_FACE_MATCH_THRESHOLD` |
 | Step 4 account → `active` / KYC Verified; vault still window-gated                                                                 | Done                                                                                                                                                    |
 | Steps 5–8b vault slots + window unlock + window uploads                                                                            | Done                                                                                                                                                    |
 | Step 6 live ID re-scan with pre-check/consent, QR, OCR, dual face match, `id_scan_submission.jpg`                                  | Done                                                                                                                                                    |
@@ -295,35 +325,85 @@ Last updated: 2026-07-26
 
 - **Pass:** numeric grade from **1.0 down to program `pass_grade`** (BSIT default **3.0**)
 - **Fail:** grade **>** program `pass_grade` (e.g. 3.1, 4.0, 5.0)
-- **Blank grades:** ignored (not counted as fail)
-- **Program source:** OCR header like `2023-2024 1st BSIT — Year 1st`; admin manages programs + pass grades in **Settings → Organization**
-- **Eligibility:** auto Pass/Fail vs `max_failed_subjects_per_semester` (Settings); pipeline stores result and sets grantee `eligible` / `not_eligible`
+- **Dropped:** explicit Dropped/DRP remarks, or blank grades on CH terms **older than** the Grade Slip term
+- **Pending blanks (not retention):** blanks on the **Grade Slip academic term** and any CH term **strictly newer** than that GS term (current enrollment after the last graded slip). Example: GS = `2025-2026 Summer`, current = `2026-2027 1st` → both blanks Pending; older blanks → Dropped. If Summer is newest on CH **and** is the uploaded GS, Summer blanks stay Pending (no separate current term required).
+- **Slot 3 Grade Slip:** upload the **last Grade Slip that already has grades** (often 2nd-to-last on CH), not an all-blank current-enrollment slip. Pipeline soft-warns empty enrollment slips and re-anchors CH pending using the GS term.
+- **CH-only fallback (no GS yet):** newest term blanks → Pending; 2nd-newest blanks → Pending only if that term mixes grades + blanks; older → Dropped.
+- **Grade Slip blanks:** review-only (not retention) when scoring the slip alone
+- **Program source:** OCR headers like `2025-2026 Summer BSIT — Year 3rd` (semester separators on Document Detail); admin manages programs + pass grades in **Settings → Organization**
+- **Eligibility / retention:** overall across full Course History — `retention_count` = failed + dropped (each counts 1; Pending blanks ignored). Not eligible when `retention_count` ≥ Settings max (key `max_failed_subjects_per_semester`, default **3** — not a per-semester cap). Document Detail shows retention-fail banner when `over_limit`; pipeline stores result and sets grantee `eligible` / `not_eligible`
 - **Notify:** in-app `BatchNotification` to all **head** + **staff** on pipeline complete (no email required)
 
 
 ### Routes / UI entry points
 
 - `/student/kyc` → on match redirects to `/student/onboarding/id-scan`
-- `/student/onboarding` → router to id-scan or liveness
-- `/student/onboarding/id-scan` · `/student/onboarding/liveness`
+- `/student/onboarding` → router to id-scan, liveness, or pending-review
+- `/student/onboarding/id-scan` · `/student/onboarding/liveness` · `/student/onboarding/pending-review`
+- `/app/face-reviews` — staff uncertain-face queue
 - `/student/documents` — Requirement Vault (locked until batch window open **and** account `active`)
-- APIs: `/api/student/identity-onboarding*`, `/api/student/requirement-vault*`
+- APIs: `/api/student/identity-onboarding*`, `/api/face-reviews*`, `/api/student/requirement-vault*`
 
 ### Env vars
 
 ```
 OCR_SERVICE_URL=http://127.0.0.1:8001
 OCR_SERVICE_TIMEOUT=120
-OCR_SPACE_API_KEY=           # preferred for ID card OCR when set
+OCR_SPACE_API_KEY=           # leave empty in local/dev (free) so PHP always uses ocr-service :8001
 OCR_SPACE_TIMEOUT=60
 TCC_REGISTRAR_DOMAINS=registrar.tcc.edu.ph,sis.tcc.edu.ph,tcc.edu.ph
 VITE_TCC_REGISTRAR_DOMAINS=registrar.tcc.edu.ph,sis.tcc.edu.ph,tcc.edu.ph
 AUTHENTICITY_SERVICE_URL=    # optional Pillow/moire microservice
 IDENTITY_FACE_MATCH_THRESHOLD=0.5
-GRADESLIP_QR_PYTHON=         # optional; defaults to python/.venv then system python
+IDENTITY_FACE_PASS_MAX=0.45
+IDENTITY_FACE_REVIEW_MAX=0.60
+GRADESLIP_QR_PYTHON=         # optional; defaults to python/.venv then system python (same ZBar caveats as ocr-service)
 GRADESLIP_QR_TIMEOUT=60
 TCC_UNIFAST_N8N_WEBHOOK_URL= # optional post-confirm pipeline webhook
 TCC_UNIFAST_N8N_WEBHOOK_HEADER=X-TCC-UniFAST-Key
 TCC_UNIFAST_N8N_WEBHOOK_SECRET=
 ```
+
+**Dev ports:** Laravel `:8000`, Vite `:5173`, OCR uvicorn `:8001` only (never bind PHP on 8001). School ID back QR is best-effort via pyzbar/OpenCV and is not required to pass onboarding.
+
+---
+
+## Testing — force uncertain face zone
+
+Defaults: `IDENTITY_FACE_PASS_MAX=0.45`, `IDENTITY_FACE_REVIEW_MAX=0.60`.
+
+| Goal | How |
+| --- | --- |
+| Force **uncertain** (staff review) | Temporarily set `IDENTITY_FACE_PASS_MAX=0.01` in `backend/.env` (or Policy Settings → Identity) so a normal same-person match (~0.2–0.4) lands in the review band; **or** lower `IDENTITY_FACE_REVIEW_MAX` so the band is tiny and use a slightly different angle/lighting. Restart PHP / clear config cache after env changes. |
+| Staff queue | Sign in as staff/admin → `/app/face-reviews` → open row → compare ID face vs selfie → Approve (activate) or Reject (block). |
+| Student waiting screen | `/student/onboarding/pending-review` — copy must say **uncertain ≠ blocked**. |
+| Restore defaults | `IDENTITY_FACE_PASS_MAX=0.45` and `IDENTITY_FACE_REVIEW_MAX=0.60` (or clear policy overrides). |
+
+Vault / requirement face checks still use `IDENTITY_FACE_MATCH_THRESHOLD` only.
+
+---
+
+## Test accounts (ActivationTestGranteesSeeder)
+
+Seed:
+
+```powershell
+cd C:\Users\BRANDON\Downloads\tcc-unifast\backend
+C:\php84\php.exe artisan db:seed --class=ActivationTestGranteesSeeder
+```
+
+| Student ID | Email | Temp password | After seed |
+| --- | --- | --- | --- |
+| `2026-ACT01` | `activate1@tcc.edu.ph` | `TCC-TEST-ACT1` | `unverified` — use printed activation URL/TOKEN from seeder output |
+| `2026-ACT02` | `activate2@tcc.edu.ph` | `TCC-TEST-ACT1` | same |
+| `2026-ACT03` | `activate3@tcc.edu.ph` | `TCC-TEST-ACT1` | same |
+| `2026-ACT04` | `activate4@tcc.edu.ph` | `TCC-TEST-ACT1` | same |
+
+Flow after opening the activation URL:
+
+1. Temp password `TCC-TEST-ACT1` → set a new password → KYC (`pending_identity`) — ready for **ID scan**
+2. ID scan pass → `pending_liveness` — ready for **liveness**
+3. Liveness confident → `active`; uncertain → `pending_face_review` (staff `/app/face-reviews`); mismatch → retry liveness (not blocked)
+
+Re-running the seeder resets users to `unverified`, invalidates unused tokens, and prints fresh activation links.
 
