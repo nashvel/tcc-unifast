@@ -4,6 +4,7 @@ import { useRoute, useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { ArrowRight, ChevronDown, ChevronUp, Eye, EyeOff, HelpCircle, Lock, Mail, ShieldCheck, UserRound } from "lucide-vue-next";
 import logo from "@/assets/system-logo.webp";
+import backgroundLogo from "@/assets/auth/imresizer-TCC_UNIFAST.png";
 import studentsCutout from "@/assets/auth/Faculties_UNifast1.webp";
 import { authSession } from "@/auth/session";
 import { studentHomePath } from "@/auth/onboardingResume";
@@ -209,6 +210,15 @@ onUnmounted(() => {
           {{ t("auth.heroDescription") }}
         </p>
       </div>
+
+      <!-- Large Watermark Logo Behind Image -->
+      <img
+        :src="backgroundLogo"
+        alt="Watermark"
+        class="absolute left-1/2 top-1/2 z-0 w-[80%] max-w-lg -translate-x-1/2 -translate-y-[35%] object-contain transition-all duration-1000"
+        :class="activeSlide === 'image' ? 'scale-100 opacity-100' : 'scale-75 opacity-0 pointer-events-none'"
+      />
+
       <img
         :src="studentsCutout"
         alt="Tagoloan Community College students"
