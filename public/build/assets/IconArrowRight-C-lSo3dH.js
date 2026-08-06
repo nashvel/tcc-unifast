@@ -1,1 +1,0 @@
-import{c as r}from"./createVueComponent-C18BaF1-.js";var o=r("outline","arrow-right","ArrowRight",[["path",{d:"M5 12l14 0",key:"svg-0"}],["path",{d:"M13 18l6 -6",key:"svg-1"}],["path",{d:"M13 6l6 6",key:"svg-2"}]]);export{o as I};
