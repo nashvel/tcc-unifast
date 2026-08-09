@@ -166,6 +166,15 @@ async function signOut() {
   await router.push(withLang("/login", route.query.lang));
 }
 
+async function goToProfile() {
+  profile.value = false; // close the dropdown
+  if (isStudent.value) {
+    await router.push(withLang("/student/profile", route.query.lang));
+  } else {
+    await router.push(withLang("/app/settings", route.query.lang));
+  }
+}
+
 // Apply dev-dark for developers on mount
 watch(
   isDeveloper,
@@ -306,7 +315,7 @@ if (dark.value && typeof document !== "undefined") {
 
         <div class="flex-1" />
 
-        <LanguageSwitcher :dark="isDeveloper" />
+
 
         <button
           class="rounded-md p-2"
@@ -451,9 +460,14 @@ if (dark.value && typeof document !== "undefined") {
                 'flex w-full items-center gap-2 rounded px-2.5 py-1.5 text-sm',
                 isDeveloper ? 'text-[var(--text)] hover:bg-[var(--surface-muted)]' : 'hover:bg-surface-muted',
               ]"
+              @click="goToProfile"
             >
               <IconUserCircle :size="15" /> {{ t("common.profile") }}</button
-            ><button
+            >
+            <div :class="['my-1 flex justify-start border-y px-2.5 py-2', isDeveloper ? 'border-[var(--border)]' : 'border-surface-muted']">
+              <LanguageSwitcher :dark="isDeveloper" class="w-full" />
+            </div>
+            <button
               :class="[
                 'flex w-full items-center gap-2 rounded px-2.5 py-1.5 text-sm text-danger',
                 isDeveloper ? 'hover:bg-[var(--surface-muted)]' : 'hover:bg-surface-muted',

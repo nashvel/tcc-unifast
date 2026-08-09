@@ -18,6 +18,10 @@ import DiceBearAvatar from "@/components/ui/DiceBearAvatar.vue";
 import AppTour from "@/components/tour/AppTour.vue";
 import { apiFetch, ApiError } from "@/api";
 import { toast } from "vue-sonner";
+import { useRouter, useRoute } from "vue-router";
+import { logout } from "@/api/auth";
+import { authSession } from "@/auth/session";
+import { withLang } from "@/i18n/routeLang";
 
 type Section = "general" | "organization" | "appearance" | "security" | "sessions";
 
@@ -43,6 +47,14 @@ type PolicySettings = {
 type ProgramFormRow = AcademicProgram & { pass_grade_input: string };
 
 const section = ref<Section>("general");
+const router = useRouter();
+const route = useRoute();
+
+async function signOut() {
+  await logout();
+  authSession.user = null;
+  await router.push(withLang("/login", route.query.lang));
+}
 const dark = ref(
   typeof document !== "undefined" && document.documentElement.classList.contains("dark"),
 );
@@ -252,6 +264,7 @@ onMounted(() => {
         <AppTour />
         <button
           class="inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-xs hover:bg-surface-muted"
+          @click="signOut"
         >
           <IconLogout :size="14" />Sign out
         </button>
@@ -608,7 +621,7 @@ onMounted(() => {
         <section v-else-if="section === 'security'" class="rounded-lg border bg-surface">
           <div class="flex items-center justify-between border-b px-4 py-3">
             <h2 class="text-sm font-semibold">Change Password</h2>
-            <button class="inline-flex items-center gap-1 text-xs">
+            <button class="inline-flex items-center gap-1 text-xs" @click="signOut">
               <IconLogout :size="13" />Sign out
             </button>
           </div>
@@ -640,7 +653,7 @@ onMounted(() => {
           ><section class="rounded-lg border bg-surface">
             <div class="flex justify-between border-b px-4 py-3">
               <h2 class="text-sm font-semibold">Current Session</h2>
-              <button class="inline-flex items-center gap-1 text-xs">
+              <button class="inline-flex items-center gap-1 text-xs" @click="signOut">
                 <IconLogout :size="13" />Sign out
               </button>
             </div>
