@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { apiUrl } from "@/api/client";
+import { apiUrl, ensureCsrfCookie } from "@/api/client";
 import { onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
@@ -7,13 +7,11 @@ import {
   IconAlertTriangle,
   IconEye,
   IconEyeOff,
-  IconKey,
   IconMail,
   IconShieldCheck,
 } from "@tabler/icons-vue";
 import AuthLayout from "./AuthLayout.vue";
 import { authSession } from "@/auth/session";
-import { setAuthToken } from "@/auth/session";
 import { withLang } from "@/i18n/routeLang";
 
 type ActivationPreview = {
@@ -29,10 +27,8 @@ const router = useRouter();
 const { t } = useI18n();
 const token = String(route.params.token ?? "");
 const preview = ref<ActivationPreview | null>(null);
-const temporaryPassword = ref("");
 const password = ref("");
 const passwordConfirmation = ref("");
-const showTemporaryPassword = ref(false);
 const showPassword = ref(false);
 const showPasswordConfirmation = ref(false);
 const loading = ref(Boolean(token));
@@ -48,6 +44,7 @@ onMounted(async () => {
 
   try {
     const response = await fetch(apiUrl(`/api/activation/${token}`), {
+      credentials: "include",
       headers: { Accept: "application/json" },
     });
     const payload = await response.json();
@@ -67,14 +64,15 @@ async function activate() {
   error.value = "";
 
   try {
+    await ensureCsrfCookie();
     const response = await fetch(apiUrl(`/api/activation/${token}`), {
       method: "POST",
+      credentials: "include",
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
       },
       body: JSON.stringify({
-        temporary_password: temporaryPassword.value,
         password: password.value,
         password_confirmation: passwordConfirmation.value,
       }),
@@ -86,11 +84,10 @@ async function activate() {
         : payload.message;
       throw new Error(String(fieldError || t("auth.activationFailed")));
     }
-    if (!payload.token || typeof payload.token !== "string") {
-      throw new Error(t("auth.activationFailed") + " (missing auth token)");
+    if (!payload.user) {
+      throw new Error(t("auth.activationFailed"));
     }
-    // Sanctum Bearer must be set before any KYC / onboarding API call (LAN has no session cookies).
-    setAuthToken(payload.token);
+    // HttpOnly access/refresh cookies set by the API — no token in JS storage.
     authSession.user = payload.user;
     authSession.loaded = true;
     await router.push(withLang("/student/kyc", route.query.lang));
@@ -130,29 +127,6 @@ async function activate() {
         </p>
       </article>
 
-      <label class="block">
-        <span class="mb-1.5 block text-xs font-medium">{{ t("auth.temporaryPassword") }} *</span>
-        <span class="relative block">
-          <IconKey :size="15" class="absolute left-3 top-1/2 -translate-y-1/2 text-text-soft" />
-          <input
-            v-model="temporaryPassword"
-            :type="showTemporaryPassword ? 'text' : 'password'"
-            placeholder="TCC-8F4K-29QZ"
-            autocomplete="current-password"
-            class="h-10 w-full rounded-md border pl-9 pr-10 text-sm"
-          />
-          <button
-            type="button"
-            class="absolute right-2 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded text-text-soft hover:text-text"
-            :aria-label="showTemporaryPassword ? t('common.hidePassword') : t('common.showPassword')"
-            :aria-pressed="showTemporaryPassword"
-            @click="showTemporaryPassword = !showTemporaryPassword"
-          >
-            <IconEyeOff v-if="showTemporaryPassword" :size="16" />
-            <IconEye v-else :size="16" />
-          </button>
-        </span>
-      </label>
       <label class="block">
         <span class="mb-1.5 block text-xs font-medium">{{ t("auth.newPassword") }} *</span>
         <span class="relative block">

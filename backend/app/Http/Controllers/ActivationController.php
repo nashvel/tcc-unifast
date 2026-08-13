@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ActivationToken;
+use App\Services\AuthTokenService;
 use App\Services\StudentOnboardingNavigator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -27,21 +28,19 @@ class ActivationController extends Controller
         ]);
     }
 
-    public function activate(Request $request, string $token, StudentOnboardingNavigator $navigator): JsonResponse
-    {
+    public function activate(
+        Request $request,
+        string $token,
+        StudentOnboardingNavigator $navigator,
+        AuthTokenService $tokens,
+    ): JsonResponse {
         $validated = $request->validate([
-            'temporary_password' => ['required', 'string'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
         ]);
 
+        // Token is the sole proof of invitation (unused + unexpired). No temporary password.
         $activation = $this->findValidToken($token);
         $user = $activation->user()->firstOrFail();
-
-        if (! Hash::check($validated['temporary_password'], $user->password)) {
-            throw ValidationException::withMessages([
-                'temporary_password' => 'The temporary password is incorrect.',
-            ]);
-        }
 
         $user->forceFill([
             'password' => Hash::make($validated['password']),
@@ -52,9 +51,12 @@ class ActivationController extends Controller
 
         $activation->update(['used_at' => now()]);
 
-        // SPA + LAN: issue Sanctum Bearer token only (no session middleware on this route).
-        $plainToken = $user->createToken('auth-token')->plainTextToken;
-        $next = $navigator->nextStep($user->fresh());
+        // Kill any prior sessions, then issue HttpOnly access + refresh cookies.
+        $tokens->revokeAll($user);
+        $tokens->issuePair($user->fresh(), $request);
+
+        $user = $user->fresh();
+        $next = $navigator->nextStep($user);
 
         return response()->json([
             'user' => [
@@ -63,7 +65,6 @@ class ActivationController extends Controller
                 'onboarding_next_step' => $next,
                 'onboarding_path' => $navigator->frontendPath($next),
             ],
-            'token' => $plainToken,
         ]);
     }
 

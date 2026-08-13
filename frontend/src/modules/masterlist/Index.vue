@@ -13,7 +13,6 @@ import DataTable from "@/components/tables/DataTable.vue";
 import TablePagination from "@/components/tables/TablePagination.vue";
 import PageHeader from "@/components/ui/PageHeader.vue";
 import AppDialog from "@/components/dialogs/AppDialog.vue";
-import { getAuthToken } from "@/auth/session";
 import {
   apiFetch,
   buildQuery,
@@ -207,7 +206,8 @@ async function previewImport() {
   try {
     const response = await fetch(apiUrl("/api/masterlist/imports/preview"), {
       method: "POST",
-      headers: { Authorization: `Bearer ${getAuthToken()}`, Accept: "application/json" },
+      headers: { Accept: "application/json" },
+      credentials: "include",
       body,
     });
     const payload = await response.json();
@@ -233,7 +233,8 @@ async function confirmImport(close: () => void) {
   try {
     const response = await fetch(apiUrl(`/api/masterlist/imports/${preview.value.id}/confirm`), {
       method: "POST",
-      headers: { Authorization: `Bearer ${getAuthToken()}`, Accept: "application/json" },
+      headers: { Accept: "application/json" },
+      credentials: "include",
     });
     const payload = await response.json();
     if (!response.ok && response.status !== 207) {
@@ -265,7 +266,8 @@ async function deleteImport() {
   try {
     const response = await fetch(apiUrl(`/api/masterlist/imports/${deletingImport.value.id}`), {
       method: "DELETE",
-      headers: { Authorization: `Bearer ${getAuthToken()}`, Accept: "application/json" },
+      headers: { Accept: "application/json" },
+      credentials: "include",
     });
     const payload = await response.json();
     if (!response.ok) throw new Error(payload.message || "Unable to delete import.");

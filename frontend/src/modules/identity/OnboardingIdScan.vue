@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { apiUrl } from "@/api/client";
+import { apiFetch, apiUrl } from "@/api/client";
 import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
-import { authSession, getAuthToken } from "@/auth/session";
+import { authSession } from "@/auth/session";
 import { toast } from "@/composables/useToast";
 import SchoolIdCaptureFlow, {
   type SchoolIdCaptureComplete,
@@ -38,13 +38,7 @@ onMounted(async () => {
 
   // Server is source of truth — block camera if KYC/ID prerequisites fail.
   try {
-    const token = getAuthToken();
-    if (!token) throw new Error("Unauthenticated.");
-    const response = await fetch(apiUrl("/api/student/identity-onboarding"), {
-      headers: { Accept: "application/json", Authorization: `Bearer ${token}` },
-    });
-    const payload = await response.json();
-    if (!response.ok) throw new Error(payload.message || "Unable to load onboarding status.");
+    const payload = await apiFetch<{ data: { next_step: string } }>("/api/student/identity-onboarding");
     const next = payload.data.next_step as string;
     if (next === "kyc") {
       await router.replace("/student/kyc");
@@ -79,17 +73,13 @@ function payloadMessage(payload: unknown, fallback: string) {
 }
 
 async function onFrontOcr(blob: Blob) {
-  const token = getAuthToken();
-  if (!token) {
-    throw new Error("Unauthenticated. Activate or sign in again, then retry the ID scan.");
-  }
-
   const body = new FormData();
   body.append("id_frame", new File([blob], "id_onboarding_front.jpg", { type: "image/jpeg" }));
 
   const response = await fetch(apiUrl("/api/student/identity-onboarding/id-scan/ocr-front"), {
     method: "POST",
-    headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+    headers: { Accept: "application/json" },
+    credentials: "include",
     body,
   });
   const payload = await response.json();
@@ -102,11 +92,6 @@ async function onFrontOcr(blob: Blob) {
 }
 
 async function onComplete(payload: SchoolIdCaptureComplete) {
-  const token = getAuthToken();
-  if (!token) {
-    throw new Error("Unauthenticated. Activate or sign in again, then retry the ID scan.");
-  }
-
   const body = new FormData();
   body.append("id_frame", new File([payload.front], "id_onboarding_front.jpg", { type: "image/jpeg" }));
   body.append("id_back", new File([payload.back], "id_onboarding_back.jpg", { type: "image/jpeg" }));
@@ -122,7 +107,8 @@ async function onComplete(payload: SchoolIdCaptureComplete) {
 
   const response = await fetch(apiUrl("/api/student/identity-onboarding/id-scan"), {
     method: "POST",
-    headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+    headers: { Accept: "application/json" },
+    credentials: "include",
     body,
   });
   const result = await response.json();

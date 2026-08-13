@@ -4,7 +4,6 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue"
 import { IconAlertTriangle, IconCamera, IconCheck, IconId, IconInfoCircle, IconRefresh } from "@tabler/icons-vue";
 import AppDialog from "@/components/dialogs/AppDialog.vue";
 import PageHeader from "@/components/ui/PageHeader.vue";
-import { getAuthToken } from "@/auth/session";
 import { useSuccessOverlay } from "@/composables/useSuccessOverlay";
 import { toast } from "@/composables/useToast";
 import { getUserMediaSafe } from "@/modules/requirements/cameraAccess";
@@ -293,11 +292,11 @@ function setPreview(which: CaptureSide, blob: Blob) {
 
 async function checkOcrHealth() {
   ocrHealthChecking.value = true;
-  const token = getAuthToken();
   try {
-    const headers: HeadersInit = { Accept: "application/json" };
-    if (token) headers.Authorization = `Bearer ${token}`;
-    const response = await fetch(apiUrl("/api/student/identity-onboarding/ocr-health"), { headers });
+    const response = await fetch(apiUrl("/api/student/identity-onboarding/ocr-health"), {
+      headers: { Accept: "application/json" },
+      credentials: "include",
+    });
     const payload = await response.json();
     const ok = Boolean(payload?.data?.ok);
     ocrHealthOk.value = ok;

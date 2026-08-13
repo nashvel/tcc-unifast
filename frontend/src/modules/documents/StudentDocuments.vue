@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { apiUrl } from "@/api/client";
+import { apiFetch, apiUrl } from "@/api/client";
 import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import {
@@ -16,7 +16,6 @@ import {
 import AppDialog from "@/components/dialogs/AppDialog.vue";
 import PageHeader from "@/components/ui/PageHeader.vue";
 import CardSkeleton from "@/components/ui/CardSkeleton.vue";
-import { getAuthToken } from "@/auth/session";
 import { toast } from "@/composables/useToast";
 import { withLang } from "@/i18n/routeLang";
 import { markVaultSchoolIdScanReady } from "@/modules/documents/vaultSchoolIdScanGate";
@@ -191,15 +190,7 @@ async function loadVault(options: { quiet?: boolean } = {}) {
   if (!options.quiet) loading.value = true;
   error.value = "";
   try {
-    const response = await fetch(apiUrl("/api/student/requirement-vault"), {
-      headers: {
-        Accept: "application/json",
-        Authorization: `Bearer ${getAuthToken()}`,
-      },
-      credentials: "include",
-    });
-    const payload = (await response.json()) as VaultResponse & { message?: string; errors?: Record<string, string[]> };
-    if (!response.ok) throw new Error(payloadMessage(payload, "Unable to load the requirement vault."));
+    const payload = await apiFetch<VaultResponse>("/api/student/requirement-vault");
     windowOpen.value = Boolean(payload.window?.open);
     windowMessage.value = payload.window?.message || "";
     granteeStatus.value = payload.grantee?.submission_status || "not_submitted";
@@ -432,16 +423,12 @@ async function confirmSubmission() {
   error.value = "";
   success.value = "";
   try {
-    const response = await fetch(apiUrl("/api/student/requirement-vault/confirm"), {
+    const payload = await apiFetch<{
+      grantee?: { submission_status?: string };
+      identity_check?: typeof identityCheck.value;
+    }>("/api/student/requirement-vault/confirm", {
       method: "POST",
-      headers: {
-        Accept: "application/json",
-        Authorization: `Bearer ${getAuthToken()}`,
-      },
-      credentials: "include",
     });
-    const payload = await response.json();
-    if (!response.ok) throw new Error(payloadMessage(payload, "Unable to submit requirements."));
     granteeStatus.value = payload.grantee?.submission_status || "docs_submitted";
     if (payload.identity_check) identityCheck.value = payload.identity_check;
     confirmDialog.value = false;
@@ -490,7 +477,7 @@ async function uploadDocument(
     body.append("file", file);
     const response = await fetch(apiUrl("/api/student/requirement-vault/document"), {
       method: "POST",
-      headers: { Authorization: `Bearer ${getAuthToken()}`, Accept: "application/json" },
+      headers: { Accept: "application/json" },
       body,
       credentials: "include",
     });
@@ -529,18 +516,13 @@ async function resubmitSlot(
   error.value = "";
   success.value = "";
   try {
-    const response = await fetch(apiUrl("/api/student/requirement-vault/resubmit-slot"), {
+    const payload = await apiFetch<{
+      data?: VaultDocument;
+      grantee?: { submission_status?: string };
+    }>("/api/student/requirement-vault/resubmit-slot", {
       method: "POST",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${getAuthToken()}`,
-      },
-      credentials: "include",
       body: JSON.stringify({ slot_key: slotKey }),
     });
-    const payload = await response.json();
-    if (!response.ok) throw new Error(payloadMessage(payload, `Unable to resubmit ${label}.`));
     if (payload.data) {
       slots.value = { ...slots.value, [slotKey]: payload.data as VaultDocument };
     }

@@ -903,15 +903,13 @@ async function descriptorFromUrlOnce(url: string): Promise<FaceDescriptorResult>
   await loadFaceModels();
   const api = await faceApi();
 
-  // Authenticated API photo routes need a Bearer fetch; <img> cannot send tokens.
+  // Authenticated API photo routes need cookie credentials; <img> cannot send them.
   if (url.includes("/api/") && !url.includes("signature=")) {
-    const { getAuthToken } = await import("@/auth/session");
     let response: Response;
     try {
       response = await fetch(url, {
         headers: {
           Accept: "image/*,application/octet-stream",
-          Authorization: `Bearer ${getAuthToken() || ""}`,
         },
         credentials: "include",
       });

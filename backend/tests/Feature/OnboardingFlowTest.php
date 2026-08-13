@@ -13,6 +13,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class OnboardingFlowTest extends TestCase
@@ -114,13 +115,13 @@ $admin = User::factory()->create(['role' => 'admin', 'account_status' => 'active
         $this->assertDatabaseCount('activation_tokens', 1);
     }
 
-    public function test_activation_requires_temporary_password_and_moves_student_to_kyc(): void
+    public function test_activation_with_token_only_moves_student_to_kyc(): void
     {
         $student = User::factory()->create([
             'role' => 'student',
             'student_id' => 'STU-1',
             'account_status' => 'unverified',
-            'password' => Hash::make('TCC-ABCD-EFGH'),
+            'password' => Hash::make(Str::random(32)),
         ]);
         $plainToken = 'activation-token';
         ActivationToken::create([
@@ -130,23 +131,25 @@ $admin = User::factory()->create(['role' => 'admin', 'account_status' => 'active
         ]);
 
         $this->postJson("/api/activation/{$plainToken}", [
-            'temporary_password' => 'wrong',
             'password' => 'new-password',
-            'password_confirmation' => 'new-password',
+            'password_confirmation' => 'mismatch',
         ])->assertUnprocessable();
 
         $this->postJson("/api/activation/{$plainToken}", [
-            'temporary_password' => 'TCC-ABCD-EFGH',
             'password' => 'new-password',
             'password_confirmation' => 'new-password',
         ])->assertOk()
             ->assertJsonPath('user.account_status', 'pending_kyc')
-            ->assertJsonStructure(['token', 'user' => ['id', 'email', 'account_status']]);
+            ->assertJsonStructure(['user' => ['id', 'email', 'account_status']])
+            ->assertJsonMissingPath('token')
+            ->assertPlainCookie(config('services.auth.access_cookie'))
+            ->assertPlainCookie(config('services.auth.refresh_cookie'));
 
         $this->assertDatabaseHas('personal_access_tokens', [
             'tokenable_id' => $student->id,
             'tokenable_type' => User::class,
         ]);
+        $this->assertDatabaseCount('refresh_tokens', 1);
     }
 
     public function test_kyc_cross_checks_typed_identity_against_masterlist(): void

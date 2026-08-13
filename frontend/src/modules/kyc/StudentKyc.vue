@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { apiUrl } from "@/api/client";
+import { apiFetch } from "@/api/client";
 import { onMounted, reactive, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { IconAlertTriangle, IconCheck, IconSchool, IconUser } from "@tabler/icons-vue";
 import PageHeader from "@/components/ui/PageHeader.vue";
 import CardSkeleton from "@/components/ui/CardSkeleton.vue";
-import { authSession, getAuthToken } from "@/auth/session";
+import { authSession } from "@/auth/session";
 import { toast } from "@/composables/useToast";
 import { withLang } from "@/i18n/routeLang";
 
@@ -37,15 +37,15 @@ onMounted(loadKyc);
 
 async function loadKyc() {
   try {
-    const token = getAuthToken();
-    if (!token) {
-      throw new Error("Unauthenticated. Activate or sign in again, then retry KYC.");
-    }
-    const response = await fetch(apiUrl("/api/student/kyc"), {
-      headers: { Accept: "application/json", Authorization: `Bearer ${token}` },
-    });
-    const payload = await response.json();
-    if (!response.ok) throw new Error(payload.message || "Unable to load KYC profile.");
+    const payload = await apiFetch<{
+      data: {
+        programs?: ProgramOption[];
+        year_level_options?: string[];
+        hint?: { student_id_last4?: string | null };
+        next_step?: string;
+        profile?: Record<string, string | null>;
+      };
+    }>("/api/student/kyc");
 
     programs.value = payload.data.programs || [];
     yearOptions.value = payload.data.year_level_options || ["1", "2", "3", "4"];
@@ -90,20 +90,16 @@ async function submit() {
   error.value = "";
 
   try {
-    const token = getAuthToken();
-    if (!token) {
-      throw new Error("Unauthenticated. Activate or sign in again, then retry KYC.");
-    }
     if (!form.first_name.trim() || !form.last_name.trim() || !form.student_id.trim() || !form.program) {
       throw new Error("Enter your first name, last name, student ID, and program.");
     }
-    const response = await fetch(apiUrl("/api/student/kyc"), {
+    const payload = await apiFetch<{
+      data: {
+        account_status: AuthAccountStatus;
+        status: string;
+      };
+    }>("/api/student/kyc", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-        Accept: "application/json",
-      },
       body: JSON.stringify({
         first_name: form.first_name.trim(),
         middle_name: form.middle_name.trim() || null,
@@ -118,11 +114,6 @@ async function submit() {
         household_income: form.household_income === "" ? null : Number(form.household_income),
       }),
     });
-    const payload = await response.json();
-    if (!response.ok) {
-      const validation = payload.errors ? Object.values(payload.errors).flat().join(" ") : "";
-      throw new Error(validation || payload.message || "Unable to validate KYC profile.");
-    }
     authSession.user = authSession.user
       ? {
           ...authSession.user,

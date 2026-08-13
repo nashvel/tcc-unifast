@@ -17,8 +17,7 @@ import PageHeader from "@/components/ui/PageHeader.vue";
 import EmptyState from "@/components/ui/EmptyState.vue";
 import CardSkeleton from "@/components/ui/CardSkeleton.vue";
 import TablePagination from "@/components/tables/TablePagination.vue";
-import { apiUrl } from "@/api/client";
-import { getAuthToken } from "@/auth/session";
+import { apiFetch, apiFetchBlob } from "@/api/client";
 import { toast } from "@/composables/useToast";
 
 type Tab = "requirements" | "imports";
@@ -195,13 +194,13 @@ async function loadFiles() {
     if (debouncedSearch.value.trim()) params.set("search", debouncedSearch.value.trim());
     if (batchId.value) params.set("batch_id", batchId.value);
 
-    const response = await fetch(apiUrl(`/api/files?${params}`), {
-      headers: { Authorization: `Bearer ${getAuthToken()}`, Accept: "application/json" },
-    });
-    const payload = await response.json();
-    if (!response.ok) {
-      throw new Error(payload.message || "Unable to load files.");
-    }
+    const payload = await apiFetch<{
+      summary?: typeof summary.value;
+      batches?: typeof batches.value;
+      meta?: typeof meta.value;
+      data?: RequirementFile[] | ImportFile[];
+      message?: string;
+    }>(`/api/files?${params}`);
 
     summary.value = payload.summary || summary.value;
     batches.value = payload.batches || [];
@@ -263,12 +262,8 @@ function revokePreview() {
 }
 
 async function fetchAuthBlob(url: string): Promise<{ objectUrl: string; mime: string | null }> {
-  const response = await fetch(apiUrl(url), {
-    headers: {
-      Accept: "*/*",
-      Authorization: `Bearer ${getAuthToken() || ""}`,
-    },
-    credentials: "include",
+  const response = await apiFetchBlob(url, {
+    headers: { Accept: "*/*" },
   });
   if (!response.ok) {
     throw new Error("Unable to load file.");

@@ -7,9 +7,8 @@ import PageHeader from "@/components/ui/PageHeader.vue";
 import CardSkeleton from "@/components/ui/CardSkeleton.vue";
 import EmptyState from "@/components/ui/EmptyState.vue";
 import { useDocumentDetail, useDocumentPackage } from "@/composables/useDocuments";
-import { apiFetch, queryKeys } from "@/api";
+import { apiFetch, apiFetchBlob, queryKeys } from "@/api";
 import type { DocSubmissionDetail } from "@/api";
-import { getAuthToken } from "@/auth/session";
 import { toast } from "@/composables/useToast";
 import { scheduleUndo } from "@/composables/useUndo";
 import { useBreadcrumbTail } from "@/composables/useBreadcrumbTail";
@@ -529,12 +528,8 @@ function revokePreviewUrls() {
 
 async function fetchAuthBlob(url: string | null | undefined): Promise<string | null> {
   if (!url) return null;
-  const response = await fetch(url, {
-    headers: {
-      Accept: "*/*",
-      Authorization: `Bearer ${getAuthToken()}`,
-    },
-    credentials: "include",
+  const response = await apiFetchBlob(url, {
+    headers: { Accept: "*/*" },
   });
   if (!response.ok) return null;
   const blob = await response.blob();

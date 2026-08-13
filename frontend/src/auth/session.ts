@@ -19,28 +19,29 @@ export type AuthUser = {
   onboarding_path?: string;
 };
 
-const TOKEN_KEY = "unifast_auth_token";
+/** In-memory mock-only session flag (never used for real auth cookies). */
+const MOCK_SESSION_KEY = "unifast_mock_session";
 
 export const authSession = reactive<{ user: AuthUser | null; loaded: boolean }>({
   user: null,
   loaded: false,
 });
 
-export function getAuthToken(): string | null {
-  if (typeof localStorage === "undefined") return null;
-  return localStorage.getItem(TOKEN_KEY);
+export function hasMockSession(): boolean {
+  if (typeof sessionStorage === "undefined") return false;
+  return sessionStorage.getItem(MOCK_SESSION_KEY) === "1";
 }
 
-export function setAuthToken(token: string) {
-  localStorage.setItem(TOKEN_KEY, token);
+export function setMockSession(active: boolean) {
+  if (typeof sessionStorage === "undefined") return;
+  if (active) sessionStorage.setItem(MOCK_SESSION_KEY, "1");
+  else sessionStorage.removeItem(MOCK_SESSION_KEY);
 }
 
-export function clearAuthToken() {
-  localStorage.removeItem(TOKEN_KEY);
+export function clearAuthSession() {
+  authSession.user = null;
+  setMockSession(false);
 }
-
-/** @deprecated Use getAuthToken() instead. Kept for backward compatibility. */
-export const csrfToken = getAuthToken;
 
 export async function loadAuthUser() {
   authSession.user = await fetchCurrentUser();

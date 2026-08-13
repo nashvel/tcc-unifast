@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 use App\Http\Controllers\AcademicProgramController;
 use App\Http\Controllers\AcademicRecordController;
@@ -34,23 +34,28 @@ use App\Http\Controllers\StudentNotificationController;
 use App\Http\Controllers\StudentSubmissionWindowController;
 use App\Http\Controllers\TccUnifastStudentsController;
 use App\Http\Controllers\TccUnifastSyncController;
+use App\Http\Controllers\FormController;
+use App\Http\Controllers\FormFieldController;
+use App\Http\Controllers\FormResponseController;
+use App\Http\Controllers\FormSecurityLogController;
+use App\Http\Controllers\GranteeFormController;
+use App\Http\Controllers\PublicFormController;
+use App\Http\Middleware\FormSecurityHeaders;
 use App\Support\VaultFileStorage;
-use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
-use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Route;
 
-// Public routes (no auth required)
+// Public auth routes (session for CSRF; cookies via api middleware stack)
 Route::middleware([
-    EncryptCookies::class,
-    AddQueuedCookiesToResponse::class,
     StartSession::class,
 ])->group(function (): void {
     Route::post('/auth/login', [AuthController::class, 'login'])
         ->middleware('throttle:'.config('services.auth.login_throttle_per_minute', 5).',1');
+    Route::post('/auth/refresh', [AuthController::class, 'refresh'])
+        ->middleware('throttle:'.config('services.auth.refresh_throttle_per_minute', 30).',1');
+    Route::get('/activation/{token}', [ActivationController::class, 'show'])->middleware('throttle:20,1');
+    Route::post('/activation/{token}', [ActivationController::class, 'activate'])->middleware('throttle:10,1');
 });
-Route::get('/activation/{token}', [ActivationController::class, 'show'])->middleware('throttle:20,1');
-Route::post('/activation/{token}', [ActivationController::class, 'activate'])->middleware('throttle:10,1');
 
 // Public content (for login page)
 Route::get('/terms/active', [TermController::class, 'active']);
@@ -241,3 +246,60 @@ Route::post('/integrations/n8n/tcc-unifast/sync', TccUnifastSyncController::clas
 Route::get('/integrations/n8n/tcc-unifast/students', TccUnifastStudentsController::class)
     ->middleware('throttle:120,1')
     ->name('integrations.n8n.tcc-unifast.students');
+
+// ══════════════════════════════════════════════════════════════
+// Dynamic Form Creation Module
+// ══════════════════════════════════════════════════════════════
+
+// Public form endpoints — no authentication required
+Route::middleware(['throttle:30,1', FormSecurityHeaders::class])->group(function (): void {
+    Route::get('/forms/public/{token}', [PublicFormController::class, 'show']);
+    Route::post('/forms/public/{token}/responses', [PublicFormController::class, 'store'])
+        ->middleware('throttle:5,1');
+});
+
+// Authenticated form endpoints
+Route::middleware(['auth:sanctum', FormSecurityHeaders::class])->group(function (): void {
+
+    // ── Grantee portal ───────────────────────────────────────────────
+    Route::middleware('role:student')->group(function (): void {
+        Route::get('/forms/assigned', [GranteeFormController::class, 'assigned']);
+        Route::get('/forms/{id}/schema', [GranteeFormController::class, 'schema'])
+            ->whereNumber('id');
+        Route::post('/forms/{id}/responses', [GranteeFormController::class, 'submit'])
+            ->whereNumber('id')
+            ->middleware('throttle:10,1');
+    });
+
+    // ── Staff — response viewing only ────────────────────────────────
+    Route::middleware('role:developer,admin,head,staff')->group(function (): void {
+        Route::get('/forms/{id}/responses', [FormResponseController::class, 'index'])
+            ->whereNumber('id');
+        Route::get('/forms/{id}/responses/{rid}', [FormResponseController::class, 'show'])
+            ->whereNumber('id')->whereNumber('rid');
+    });
+
+    // ── Admin form management ────────────────────────────────────────
+    Route::middleware('role:developer,admin')->prefix('forms')->group(function (): void {
+        // Form CRUD
+        Route::get('/', [FormController::class, 'index'])->middleware('throttle:60,1');
+        Route::post('/', [FormController::class, 'store'])->middleware('throttle:60,1');
+        Route::get('/{id}', [FormController::class, 'show'])->whereNumber('id');
+        Route::put('/{id}', [FormController::class, 'update'])->whereNumber('id')->middleware('throttle:60,1');
+        Route::delete('/{id}', [FormController::class, 'destroy'])->whereNumber('id')->middleware('throttle:60,1');
+        Route::patch('/{id}/toggle', [FormController::class, 'toggle'])->whereNumber('id')->middleware('throttle:60,1');
+        Route::patch('/{id}/regenerate-token', [FormController::class, 'regenerateToken'])->whereNumber('id')->middleware('throttle:20,1');
+
+        // Field management
+        Route::post('/{id}/fields', [FormFieldController::class, 'store'])->whereNumber('id')->middleware('throttle:60,1');
+        Route::put('/{id}/fields/{fid}', [FormFieldController::class, 'update'])->whereNumber('id')->whereNumber('fid')->middleware('throttle:60,1');
+        Route::delete('/{id}/fields/{fid}', [FormFieldController::class, 'destroy'])->whereNumber('id')->whereNumber('fid')->middleware('throttle:60,1');
+        Route::patch('/{id}/fields/reorder', [FormFieldController::class, 'reorder'])->whereNumber('id')->middleware('throttle:60,1');
+
+        // Response export (admin only)
+        Route::get('/{id}/responses/export', [FormResponseController::class, 'export'])->whereNumber('id');
+
+        // Security logs (admin only)
+        Route::get('/{id}/security-logs', [FormSecurityLogController::class, 'index'])->whereNumber('id');
+    });
+});

@@ -3,7 +3,8 @@ import { onBeforeUnmount, onMounted } from "vue";
 import { IconClockHour4 } from "@tabler/icons-vue";
 import { useRoute, useRouter } from "vue-router";
 import PageHeader from "@/components/ui/PageHeader.vue";
-import { authSession, clearAuthToken, loadAuthUser } from "@/auth/session";
+import { authSession, loadAuthUser } from "@/auth/session";
+import { logout } from "@/api/auth";
 import { studentHomePath } from "@/auth/onboardingResume";
 import { withLang } from "@/i18n/routeLang";
 
@@ -34,8 +35,7 @@ async function refreshAndExitIfReady() {
 }
 
 async function signOut() {
-  clearAuthToken();
-  authSession.user = null;
+  await logout();
   await router.push(withLang("/login", route.query.lang));
 }
 

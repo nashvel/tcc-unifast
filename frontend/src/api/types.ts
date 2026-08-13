@@ -360,3 +360,104 @@ export type SubmissionWindow = {
     window_status: string;
   };
 };
+
+// ────────────────────────────────────────────────────────────
+// Dynamic Forms
+// ────────────────────────────────────────────────────────────
+
+export type FieldType =
+  | "text"
+  | "number"
+  | "email"
+  | "select"
+  | "radio"
+  | "checkbox"
+  | "textarea"
+  | "date"
+  | "file";
+
+export type FormField = {
+  id: number;
+  form_id?: number;
+  label: string;
+  field_name: string;
+  field_type: FieldType;
+  placeholder: string | null;
+  options: string[] | null;
+  is_required: boolean;
+  min_value: string | null;
+  max_value: string | null;
+  min_length: number | null;
+  max_length: number | null;
+  accepted_types: string | null;
+  max_file_size: number | null;
+  sort_order: number;
+  is_locked: boolean;
+};
+
+export type Form = {
+  id: number;
+  title: string;
+  description: string | null;
+  visibility: "public" | "private";
+  target_role: "grantee" | "staff" | "all";
+  is_active: boolean;
+  max_submissions: number | null;
+  closes_at: string | null;
+  batch_id: number | null;
+  batch_name: string | null;
+  public_token: string | null;
+  responses_count: number;
+  created_by: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+};
+
+export type FormDetail = Form & {
+  fields: FormField[];
+};
+
+export type FormSchema = {
+  id: number;
+  title: string;
+  description: string | null;
+  closes_at: string | null;
+  already_submitted?: boolean;
+  fields: Omit<FormField, "is_locked" | "sort_order" | "form_id">[];
+};
+
+export type FormResponse = {
+  id: number;
+  grantee_name: string;
+  student_id: string | null;
+  batch_name: string | null;
+  submitted_at: string | null;
+  is_authenticated: boolean;
+  submitter_ip: string | null;
+};
+
+export type FormResponseDetail = FormResponse & {
+  responses: Record<string, unknown>;
+  honeypot_triggered: boolean;
+  submitter_agent: string | null;
+};
+
+export type FormSecurityLog = {
+  id: number;
+  event_type: string;
+  ip_address: string;
+  user_id: number | null;
+  created_at: string | null;
+  payload: Record<string, unknown> | null;
+};
+
+export type AssignedForm = {
+  id: number;
+  title: string;
+  description: string | null;
+  closes_at: string | null;
+  is_closed: boolean;
+  already_submitted: boolean;
+  responses_count: number;
+};
+

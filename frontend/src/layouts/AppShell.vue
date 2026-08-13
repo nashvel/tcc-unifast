@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { useQuery, useQueryClient } from "@tanstack/vue-query";
@@ -13,6 +13,7 @@ import {
   IconSearch,
   IconSun,
   IconUserCircle,
+  IconX,
 } from "@tabler/icons-vue";
 import {
   adminNavigation,
@@ -20,6 +21,7 @@ import {
   lockedStudentNavigation,
   staffNavigation,
   studentNavigation,
+  type NavigationSection,
 } from "@/constants/navigation";
 import logo from "@/assets/system-logo.png";
 import AppBreadcrumbs from "@/components/navigation/AppBreadcrumbs.vue";
@@ -35,6 +37,8 @@ import { ensureEcho, useNotificationChannel } from "@/composables/useEcho";
 import { withLang } from "@/i18n/routeLang";
 
 ensureEcho();
+
+const SEARCH_MAX_LEN = 100;
 
 type ShellNotification = {
   id: number;
@@ -52,6 +56,10 @@ const queryClient = useQueryClient();
 const mobile = ref(false);
 const profile = ref(false);
 const notifications = ref(false);
+const jumpOpen = ref(false);
+const jumpQuery = ref("");
+const jumpInput = ref<HTMLInputElement | null>(null);
+const signingOut = ref(false);
 const isStudent = computed(() => route.path.startsWith("/student"));
 const isDeveloper = computed(() => authSession.user?.role === "developer");
 const role = computed(() => authSession.user?.role ?? "student");
@@ -59,6 +67,60 @@ const user = computed(() => authSession.user);
 const staffNotifyEnabled = computed(
   () => !isStudent.value && ["admin", "head", "staff", "developer"].includes(String(role.value)),
 );
+
+const profilePath = computed(() => {
+  if (isStudent.value) return "/student/profile";
+  if (role.value === "developer") return "/app/developer/settings";
+  return "/app/settings";
+});
+
+type JumpItem = { label: string; path: string; icon: NavigationSection["items"][number]["icon"] };
+
+function closeMenus() {
+  profile.value = false;
+  notifications.value = false;
+}
+
+function openJump() {
+  closeMenus();
+  jumpOpen.value = true;
+  jumpQuery.value = "";
+  void nextTick(() => jumpInput.value?.focus());
+}
+
+function closeJump() {
+  jumpOpen.value = false;
+  jumpQuery.value = "";
+}
+
+function onJumpQueryInput(event: Event) {
+  const value = (event.target as HTMLInputElement).value.slice(0, SEARCH_MAX_LEN);
+  jumpQuery.value = value;
+}
+
+function onGlobalKeydown(event: KeyboardEvent) {
+  const key = event.key.toLowerCase();
+  if ((event.metaKey || event.ctrlKey) && key === "k") {
+    event.preventDefault();
+    if (jumpOpen.value) closeJump();
+    else openJump();
+    return;
+  }
+  if (event.key === "Escape") {
+    if (jumpOpen.value) {
+      closeJump();
+      return;
+    }
+    closeMenus();
+  }
+}
+
+onMounted(() => {
+  window.addEventListener("keydown", onGlobalKeydown);
+});
+onBeforeUnmount(() => {
+  window.removeEventListener("keydown", onGlobalKeydown);
+});
 
 const staffNotificationsQuery = useQuery({
   queryKey: queryKeys.notifications,
@@ -137,6 +199,30 @@ const sections = computed(() => {
   return staffNavigation;
 });
 
+const jumpItems = computed((): JumpItem[] => {
+  const q = jumpQuery.value.trim().toLowerCase().slice(0, SEARCH_MAX_LEN);
+  const items: JumpItem[] = [];
+  for (const section of sections.value) {
+    for (const item of section.items) {
+      const label = t(item.labelKey);
+      if (!q || label.toLowerCase().includes(q) || item.path.toLowerCase().includes(q)) {
+        items.push({ label, path: item.path, icon: item.icon });
+      }
+    }
+  }
+  return items.slice(0, 12);
+});
+
+function jumpTo(path: string) {
+  // Allowlist: only paths from the role's navigation sections.
+  const allowed = new Set(
+    sections.value.flatMap((section) => section.items.map((item) => item.path)),
+  );
+  if (!allowed.has(path)) return;
+  closeJump();
+  go(path);
+}
+
 function isActive(path: string) {
   return path === "/app" || path === "/student"
     ? route.path === path
@@ -161,9 +247,18 @@ function toggleTheme() {
     localStorage.setItem("theme", dark.value ? "dark" : "light");
 }
 async function signOut() {
-  await logout();
-  authSession.user = null;
-  await router.push(withLang("/login", route.query.lang));
+  if (signingOut.value) return;
+  signingOut.value = true;
+  closeMenus();
+  closeJump();
+  try {
+    await logout();
+  } finally {
+    authSession.user = null;
+    queryClient.clear();
+    signingOut.value = false;
+    await router.push(withLang("/login", route.query.lang));
+  }
 }
 
 // Apply dev-dark for developers on mount
@@ -269,11 +364,12 @@ if (dark.value && typeof document !== "undefined") {
     <div :class="['min-h-screen', isDeveloper ? 'lg:pl-56' : 'lg:pl-60']">
       <header
         :class="[
-          'sticky top-0 z-30 flex h-14 items-center gap-2 border-b px-4',
+          'sticky top-0 z-50 flex h-14 items-center gap-2 border-b px-4',
           isDeveloper ? 'border-[var(--border)] bg-[var(--bg)]' : 'bg-surface',
         ]"
       >
         <button
+          type="button"
           :class="[
             'rounded-md p-1.5 lg:hidden',
             isDeveloper ? 'hover:bg-[var(--surface-muted)] text-[var(--text-muted)]' : 'hover:bg-surface-muted',
@@ -286,12 +382,15 @@ if (dark.value && typeof document !== "undefined") {
         <img :src="logo" class="h-7 w-7 object-contain lg:hidden" alt="TCC" />
 
         <button
+          type="button"
           :class="[
             'flex h-9 max-w-md flex-1 items-center gap-2 rounded-md border px-2.5 text-left text-sm',
             isDeveloper
               ? 'border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:bg-[var(--surface-muted)]'
               : 'border bg-surface text-text-muted hover:bg-surface-muted',
           ]"
+          :aria-label="t('shell.searchJump')"
+          @click="openJump"
         >
           <IconSearch :size="15" />
           <span class="flex-1 truncate">{{ t("shell.searchJump") }}</span>
@@ -309,6 +408,7 @@ if (dark.value && typeof document !== "undefined") {
         <LanguageSwitcher :dark="isDeveloper" />
 
         <button
+          type="button"
           class="rounded-md p-2"
           :class="isDeveloper ? 'hover:bg-[var(--surface-muted)]' : 'hover:bg-surface-muted'"
           @click="toggleTheme"
@@ -316,13 +416,15 @@ if (dark.value && typeof document !== "undefined") {
           <IconSun v-if="dark" :size="18" /><IconMoon v-else :size="18" />
         </button>
 
-        <div class="relative">
+        <div class="relative z-50">
           <button
+            type="button"
             :class="[
               'relative rounded-md p-2',
               isDeveloper ? 'hover:bg-[var(--surface-muted)] text-[var(--text-muted)]' : 'hover:bg-surface-muted',
             ]"
             :aria-label="t('shell.notifications')"
+            :aria-expanded="notifications"
             @click="
               notifications = !notifications;
               profile = false;
@@ -337,7 +439,7 @@ if (dark.value && typeof document !== "undefined") {
           <div
             v-if="notifications"
             :class="[
-              'absolute right-0 mt-1 w-80 rounded-lg border shadow-xl',
+              'absolute right-0 z-50 mt-1 w-80 rounded-lg border shadow-xl',
               isDeveloper ? 'border-[var(--border)] bg-[var(--surface)]' : 'border bg-surface',
             ]"
           >
@@ -399,25 +501,28 @@ if (dark.value && typeof document !== "undefined") {
           </div>
         </div>
 
-        <div class="relative">
+        <div class="relative z-50">
           <button
+            type="button"
             :class="[
               'flex items-center gap-2 rounded-md py-1 pl-1 pr-2',
               isDeveloper ? 'hover:bg-[var(--surface-muted)]' : 'hover:bg-surface-muted',
             ]"
+            :aria-expanded="profile"
+            :aria-haspopup="true"
             @click="
               profile = !profile;
               notifications = false;
             "
           >
             <DiceBearAvatar
-              :seed="isStudent ? 'student@tcc.edu.ph' : 'admin@unifast.gov.ph'"
-              :alt="isStudent ? 'Maria Santos' : t('shell.systemDeveloper')"
+              :seed="user?.email || (isStudent ? 'student@tcc.edu.ph' : 'admin@unifast.gov.ph')"
+              :alt="user?.name || (isStudent ? 'Student' : t('shell.systemDeveloper'))"
               :size="28"
             />
             <span class="hidden text-left leading-tight sm:block"
               ><span :class="['block text-xs font-medium', isDeveloper ? 'text-[var(--text)]' : '']">{{
-                user?.name ?? (isStudent ? "Maria Santos" : t("shell.systemDeveloper"))
+                user?.name ?? (isStudent ? "Student" : t("shell.systemDeveloper"))
               }}</span
               ><span
                 :class="[
@@ -434,39 +539,58 @@ if (dark.value && typeof document !== "undefined") {
           <div
             v-if="profile"
             :class="[
-              'absolute right-0 mt-1 w-56 rounded-lg border p-1 shadow-xl',
+              'absolute right-0 z-[60] mt-1 w-56 rounded-lg border p-1 shadow-xl',
               isDeveloper ? 'border-[var(--border)] bg-[var(--surface)]' : 'border bg-surface',
             ]"
+            role="menu"
           >
             <div :class="['border-b px-2.5 py-2', isDeveloper ? 'border-[var(--border)]' : '']">
               <p :class="['text-sm font-medium', isDeveloper ? 'text-[var(--text)]' : '']">
-                {{ user?.name ?? (isStudent ? "Maria Santos" : t("shell.systemDeveloper")) }}
+                {{ user?.name ?? (isStudent ? "Student" : t("shell.systemDeveloper")) }}
               </p>
               <p :class="['text-xs', isDeveloper ? 'text-[var(--text-muted)]' : 'text-text-muted']">
                 {{ user?.email ?? (isStudent ? "student@tcc.edu.ph" : "admin@unifast.gov.ph") }}
               </p>
             </div>
             <button
+              type="button"
+              role="menuitem"
               :class="[
                 'flex w-full items-center gap-2 rounded px-2.5 py-1.5 text-sm',
                 isDeveloper ? 'text-[var(--text)] hover:bg-[var(--surface-muted)]' : 'hover:bg-surface-muted',
               ]"
+              @click="
+                closeMenus();
+                go(profilePath);
+              "
             >
               <IconUserCircle :size="15" /> {{ t("common.profile") }}</button
             ><button
+              type="button"
+              role="menuitem"
+              :disabled="signingOut"
               :class="[
-                'flex w-full items-center gap-2 rounded px-2.5 py-1.5 text-sm text-danger',
+                'flex w-full items-center gap-2 rounded px-2.5 py-1.5 text-sm text-danger disabled:opacity-50',
                 isDeveloper ? 'hover:bg-[var(--surface-muted)]' : 'hover:bg-surface-muted',
               ]"
-              @click="signOut"
+              @click.stop="signOut"
             >
-              <IconLogout :size="15" /> {{ t("common.signOut") }}
+              <IconLogout :size="15" />
+              {{ signingOut ? t("common.signingOut") : t("common.signOut") }}
             </button>
           </div>
         </div>
       </header>
 
-      <main class="mx-auto w-full max-w-[1400px] p-4 sm:p-6" data-cloud="page-content">
+      <!-- Outside-click catcher: below header menus (z-50), above page content. -->
+      <div
+        v-if="profile || notifications"
+        class="fixed inset-0 z-[45]"
+        aria-hidden="true"
+        @click="closeMenus"
+      />
+
+      <main class="relative z-0 mx-auto w-full max-w-[1400px] p-4 sm:p-6" data-cloud="page-content">
         <AppBreadcrumbs v-if="!isStudent && !isDeveloper" />
         <RouterView v-slot="{ Component }"
           ><Transition name="page" mode="out-in"
@@ -474,5 +598,70 @@ if (dark.value && typeof document !== "undefined") {
         ></RouterView>
       </main>
     </div>
+
+    <!-- Jump / search palette: allowlisted nav paths only -->
+    <Teleport to="body">
+      <div
+        v-if="jumpOpen"
+        class="fixed inset-0 z-[120] flex items-start justify-center bg-black/45 p-4 pt-[12vh] backdrop-blur-sm"
+        role="dialog"
+        aria-modal="true"
+        :aria-label="t('shell.searchJump')"
+        @click.self="closeJump"
+      >
+        <div
+          :class="[
+            'w-full max-w-lg overflow-hidden rounded-xl border shadow-2xl',
+            isDeveloper ? 'border-[var(--border)] bg-[var(--surface)]' : 'border bg-surface',
+          ]"
+        >
+          <div
+            :class="[
+              'flex items-center gap-2 border-b px-3',
+              isDeveloper ? 'border-[var(--border)]' : '',
+            ]"
+          >
+            <IconSearch :size="16" class="shrink-0 text-text-muted" />
+            <input
+              ref="jumpInput"
+              type="search"
+              autocomplete="off"
+              spellcheck="false"
+              maxlength="100"
+              class="h-12 w-full bg-transparent text-sm outline-none"
+              :placeholder="t('shell.searchJump')"
+              :value="jumpQuery"
+              @input="onJumpQueryInput"
+              @keydown.enter.prevent="jumpItems[0] && jumpTo(jumpItems[0].path)"
+            />
+            <button
+              type="button"
+              class="rounded-md p-1.5 text-text-muted hover:bg-surface-muted"
+              :aria-label="t('common.close')"
+              @click="closeJump"
+            >
+              <IconX :size="16" />
+            </button>
+          </div>
+          <ul class="max-h-72 overflow-y-auto p-1" role="listbox">
+            <li v-if="jumpItems.length === 0" class="px-3 py-4 text-center text-xs text-text-muted">
+              {{ t("shell.noJumpResults") }}
+            </li>
+            <li v-for="item in jumpItems" :key="item.path">
+              <button
+                type="button"
+                role="option"
+                class="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-sm hover:bg-surface-muted"
+                @click="jumpTo(item.path)"
+              >
+                <component :is="item.icon" :size="15" class="shrink-0 text-text-muted" />
+                <span class="min-w-0 flex-1 truncate">{{ item.label }}</span>
+                <span class="truncate text-2xs text-text-soft">{{ item.path }}</span>
+              </button>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>

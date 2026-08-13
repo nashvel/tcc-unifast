@@ -7,8 +7,7 @@ import PageHeader from "@/components/ui/PageHeader.vue";
 import DataTable from "@/components/tables/DataTable.vue";
 import TablePagination from "@/components/tables/TablePagination.vue";
 import TableStates from "@/components/ui/TableStates.vue";
-import { apiFetch, apiUrl, ApiError } from "@/api/client";
-import { getAuthToken } from "@/auth/session";
+import { apiFetch, apiFetchBlob, apiUrl, ApiError } from "@/api/client";
 import { toast } from "@/composables/useToast";
 import { useOnline } from "@/composables/useOnline";
 import { queryKeys } from "@/api/queryKeys";
@@ -99,12 +98,10 @@ function zoneLabel(zone: string | null | undefined): string {
 
 function authPhotoUrl(path: string | null): string | null {
   if (!path) return null;
-  const token = getAuthToken();
-  const url = apiUrl(path);
-  return token ? `${url}${url.includes("?") ? "&" : "?"}token=${encodeURIComponent(token)}` : url;
+  return apiUrl(path);
 }
 
-/** Prefer Authorization header via blob fetch for private photos. */
+/** Prefer cookie credentials via blob fetch for private photos. */
 const idRefSrc = ref<string | null>(null);
 const selfieSrc = ref<string | null>(null);
 const challenge1Src = ref<string | null>(null);
@@ -148,17 +145,15 @@ function revokePhoto(target: typeof idRefSrc) {
 
 async function loadAuthImage(path: string | null | undefined): Promise<string | null> {
   if (!path) return null;
-  const token = getAuthToken();
-  if (!token) return authPhotoUrl(path);
   try {
-    const response = await fetch(apiUrl(path), {
-      headers: { Authorization: `Bearer ${token}`, Accept: "image/*" },
+    const response = await apiFetchBlob(path, {
+      headers: { Accept: "image/*" },
     });
     if (!response.ok) return null;
     const blob = await response.blob();
     return URL.createObjectURL(blob);
   } catch {
-    return null;
+    return authPhotoUrl(path);
   }
 }
 

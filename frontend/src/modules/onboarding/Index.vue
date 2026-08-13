@@ -14,7 +14,6 @@ import AppDialog from "@/components/dialogs/AppDialog.vue";
 import { apiFetch, apiUrl } from "@/api/client";
 import type { PaginatedResponse } from "@/api/types";
 import { queryKeys } from "@/api/queryKeys";
-import { getAuthToken } from "@/auth/session";
 import { toast } from "@/composables/useToast";
 
 type Batch = {
@@ -158,7 +157,8 @@ async function confirmImport() {
   try {
     const response = await fetch(apiUrl(`/api/masterlist/imports/${preview.value.id}/confirm`), {
       method: "POST",
-      headers: { Authorization: `Bearer ${getAuthToken()}`, Accept: "application/json" },
+      headers: { Accept: "application/json" },
+      credentials: "include",
     });
     const payload = await response.json();
     if (!response.ok && response.status !== 207) {
