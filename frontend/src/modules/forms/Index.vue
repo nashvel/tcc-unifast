@@ -277,7 +277,7 @@ function statusBadge(active: boolean) {
     </div>
 
     <!-- Delete confirm modal -->
-    <AppDialog v-model="!!deleteTarget" title="Delete form" @update:model-value="deleteTarget = null">
+    <AppDialog :model-value="!!deleteTarget" title="Delete form" @update:model-value="deleteTarget = null">
       <p class="text-sm text-text-muted">
         Are you sure you want to delete <strong>{{ deleteTarget?.title }}</strong>? This action cannot be undone.
       </p>
@@ -294,7 +294,7 @@ function statusBadge(active: boolean) {
     </AppDialog>
 
     <!-- Regen token confirm modal -->
-    <AppDialog v-model="!!regenTarget" title="Regenerate public link" @update:model-value="regenTarget = null">
+    <AppDialog :model-value="!!regenTarget" title="Regenerate public link" @update:model-value="regenTarget = null">
       <p class="text-sm text-text-muted">
         Regenerating the link for <strong>{{ regenTarget?.title }}</strong> will immediately invalidate the current public URL.
         Anyone with the old link will lose access.
