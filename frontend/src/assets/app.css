@@ -73,6 +73,102 @@
   --accent-gold-soft: #2a2113;
 }
 
+/* ══════════════════════════════════════════════════════════════
+   Flare Theme — Light
+   Primary: #FF6115 (Neon Orange) | Base: #FFFCF4 (Porcelain)
+   Fonts:   Inter (body) + Space Grotesk (headings)
+══════════════════════════════════════════════════════════════ */
+html.flare {
+  --primary:            #FF6115;
+  --primary-hover:      #E2540F;
+  --primary-soft:       #FFE4D6;
+  --success:            #3a7d44;
+  --success-soft:       #e6f4e8;
+  --warning:            #b45309;
+  --warning-soft:       #fef3c7;
+  --danger:             #dc2626;
+  --danger-soft:        #fee2e2;
+  --info:               #2563eb;
+  --info-soft:          #dbeafe;
+  --bg:                 #FFFCF4;
+  --surface:            #FFFFFF;
+  --surface-muted:      #FFE4D6;
+  --border:             rgba(26,26,24,0.10);
+  --border-strong:      rgba(26,26,24,0.22);
+  --text:               #1A1A18;
+  --text-muted:         rgba(26,26,24,0.68);
+  --text-soft:          rgba(26,26,24,0.48);
+  --sidebar-bg:         #FFFCF4;
+  --sidebar-active:     #FFE4D6;
+  --sidebar-active-text:#FF6115;
+  --sidebar-text:       #1A1A18;
+  --sidebar-text-muted: rgba(26,26,24,0.55);
+  --accent-gold:        #FF6115;
+  --accent-gold-hover:  #E2540F;
+  --accent-gold-soft:   #FFE4D6;
+  --ring:               rgba(255,97,21,0.28);
+  --font-sans:          "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display:       "Space Grotesk", ui-sans-serif, sans-serif;
+}
+/* Heading font override for Flare */
+html.flare h1,
+html.flare h2,
+html.flare h3,
+html.flare h4,
+html.flare h5,
+html.flare h6 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+html.flare body,
+html.flare #app {
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--text);
+}
+/* Sidebar border in Flare light mode */
+html.flare aside {
+  border-right-color: rgba(26,26,24,0.10);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   Flare Dark — dark navy/ink bg with orange accents
+══════════════════════════════════════════════════════════════ */
+html.flare.dark {
+  --primary:            #FF6B1F;
+  --primary-hover:      #FF7E3A;
+  --primary-soft:       rgba(255,97,21,0.15);
+  --success:            #4ade80;
+  --success-soft:       rgba(74,222,128,0.12);
+  --warning:            #fbbf24;
+  --warning-soft:       rgba(251,191,36,0.12);
+  --danger:             #f87171;
+  --danger-soft:        rgba(248,113,113,0.12);
+  --info:               #60a5fa;
+  --info-soft:          rgba(96,165,250,0.12);
+  --bg:                 #111210;
+  --surface:            #1A1917;
+  --surface-muted:      #23211E;
+  --border:             rgba(255,97,21,0.14);
+  --border-strong:      rgba(255,97,21,0.28);
+  --text:               #F5EDE0;
+  --text-muted:         rgba(245,237,224,0.65);
+  --text-soft:          rgba(245,237,224,0.42);
+  --sidebar-bg:         #0E0D0C;
+  --sidebar-active:     rgba(255,97,21,0.18);
+  --sidebar-active-text:#FF6B1F;
+  --sidebar-text:       #F0E6D8;
+  --sidebar-text-muted: rgba(240,230,216,0.55);
+  --accent-gold:        #FF6B1F;
+  --accent-gold-hover:  #FF7E3A;
+  --accent-gold-soft:   rgba(255,97,21,0.15);
+  --ring:               rgba(255,107,31,0.32);
+  --font-sans:          "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display:       "Space Grotesk", ui-sans-serif, sans-serif;
+}
+
+
 /* Developer Console Dark Theme - overrides .dark */
 html.dev-dark {
   background-color: #0d0d0d !important;

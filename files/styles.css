@@ -1,0 +1,139 @@
+/* ============================================================
+   UniFAST — Flare Theme
+   Fonts:   Space Grotesk (headings) + Inter (body)
+   Primary: #FF6115 (Neon Orange)
+   Base:    #FFFCF4 (Porcelain)
+   ============================================================ */
+
+/* Google Fonts — add this to your index.html <head> */
+/* 
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@700&display=swap"
+/>
+*/
+
+@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  /* ── Fonts ── */
+  --font-display: "Space Grotesk", sans-serif;
+  --font-sans:    "Inter", sans-serif;
+
+  /* ── Border radius scale ── */
+  --radius-sm:  calc(var(--radius) - 4px);
+  --radius-md:  calc(var(--radius) - 2px);
+  --radius-lg:  var(--radius);
+  --radius-xl:  calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+
+  /* ── Semantic color tokens → Tailwind utilities ── */
+  --color-background:        var(--background);
+  --color-foreground:        var(--foreground);
+  --color-primary:           var(--primary);
+  --color-primary-foreground:var(--primary-foreground);
+  --color-primary-hover:     var(--primary-hover);
+  --color-base:              var(--base);
+  --color-wash:              var(--wash);
+  --color-ink:               var(--ink);
+  --color-border:            var(--border);
+  --color-muted:             var(--muted);
+  --color-muted-foreground:  var(--muted-foreground);
+}
+
+/* ── Light mode (default) ── */
+:root {
+  --radius: 0.75rem;
+
+  /* Brand */
+  --primary:            oklch(0.690 0.206 40.703);   /* #FF6115 Neon Orange  */
+  --primary-hover:      oklch(0.629 0.190 40.576);   /* #E2540F darker       */
+  --primary-foreground: oklch(0.991 0.011 89.720);   /* Porcelain on orange  */
+
+  /* Surface */
+  --base:  oklch(0.991 0.011 89.720);                /* #FFFCF4 Porcelain    */
+  --wash:  oklch(0.937 0.035 49.237);                /* #FFE4D6 light orange */
+  --ink:   oklch(0.217 0.004 106.715);               /* #1A1A18 near-black   */
+
+  /* Shadcn / Tailwind overrides */
+  --background:         var(--base);
+  --foreground:         var(--ink);
+  --muted:              var(--wash);
+  --muted-foreground:   oklch(0.217 0.004 106.715 / 0.7);
+  --border:             oklch(0.217 0.004 106.715 / 0.1);
+}
+
+/* ── Base layer resets ── */
+@layer base {
+  * {
+    border-color: var(--color-border);
+    box-sizing: border-box;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    background-color: var(--color-background);
+    color:            var(--color-foreground);
+    font-family:      var(--font-sans);
+    font-size:        1rem;
+    line-height:      1.6;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family:    var(--font-display);
+    letter-spacing: -0.02em;
+    color:          var(--color-ink);
+  }
+}
+
+/* ── Utility classes ── */
+
+/* Orange wash section background */
+@utility section-wash {
+  background-color: var(--color-wash);
+}
+
+/* Centered container */
+@utility container-custom {
+  max-width:     1200px;
+  margin-left:   auto;
+  margin-right:  auto;
+  padding-left:  1.5rem;
+  padding-right: 1.5rem;
+}
+
+/* Slide-up entrance animation */
+@utility animate-slide-up {
+  animation: slide-up 0.6s ease-out forwards;
+}
+
+@keyframes slide-up {
+  from {
+    opacity:   0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity:   1;
+    transform: translateY(0);
+  }
+}
+
+/* Fade-in animation */
+@utility animate-fade-in {
+  animation: fade-in 0.4s ease-out forwards;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}

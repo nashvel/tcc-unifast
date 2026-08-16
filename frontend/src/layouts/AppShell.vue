@@ -10,6 +10,7 @@ import {
   IconLogout,
   IconMenu2,
   IconMoon,
+  IconPalette,
   IconSearch,
   IconSun,
   IconUserCircle,
@@ -35,8 +36,11 @@ import { apiFetch, type PaginatedResponse } from "@/api";
 import { queryKeys } from "@/api/queryKeys";
 import { ensureEcho, useNotificationChannel } from "@/composables/useEcho";
 import { withLang } from "@/i18n/routeLang";
+import { useTheme } from "@/composables/useTheme";
 
 ensureEcho();
+
+const { isFlare, toggleFlare } = useTheme();
 
 const SEARCH_MAX_LEN = 100;
 
@@ -351,7 +355,7 @@ if (dark.value && typeof document !== "undefined") {
                 class="flex h-8 w-full items-center gap-2 rounded-md px-2 text-left text-sm transition-colors"
                 :class="
                   isActive(item.path)
-                    ? 'bg-sidebar-active font-medium text-[#f5e6c4]'
+                    ? 'bg-sidebar-active font-medium text-[var(--sidebar-active-text,#f5e6c4)]'
                     : 'text-sidebar-text hover:bg-sidebar-active'
                 "
                 @click="go(item.path)"
@@ -359,7 +363,7 @@ if (dark.value && typeof document !== "undefined") {
                 <component
                   :is="item.icon"
                   :size="16"
-                  :class="isActive(item.path) ? 'text-[#f5e6c4]' : 'text-sidebar-text-muted'"
+                  :class="isActive(item.path) ? 'text-[var(--sidebar-active-text,#f5e6c4)]' : 'text-sidebar-text-muted'"
                 />
                 <span class="truncate">{{ t(item.labelKey) }}</span>
               </button>
@@ -414,7 +418,22 @@ if (dark.value && typeof document !== "undefined") {
 
         <div class="flex-1" />
 
-
+        <!-- Flare theme toggle -->
+        <button
+          v-if="!isDeveloper"
+          id="btn-toggle-flare-theme"
+          type="button"
+          class="rounded-md p-2 hover:bg-surface-muted transition-colors"
+          :title="isFlare ? 'Switch to Default theme' : 'Switch to Flare theme'"
+          :aria-label="isFlare ? 'Switch to Default theme' : 'Switch to Flare theme'"
+          @click="toggleFlare"
+        >
+          <IconPalette
+            :size="18"
+            :class="isFlare ? 'text-[#FF6115]' : 'text-text-muted'"
+            :stroke-width="isFlare ? 2.5 : 1.8"
+          />
+        </button>
 
         <button
           type="button"

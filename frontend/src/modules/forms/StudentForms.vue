@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
 import { useRouter } from "vue-router";
-import { IconFileText, IconCheckCircle, IconClock, IconArrowRight } from "@tabler/icons-vue";
+import { IconFileText, IconCircleCheck, IconClock, IconArrowRight } from "@tabler/icons-vue";
 import PageHeader from "@/components/ui/PageHeader.vue";
 import CardSkeleton from "@/components/ui/CardSkeleton.vue";
 import EmptyState from "@/components/ui/EmptyState.vue";
@@ -80,7 +80,7 @@ function deadline(f: AssignedForm) {
               Fill out <IconArrowRight :size="12" />
             </span>
             <span v-else-if="form.already_submitted" class="flex items-center gap-0.5 text-xs text-success">
-              <IconCheckCircle :size="12" /> Done
+              <IconCircleCheck :size="12" /> Done
             </span>
           </div>
         </button>
