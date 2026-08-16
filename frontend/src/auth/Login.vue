@@ -137,7 +137,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-bg p-4 sm:p-8">
+  <div class="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-bg">
     <!-- Animated Mesh Background -->
     <div class="pointer-events-none absolute inset-0 z-0 overflow-hidden opacity-40">
       <div class="absolute -left-[10%] -top-[20%] h-[60%] w-[60%] animate-pulse rounded-full bg-primary/20 blur-[120px] mix-blend-multiply duration-[8000ms]"></div>
@@ -145,45 +145,48 @@ onMounted(async () => {
       <div class="absolute -bottom-[20%] left-[20%] h-[60%] w-[60%] animate-pulse rounded-full bg-primary-hover/20 blur-[120px] mix-blend-multiply duration-[12000ms]"></div>
     </div>
 
-    <!-- Main Glass Card -->
-    <main class="relative z-10 w-full max-w-5xl overflow-hidden rounded-[2.5rem] border border-border bg-surface/80 shadow-2xl backdrop-blur-3xl lg:grid lg:grid-cols-2">
+    <!-- Main Glass Split Screen -->
+    <main class="relative z-10 w-full h-screen overflow-hidden bg-surface/80 backdrop-blur-3xl lg:grid lg:grid-cols-[1.05fr_.95fr]">
       
       <!-- Left Side: Branding & Hero (Desktop) -->
-      <section class="relative hidden flex-col justify-between border-r border-border bg-surface-muted/30 p-10 lg:flex">
-        <!-- Logo -->
-        <div class="flex items-center gap-4">
-          <div class="flex h-12 w-12 items-center justify-center rounded-xl border border-border bg-surface p-2 shadow-sm">
-            <img :src="logo" class="h-full w-full object-contain" alt="UniFAST TES" />
-          </div>
-          <div>
-            <p class="font-display text-lg font-bold text-text">{{ t("app.name") }}</p>
-            <p class="text-xs font-medium text-text-muted">{{ t("app.college") }}</p>
-          </div>
-        </div>
+      <section class="relative hidden h-full flex-col border-r border-border bg-surface-muted/30 lg:flex">
         
-        <!-- Hero Text -->
-        <div class="relative z-10 my-16 max-w-sm">
-          <p class="mb-3 text-xs font-bold uppercase tracking-widest text-primary">
-            Welcome to the future
-          </p>
-          <h1 class="font-display text-4xl font-bold leading-[1.15] tracking-tight text-text xl:text-5xl">
-            {{ t("auth.heroTitle") }}
-          </h1>
-          <p class="mt-5 text-sm leading-relaxed text-text-muted">
-            {{ t("auth.heroDescription") }}
-          </p>
+        <div class="relative z-20 flex flex-1 flex-col justify-between p-12 xl:p-16">
+          <!-- Logo -->
+          <div class="flex items-center gap-4">
+            <div class="flex h-12 w-12 items-center justify-center rounded-xl border border-border bg-surface p-2 shadow-sm">
+              <img :src="logo" class="h-full w-full object-contain" alt="UniFAST TES" />
+            </div>
+            <div>
+              <p class="font-display text-lg font-bold text-text">{{ t("app.name") }}</p>
+              <p class="text-xs font-medium text-text-muted">{{ t("app.college") }}</p>
+            </div>
+          </div>
+          
+          <!-- Hero Text -->
+          <div class="mb-10 max-w-lg xl:mb-20">
+            <p class="mb-3 text-xs font-bold uppercase tracking-widest text-primary">
+              Welcome to the future
+            </p>
+            <h1 class="font-display text-4xl font-bold leading-[1.15] tracking-tight text-text xl:text-5xl">
+              {{ t("auth.heroTitle") }}
+            </h1>
+            <p class="mt-5 text-sm leading-relaxed text-text-muted">
+              {{ t("auth.heroDescription") }}
+            </p>
+          </div>
         </div>
 
-        <!-- Cutout Image -->
-        <div class="relative -mx-10 -mb-10 mt-auto h-72 overflow-hidden rounded-bl-[2.5rem]">
-          <div class="absolute inset-0 bg-gradient-to-t from-surface-muted/80 to-transparent z-10"></div>
-          <img :src="studentsCutout" class="absolute bottom-0 left-1/2 z-0 w-[90%] -translate-x-1/2 object-contain drop-shadow-xl saturate-150 transition-transform duration-700 hover:scale-[1.03]" />
+        <!-- Cutout Image pinned to bottom -->
+        <div class="absolute bottom-0 left-0 right-0 z-10 h-[45vh] max-h-[500px] overflow-hidden">
+          <div class="absolute inset-0 z-10 bg-gradient-to-t from-surface-muted/90 via-surface-muted/20 to-transparent pointer-events-none"></div>
+          <img :src="studentsCutout" class="absolute bottom-0 left-1/2 z-0 w-[85%] max-w-[650px] -translate-x-1/2 object-contain drop-shadow-2xl saturate-150 transition-transform duration-700 hover:scale-[1.02]" />
         </div>
       </section>
 
       <!-- Right Side: Form -->
-      <section class="flex flex-col justify-center p-8 sm:p-12 lg:p-16">
-        <div class="absolute right-6 top-6 hidden lg:block">
+      <section class="flex flex-col justify-center overflow-y-auto p-8 sm:p-12 lg:p-16">
+        <div class="absolute right-6 top-6 hidden lg:block z-50">
           <LanguageSwitcher />
         </div>
 
