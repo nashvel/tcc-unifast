@@ -34,6 +34,7 @@ use App\Http\Controllers\StudentNotificationController;
 use App\Http\Controllers\StudentSubmissionWindowController;
 use App\Http\Controllers\TccUnifastStudentsController;
 use App\Http\Controllers\TccUnifastSyncController;
+use App\Http\Controllers\ActivationSeederController;
 use App\Http\Controllers\FormController;
 use App\Http\Controllers\FormFieldController;
 use App\Http\Controllers\FormResponseController;
@@ -182,6 +183,10 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
     // RBAC + database viewer (developer/admin)
     Route::middleware('role:developer,admin')->group(function (): void {
+        // Activation Seeder — create activation-ready grantees from the browser
+        Route::get('/activation-seeder/batches', [ActivationSeederController::class, 'batches']);
+        Route::post('/activation-seeder', [ActivationSeederController::class, 'seed'])->middleware('throttle:30,1');
+
         Route::get('/changelogs', [ChangelogController::class, 'index']);
         Route::get('/rbac/roles', [RbacController::class, 'index']);
         Route::post('/rbac/roles', [RbacController::class, 'store']);

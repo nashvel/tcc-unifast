@@ -35,6 +35,7 @@ const appChildren: RouteRecordRaw[] = [
   { path: "users", component: () => import("@/modules/users/Index.vue") },
   { path: "users/permissions", component: () => import("@/modules/users/Permissions.vue") },
   { path: "settings", component: () => import("@/modules/settings/Index.vue") },
+  { path: "activation-seeder", component: () => import("@/modules/activation-seeder/ActivationSeeder.vue") },
   { path: "appearance", component: () => import("@/modules/appearance/Index.vue") },
   { path: "style-guide", component: () => import("@/modules/style-guide/Index.vue") },
   { path: "masterlist", component: () => import("@/modules/masterlist/Index.vue") },
