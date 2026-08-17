@@ -37,6 +37,7 @@ import { queryKeys } from "@/api/queryKeys";
 import { ensureEcho, useNotificationChannel } from "@/composables/useEcho";
 import { withLang } from "@/i18n/routeLang";
 import { useTheme } from "@/composables/useTheme";
+import { useNotificationList, useMarkAllNotificationsRead } from "@/composables/useNotifications";
 
 ensureEcho();
 
@@ -64,6 +65,7 @@ const jumpOpen = ref(false);
 const jumpQuery = ref("");
 const jumpInput = ref<HTMLInputElement | null>(null);
 const signingOut = ref(false);
+const logoutToast = ref(false);
 const isStudent = computed(() => route.path.startsWith("/student"));
 const isDeveloper = computed(() => authSession.user?.role === "developer");
 const role = computed(() => authSession.user?.role ?? "student");
@@ -83,12 +85,13 @@ type JumpItem = { label: string; path: string; icon: NavigationSection["items"][
 function closeMenus() {
   profile.value = false;
   notifications.value = false;
+  jumpOpen.value = false;
 }
 
 function openJump() {
-  closeMenus();
+  profile.value = false;
+  notifications.value = false;
   jumpOpen.value = true;
-  jumpQuery.value = "";
   void nextTick(() => jumpInput.value?.focus());
 }
 
@@ -135,6 +138,11 @@ const staffNotificationsQuery = useQuery({
 const staffItems = computed(() => staffNotificationsQuery.data.value?.data ?? []);
 const unreadCount = computed(() => staffItems.value.filter((item) => !item.read).length);
 
+// Student notifications (bell)
+const { query: studentNotifsQuery, items: studentNotifItems } = useNotificationList();
+const markAllStudentRead = useMarkAllNotificationsRead();
+const studentUnreadCount = computed(() => studentNotifItems.value.filter((n) => !n.read).length);
+
 useNotificationChannel((payload) => {
   if (!staffNotifyEnabled.value) return;
   queryClient.setQueryData<PaginatedResponse<ShellNotification>>(queryKeys.notifications, (current) => {
@@ -157,7 +165,9 @@ useNotificationChannel((payload) => {
 });
 
 watch(notifications, (open) => {
-  if (open && staffNotifyEnabled.value) void staffNotificationsQuery.refetch();
+  if (!open) return;
+  if (staffNotifyEnabled.value) void staffNotificationsQuery.refetch();
+  if (isStudent.value) void studentNotifsQuery.refetch();
 });
 
 async function markAllStaffRead() {
@@ -253,6 +263,7 @@ function toggleTheme() {
 async function signOut() {
   if (signingOut.value) return;
   signingOut.value = true;
+  logoutToast.value = true;
   closeMenus();
   closeJump();
   try {
@@ -262,6 +273,7 @@ async function signOut() {
     queryClient.clear();
     signingOut.value = false;
     await router.push(withLang("/login", route.query.lang));
+    logoutToast.value = false;
   }
 }
 
@@ -343,13 +355,37 @@ if (dark.value && typeof document !== "undefined") {
       </div>
       <nav class="flex-1 overflow-y-auto py-3">
         <div v-for="(section, sectionIndex) in sections" :key="sectionIndex" class="mb-3 px-2">
-          <p
-            v-if="section.labelKey"
-            class="mb-1 px-2 text-2xs font-semibold uppercase tracking-wider text-sidebar-text-muted"
-          >
-            {{ t(section.labelKey) }}
-          </p>
-          <ul class="space-y-0.5">
+          
+          <!-- Collapsible Section (if it has a label) -->
+          <details v-if="section.labelKey" class="group" open>
+            <summary class="flex cursor-pointer select-none items-center justify-between px-2 py-1 outline-none list-none [&::-webkit-details-marker]:hidden mb-1 transition-opacity hover:opacity-80">
+              <span class="text-2xs font-semibold uppercase tracking-wider text-sidebar-text-muted">{{ t(section.labelKey) }}</span>
+              <IconChevronDown :size="14" class="text-sidebar-text-muted opacity-50 transition-transform group-open:rotate-180" />
+            </summary>
+            <ul class="space-y-0.5 mt-1">
+              <li v-for="item in section.items" :key="item.path">
+                <button
+                  class="flex h-8 w-full items-center gap-2 rounded-md px-2 text-left text-sm transition-colors"
+                  :class="
+                    isActive(item.path)
+                      ? 'bg-sidebar-active font-medium text-[var(--sidebar-active-text,#f5e6c4)]'
+                      : 'text-sidebar-text hover:bg-sidebar-active'
+                  "
+                  @click="go(item.path)"
+                >
+                  <component
+                    :is="item.icon"
+                    :size="16"
+                    :class="isActive(item.path) ? 'text-[var(--sidebar-active-text,#f5e6c4)]' : 'text-sidebar-text-muted'"
+                  />
+                  <span class="truncate">{{ t(item.labelKey) }}</span>
+                </button>
+              </li>
+            </ul>
+          </details>
+
+          <!-- Flat Section (if no label, e.g. Dashboard) -->
+          <ul v-else class="space-y-0.5">
             <li v-for="item in section.items" :key="item.path">
               <button
                 class="flex h-8 w-full items-center gap-2 rounded-md px-2 text-left text-sm transition-colors"
@@ -369,6 +405,7 @@ if (dark.value && typeof document !== "undefined") {
               </button>
             </li>
           </ul>
+          
         </div>
       </nav>
     </aside>
@@ -394,27 +431,64 @@ if (dark.value && typeof document !== "undefined") {
         </button>
         <img :src="logo" class="h-7 w-7 object-contain lg:hidden" alt="TCC" />
 
-        <button
-          type="button"
-          :class="[
-            'flex h-9 max-w-md flex-1 items-center gap-2 rounded-md border px-2.5 text-left text-sm',
-            isDeveloper
-              ? 'border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:bg-[var(--surface-muted)]'
-              : 'border bg-surface text-text-muted hover:bg-surface-muted',
-          ]"
-          :aria-label="t('shell.searchJump')"
-          @click="openJump"
-        >
-          <IconSearch :size="15" />
-          <span class="flex-1 truncate">{{ t("shell.searchJump") }}</span>
-          <kbd
+        <div class="relative flex-1 max-w-md">
+          <div
             :class="[
-              'hidden items-center gap-0.5 rounded border px-1 py-0.5 text-2xs sm:inline-flex',
-              isDeveloper ? 'border-[var(--border)] text-[var(--text-soft)]' : 'border bg-surface text-text-soft',
+              'flex h-9 w-full items-center gap-2 rounded-md border px-2.5 text-sm transition-colors z-50 relative',
+              isDeveloper
+                ? 'border-[var(--border)] bg-[var(--surface)] text-[var(--text)] focus-within:border-primary focus-within:ring-1 focus-within:ring-primary'
+                : 'border bg-surface text-text focus-within:border-primary focus-within:ring-1 focus-within:ring-primary',
             ]"
-            ><IconCommand :size="10" /> K</kbd
           >
-        </button>
+            <IconSearch :size="15" class="text-text-muted" />
+            <input
+              ref="jumpInput"
+              type="search"
+              autocomplete="off"
+              spellcheck="false"
+              maxlength="100"
+              class="h-full w-full bg-transparent outline-none placeholder:text-text-muted"
+              :placeholder="'Search students, batches, programs...'"
+              :value="jumpQuery"
+              @input="onJumpQueryInput"
+              @focus="openJump"
+              @keydown.enter.prevent="jumpItems[0] && jumpTo(jumpItems[0].path)"
+            />
+            <kbd
+              :class="[
+                'hidden items-center gap-0.5 rounded border px-1 py-0.5 text-2xs sm:inline-flex',
+                isDeveloper ? 'border-[var(--border)] text-[var(--text-soft)]' : 'border bg-surface text-text-soft',
+              ]"
+              ><IconCommand :size="10" /> K</kbd>
+          </div>
+
+          <!-- Inline dropdown for search results -->
+          <div
+            v-if="jumpOpen"
+            :class="[
+              'absolute left-0 right-0 top-full z-[60] mt-1 overflow-hidden rounded-lg border shadow-xl',
+              isDeveloper ? 'border-[var(--border)] bg-[var(--surface)]' : 'border bg-surface',
+            ]"
+          >
+            <ul class="max-h-72 overflow-y-auto p-1" role="listbox">
+              <li v-if="jumpItems.length === 0" class="px-3 py-4 text-center text-xs text-text-muted">
+                {{ t("shell.noJumpResults") }}
+              </li>
+              <li v-for="item in jumpItems" :key="item.path">
+                <button
+                  type="button"
+                  role="option"
+                  class="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-sm hover:bg-surface-muted"
+                  @click="jumpTo(item.path)"
+                >
+                  <component :is="item.icon" :size="15" class="shrink-0 text-text-muted" />
+                  <span class="min-w-0 flex-1 truncate">{{ item.label }}</span>
+                  <span class="truncate text-2xs text-text-soft">{{ item.path }}</span>
+                </button>
+              </li>
+            </ul>
+          </div>
+        </div>
 
         <div class="flex-1" />
 
@@ -458,12 +532,19 @@ if (dark.value && typeof document !== "undefined") {
               profile = false;
             "
           >
-            <IconBell :size="18" /><span
+            <IconBell :size="18" />
+            <!-- Staff badge -->
+            <span
               v-if="staffNotifyEnabled && unreadCount > 0"
               class="absolute right-1 top-1 grid h-4 min-w-4 place-items-center rounded-full bg-danger px-1 text-2xs text-white"
-              >{{ unreadCount > 9 ? "9+" : unreadCount }}</span
-            >
+            >{{ unreadCount > 9 ? "9+" : unreadCount }}</span>
+            <!-- Student badge -->
+            <span
+              v-if="isStudent && studentUnreadCount > 0"
+              class="absolute right-1 top-1 grid h-4 min-w-4 place-items-center rounded-full bg-danger px-1 text-2xs text-white"
+            >{{ studentUnreadCount > 9 ? "9+" : studentUnreadCount }}</span>
           </button>
+
           <div
             v-if="notifications"
             :class="[
@@ -471,6 +552,7 @@ if (dark.value && typeof document !== "undefined") {
               isDeveloper ? 'border-[var(--border)] bg-[var(--surface)]' : 'border bg-surface',
             ]"
           >
+            <!-- Header row -->
             <div
               :class="[
                 'flex h-10 items-center justify-between border-b px-3',
@@ -480,6 +562,7 @@ if (dark.value && typeof document !== "undefined") {
               <p :class="['text-sm font-semibold', isDeveloper ? 'text-[var(--text)]' : '']">
                 {{ t("shell.notifications") }}
               </p>
+              <!-- Mark all read: staff -->
               <button
                 v-if="staffNotifyEnabled && unreadCount > 0"
                 :class="['text-xs', isDeveloper ? 'text-white' : 'text-primary']"
@@ -487,7 +570,17 @@ if (dark.value && typeof document !== "undefined") {
               >
                 {{ t("shell.markAllRead") }}
               </button>
+              <!-- Mark all read: student -->
+              <button
+                v-if="isStudent && studentUnreadCount > 0"
+                class="text-xs text-primary"
+                @click="markAllStudentRead.mutate()"
+              >
+                {{ t("shell.markAllRead") }}
+              </button>
             </div>
+
+            <!-- Staff notifications -->
             <div
               v-if="staffNotifyEnabled"
               :class="[
@@ -496,13 +589,11 @@ if (dark.value && typeof document !== "undefined") {
               ]"
             >
               <p v-if="staffNotificationsQuery.isLoading.value" class="text-text-muted">Loading…</p>
-              <p v-else-if="staffItems.length === 0" class="text-text-muted">No notifications yet.</p>
-              <div v-for="item in staffItems" :key="item.id" :class="item.read ? 'opacity-70' : ''">
+              <p v-else-if="staffItems.length === 0" class="py-4 text-center text-text-muted">No notifications yet.</p>
+              <div v-for="item in staffItems" :key="item.id" :class="item.read ? 'opacity-60' : ''">
                 <p>
-                  <b>{{ item.title }}</b
-                  ><br /><span :class="isDeveloper ? 'text-[var(--text-soft)]' : 'text-text-muted'">{{
-                    item.body
-                  }}</span>
+                  <b>{{ item.title }}</b><br />
+                  <span :class="isDeveloper ? 'text-[var(--text-soft)]' : 'text-text-muted'">{{ item.body }}</span>
                 </p>
                 <p
                   v-if="item.time"
@@ -512,22 +603,33 @@ if (dark.value && typeof document !== "undefined") {
                 </p>
               </div>
             </div>
-            <div v-else :class="['space-y-3 p-3 text-xs', isDeveloper ? 'text-[var(--text-muted)]' : '']">
-              <p>
-                <b>{{ t("shell.documentsValidated") }}</b
-                ><br /><span :class="isDeveloper ? 'text-[var(--text-soft)]' : 'text-text-muted'">{{
-                  t("shell.documentsReady")
-                }}</span>
+
+            <!-- Student notifications -->
+            <div v-else-if="isStudent" class="max-h-72 space-y-3 overflow-y-auto p-3 text-xs">
+              <p v-if="studentNotifsQuery.isLoading.value" class="text-text-muted">Loading…</p>
+              <p v-else-if="studentNotifItems.length === 0" class="py-4 text-center text-text-muted">
+                No notifications yet.
               </p>
-              <p>
-                <b>{{ t("shell.batchClosingSoon") }}</b
-                ><br /><span :class="isDeveloper ? 'text-[var(--text-soft)]' : 'text-text-muted'">{{
-                  t("shell.batchClosingDetail")
-                }}</span>
-              </p>
+              <div
+                v-for="item in studentNotifItems"
+                :key="item.id"
+                :class="['rounded-lg border p-2.5 transition', item.read ? 'opacity-60' : 'border-primary/20 bg-primary/5']"
+              >
+                <p class="font-semibold text-text">{{ item.title }}</p>
+                <p class="mt-0.5 text-text-muted">{{ item.body }}</p>
+                <p v-if="item.created_at" class="mt-1 text-2xs text-text-soft">
+                  {{ new Date(item.created_at).toLocaleDateString("en-PH", { month: "short", day: "numeric" }) }}
+                </p>
+              </div>
+            </div>
+
+            <!-- Fallback empty for other roles -->
+            <div v-else class="p-4 text-center text-xs text-text-muted">
+              No notifications available.
             </div>
           </div>
         </div>
+
 
         <div class="relative z-50">
           <button
@@ -613,7 +715,7 @@ if (dark.value && typeof document !== "undefined") {
 
       <!-- Outside-click catcher: below header menus (z-50), above page content. -->
       <div
-        v-if="profile || notifications"
+        v-if="profile || notifications || jumpOpen"
         class="fixed inset-0 z-[45]"
         aria-hidden="true"
         @click="closeMenus"
@@ -628,69 +730,27 @@ if (dark.value && typeof document !== "undefined") {
       </main>
     </div>
 
-    <!-- Jump / search palette: allowlisted nav paths only -->
+    <!-- Logout toast overlay -->
     <Teleport to="body">
-      <div
-        v-if="jumpOpen"
-        class="fixed inset-0 z-[120] flex items-start justify-center bg-black/45 p-4 pt-[12vh] backdrop-blur-sm"
-        role="dialog"
-        aria-modal="true"
-        :aria-label="t('shell.searchJump')"
-        @click.self="closeJump"
-      >
+      <Transition name="fade">
         <div
-          :class="[
-            'w-full max-w-lg overflow-hidden rounded-xl border shadow-2xl',
-            isDeveloper ? 'border-[var(--border)] bg-[var(--surface)]' : 'border bg-surface',
-          ]"
+          v-if="logoutToast"
+          class="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm"
         >
-          <div
-            :class="[
-              'flex items-center gap-2 border-b px-3',
-              isDeveloper ? 'border-[var(--border)]' : '',
-            ]"
-          >
-            <IconSearch :size="16" class="shrink-0 text-text-muted" />
-            <input
-              ref="jumpInput"
-              type="search"
-              autocomplete="off"
-              spellcheck="false"
-              maxlength="100"
-              class="h-12 w-full bg-transparent text-sm outline-none"
-              :placeholder="t('shell.searchJump')"
-              :value="jumpQuery"
-              @input="onJumpQueryInput"
-              @keydown.enter.prevent="jumpItems[0] && jumpTo(jumpItems[0].path)"
-            />
-            <button
-              type="button"
-              class="rounded-md p-1.5 text-text-muted hover:bg-surface-muted"
-              :aria-label="t('common.close')"
-              @click="closeJump"
+          <div class="flex flex-col items-center gap-4 rounded-2xl bg-white px-10 py-8 shadow-2xl">
+            <svg
+              class="h-8 w-8 animate-spin text-primary"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
             >
-              <IconX :size="16" />
-            </button>
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+            <p class="text-sm font-semibold text-text">{{ t("common.signingOut") }}</p>
           </div>
-          <ul class="max-h-72 overflow-y-auto p-1" role="listbox">
-            <li v-if="jumpItems.length === 0" class="px-3 py-4 text-center text-xs text-text-muted">
-              {{ t("shell.noJumpResults") }}
-            </li>
-            <li v-for="item in jumpItems" :key="item.path">
-              <button
-                type="button"
-                role="option"
-                class="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-sm hover:bg-surface-muted"
-                @click="jumpTo(item.path)"
-              >
-                <component :is="item.icon" :size="15" class="shrink-0 text-text-muted" />
-                <span class="min-w-0 flex-1 truncate">{{ item.label }}</span>
-                <span class="truncate text-2xs text-text-soft">{{ item.path }}</span>
-              </button>
-            </li>
-          </ul>
         </div>
-      </div>
+      </Transition>
     </Teleport>
   </div>
 </template>

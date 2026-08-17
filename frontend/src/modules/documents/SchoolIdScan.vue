@@ -113,7 +113,11 @@ async function onComplete(payload: SchoolIdCaptureComplete) {
 
 async function onExit() {
   clearVaultSchoolIdScanReady();
-  await router.push(withLang("/student/documents"));
+  try {
+    await router.replace(withLang("/student/documents"));
+  } catch {
+    await router.push(withLang("/student/documents"));
+  }
 }
 </script>
 

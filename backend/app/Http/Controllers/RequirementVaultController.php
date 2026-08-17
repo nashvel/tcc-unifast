@@ -44,7 +44,7 @@ class RequirementVaultController extends Controller
     ];
 
     /** @var list<string> */
-    private const IMAGE_MIMES = ['image/jpeg', 'image/png', 'image/webp'];
+    private const IMAGE_OR_PDF_MIMES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
 
     /** @var list<string> */
     private const PDF_MIMES = ['application/pdf'];
@@ -173,10 +173,18 @@ class RequirementVaultController extends Controller
         );
         $vsReference = FaceDescriptorMath::euclidean($probe, $referenceDescriptor);
         $vsSelfie = FaceDescriptorMath::euclidean($probe, $selfieDescriptor);
-        $threshold = FaceDescriptorMath::threshold();
-        if ($vsReference >= $threshold || $vsSelfie >= $threshold) {
+        $worstDistance = max($vsReference, $vsSelfie);
+        $classification = FaceDescriptorMath::classify($worstDistance);
+
+        if ($classification === FaceDescriptorMath::ZONE_MISMATCH) {
+            $matchScore = round(max(0, 1 - $worstDistance) * 100);
+            $reqScore = round(max(0, 1 - FaceDescriptorMath::reviewMax()) * 100);
             throw ValidationException::withMessages([
-                'face_match' => 'Submission ID face does not match onboarding reference photos. Retake the ID scan.',
+                'face_match' => sprintf(
+                    'Face match failed. You scored %d%% (requires %d%% or higher). Retake the ID scan.',
+                    $matchScore,
+                    $reqScore
+                ),
             ]);
         }
 
@@ -222,7 +230,7 @@ class RequirementVaultController extends Controller
             : null;
 
         $quality = (float) $validated['face_quality_score'];
-        $manualReview = $quality < 0.7;
+        $manualReview = $quality < 0.7 || $classification === FaceDescriptorMath::ZONE_UNCERTAIN;
 
         $facePath = VaultFileStorage::storeIdentity(
             $validated['id_face_crop'],
@@ -352,14 +360,14 @@ class RequirementVaultController extends Controller
             'file' => [
                 'required',
                 'file',
-                $isSpecimen ? 'mimes:jpg,jpeg,png,webp' : 'mimes:pdf',
-                $isSpecimen ? 'max:10240' : 'max:20480',
+                $isSpecimen ? 'mimes:jpg,jpeg,png,webp,pdf' : 'mimes:pdf',
+                'max:20480',
             ],
         ]);
 
         $file = $validated['file'];
         $slotKey = $validated['slot_key'];
-        $allowed = $slotKey === self::SPECIMEN_SIGNATURES_SLOT ? self::IMAGE_MIMES : self::PDF_MIMES;
+        $allowed = $slotKey === self::SPECIMEN_SIGNATURES_SLOT ? self::IMAGE_OR_PDF_MIMES : self::PDF_MIMES;
         $detectedMime = SecureUpload::assertAllowedMime($file, $allowed, 'file');
 
         $existing = DocumentSubmission::query()
@@ -378,7 +386,7 @@ class RequirementVaultController extends Controller
         $label = match ($slotKey) {
             self::COURSE_HISTORY_SLOT => 'Course History',
             self::GRADE_SLIP_SLOT => 'Grade Slip',
-            self::SPECIMEN_SIGNATURES_SLOT => '3 Specimen Signatures',
+            self::SPECIMEN_SIGNATURES_SLOT => 'ID Back-to-Back with Specimen',
             default => 'Requirement',
         };
 
@@ -548,25 +556,35 @@ class RequirementVaultController extends Controller
             $schoolId->face_descriptor_payload,
             'submission_face_descriptor',
         );
-        $referenceDescriptor = FaceDescriptorMath::normalize(
-            $identity->id_reference_face_descriptor,
-            'id_reference_face_descriptor',
-        );
         $selfieDescriptor = FaceDescriptorMath::normalize(
             $identity->onboarding_selfie_descriptor,
             'onboarding_selfie_descriptor',
         );
 
-        $threshold = FaceDescriptorMath::threshold();
+        $match4 = FaceDescriptorMath::euclidean($live, $submissionDescriptor);
+        $match5 = FaceDescriptorMath::euclidean($live, $selfieDescriptor);
+        
+        $worstDistance = max($match4, $match5);
+        $classification = FaceDescriptorMath::classify($worstDistance);
+
+        if ($classification === FaceDescriptorMath::ZONE_MISMATCH) {
+            $matchScore = round(max(0, 1 - $worstDistance) * 100);
+            $reqScore = round(max(0, 1 - FaceDescriptorMath::reviewMax()) * 100);
+            throw ValidationException::withMessages([
+                'face_match' => sprintf(
+                    'Liveness check failed. You scored %d%% (requires %d%% or higher). Please retry under better lighting.',
+                    $matchScore,
+                    $reqScore
+                ),
+            ]);
+        }
+
         $distances = [
-            'vs_submission_id' => FaceDescriptorMath::euclidean($submissionDescriptor, $live),
-            'vs_id_reference' => FaceDescriptorMath::euclidean($referenceDescriptor, $live),
-            'vs_onboarding_selfie' => FaceDescriptorMath::euclidean($selfieDescriptor, $live),
+            'vs_submission_id' => $match4,
+            'vs_onboarding_selfie' => $match5,
         ];
-        $allPass = collect($distances)->every(fn (float $d) => $d < $threshold);
-        $manualReview = ! $allPass;
-        $serverDistance = max($distances);
-        $confidence = max(0, min(100, (1 - $serverDistance) * 100));
+        $manualReview = $classification === FaceDescriptorMath::ZONE_UNCERTAIN;
+        $confidence = max(0, min(100, (1 - $worstDistance) * 100));
         $checkedAt = now();
 
         $selfiePath = VaultFileStorage::storeIdentity(
@@ -582,7 +600,7 @@ class RequirementVaultController extends Controller
             'document_submission_id' => $schoolId->id,
             'challenge_sequence' => $validated['challenge_sequence'],
             'result' => $manualReview ? 'no_match' : 'match',
-            'distance' => $serverDistance,
+            'distance' => $worstDistance,
             'distances' => $distances,
             'selfie_path' => $selfiePath,
             'liveness_confirmed' => true,
@@ -736,11 +754,11 @@ class RequirementVaultController extends Controller
             $identity->onboarding_selfie_descriptor,
             'onboarding_selfie_descriptor',
         );
-        $threshold = FaceDescriptorMath::threshold();
         $vsReference = FaceDescriptorMath::euclidean($probe, $reference);
         $vsSelfie = FaceDescriptorMath::euclidean($probe, $selfie);
+        $worstDistance = max($vsReference, $vsSelfie);
 
-        if ($vsReference >= $threshold || $vsSelfie >= $threshold) {
+        if (FaceDescriptorMath::isMismatch($worstDistance)) {
             throw ValidationException::withMessages([
                 'face_match' => 'School ID face does not match onboarding reference photos. Re-scan Slot 1 before submitting.',
             ]);
@@ -986,7 +1004,7 @@ class RequirementVaultController extends Controller
                     self::SCHOOL_ID_SLOT => 'School ID',
                     self::COURSE_HISTORY_SLOT => 'Course History',
                     self::GRADE_SLIP_SLOT => 'Grade Slip',
-                    self::SPECIMEN_SIGNATURES_SLOT => '3 Specimen Signatures',
+                    self::SPECIMEN_SIGNATURES_SLOT => 'ID Back-to-Back with Specimen',
                     default => $slotKey,
                 };
             }
@@ -1029,7 +1047,7 @@ class RequirementVaultController extends Controller
                 self::SCHOOL_ID_SLOT => 'School ID',
                 self::COURSE_HISTORY_SLOT => 'Course History',
                 self::GRADE_SLIP_SLOT => 'Grade Slip',
-                self::SPECIMEN_SIGNATURES_SLOT => '3 Specimen Signatures',
+                self::SPECIMEN_SIGNATURES_SLOT => 'ID Back-to-Back with Specimen',
                 default => 'required',
             };
 

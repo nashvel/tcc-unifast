@@ -3,7 +3,11 @@ import { clearAuthSession, setMockSession, type AuthUser } from "@/auth/session"
 
 export async function fetchCurrentUser(): Promise<AuthUser | null> {
   try {
-    const payload = await apiFetch<{ user: AuthUser }>("/api/auth/me");
+    // Abort after 5 s — if the backend is dead/frozen we must not block the router forever.
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    const payload = await apiFetch<{ user: AuthUser }>("/api/auth/me", { signal: controller.signal });
+    clearTimeout(timeout);
     return payload.user;
   } catch {
     return null;

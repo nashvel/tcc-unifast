@@ -10,20 +10,20 @@ import { authSession } from "@/auth/session";
 import { studentHomePath } from "@/auth/onboardingResume";
 import { login } from "@/api/auth";
 import { apiFetch } from "@/api/client";
+import { useTheme } from "@/composables/useTheme";
 import LanguageSwitcher from "@/components/LanguageSwitcher.vue";
 import { withLang } from "@/i18n/routeLang";
 import VueRecaptcha from "vue3-recaptcha2";
 
-const activeSlide = ref<'text'>('text'); // Kept for legacy bindings just in case, but no longer sliding
-
-// Remove forced light mode so it respects the user's system theme / active Flare theme.
+// Force light mode on login page - never use dark mode here
 onMounted(() => {
-  // Setup if needed
+  document.documentElement.classList.remove("dark", "dev-dark");
 });
 
 const route = useRoute();
 const router = useRouter();
 const { t } = useI18n();
+const { isFlare } = useTheme();
 const email = ref("");
 const password = ref("");
 const showPassword = ref(false);
@@ -134,197 +134,209 @@ onMounted(async () => {
     terms.value = termsRes.data;
   } catch {}
 });
+
 </script>
 
 <template>
-  <div class="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-bg">
-    <!-- Animated Mesh Background -->
-    <div class="pointer-events-none absolute inset-0 z-0 overflow-hidden opacity-40">
-      <div class="absolute -left-[10%] -top-[20%] h-[60%] w-[60%] animate-pulse rounded-full bg-primary/20 blur-[120px] mix-blend-multiply duration-[8000ms]"></div>
-      <div class="absolute -right-[10%] top-[20%] h-[60%] w-[60%] animate-pulse rounded-full bg-accent-gold/20 blur-[120px] mix-blend-multiply duration-[10000ms]"></div>
-      <div class="absolute -bottom-[20%] left-[20%] h-[60%] w-[60%] animate-pulse rounded-full bg-primary-hover/20 blur-[120px] mix-blend-multiply duration-[12000ms]"></div>
-    </div>
-
-    <!-- Main Glass Split Screen -->
-    <main class="relative z-10 w-full h-screen overflow-hidden bg-surface/80 backdrop-blur-3xl lg:grid lg:grid-cols-[1.05fr_.95fr]">
+  <div class="grid h-screen overflow-hidden bg-surface lg:h-[80vh] lg:grid-cols-[1.08fr_.92fr]">
+    <section
+      :class="[
+        'relative hidden h-screen overflow-hidden px-8 py-5 lg:flex lg:h-[80vh] lg:flex-col xl:px-10 xl:py-6',
+        isFlare ? 'bg-surface' : 'bg-[#4a141d]'
+      ]"
+    >
+      <div
+        class="absolute inset-0 z-0"
+        :style="
+          isFlare
+            ? 'background: radial-gradient(circle at 41% 44%, rgba(255, 97, 21, 0.08), transparent 34%), radial-gradient(circle at 58% 58%, rgba(255, 97, 21, 0.04), transparent 14%), linear-gradient(135deg, #ffffff 0%, #fff5f0 52%, #ffffff 100%);'
+            : 'background: radial-gradient(circle at 41% 44%, rgba(126, 31, 44, 0.9), transparent 34%), radial-gradient(circle at 96% 3%, rgba(255, 255, 255, 0.08), transparent 20%), radial-gradient(circle at 58% 58%, rgba(154, 42, 42, 0.46), transparent 14%), linear-gradient(135deg, #4a141d 0%, #681b29 52%, #4a141d 100%);'
+        "
+      />
+      <div
+        class="absolute bottom-32 right-10 h-36 w-36 z-0 opacity-20"
+        :style="`
+          background-image: radial-gradient(${isFlare ? 'rgba(255, 97, 21, 0.3)' : 'rgba(255, 255, 255, 0.48)'} 1px, transparent 1px);
+          background-size: 14px 14px;
+        `"
+      />
       
-      <!-- Left Side: Branding & Hero (Desktop) -->
-      <section class="relative hidden h-full flex-col border-r border-border bg-surface-muted/30 lg:flex">
-        
-        <div class="relative z-20 flex flex-1 flex-col justify-between p-12 xl:p-16">
-          <!-- Logo -->
-          <div class="flex items-center gap-4">
-            <div class="flex h-12 w-12 items-center justify-center rounded-xl border border-border bg-surface p-2 shadow-sm">
-              <img :src="logo" class="h-full w-full object-contain" alt="UniFAST TES" />
-            </div>
-            <div>
-              <p class="font-display text-lg font-bold text-text">{{ t("app.name") }}</p>
-              <p class="text-xs font-medium text-text-muted">{{ t("app.college") }}</p>
-            </div>
-          </div>
-          
-          <!-- Hero Text -->
-          <div class="mb-10 max-w-lg xl:mb-20">
-            <p class="mb-3 text-xs font-bold uppercase tracking-widest text-primary">
-              Welcome to the future
-            </p>
-            <h1 class="font-display text-4xl font-bold leading-[1.15] tracking-tight text-text xl:text-5xl">
-              {{ t("auth.heroTitle") }}
-            </h1>
-            <p class="mt-5 text-sm leading-relaxed text-text-muted">
-              {{ t("auth.heroDescription") }}
-            </p>
-          </div>
+      <div :class="['relative z-50 flex items-center gap-3 w-full justify-start mt-0', isFlare ? 'text-text' : 'text-white']">
+        <div :class="['h-10 w-10 rounded-lg p-1.5 shadow-sm bg-white', isFlare ? 'border border-surface-muted' : '']">
+          <img :src="logo" class="h-full w-full object-contain" alt="UniFAST TES" />
         </div>
-
-        <!-- Cutout Image pinned to bottom -->
-        <div class="absolute bottom-0 left-0 right-0 z-10 h-[45vh] max-h-[500px] overflow-hidden">
-          <div class="absolute inset-0 z-10 bg-gradient-to-t from-surface-muted/90 via-surface-muted/20 to-transparent pointer-events-none"></div>
-          <img :src="studentsCutout" class="absolute bottom-0 left-1/2 z-0 w-[85%] max-w-[650px] -translate-x-1/2 object-contain drop-shadow-2xl saturate-150 transition-transform duration-700 hover:scale-[1.02]" />
-        </div>
-      </section>
-
-      <!-- Right Side: Form -->
-      <section class="flex flex-col justify-center overflow-y-auto p-8 sm:p-12 lg:p-16">
-        <div class="absolute right-6 top-6 hidden lg:block z-50">
-          <LanguageSwitcher />
-        </div>
-
-        <div class="mx-auto w-full max-w-sm">
-          <!-- Mobile Logo (Hidden on Desktop) -->
-          <div class="mb-8 flex items-center gap-3 lg:hidden">
-            <div class="flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-surface p-1.5 shadow-sm">
-              <img :src="logo" class="h-full w-full object-contain" alt="UniFAST TES" />
-            </div>
-            <div>
-              <p class="font-display text-base font-bold text-text">{{ t("app.name") }}</p>
-              <p class="text-xs font-medium text-text-muted">{{ t("app.college") }}</p>
-            </div>
-            <div class="ml-auto"><LanguageSwitcher /></div>
-          </div>
-
-          <!-- Form Header -->
-          <h2 class="font-display text-2xl font-bold tracking-tight text-text sm:text-3xl">
-            {{
-              mode === "forgot"
-                ? t("auth.forgotTitle")
-                : mode === "activate"
-                  ? t("auth.activateTitle")
-                  : t("auth.loginTitle")
-            }}
-          </h2>
-          <p class="mt-2 text-sm text-text-muted">
-            {{
-              mode === "login"
-                ? t("auth.loginDescription")
-                : t("auth.emailDescription")
-            }}
+        <div>
+          <p class="text-base font-semibold">
+            UniFAST TES
           </p>
+          <p :class="['text-xs', isFlare ? 'text-text-muted' : 'text-white/80']">
+            {{ t("app.granteeManagement") }}
+          </p>
+        </div>
+      </div>
 
-          <!-- The Form -->
-          <form class="mt-8 space-y-5" @submit.prevent="mode === 'login' ? openCaptchaModal() : submit()">
-            <div class="space-y-1.5">
-              <label class="text-xs font-semibold text-text">{{ t("common.email") }} <span class="text-danger">*</span></label>
-              <div class="relative">
-                <Mail :size="18" class="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-soft transition-colors group-focus-within:text-primary" />
-                <input
-                  v-model="email"
-                  type="email"
-                  placeholder="you@unifast.gov.ph"
-                  class="group h-11 w-full rounded-xl border border-border bg-surface-muted/50 pl-11 pr-4 text-sm text-text transition-all focus:border-primary focus:bg-surface focus:ring-4 focus:ring-primary/10"
-                />
-              </div>
+      <div :class="['relative z-20 mt-12 max-w-xl xl:mt-16', isFlare ? 'text-text' : 'text-white']">
+        <p :class="['text-xs font-semibold uppercase tracking-[0.2em]', isFlare ? 'text-primary' : 'text-white/90']">
+          {{ t("app.college") }}
+        </p>
+        <h1
+          class="mt-4 max-w-[31rem] text-3xl font-semibold leading-[1.14] tracking-tight xl:text-4xl"
+        >
+          {{ t("auth.heroTitle") }}
+        </h1>
+        <p :class="['mt-4 max-w-md text-sm leading-6', isFlare ? 'text-text-muted' : 'text-white/82']">
+          {{ t("auth.heroDescription") }}
+        </p>
+      </div>
+
+      <!-- Large Watermark Logo Behind Image -->
+      <img
+        :src="backgroundLogo"
+        alt="Watermark"
+        class="absolute right-0 bottom-0 z-0 w-[90%] max-w-[600px] object-contain opacity-10 mix-blend-overlay pointer-events-none translate-x-[15%] translate-y-[15%]"
+      />
+
+      <img
+        :src="studentsCutout"
+        alt="Tagoloan Community College students"
+        class="absolute bottom-0 right-[-5%] z-10 w-[85%] max-w-[650px] object-contain drop-shadow-2xl brightness-105 contrast-105 hover:scale-[1.02] hover:brightness-110 transition-all duration-500 xl:w-[80%]"
+      />
+    </section>
+
+    <main
+      class="relative flex h-screen items-center justify-center overflow-hidden bg-white p-5 sm:p-6 lg:h-[80vh]"
+    >
+      <div class="absolute right-6 top-6 hidden lg:block">
+        <LanguageSwitcher />
+      </div>
+
+      <div class="w-full max-w-[31rem]">
+        <div class="mb-6 flex items-center gap-3 lg:hidden">
+          <span
+            class="grid h-12 w-12 place-items-center rounded-xl border bg-white p-1.5 shadow-sm"
+          >
+            <img :src="logo" class="h-full w-full object-contain" alt="UniFAST TES" />
+          </span>
+          <div>
+            <p class="font-semibold">{{ t("app.name") }}</p>
+            <p class="text-xs text-text-muted">{{ t("app.college") }}</p>
+          </div>
+          <div class="ml-auto"><LanguageSwitcher /></div>
+        </div>
+
+        <h2 class="text-xl font-semibold tracking-tight text-text">
+          {{
+            mode === "forgot"
+              ? t("auth.forgotTitle")
+              : mode === "activate"
+                ? t("auth.activateTitle")
+                : t("auth.loginTitle")
+          }}
+        </h2>
+        <p class="mt-1 text-sm text-text-muted">
+          {{
+            mode === "login"
+              ? t("auth.loginDescription")
+              : t("auth.emailDescription")
+          }}
+        </p>
+
+        <form class="mt-5 space-y-3.5">
+          <label class="block">
+            <span class="mb-1.5 block text-xs font-medium text-text">{{ t("common.email") }} <b class="text-danger">*</b></span>
+            <div class="relative">
+              <Mail :size="17" class="absolute left-3 top-1/2 -translate-y-1/2 text-text-soft" />
+              <input
+                v-model="email"
+                type="email"
+                placeholder="you@unifast.gov.ph"
+                class="h-10 w-full rounded-md border bg-[#f1f5fb] pl-10 pr-3 text-sm text-text shadow-inner shadow-slate-200/40"
+              />
             </div>
-
-            <div v-if="mode === 'login'" class="space-y-1.5">
-              <label class="text-xs font-semibold text-text">{{ t("common.password") }} <span class="text-danger">*</span></label>
-              <div class="relative">
-                <Lock :size="18" class="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-soft transition-colors group-focus-within:text-primary" />
-                <input
-                  v-model="password"
-                  :type="showPassword ? 'text' : 'password'"
-                  :placeholder="t('common.password')"
-                  autocomplete="current-password"
-                  class="group h-11 w-full rounded-xl border border-border bg-surface-muted/50 pl-11 pr-11 text-sm text-text transition-all focus:border-primary focus:bg-surface focus:ring-4 focus:ring-primary/10"
-                />
-                <button
-                  type="button"
-                  class="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-text-soft transition-colors hover:bg-surface-muted hover:text-text"
-                  :aria-label="showPassword ? t('common.hidePassword') : t('common.showPassword')"
-                  :aria-pressed="showPassword"
-                  @click="showPassword = !showPassword"
-                >
-                  <EyeOff v-if="showPassword" :size="16" />
-                  <Eye v-else :size="16" />
-                </button>
-              </div>
-            </div>
-
-            <p v-if="error" class="text-xs font-medium text-danger">{{ error }}</p>
-
-            <button
-              type="submit"
-              :disabled="busy"
-              class="group flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-white shadow-md transition-all hover:bg-primary-hover hover:shadow-lg focus:ring-4 focus:ring-primary/30 disabled:opacity-60"
+          </label>
+          <label v-if="mode === 'login'" class="block">
+            <span class="mb-1.5 block text-xs font-medium text-text"
+              >{{ t("common.password") }} <b class="text-danger">*</b></span
             >
-              {{ busy ? t("auth.signingIn") : mode === "login" ? t("common.signIn") : t("common.continue") }}
-              <ArrowRight :size="16" class="transition-transform group-hover:translate-x-1" />
-            </button>
-          </form>
-
-          <!-- Links -->
-          <div v-if="mode === 'login'" class="mt-5 flex items-center justify-between text-xs font-medium text-primary">
-            <RouterLink :to="withLang('/forgot-password', route.query.lang)" class="hover:underline">{{ t("auth.forgotPassword") }}</RouterLink>
-            <RouterLink :to="withLang('/activate', route.query.lang)" class="hover:underline">{{ t("auth.activateAccount") }}</RouterLink>
-          </div>
-          <div v-else class="mt-5 text-center text-xs font-medium">
-            <RouterLink :to="withLang('/login', route.query.lang)" class="text-primary hover:underline">{{ t("auth.backToSignIn") }}</RouterLink>
-          </div>
-
-          <!-- Demo Accounts -->
-          <div v-if="mode === 'login'" class="mt-8 border-t border-border pt-6">
-            <p class="mb-4 text-center text-xs font-bold uppercase tracking-wider text-text-soft">
-              {{ t("auth.demoAccounts") }}
-            </p>
-            <div class="grid grid-cols-2 gap-3">
+            <div class="relative">
+              <Lock :size="17" class="absolute left-3 top-1/2 -translate-y-1/2 text-text-soft" />
+              <input
+                v-model="password"
+                :type="showPassword ? 'text' : 'password'"
+                :placeholder="t('common.password')"
+                autocomplete="current-password"
+                class="h-10 w-full rounded-md border bg-[#f1f5fb] pl-10 pr-10 text-sm text-text shadow-inner shadow-slate-200/40"
+              />
               <button
-                v-for="role in ['Developer', 'Administrator', 'UniFAST Staff', 'Student']"
-                :key="role"
                 type="button"
-                class="flex h-11 items-center gap-2.5 rounded-xl border border-border bg-surface px-3 text-left shadow-sm transition-all hover:border-primary/40 hover:bg-surface-muted hover:shadow-md"
-                @click="quickLogin(role)"
+                class="absolute right-2 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded text-text-soft hover:text-text"
+                :aria-label="showPassword ? t('common.hidePassword') : t('common.showPassword')"
+                :aria-pressed="showPassword"
+                @click="showPassword = !showPassword"
               >
-                <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                  <UserRound :size="14" stroke-width="2.5" />
-                </div>
-                <span class="text-xs font-semibold text-text">{{ demoAccountLabel(role) }}</span>
+                <EyeOff v-if="showPassword" :size="16" />
+                <Eye v-else :size="16" />
               </button>
             </div>
-            
-            <RouterLink
-              :to="withLang('/help/support', route.query.lang)"
-              class="mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-border bg-surface text-xs font-semibold text-text-muted transition-all hover:bg-surface-muted hover:text-text"
-            >
-              <HelpCircle :size="16" />
-              Help & Support
-            </RouterLink>
-          </div>
+          </label>
+          <p v-if="error" class="text-xs text-danger mb-2">{{ error }}</p>
 
-          <!-- Terms & Conditions -->
-          <div v-if="terms && mode === 'login'" class="mt-6">
-            <button class="flex w-full items-center justify-between rounded-xl border border-border bg-surface px-4 py-3 text-xs font-medium text-text-muted transition-colors hover:bg-surface-muted hover:text-text" @click="showTerms = !showTerms">
-              <span class="flex items-center gap-2">
-                <ShieldCheck :size="16" class="text-primary" />
-                {{ terms.title }} (v{{ terms.version }})
-              </span>
-              <component :is="showTerms ? ChevronUp : ChevronDown" :size="16" />
+          <button
+            type="button"
+            :disabled="busy"
+            class="flex h-10 w-full items-center justify-center gap-2 rounded-md bg-primary text-sm font-semibold text-white shadow-sm hover:bg-primary-hover disabled:opacity-60"
+            @click="mode === 'login' ? openCaptchaModal() : submit()"
+          >
+            {{ busy ? t("auth.signingIn") : mode === "login" ? t("common.signIn") : t("common.continue") }}
+            <ArrowRight :size="15" />
+          </button>
+        </form>
+
+        <div v-if="mode === 'login'" class="mt-4 flex justify-between text-xs text-primary">
+          <RouterLink :to="withLang('/forgot-password', route.query.lang)">{{ t("auth.forgotPassword") }}</RouterLink>
+          <RouterLink :to="withLang('/activate', route.query.lang)">{{ t("auth.activateAccount") }}</RouterLink>
+        </div>
+        <div v-else class="mt-4 text-xs">
+          <RouterLink :to="withLang('/login', route.query.lang)" class="text-primary">{{ t("auth.backToSignIn") }}</RouterLink>
+        </div>
+
+        <div v-if="mode === 'login'" class="mt-6 border-t pt-4">
+          <p class="mb-2.5 text-2xs font-semibold uppercase tracking-wider text-text-soft">
+            {{ t("auth.demoAccounts") }}
+          </p>
+          <div class="grid grid-cols-2 gap-2">
+            <button
+              v-for="role in ['Developer', 'Administrator', 'UniFAST Staff', 'Student']"
+              :key="role"
+              type="button"
+              class="flex h-10 items-center gap-2.5 rounded-md border bg-white px-3 text-left hover:bg-surface-muted"
+              @click="quickLogin(role)"
+            >
+              <UserRound :size="17" class="text-text-muted" />
+              <span class="text-xs font-medium">{{ demoAccountLabel(role) }}</span>
             </button>
-            <div v-if="showTerms" class="mt-2 max-h-48 overflow-y-auto rounded-xl border border-border bg-surface-muted/50 p-4 text-xs leading-relaxed text-text-muted shadow-inner">
-              <div v-html="terms.content" />
-            </div>
+          </div>
+          <RouterLink
+            :to="withLang('/help/support', route.query.lang)"
+            class="mt-4 flex items-center justify-center gap-2 rounded-md border py-2.5 text-xs font-medium text-text-muted hover:bg-surface-muted"
+          >
+            <HelpCircle :size="14" />
+            Help & Support
+          </RouterLink>
+        </div>
+
+        <!-- Terms & Conditions -->
+        <div v-if="terms && mode === 'login'" class="mt-6 border-t pt-4">
+          <button class="flex w-full items-center gap-2 text-xs font-medium text-text-muted hover:text-text" @click="showTerms = !showTerms">
+            <ShieldCheck :size="14" />
+            <span>{{ terms.title }} (v{{ terms.version }})</span>
+            <component :is="showTerms ? ChevronUp : ChevronDown" :size="14" class="ml-auto" />
+          </button>
+          <div v-if="showTerms" class="mt-3 max-h-48 overflow-y-auto rounded-md border bg-surface p-3 text-xs text-text-muted">
+            <div v-html="terms.content" />
           </div>
         </div>
-      </section>
+      </div>
     </main>
   </div>
 

@@ -113,6 +113,7 @@ const studentChildren: RouteRecordRaw[] = [
   },
   { path: "upload", redirect: (to) => withLang("/student/documents", to.query.lang) },
   { path: "announcements", component: () => import("@/modules/announcements/StudentIndex.vue") },
+  { path: "announcements/:id", component: () => import("@/modules/announcements/StudentDetail.vue") },
   {
     path: "notifications",
     component: () => import("@/modules/notifications/StudentNotifications.vue"),

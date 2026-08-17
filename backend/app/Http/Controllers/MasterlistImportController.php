@@ -179,20 +179,8 @@ class MasterlistImportController extends Controller
                     'status' => 'unverified',
                 ]);
 
-                $plainToken = Str::random(48);
-                ActivationToken::create([
-                    'user_id' => $user->id,
-                    'token_hash' => hash('sha256', $plainToken),
-                    'expires_at' => now()->addDays(7),
-                ]);
-
-                try {
-                    $this->sendActivationEmail($user, $temporaryPassword, $plainToken);
-                    $sent++;
-                } catch (Throwable $exception) {
-                    report($exception);
-                    $failed[] = ['email' => $user->email, 'message' => $exception->getMessage()];
-                }
+                // Emails and activation tokens are no longer generated here.
+                // They will be generated when the staff uses the Onboarding Center to blast invites.
             }
 
             $import->update([
@@ -203,8 +191,8 @@ class MasterlistImportController extends Controller
 
         return response()->json([
             'data' => $this->presentImport($import->fresh(['batch', 'rows'])),
-            'mail' => ['sent' => $sent, 'failed' => $failed],
-        ], $failed === [] ? 200 : 207);
+            'message' => 'Successfully staged accounts for invitation.',
+        ], 200);
     }
 
     /**

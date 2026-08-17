@@ -77,7 +77,6 @@ type ImportDetail = {
 };
 
 const batches = ref<Batch[]>([]);
-const filterBatchId = ref<number | null>(null);
 const uploadBatchId = ref<number | null>(null);
 const imports = ref<ImportSummary[]>([]);
 const importsMeta = ref<PaginationMeta | null>(null);
@@ -97,6 +96,10 @@ const mailResult = ref<{ sent: number; failed: { email: string; message: string 
 
 const deadlineBatches = computed(() =>
   batches.value.filter((batch) => Boolean(batch.submission_deadline)),
+);
+
+const selectedUploadBatch = computed(() =>
+  uploadBatchId.value ? batches.value.find((b) => b.id === uploadBatchId.value) ?? null : null,
 );
 
 const rows = computed(() => {
@@ -120,7 +123,7 @@ onMounted(async () => {
   await loadImports();
 });
 
-watch(filterBatchId, () => {
+watch(uploadBatchId, () => {
   if (importsPage.value !== 1) {
     importsPage.value = 1;
   } else {
@@ -140,7 +143,7 @@ async function loadImports() {
       `/api/masterlist/imports${buildQuery({
         page: importsPage.value,
         per_page: 15,
-        batch_id: filterBatchId.value,
+        batch_id: uploadBatchId.value,
       })}`,
     );
     imports.value = payload.data;
@@ -156,6 +159,20 @@ async function loadImports() {
 
 function openFilePicker() {
   fileInput.value?.click();
+}
+
+function downloadTemplate() {
+  const headers = "student_id,name,email,program,year_level,student_number\n";
+  const sampleRow = "2026-001,Juan Dela Cruz,juan@email.com,BSIT,2,SN-1234\n";
+  const blob = new Blob([headers + sampleRow], { type: "text/csv" });
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.style.display = "none";
+  a.href = url;
+  a.download = "masterlist_template.csv";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
 }
 
 async function selectImport(importId: number) {
@@ -293,76 +310,199 @@ function formatDate(value: string | null) {
 }
 </script>
 
+
 <template>
   <div>
     <PageHeader
       title="Masterlist"
-      description="Records uploaded from Onboarding Center appear here. Upload a new file to update."
+      description="Upload a new file to add or update grantees. Stored imports appear below."
     />
 
-    <section class="mb-4 rounded-lg border bg-surface p-4">
-      <div class="mb-3 flex flex-wrap items-end justify-between gap-3">
+    <!-- ══ UPLOAD SECTION (top) ══ -->
+    <section class="mb-6 grid gap-6 rounded-lg border bg-surface p-6">
+      
+      <!-- Progress Indicator -->
+      <div class="flex items-center justify-between text-xs font-semibold text-text-muted">
+        <span class="flex items-center gap-1.5" :class="{ 'text-primary': !uploadBatchId }">
+          <span class="grid size-5 place-items-center rounded-full bg-border text-text">1</span>
+          Select Batch
+        </span>
+        <span class="h-px flex-1 bg-border/60 mx-4"></span>
+        <span class="flex items-center gap-1.5" :class="{ 'text-primary': uploadBatchId && !preview && !selectedFile }">
+          <span class="grid size-5 place-items-center rounded-full bg-border text-text">2</span>
+          Upload
+        </span>
+        <span class="h-px flex-1 bg-border/60 mx-4"></span>
+        <span class="flex items-center gap-1.5" :class="{ 'text-primary': selectedFile || preview }">
+          <span class="grid size-5 place-items-center rounded-full bg-border text-text">3</span>
+          Review
+        </span>
+        <span class="h-px flex-1 bg-border/60 mx-4"></span>
+        <span class="flex items-center gap-1.5">
+          <span class="grid size-5 place-items-center rounded-full bg-border text-text">4</span>
+          Import
+        </span>
+      </div>
+
+      <div v-if="!deadlineBatches.length" class="flex items-center gap-3 rounded-md border border-warning/30 bg-warning-soft p-4">
+        <IconAlertTriangle :size="20" class="text-warning" />
         <div>
-          <h2 class="text-sm font-semibold">Stored imports</h2>
+          <p class="text-sm font-medium text-warning">No active batch detected</p>
+          <p class="mt-0.5 text-xs text-warning/80">You must <RouterLink to="/app/batches?create=true" class="underline font-semibold hover:text-warning-dark">create a batch</RouterLink> or activate a submission deadline before you can upload a masterlist.</p>
+        </div>
+      </div>
+
+      <template v-else>
+        <!-- Row 1: Batch selection & Deadline -->
+        <div class="grid gap-4 md:grid-cols-[1fr_auto]">
+          <label class="block">
+            <span class="mb-1.5 block text-xs font-medium">1. Select Target Batch</span>
+            <select v-model.number="uploadBatchId" class="h-10 w-full rounded-md border px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary">
+              <option :value="null" disabled>Select a batch</option>
+              <option v-for="batch in deadlineBatches" :key="batch.id" :value="batch.id">
+                {{ batch.name }} · {{ batch.academic_year }} · {{ batch.semester }}
+              </option>
+            </select>
+          </label>
+
+          <div v-if="selectedUploadBatch?.submission_deadline" class="flex flex-col justify-center rounded-md border bg-surface-muted px-4 py-1.5 min-w-[200px]">
+            <span class="text-2xs font-semibold uppercase tracking-wider text-text-muted">Batch Deadline</span>
+            <div class="mt-0.5 flex items-center gap-2">
+              <span class="text-sm font-semibold text-text">{{ formatDate(selectedUploadBatch.submission_deadline) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Row 2: Upload Zone -->
+        <div class="grid gap-6 md:grid-cols-[2fr_1fr]">
+          
+          <!-- Dropzone Area -->
+          <div>
+            <span class="mb-1.5 block text-xs font-medium">2. Upload Masterlist</span>
+            <div
+              class="relative flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-border bg-surface-muted p-8 text-center transition-colors hover:border-primary hover:bg-primary/5"
+              @click="openFilePicker"
+            >
+              <input
+                ref="fileInput"
+                type="file"
+                accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
+                class="hidden"
+                @change="chooseFile"
+              />
+              <span class="mb-3 grid size-12 place-items-center rounded-full bg-primary/10 text-primary">
+                <IconFileSpreadsheet :size="24" />
+              </span>
+              <p class="text-base font-semibold text-text">Drag & drop your masterlist here</p>
+              <p class="mt-1 text-sm text-text-muted">or <span class="text-primary hover:underline">browse files</span></p>
+              
+              <div class="mt-4 flex flex-wrap justify-center gap-2 text-xs text-text-muted">
+                <span class="rounded bg-surface px-2 py-1 border shadow-sm">Excel (.xlsx)</span>
+                <span class="rounded bg-surface px-2 py-1 border shadow-sm">CSV (.csv)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Requirements & Template -->
+          <div class="flex flex-col justify-center gap-4">
+            <div class="rounded-lg border bg-surface-muted p-4">
+              <p class="text-xs font-semibold text-text">Required Columns</p>
+              <ul class="mt-2 space-y-1.5 text-xs text-text-muted">
+                <li class="flex items-center gap-1.5"><IconCheck :size="14" class="text-success" /> student_id</li>
+                <li class="flex items-center gap-1.5"><IconCheck :size="14" class="text-success" /> name</li>
+                <li class="flex items-center gap-1.5"><IconCheck :size="14" class="text-success" /> email</li>
+                <li class="flex items-center gap-1.5"><IconCheck :size="14" class="text-success" /> program</li>
+                <li class="flex items-center gap-1.5"><IconCheck :size="14" class="text-success" /> year_level</li>
+                <li class="flex items-center gap-1.5 text-text-soft"><span class="ml-1 text-2xs border rounded-full px-1">O</span> student_number (optional)</li>
+              </ul>
+            </div>
+            
+            <button
+              class="flex w-full items-center justify-center gap-2 rounded-md border bg-surface py-2 text-xs font-semibold text-text shadow-sm hover:bg-surface-muted"
+              @click="downloadTemplate"
+            >
+              <IconFileSpreadsheet :size="16" /> Download Template
+            </button>
+          </div>
+        </div>
+
+        <!-- Selected File Banner -->
+        <div v-if="selectedFile" class="flex items-center justify-between rounded-md border border-primary/20 bg-primary/5 px-4 py-3">
+          <div class="flex items-center gap-3">
+            <IconFileSpreadsheet :size="20" class="text-primary" />
+            <div>
+              <p class="text-sm font-semibold text-text">{{ selectedFile.name }}</p>
+              <p class="text-xs text-text-muted">{{ (selectedFile.size / 1024).toFixed(1) }} KB</p>
+            </div>
+          </div>
+          <button
+            class="flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-primary-dark disabled:opacity-50"
+            :disabled="busy || !uploadBatchId"
+            @click="previewImport"
+          >
+            <IconUpload :size="16" />{{ busy ? "Processing..." : "3. Preview Import" }}
+          </button>
+        </div>
+      </template>
+      <hr class="col-span-full my-2 border-t border-border/60" />
+
+      <!-- ══ IMPORT HISTORY LIST (below) ══ -->
+      <div class="col-span-full">
+        <div>
+          <h2 class="text-sm font-semibold">Import History</h2>
           <p class="mt-0.5 text-xs text-text-muted">
             Click a row to preview rows. New uploads from
             <RouterLink to="/app/onboarding" class="text-primary hover:underline">Onboarding Center</RouterLink>
             show up in this list.
           </p>
         </div>
-        <label class="block min-w-52">
-          <span class="mb-1.5 block text-xs font-medium">Filter by batch</span>
-          <select v-model="filterBatchId" class="h-9 w-full rounded-md border px-3 text-sm">
-            <option :value="null">All batches</option>
-            <option v-for="batch in batches" :key="batch.id" :value="batch.id">
-              {{ batch.name }} · {{ batch.academic_year }} · {{ batch.semester }}
-            </option>
-          </select>
-        </label>
-      </div>
 
-      <DataTable :headings="['File', 'Batch', 'Status', 'Rows', 'Imported', 'Uploaded', '']">
+      <DataTable :headings="['File', 'Status', 'Records', 'Imported', 'Uploaded', 'Actions']">
         <tr
           v-for="item in imports"
           :key="item.id"
           :class="[
-            'group cursor-pointer hover:bg-primary/5',
+            'group hover:bg-primary/5 transition-colors',
             selectedImportId === item.id ? 'bg-primary/5' : '',
           ]"
-          @click="selectImport(item.id)"
         >
           <td class="px-3 py-3 font-medium">{{ item.original_name || `Import #${item.id}` }}</td>
-          <td class="px-3 py-3 text-text-muted">
-            <template v-if="item.batch">
-              {{ item.batch.name }} · {{ item.batch.academic_year }} · {{ item.batch.semester }}
-            </template>
-            <template v-else>—</template>
+          <td class="px-3 py-3">
+            <span v-if="item.status === 'imported' || item.status === 'completed'" class="inline-flex rounded-full bg-success-soft px-2 py-0.5 text-xs font-semibold text-success">
+              ✓ Imported
+            </span>
+            <span v-else class="inline-flex rounded-full bg-surface-muted px-2 py-0.5 text-xs font-semibold text-text-muted capitalize">
+              {{ item.status }}
+            </span>
           </td>
-          <td class="px-3 py-3 capitalize">{{ item.status }}</td>
-          <td class="px-3 py-3 tabular-nums">
-            {{ item.valid_rows }}/{{ item.total_rows }}
-            <span v-if="item.invalid_rows" class="text-danger">({{ item.invalid_rows }} err)</span>
+          <td class="px-3 py-3">
+            <span v-if="item.invalid_rows > 0" class="inline-flex items-center gap-1 rounded-full bg-warning-soft px-2 py-0.5 text-xs font-semibold text-warning">
+              ⚠ {{ item.invalid_rows }} errors
+            </span>
+            <span v-else class="inline-flex rounded-full bg-surface-muted px-2 py-0.5 text-xs font-semibold text-text-muted">
+              {{ item.valid_rows }} valid
+            </span>
           </td>
           <td class="px-3 py-3 tabular-nums">{{ item.imported_rows }}</td>
           <td class="px-3 py-3 text-text-muted">{{ formatDate(item.created_at) }}</td>
           <td class="px-3 py-3 text-right">
-            <button
-              v-if="item.status !== 'completed'"
-              class="text-text-muted hover:text-danger opacity-0 group-hover:opacity-100 transition-opacity"
-              title="Delete import"
-              @click.stop="openDeleteDialog(item)"
-            >
-              <IconTrash :size="16" />
-            </button>
+            <div class="flex items-center justify-end gap-2">
+              <button
+                class="text-xs font-semibold text-primary hover:underline"
+                @click="selectImport(item.id)"
+              >
+                View
+              </button>
+            </div>
           </td>
         </tr>
         <tr v-if="!loadingList && !imports.length">
-          <td colspan="6" class="p-8 text-center text-text-muted">
+          <td colspan="5" class="p-8 text-center text-text-muted">
             No masterlist records yet. Upload from Onboarding Center or use the form below.
           </td>
         </tr>
         <tr v-if="loadingList">
-          <td colspan="6" class="p-8 text-center text-text-muted">Loading records…</td>
+          <td colspan="5" class="p-8 text-center text-text-muted">Loading records…</td>
         </tr>
         <template v-if="importsMeta" #footer>
           <TablePagination
@@ -372,65 +512,9 @@ function formatDate(value: string | null) {
           />
         </template>
       </DataTable>
+      </div>
     </section>
 
-    <section class="mb-4 grid gap-4 rounded-lg border bg-surface p-4 lg:grid-cols-2">
-      <div class="lg:col-span-2">
-        <h2 class="text-sm font-semibold">Upload updated masterlist</h2>
-        <p class="mt-0.5 text-xs text-text-muted">
-          Choose a batch and upload a new CHED file when the masterlist needs updating. Preview, then confirm
-          to create/update grantee accounts.
-        </p>
-      </div>
-      
-      <div v-if="!deadlineBatches.length" class="lg:col-span-2 flex items-center gap-3 rounded-md border border-warning/30 bg-warning-soft p-4">
-        <IconAlertTriangle :size="20" class="text-warning" />
-        <div>
-          <p class="text-sm font-medium text-warning">No active batch detected</p>
-          <p class="mt-0.5 text-xs text-warning/80">You must <RouterLink to="/app/batches?create=true" class="underline font-semibold hover:text-warning-dark">create a batch</RouterLink> or activate a submission deadline before you can upload a masterlist.</p>
-        </div>
-      </div>
-
-      <template v-else>
-        <label class="block">
-          <span class="mb-1.5 block text-xs font-medium">Batch (with deadline)</span>
-          <select v-model.number="uploadBatchId" class="h-9 w-full rounded-md border px-3 text-sm">
-            <option :value="null" disabled>Select a batch</option>
-            <option v-for="batch in deadlineBatches" :key="batch.id" :value="batch.id">
-              {{ batch.name }} · {{ batch.academic_year }} · {{ batch.semester }}
-            </option>
-          </select>
-        </label>
-
-        <div class="flex items-end gap-2">
-          <input
-            ref="fileInput"
-            type="file"
-            accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
-            class="hidden"
-            @change="chooseFile"
-          />
-          <button
-            class="flex h-9 w-full items-center justify-center gap-2 rounded-md border bg-surface px-4 text-xs font-medium hover:bg-surface-muted"
-            data-tour="masterlist-upload"
-            @click="openFilePicker"
-          >
-            <IconFileSpreadsheet :size="14" /> Upload Excel or CSV file
-          </button>
-        </div>
-
-        <div v-if="selectedFile" class="lg:col-span-2 flex items-center justify-between rounded-md border bg-surface-muted px-3 py-2">
-          <span class="text-xs font-medium">{{ selectedFile.name }}</span>
-          <button
-            class="flex items-center gap-1 rounded bg-primary px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50"
-            :disabled="busy || !uploadBatchId"
-            @click="previewImport"
-          >
-            <IconUpload :size="14" />{{ busy ? "Processing..." : "Preview import" }}
-          </button>
-        </div>
-      </template>
-    </section>
 
     <p
       v-if="error"
@@ -522,47 +606,49 @@ function formatDate(value: string | null) {
       <div v-if="preview.status !== 'imported'" class="flex justify-end">
         <button
           :disabled="preview.valid_rows === 0"
-          class="inline-flex h-9 items-center gap-1.5 rounded-md bg-primary px-3 text-xs font-medium text-white disabled:opacity-60"
+          class="inline-flex h-9 items-center gap-1.5 rounded-md bg-primary px-3 text-xs font-medium text-white shadow-sm disabled:opacity-60"
           @click="confirmDialog = true"
         >
           <IconCheck :size="14" />
-          Confirm import ({{ preview.valid_rows }} accounts)
+          4. Confirm Import ({{ preview.valid_rows }} accounts)
         </button>
       </div>
-      <p v-else class="text-right text-xs text-text-muted">This import is confirmed.</p>
+      <p v-else class="text-right text-xs font-semibold text-success">✓ This import is confirmed.</p>
     </div>
 
     <section
       v-else-if="!loadingDetail"
-      class="flex min-h-48 flex-col items-center justify-center rounded-lg border-2 border-dashed bg-surface p-8 text-center"
+      class="flex flex-col items-center justify-center rounded-lg border bg-surface-muted py-6 text-center"
     >
-      <span class="mb-3 grid size-12 place-items-center rounded-full bg-primary-soft text-primary">
-        <IconFileSpreadsheet :size="24" />
-      </span>
-      <span class="text-sm font-semibold">Select a stored import or upload a file</span>
-      <span class="mt-1 text-xs text-text-muted">
-        Required columns: student ID, name, email, program, year level, and optional student number.
-      </span>
+      <span class="text-sm font-semibold text-text-muted">Select an import history record to view details</span>
     </section>
 
     <AppDialog
       v-model="confirmDialog"
-      title="Confirm masterlist import"
-      :description="preview ? `${preview.valid_rows} valid rows will create accounts and receive activation emails.` : ''"
+      title="Ready to import records"
+      :description="preview ? `You are about to import ${preview.valid_rows} records into the system.` : ''"
       size="sm"
     >
-      <p class="text-sm text-text-muted">
-        New accounts will start as unverified. Each grantee receives a one-time activation link and
-        temporary password.
+      <div v-if="preview" class="space-y-3 rounded-lg border bg-surface p-4 text-sm">
+        <p class="flex items-center gap-2 text-success">
+          <IconCheck :size="16" /> {{ preview.valid_rows }} new grantees will be created
+        </p>
+        <p v-if="preview.invalid_rows" class="flex items-center gap-2 text-warning">
+          <IconAlertTriangle :size="16" /> {{ preview.invalid_rows }} records will be skipped due to errors
+        </p>
+      </div>
+      
+      <p class="mt-4 text-xs text-text-muted">
+        New accounts will start as unverified. Each grantee receives a one-time activation link and temporary password via email.
       </p>
       <template #footer="{ close }">
-        <button class="rounded-md border px-4 py-2 text-xs" @click="close">Cancel</button>
+        <button class="rounded-md border px-4 py-2 text-xs font-medium hover:bg-surface-muted" @click="close">Cancel</button>
         <button
-          class="rounded-md bg-primary px-4 py-2 text-xs text-white disabled:opacity-60"
+          class="rounded-md bg-primary px-4 py-2 text-xs font-medium text-white shadow-sm disabled:opacity-60"
           :disabled="confirming"
           @click="confirmImport(close)"
         >
-          {{ confirming ? "Importing..." : "Confirm import" }}
+          {{ confirming ? "Importing..." : "Confirm Import" }}
         </button>
       </template>
     </AppDialog>

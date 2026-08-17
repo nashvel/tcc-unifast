@@ -13,6 +13,7 @@ use App\Http\Controllers\ChangelogController;
 use App\Http\Controllers\CollaboratorController;
 use App\Http\Controllers\DatabaseController;
 use App\Http\Controllers\DistributionReportController;
+use App\Http\Controllers\DeveloperServicesController;
 use App\Http\Controllers\DocumentSubmissionController;
 use App\Http\Controllers\DocumentFileController;
 use App\Http\Controllers\EligibilityController;
@@ -80,7 +81,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
     // Student routes
     Route::middleware('role:student')->group(function (): void {
         Route::get('/student/kyc', [StudentKycController::class, 'show'])->middleware('throttle:30,1');
-        Route::post('/student/kyc', [StudentKycController::class, 'store'])->middleware('throttle:5,1');
+        Route::post('/student/kyc', [StudentKycController::class, 'store'])->middleware('throttle:60,1');
         Route::get('/student/identity-onboarding', [IdentityOnboardingController::class, 'show']);
         Route::get('/student/identity-onboarding/ocr-health', [IdentityOnboardingController::class, 'ocrHealth'])->middleware('throttle:30,1');
         Route::post('/student/identity-onboarding/id-scan/ocr-front', [IdentityOnboardingController::class, 'validateFrontIdOcr'])->middleware('throttle:30,1');
@@ -179,13 +180,25 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::post('/batches/{batch}/deactivate', [BatchController::class, 'deactivate'])->middleware('throttle:10,1');
         Route::post('/batches/{batch}/extend-deadline', [BatchController::class, 'extendDeadline'])->middleware('throttle:10,1');
         Route::post('/masterlist/imports/{import}/confirm', [MasterlistImportController::class, 'confirm'])->middleware('throttle:10,1');
+
+        Route::get('/onboarding-center/batches/{batch}/stats', [\App\Http\Controllers\OnboardingCenterController::class, 'stats']);
+        Route::get('/onboarding-center/batches/{batch}/grantees', [\App\Http\Controllers\OnboardingCenterController::class, 'grantees']);
+        Route::post('/onboarding-center/batches/{batch}/blast-invites', [\App\Http\Controllers\OnboardingCenterController::class, 'blastInvites'])->middleware('throttle:5,1');
+        Route::post('/onboarding-center/grantees/{grantee}/resend-invite', [\App\Http\Controllers\OnboardingCenterController::class, 'resendInvite'])->middleware('throttle:20,1');
     });
 
     // RBAC + database viewer (developer/admin)
     Route::middleware('role:developer,admin')->group(function (): void {
         // Activation Seeder — create activation-ready grantees from the browser
         Route::get('/activation-seeder/batches', [ActivationSeederController::class, 'batches']);
+        Route::get('/activation-seeder/history', [ActivationSeederController::class, 'history']);
         Route::post('/activation-seeder', [ActivationSeederController::class, 'seed'])->middleware('throttle:30,1');
+        Route::post('/activation-seeder/regenerate/{grantee}', [ActivationSeederController::class, 'regenerate'])->middleware('throttle:10,1');
+
+        // Service Manager
+        Route::get('/services/status', [DeveloperServicesController::class, 'status']);
+        Route::post('/services/start-ocr', [DeveloperServicesController::class, 'startOcr'])->middleware('throttle:20,1');
+        Route::post('/services/start-cloudflare', [DeveloperServicesController::class, 'startCloudflare'])->middleware('throttle:20,1');
 
         Route::get('/changelogs', [ChangelogController::class, 'index']);
         Route::get('/rbac/roles', [RbacController::class, 'index']);

@@ -6,7 +6,9 @@ import {
   IconCamera,
   IconCheck,
   IconFileText,
+  IconHelp,
   IconId,
+  IconInfoCircle,
   IconLock,
   IconRefresh,
   IconShieldCheck,
@@ -88,6 +90,21 @@ const precheck = ref<Record<string, boolean>>({
 });
 const consent = ref(false);
 const confirmDialog = ref(false);
+const tutorialDialog = ref(false);
+const precheckDialog = ref(false);
+const activeTutorialTab = ref<"overview" | "slot1" | "slot2" | "slot3" | "slot4">("overview");
+
+function openTutorial(tab: "overview" | "slot1" | "slot2" | "slot3" | "slot4" = "overview") {
+  activeTutorialTab.value = tab;
+  tutorialDialog.value = true;
+}
+
+function selectAllPrecheck() {
+  for (const key of Object.keys(precheck.value)) {
+    precheck.value[key] = true;
+  }
+  consent.value = true;
+}
 
 const schoolIdUploaded = computed(() => Boolean(slots.value.school_id));
 const packageLocked = computed(() =>
@@ -106,15 +123,6 @@ const allDocumentsUploaded = computed(
     Boolean(slots.value.specimen_signatures),
 );
 const precheckReady = computed(() => Object.values(precheck.value).every(Boolean) && consent.value);
-const canOpenIdScan = computed(
-  () =>
-    (precheckReady.value && !schoolIdUploaded.value) ||
-    (inResubmissionMode.value && canEditSlot("school_id")),
-);
-/** Precheck/consent stay editable when School ID was never uploaded. */
-const schoolIdPrecheckLocked = computed(
-  () => inResubmissionMode.value && schoolIdUploaded.value && !canEditSlot("school_id"),
-);
 const canSubmitPackage = computed(
   () => allDocumentsUploaded.value && !packageLocked.value && !inResubmissionMode.value,
 );
@@ -242,7 +250,10 @@ function canResubmitSlot(
 function isSlotActionable(
   slotKey: "school_id" | "course_history" | "grade_slip" | "specimen_signatures",
 ) {
-  return canEditSlot(slotKey) || canResubmitSlot(slotKey);
+  if (inResubmissionMode.value) {
+    return canEditSlot(slotKey) || canResubmitSlot(slotKey);
+  }
+  return slots.value[slotKey]?.status === "resubmission";
 }
 
 /** Already on file with staff and not returned — muted during resubmission. */
@@ -268,7 +279,7 @@ function canUploadNewSlot(
 
 function slotStatusLabel(status: string) {
   if (status === "draft") {
-    return granteeStatus.value === "resubmission_requested" ? "Ready to resubmit" : "Draft";
+    return granteeStatus.value === "resubmission_requested" ? "Ready to resubmit" : "Draft saved";
   }
   if (status === "pending_review") return "Pending review";
   if (status === "resubmission") return "Resubmission requested";
@@ -403,8 +414,18 @@ function onFilePicked(event: Event, target: "course" | "grade" | "specimen") {
   void uploadDocument(slotKey, file, { replace: replacing });
 }
 
-function openSchoolIdScan() {
-  if (!canOpenIdScan.value) return;
+function handleSlot1Click() {
+  if (packageLocked.value && !canEditSlot("school_id")) return;
+  if (precheckReady.value) {
+    proceedToSchoolIdScan();
+  } else {
+    precheckDialog.value = true;
+  }
+}
+
+function proceedToSchoolIdScan() {
+  if (!precheckReady.value && !canEditSlot("school_id")) return;
+  precheckDialog.value = false;
   markVaultSchoolIdScanReady();
   // Full-page capture (same SchoolIdCaptureFlow as onboarding) — not the old one-shot modal.
   void router.push(withLang({ name: "student-documents-school-id-scan" }));
@@ -543,10 +564,20 @@ async function resubmitSlot(
 
 <template>
   <div class="space-y-5">
-    <PageHeader
-      title="Requirement Vault"
-      description="Upload all four documents (School ID, Course History, Grade Slip, Specimen), then submit to staff. After a return, resubmit only returned document(s)."
-    />
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <PageHeader
+        title="Requirement Vault"
+        description="Upload all four documents (School ID, Course History, Grade Slip, ID Back-to-Back with Specimen), then submit to staff. After a return, resubmit only returned document(s)."
+      />
+      <button
+        type="button"
+        @click="openTutorial('overview')"
+        class="inline-flex shrink-0 items-center gap-1.5 self-start rounded-xl border bg-surface px-3.5 py-2 text-xs font-semibold text-primary shadow-sm transition hover:bg-primary-soft/40 hover:shadow"
+      >
+        <IconHelp :size="16" />
+        Requirements Guide &amp; Tutorial
+      </button>
+    </div>
 
     <CardSkeleton v-if="loading" :lines="4" class-name="rounded-2xl p-6" />
     <section v-else-if="!windowOpen" class="rounded-2xl border bg-surface p-6 shadow-sm">
@@ -593,39 +624,6 @@ async function resubmitSlot(
       <p v-if="error" class="rounded-md border border-danger/30 bg-danger-soft p-3 text-xs text-danger">{{ error }}</p>
       <p v-if="success" class="rounded-md border border-success/30 bg-success-soft p-3 text-xs text-success">{{ success }}</p>
 
-      <article
-        class="rounded-lg border bg-surface p-4"
-        :class="{
-          'opacity-55 bg-surface-muted/40': schoolIdPrecheckLocked,
-        }"
-      >
-        <h2 class="flex items-center gap-2 text-sm font-semibold"><IconCamera :size="17" /> Pre-check &amp; consent (required before Slot 1)</h2>
-        <p v-if="schoolIdPrecheckLocked" class="mt-2 text-xs text-text-muted">
-          Pre-check is not required to replace a returned document.
-        </p>
-        <p v-else-if="inResubmissionMode && !schoolIdUploaded" class="mt-2 text-xs text-text-muted">
-          Complete pre-check to upload a missing School ID during this resubmission.
-        </p>
-        <div class="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-          <label v-for="[key, label] in precheckItems" :key="key" class="flex items-center gap-2 rounded-md border p-3 text-xs">
-            <input
-              v-model="precheck[key]"
-              type="checkbox"
-              :disabled="schoolIdPrecheckLocked"
-            />
-            {{ label }}
-          </label>
-        </div>
-        <label class="mt-3 flex items-start gap-2 rounded-md border p-3 text-xs">
-          <input
-            v-model="consent"
-            type="checkbox"
-            :disabled="schoolIdPrecheckLocked"
-          />
-          <span>I accept the Data Privacy Act consent for identity verification processing.</span>
-        </label>
-      </article>
-
       <section class="grid items-start gap-4 md:grid-cols-2 xl:grid-cols-4">
         <article class="rounded-lg border bg-surface p-4" :class="slotCardClass('school_id')">
           <div class="flex items-start gap-3">
@@ -636,10 +634,10 @@ async function resubmitSlot(
             </div>
           </div>
           <div v-if="slots.school_id" class="mt-4 space-y-2" :class="slotFilePanelClass('school_id')">
-            <p class="font-semibold">
+            <p class="font-semibold flex items-center gap-1.5">
               <IconCheck v-if="!isSlotActionable('school_id')" :size="14" class="inline" />
               <IconRefresh v-else :size="14" class="inline" />
-              {{ isSlotActionable("school_id") ? "Action needed" : "On file with staff" }}
+              {{ isSlotActionable("school_id") ? "Action needed" : (packageLocked ? "On file with staff" : "Draft saved") }}
             </p>
             <p>
               <span :class="slotStatusClass(slots.school_id.status)">{{
@@ -662,9 +660,9 @@ async function resubmitSlot(
           </p>
           <button
             v-if="!schoolIdUploaded || canEditSlot('school_id')"
-            class="mt-4 inline-flex h-9 items-center gap-2 rounded-md bg-primary px-3 text-xs font-medium text-white disabled:opacity-50"
-            :disabled="!canOpenIdScan"
-            @click="openSchoolIdScan"
+            class="mt-4 inline-flex h-9 items-center gap-2 rounded-md bg-primary px-3 text-xs font-medium text-white shadow-sm transition hover:bg-primary-hover disabled:opacity-50"
+            :disabled="packageLocked && !canEditSlot('school_id')"
+            @click="handleSlot1Click"
           >
             <IconCamera :size="14" />
             {{ canEditSlot("school_id") ? "Re-scan School ID" : "Start live ID scan" }}
@@ -684,15 +682,23 @@ async function resubmitSlot(
         <article class="rounded-lg border bg-surface p-4" :class="slotCardClass('course_history')">
           <div class="flex items-start gap-3">
             <span class="grid h-10 w-10 place-items-center rounded-lg bg-info-soft text-info"><IconFileText :size="20" /></span>
-            <div>
+            <div class="min-w-0 flex-1">
               <h2 class="text-sm font-semibold">Slot 2: Course History</h2>
-              <p class="text-xs text-text-muted">PDF only</p>
+              <p class="text-xs text-text-muted">PDF only from TCC SIS</p>
             </div>
+            <button
+              type="button"
+              @click="openTutorial('slot2')"
+              class="text-xs text-primary hover:underline font-medium shrink-0"
+              title="How to get from TCC SIS"
+            >
+              SIS Guide
+            </button>
           </div>
           <div v-if="slots.course_history" class="mt-4 space-y-3">
             <div :class="slotFilePanelClass('course_history')">
               <IconRefresh v-if="isSlotActionable('course_history')" :size="14" class="inline" />
-              <IconCheck v-else :size="14" class="inline" />
+              <IconCheck v-else :size="14" class="inline text-success" />
               {{ slots.course_history.original_name }}
               <span class="mt-1 block">
                 <span :class="slotStatusClass(slots.course_history.status)">{{
@@ -772,17 +778,25 @@ async function resubmitSlot(
         <article class="rounded-lg border bg-surface p-4" :class="slotCardClass('grade_slip')">
           <div class="flex items-start gap-3">
             <span class="grid h-10 w-10 place-items-center rounded-lg bg-info-soft text-info"><IconFileText :size="20" /></span>
-            <div>
+            <div class="min-w-0 flex-1">
               <h2 class="text-sm font-semibold">Slot 3: Grade Slip</h2>
               <p class="text-xs text-text-muted">
-                PDF — last Grade Slip that already has grades (not current-enrollment empty slip)
+                PDF from TCC SIS · Current Grade Slip (pending/late grades accepted)
               </p>
             </div>
+            <button
+              type="button"
+              @click="openTutorial('slot3')"
+              class="text-xs text-primary hover:underline font-medium shrink-0"
+              title="How to get from TCC SIS"
+            >
+              SIS Guide
+            </button>
           </div>
           <div v-if="slots.grade_slip" class="mt-4 space-y-3">
             <div :class="slotFilePanelClass('grade_slip')">
               <IconRefresh v-if="isSlotActionable('grade_slip')" :size="14" class="inline" />
-              <IconCheck v-else :size="14" class="inline" />
+              <IconCheck v-else :size="14" class="inline text-success" />
               {{ slots.grade_slip.original_name }}
               <span class="mt-1 block">
                 <span :class="slotStatusClass(slots.grade_slip.status)">{{
@@ -862,21 +876,29 @@ async function resubmitSlot(
         <article class="rounded-lg border bg-surface p-4" :class="slotCardClass('specimen_signatures')">
           <div class="flex items-start gap-3">
             <span class="grid h-10 w-10 place-items-center rounded-lg bg-info-soft text-info"><IconSignature :size="20" /></span>
-            <div>
-              <h2 class="text-sm font-semibold">Slot 4: 3 Specimen Signatures</h2>
-              <p class="text-xs text-text-muted">Image only (JPG, PNG, WEBP)</p>
+            <div class="min-w-0 flex-1">
+              <h2 class="text-sm font-semibold">Slot 4: ID (Back-to-Back) &amp; Specimen</h2>
+              <p class="text-xs text-text-muted">PDF or Image (PDF, JPG, PNG, WEBP) · ID front &amp; back + 3 blue signatures</p>
             </div>
+            <button
+              type="button"
+              @click="openTutorial('slot4')"
+              class="text-xs text-primary hover:underline font-medium shrink-0"
+              title="How to prepare this document"
+            >
+              Guide
+            </button>
           </div>
           <p
             v-if="!slots.specimen_signatures || !inResubmissionMode || isSlotActionable('specimen_signatures')"
             class="mt-3 text-xs text-text-muted"
           >
-            Write three specimen signatures on one sheet using a <span class="font-semibold text-text">blue ballpen</span>.
+            Put your ID (Front &amp; Back) in a document with 3 specimen signatures in <span class="font-semibold text-text">blue ballpen</span>, then upload as PDF or Image.
           </p>
           <div v-if="slots.specimen_signatures" class="mt-4 space-y-3">
             <div :class="slotFilePanelClass('specimen_signatures')">
               <IconRefresh v-if="isSlotActionable('specimen_signatures')" :size="14" class="inline" />
-              <IconCheck v-else :size="14" class="inline" />
+              <IconCheck v-else :size="14" class="inline text-success" />
               {{ slots.specimen_signatures.original_name }}
               <span class="mt-1 block">
                 <span :class="slotStatusClass(slots.specimen_signatures.status)">{{
@@ -901,7 +923,7 @@ async function resubmitSlot(
               :disabled="!canEditSlot('specimen_signatures') || busy === 'specimen_signatures'"
               class="hidden"
               type="file"
-              accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+              accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp"
               @change="onFilePicked($event, 'specimen')"
             />
             <button
@@ -925,21 +947,21 @@ async function resubmitSlot(
               {{
                 busy === "resubmit-specimen_signatures"
                   ? "Resubmitting…"
-                  : "Resubmit Specimen Signatures"
+                  : "Resubmit ID (Back-to-Back) & Specimen"
               }}
             </button>
           </div>
           <div v-else class="mt-4 space-y-3">
             <label class="flex items-start gap-2 rounded-md border p-3 text-xs">
               <input v-model="specimenBlueInkAck" type="checkbox" :disabled="!schoolIdUploaded" />
-              <span>I confirm the three specimens were written with a blue ballpen.</span>
+              <span>I confirm the file contains my School ID (front &amp; back) with 3 blue-ink specimen signatures.</span>
             </label>
             <input
               ref="specimenSignaturesInput"
               :disabled="!canUploadNewSlot('specimen_signatures') || busy === 'specimen_signatures'"
               class="hidden"
               type="file"
-              accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+              accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp"
               @change="onFilePicked($event, 'specimen')"
             />
             <p
@@ -947,7 +969,7 @@ async function resubmitSlot(
               aria-live="polite"
             >
               <IconSignature :size="14" class="shrink-0" />
-              <span class="truncate">{{ slotFileLabel("specimen_signatures", specimenSignatures, "No image selected") }}</span>
+              <span class="truncate">{{ slotFileLabel("specimen_signatures", specimenSignatures, "No file selected (PDF or Image)") }}</span>
             </p>
             <button
               type="button"
@@ -956,7 +978,7 @@ async function resubmitSlot(
               @click="uploadDocument('specimen_signatures')"
             >
               <IconUpload :size="14" />
-              {{ busy === "specimen_signatures" ? "Uploading…" : "Upload Specimen Signatures" }}
+              {{ busy === "specimen_signatures" ? "Uploading…" : "Upload ID (Back-to-Back) & Specimen" }}
             </button>
           </div>
         </article>
@@ -1037,6 +1059,264 @@ async function resubmitSlot(
           @click="confirmSubmission"
         >
           {{ busy === "confirm" ? "Submitting…" : "Confirm — submit all four" }}
+        </button>
+      </template>
+    </AppDialog>
+
+    <!-- Submission Guide & Tutorial Dialog -->
+    <AppDialog
+      v-model="tutorialDialog"
+      title="How to Prepare & Submit Requirements"
+      description="Follow these step-by-step instructions to prepare your 4 documents from TCC SIS and your student ID."
+      size="lg"
+    >
+      <!-- Navigation Tabs -->
+      <div class="flex flex-wrap gap-1.5 border-b pb-3 text-xs">
+        <button
+          type="button"
+          @click="activeTutorialTab = 'overview'"
+          class="rounded-lg px-3 py-1.5 font-medium transition"
+          :class="activeTutorialTab === 'overview' ? 'bg-primary text-white shadow-sm' : 'border bg-surface text-text hover:bg-surface-muted'"
+        >
+          Overview (All 4)
+        </button>
+        <button
+          type="button"
+          @click="activeTutorialTab = 'slot1'"
+          class="rounded-lg px-3 py-1.5 font-medium transition"
+          :class="activeTutorialTab === 'slot1' ? 'bg-primary text-white shadow-sm' : 'border bg-surface text-text hover:bg-surface-muted'"
+        >
+          Slot 1: Live ID Scan
+        </button>
+        <button
+          type="button"
+          @click="activeTutorialTab = 'slot2'"
+          class="rounded-lg px-3 py-1.5 font-medium transition"
+          :class="activeTutorialTab === 'slot2' ? 'bg-primary text-white shadow-sm' : 'border bg-surface text-text hover:bg-surface-muted'"
+        >
+          Slot 2: Course History (SIS)
+        </button>
+        <button
+          type="button"
+          @click="activeTutorialTab = 'slot3'"
+          class="rounded-lg px-3 py-1.5 font-medium transition"
+          :class="activeTutorialTab === 'slot3' ? 'bg-primary text-white shadow-sm' : 'border bg-surface text-text hover:bg-surface-muted'"
+        >
+          Slot 3: Grade Slip (SIS)
+        </button>
+        <button
+          type="button"
+          @click="activeTutorialTab = 'slot4'"
+          class="rounded-lg px-3 py-1.5 font-medium transition"
+          :class="activeTutorialTab === 'slot4' ? 'bg-primary text-white shadow-sm' : 'border bg-surface text-text hover:bg-surface-muted'"
+        >
+          Slot 4: ID (Back-to-Back) &amp; Specimen
+        </button>
+      </div>
+
+      <!-- Tab 1: Overview -->
+      <div v-if="activeTutorialTab === 'overview'" class="space-y-4 pt-2 text-xs">
+        <p class="text-text-muted">
+          All four slots must be completed before you can submit the package to staff Document Validation:
+        </p>
+        <div class="grid gap-3 sm:grid-cols-2">
+          <div class="rounded-xl border bg-surface-muted/30 p-3">
+            <p class="font-semibold text-text flex items-center gap-1.5">
+              <span class="grid size-5 place-items-center rounded bg-primary text-2xs text-white">1</span>
+              Slot 1: Live School ID Scan
+            </p>
+            <p class="mt-1 text-text-muted">Direct live camera scan of front &amp; back of your physical ID with real-time biometric &amp; OCR checks.</p>
+          </div>
+          <div class="rounded-xl border bg-surface-muted/30 p-3">
+            <p class="font-semibold text-text flex items-center gap-1.5">
+              <span class="grid size-5 place-items-center rounded bg-primary text-2xs text-white">2</span>
+              Slot 2: Course History (PDF)
+            </p>
+            <p class="mt-1 text-text-muted">Downloaded directly from your TCC SIS student portal and saved as PDF.</p>
+          </div>
+          <div class="rounded-xl border bg-surface-muted/30 p-3">
+            <p class="font-semibold text-text flex items-center gap-1.5">
+              <span class="grid size-5 place-items-center rounded bg-primary text-2xs text-white">3</span>
+              Slot 3: Grade Slip (PDF)
+            </p>
+            <p class="mt-1 text-text-muted">Downloaded from TCC SIS — your current Grade Slip (it is okay if some subjects have pending/late grades).</p>
+          </div>
+          <div class="rounded-xl border bg-surface-muted/30 p-3">
+            <p class="font-semibold text-text flex items-center gap-1.5">
+              <span class="grid size-5 place-items-center rounded bg-primary text-2xs text-white">4</span>
+              Slot 4: ID Back-to-Back &amp; Specimen
+            </p>
+            <p class="mt-1 text-text-muted">A document (DOCX saved as PDF or Image) containing your ID front &amp; back side-by-side with 3 handwritten blue ballpen specimen signatures.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 2: Slot 1 Guide -->
+      <div v-else-if="activeTutorialTab === 'slot1'" class="space-y-3 pt-2 text-xs">
+        <h3 class="font-semibold text-text">Slot 1: Live School ID Scan Guide</h3>
+        <ol class="list-decimal space-y-2 pl-4 text-text-muted">
+          <li>Ensure you are in a <strong>well-lit room</strong> with no harsh glare or shadows on the card.</li>
+          <li>Hold your physical TCC ID vertically inside the green camera boundary.</li>
+          <li>The AI will automatically lock and scan the <strong>Front</strong>, verify your student details via OCR, and crop your photo.</li>
+          <li>Flip to the <strong>Back</strong> of the ID to complete the scan.</li>
+        </ol>
+      </div>
+
+      <!-- Tab 3: Slot 2 Course History Guide -->
+      <div v-else-if="activeTutorialTab === 'slot2'" class="space-y-3 pt-2 text-xs">
+        <h3 class="font-semibold text-text">Slot 2: Downloading Course History from TCC SIS</h3>
+        <ol class="list-decimal space-y-2 pl-4 text-text-muted">
+          <li>Open and log in to the <strong>TCC Student Information System (SIS)</strong>.</li>
+          <li>Navigate to <strong>Academic Records</strong> / <strong>Curriculum Checklist</strong>.</li>
+          <li>Click <strong>Print / Download Course History</strong> and choose <strong>Save as PDF</strong>.</li>
+          <li>Upload the resulting <code>.pdf</code> file to Slot 2.</li>
+        </ol>
+        <p class="rounded-lg bg-info-soft/40 border border-info/30 p-2.5 text-info text-2xs">
+          💡 Note: Upload is enabled when your batch submission window is open.
+        </p>
+      </div>
+
+      <!-- Tab 3: Slot 3 Grade Slip Guide -->
+      <div v-else-if="activeTutorialTab === 'slot3'" class="space-y-3 pt-2 text-xs">
+        <h3 class="font-semibold text-text">Slot 3: Downloading Grade Slip from TCC SIS</h3>
+        <ol class="list-decimal space-y-2 pl-4 text-text-muted">
+          <li>Log in to your <strong>TCC Student Information System (SIS)</strong> portal.</li>
+          <li>Go to your <strong>Grade Reports / Semestral Grades</strong>.</li>
+          <li>Download your <strong>current semester Grade Slip</strong> as a <strong>PDF</strong>.</li>
+          <li>Upload the <code>.pdf</code> to Slot 3.</li>
+        </ol>
+        <div class="rounded-lg bg-info-soft/40 border border-info/30 p-3 text-info text-2xs space-y-1">
+          <p class="font-semibold flex items-center gap-1.5 text-xs text-text">
+            <span>ℹ️</span> Current Grade Slip &amp; Pending Grades:
+          </p>
+          <p class="text-text-muted">
+            Your Grade Slip should be for the current semester. It is <strong>completely okay if some subjects have pending (P) or late grades</strong>, as some instructors post grades later than others. Just make sure to upload your official SIS Grade Slip.
+          </p>
+        </div>
+      </div>
+
+      <!-- Tab 4: Slot 4 ID Back-to-Back & Specimen Guide -->
+      <div v-else-if="activeTutorialTab === 'slot4'" class="space-y-4 pt-2 text-xs">
+        <div>
+          <h3 class="font-semibold text-text text-sm">Slot 4: ID Back-to-Back with 3 Specimen Signatures</h3>
+          <p class="mt-1 text-text-muted">Follow these 4 simple steps to prepare your Slot 4 submission file:</p>
+        </div>
+
+        <div class="grid gap-4 md:grid-cols-2 items-start">
+          <div class="space-y-3">
+            <div class="rounded-xl border p-3 bg-surface">
+              <p class="font-semibold text-text mb-1 flex items-center gap-1.5">
+                <span class="grid size-5 place-items-center rounded bg-primary text-2xs text-white">1</span>
+                Photograph Your Student ID
+              </p>
+              <p class="text-text-muted">Take two clear, flat photos: one of the <strong>Front</strong> and one of the <strong>Back</strong> of your TCC Student ID.</p>
+            </div>
+
+            <div class="rounded-xl border p-3 bg-surface">
+              <p class="font-semibold text-text mb-1 flex items-center gap-1.5">
+                <span class="grid size-5 place-items-center rounded bg-primary text-2xs text-white">2</span>
+                Insert into Word / Google Docs
+              </p>
+              <p class="text-text-muted">Open <strong>Microsoft Word (.docx)</strong> or <strong>Google Docs</strong>, and insert both ID pictures side-by-side on the page.</p>
+            </div>
+
+            <div class="rounded-xl border p-3 bg-surface">
+              <p class="font-semibold text-text mb-1 flex items-center gap-1.5">
+                <span class="grid size-5 place-items-center rounded bg-primary text-2xs text-white">3</span>
+                Sign 3 Specimen Signatures in Blue Ballpen
+              </p>
+              <p class="text-text-muted">Directly below the two ID images, place <strong class="text-primary">3 specimen signatures written with a blue ballpen</strong>.</p>
+            </div>
+
+            <div class="rounded-xl border p-3 bg-surface">
+              <p class="font-semibold text-text mb-1 flex items-center gap-1.5">
+                <span class="grid size-5 place-items-center rounded bg-primary text-2xs text-white">4</span>
+                Save as PDF / Image and Upload
+              </p>
+              <p class="text-text-muted">Save/export the document as <strong>PDF</strong> (or export/screenshot as JPG/PNG) and upload it to Slot 4.</p>
+            </div>
+          </div>
+
+          <!-- Visual Sample Card -->
+          <div class="rounded-xl border bg-surface-muted/20 p-3 text-center">
+            <p class="font-semibold text-xs text-text mb-2">Sample Required Layout:</p>
+            <div class="overflow-hidden rounded-lg border bg-white p-2 shadow-sm">
+              <img
+                src="/images/student-id-b2b-sample.jpg"
+                alt="Student ID Back-to-Back with 3 Specimen Signatures Sample"
+                class="mx-auto max-h-64 object-contain rounded"
+              />
+            </div>
+            <p class="mt-2 text-2xs text-text-muted">
+              Top: ID Front &amp; Back side-by-side<br/>
+              Bottom: 3 handwritten blue-ink specimen signatures
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <template #footer="{ close }">
+        <button class="rounded-md bg-primary px-4 py-2 text-xs font-medium text-white shadow-sm" @click="close">
+          Got it, close guide
+        </button>
+      </template>
+    </AppDialog>
+
+    <!-- Camera Pre-Check & Consent Dialog (Slot 1) -->
+    <AppDialog
+      v-model="precheckDialog"
+      title="Slot 1 Camera Pre-Check & Consent"
+      description="Verify your capture environment and confirm data privacy consent before launching the live ID scanner."
+      size="md"
+    >
+      <div class="space-y-3 pt-1 text-xs">
+        <div class="flex items-center justify-between">
+          <p class="font-semibold text-text">Environment Checklist</p>
+          <button
+            type="button"
+            @click="selectAllPrecheck"
+            class="text-2xs font-semibold text-primary hover:underline"
+          >
+            Select all
+          </button>
+        </div>
+        <div class="grid gap-2 sm:grid-cols-2">
+          <label
+            v-for="[key, label] in precheckItems"
+            :key="key"
+            class="flex items-center gap-2 rounded-lg border bg-surface p-2.5 transition hover:bg-surface-muted/50 cursor-pointer"
+          >
+            <input
+              v-model="precheck[key]"
+              type="checkbox"
+              class="rounded border-border text-primary focus:ring-primary"
+            />
+            <span class="text-text leading-tight">{{ label }}</span>
+          </label>
+        </div>
+
+        <div class="pt-1">
+          <label class="flex items-start gap-2.5 rounded-lg border border-primary/20 bg-primary-soft/20 p-3 transition cursor-pointer">
+            <input
+              v-model="consent"
+              type="checkbox"
+              class="mt-0.5 rounded border-border text-primary focus:ring-primary"
+            />
+            <span class="text-text leading-snug">
+              I accept the <strong>Data Privacy Act</strong> consent for identity verification processing.
+            </span>
+          </label>
+        </div>
+      </div>
+
+      <template #footer="{ close }">
+        <button class="rounded-md border px-4 py-2 text-xs" @click="close">Cancel</button>
+        <button
+          class="rounded-md bg-primary px-4 py-2 text-xs font-medium text-white shadow-sm transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+          :disabled="!precheckReady"
+          @click="proceedToSchoolIdScan"
+        >
+          Proceed to Live Scanner
         </button>
       </template>
     </AppDialog>

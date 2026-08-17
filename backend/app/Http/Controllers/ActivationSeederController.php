@@ -50,6 +50,92 @@ class ActivationSeederController extends Controller
     }
 
     /**
+     * GET /api/activation-seeder/history
+     * Returns a list of recently seeded grantees and their token status.
+     */
+    public function history(): JsonResponse
+    {
+        // Query grantees with their latest activation token via a subquery join
+        $grantees = Grantee::query()
+            ->with('user')
+            ->latest('id')
+            ->limit(50)
+            ->get()
+            ->map(function ($grantee) {
+                // Fetch the most recent token for this user directly
+                $token = $grantee->user_id
+                    ? ActivationToken::where('user_id', $grantee->user_id)
+                        ->latest()
+                        ->first()
+                    : null;
+
+                $tokenStatus = 'No Token';
+                if ($token) {
+                    if ($token->used_at) {
+                        $tokenStatus = 'Used';
+                    } elseif (now()->greaterThan($token->expires_at)) {
+                        $tokenStatus = 'Expired';
+                    } else {
+                        $tokenStatus = 'Active';
+                    }
+                }
+
+                return [
+                    'id'               => $grantee->id,
+                    'student_id'       => $grantee->student_id,
+                    'full_name'        => $grantee->full_name,
+                    'email'            => $grantee->email,
+                    'program'          => $grantee->program,
+                    'year_level'       => $grantee->year_level,
+                    'created_at'       => $grantee->created_at,
+                    'token_status'     => $tokenStatus,
+                    'token_expires_at' => $token?->expires_at,
+                ];
+            });
+
+        return response()->json(['data' => $grantees]);
+    }
+
+    /**
+     * POST /api/activation-seeder/regenerate/{grantee}
+     * Generate a new activation token for an existing grantee.
+     */
+    public function regenerate(Grantee $grantee): JsonResponse
+    {
+        $user = $grantee->user;
+        if (!$user) {
+            return response()->json(['message' => 'Grantee has no associated user account.'], 400);
+        }
+
+        // Invalidate past tokens
+        ActivationToken::query()
+            ->where('user_id', $user->id)
+            ->whereNull('used_at')
+            ->delete();
+
+        $plainToken = Str::random(48);
+        ActivationToken::create([
+            'user_id'    => $user->id,
+            'token_hash' => hash('sha256', $plainToken),
+            'expires_at' => now()->addDays(14),
+        ]);
+
+        preg_match('/^ACTIVATION_FRONTEND_URL=(.*)/m', file_get_contents(base_path('.env')), $matches);
+        $frontendUrl = rtrim((string) ($matches[1] ?? 'http://localhost:5173'), '/');
+        $activationUrl = $frontendUrl.'/activate/'.$plainToken.'?lang=en';
+
+        return response()->json([
+            'data' => [
+                'grantee_id'     => $grantee->id,
+                'full_name'      => $grantee->full_name,
+                'plain_token'    => $plainToken,
+                'activation_url' => $activationUrl,
+                'expires_at'     => now()->addDays(14)->toIso8601String(),
+            ],
+        ]);
+    }
+
+    /**
      * POST /api/activation-seeder
      *
      * Body:
@@ -58,8 +144,9 @@ class ActivationSeederController extends Controller
      *   academic_year    string    — required if creating batch
      *   semester         string    — required if creating batch
      *   student_id       string    — unique student ID
-     *   student_number   string    — student number (may equal student_id)
-     *   full_name        string
+     *   first_name       string
+     *   last_name        string
+     *   middle_name      string|null
      *   email            string
      *   program          string
      *   year_level       string
@@ -73,8 +160,9 @@ class ActivationSeederController extends Controller
             'academic_year'  => ['required_without:batch_id', 'nullable', 'string', 'max:20'],
             'semester'       => ['required_without:batch_id', 'nullable', 'string', 'max:50'],
             'student_id'     => ['required', 'string', 'max:50'],
-            'student_number' => ['required', 'string', 'max:50'],
-            'full_name'      => ['required', 'string', 'max:191'],
+            'first_name'     => ['required', 'string', 'max:100'],
+            'last_name'      => ['required', 'string', 'max:100'],
+            'middle_name'    => ['nullable', 'string', 'max:100'],
             'email'          => ['required', 'email', 'max:191'],
             'program'        => ['required', 'string', 'max:100'],
             'year_level'     => ['nullable', 'string', 'max:10'],
@@ -83,9 +171,16 @@ class ActivationSeederController extends Controller
 
         $yearLevel  = $data['year_level']  ?? '1';
         $resetKyc   = (bool) ($data['reset_kyc'] ?? false);
-        $frontendUrl = rtrim((string) (env('FRONTEND_URL') ?: 'http://localhost:5173'), '/');
+        preg_match('/^ACTIVATION_FRONTEND_URL=(.*)/m', file_get_contents(base_path('.env')), $matches);
+        $frontendUrl = rtrim((string) ($matches[1] ?? 'http://localhost:5173'), '/');
 
-        return DB::transaction(function () use ($data, $yearLevel, $resetKyc, $frontendUrl): JsonResponse {
+        $fullName = trim(
+            $data['first_name'] . ' ' .
+            (!empty($data['middle_name']) ? $data['middle_name'] . ' ' : '') .
+            $data['last_name']
+        );
+
+        return DB::transaction(function () use ($data, $yearLevel, $resetKyc, $frontendUrl, $fullName): JsonResponse {
 
             // ── 1. Resolve or create batch ─────────────────────────────────────
             if (! empty($data['batch_id'])) {
@@ -135,7 +230,7 @@ class ActivationSeederController extends Controller
             $user = User::query()->updateOrCreate(
                 ['email' => $data['email']],
                 [
-                    'name'               => $data['full_name'],
+                    'name'               => $fullName,
                     'role'               => 'student',
                     'student_id'         => $data['student_id'],
                     'account_status'     => 'unverified',
@@ -156,8 +251,9 @@ class ActivationSeederController extends Controller
                 ['student_id' => $data['student_id'], 'batch_id' => $batch->id],
                 [
                     'user_id'           => $user->id,
-                    'student_number'    => $data['student_number'],
-                    'full_name'         => $data['full_name'],
+                    'student_id'        => $data['student_id'],
+                    'student_number'    => null,
+                    'full_name'         => $fullName,
                     'email'             => $data['email'],
                     'program'           => $data['program'],
                     'year_level'        => $yearLevel,
@@ -182,8 +278,8 @@ class ActivationSeederController extends Controller
                 ],
                 [
                     'row_number'     => $rowNumber,
-                    'student_number' => $data['student_number'],
-                    'full_name'      => $data['full_name'],
+                    'student_number' => null,
+                    'full_name'      => $fullName,
                     'email'          => $data['email'],
                     'program'        => $data['program'],
                     'year_level'     => $yearLevel,
@@ -219,7 +315,7 @@ class ActivationSeederController extends Controller
                     'batch_id'       => $batch->id,
                     'batch_name'     => $batch->name,
                     'student_id'     => $data['student_id'],
-                    'full_name'      => $data['full_name'],
+                    'full_name'      => $fullName,
                     'email'          => $data['email'],
                     'program'        => $data['program'],
                     'plain_token'    => $plainToken,

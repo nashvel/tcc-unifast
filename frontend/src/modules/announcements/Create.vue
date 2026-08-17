@@ -6,7 +6,6 @@ const title = ref("");
 const message = ref("");
 const audience = ref("All grantees");
 const channels = ref(["In-app", "Email"]);
-const published = ref(false);
 </script>
 <template>
   <div>
@@ -19,7 +18,7 @@ const published = ref(false);
       title="Create Announcement"
       description="Compose and publish an update to the selected audience."
     />
-    <form class="grid gap-4 xl:grid-cols-[2fr_1fr]" @submit.prevent="published = true">
+    <form class="grid gap-4 xl:grid-cols-[2fr_1fr]">
       <section class="rounded-lg border bg-surface p-5">
         <label class="block text-xs font-medium"
           >Title<input
@@ -77,9 +76,6 @@ const published = ref(false);
         >
           <IconSend :size="14" />Publish announcement
         </button>
-        <p v-if="published" class="mt-3 text-center text-xs text-success">
-          Mock announcement published.
-        </p>
       </aside>
     </form>
   </div>

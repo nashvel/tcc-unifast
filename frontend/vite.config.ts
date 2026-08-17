@@ -22,15 +22,15 @@ export default defineConfig({
     port: 5173,
     proxy: {
       "/sanctum": {
-        target: "http://localhost:8000",
+        target: "http://127.0.0.1:8088",
         changeOrigin: true,
       },
       "/api": {
-        target: "http://localhost:8000",
+        target: "http://127.0.0.1:8088",
         changeOrigin: true,
       },
       "/broadcasting": {
-        target: "http://localhost:8000",
+        target: "http://127.0.0.1:8088",
         changeOrigin: true,
       },
       // Do NOT proxy /models — face-api weights live in frontend/public/models

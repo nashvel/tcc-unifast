@@ -868,7 +868,7 @@ function onPrimaryClick() {
         <div class="flex shrink-0 items-center gap-1.5">
           <button
             v-if="frontBlob && !idScanVerified"
-            class="inline-flex h-8 items-center rounded-md border px-2 text-xs sm:px-3"
+            class="inline-flex h-8 items-center rounded-md border px-2 text-xs sm:px-3 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
             type="button"
             :disabled="busy"
             @click="retakeFront"
@@ -877,7 +877,7 @@ function onPrimaryClick() {
           </button>
           <button
             v-if="backBlob && !idScanVerified"
-            class="inline-flex h-8 items-center rounded-md border px-2 text-xs sm:px-3"
+            class="inline-flex h-8 items-center rounded-md border px-2 text-xs sm:px-3 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
             type="button"
             :disabled="busy"
             @click="retakeBack"
@@ -886,19 +886,21 @@ function onPrimaryClick() {
           </button>
           <button
             v-if="phase === 'live'"
-            class="inline-flex h-8 items-center gap-1.5 rounded-md border px-2 text-xs sm:px-3"
+            class="inline-flex h-8 items-center gap-1.5 rounded-md border px-2 text-xs sm:px-3 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
             type="button"
             title="Restart camera"
+            :disabled="busy"
             @click="startCamera"
           >
             <IconRefresh :size="14" />
             <span class="hidden sm:inline">Restart camera</span>
           </button>
           <button
-            class="inline-flex h-8 w-8 items-center justify-center rounded-md border text-primary"
+            class="inline-flex h-8 w-8 items-center justify-center rounded-md border text-primary disabled:opacity-50 disabled:cursor-not-allowed"
             type="button"
             aria-label="Scan guidelines"
             title="Scan guidelines"
+            :disabled="busy"
             @click="guideOpen = true"
           >
             <IconInfoCircle :size="18" />

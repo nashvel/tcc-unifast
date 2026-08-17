@@ -132,11 +132,11 @@ export const studentNavigation: NavigationSection[] = [
       { labelKey: "nav.requiredDocuments", path: "/student/documents", icon: IconFileCheck },
       { labelKey: "common.profile", path: "/student/profile", icon: IconUserCircle },
       { labelKey: "nav.announcements", path: "/student/announcements", icon: IconSpeakerphone },
-      { labelKey: "shell.notifications", path: "/student/notifications", icon: IconBell },
       { labelKey: "common.settings", path: "/student/settings", icon: IconSettings },
     ],
   },
 ];
+
 
 export const lockedStudentNavigation: NavigationSection[] = [
   {
