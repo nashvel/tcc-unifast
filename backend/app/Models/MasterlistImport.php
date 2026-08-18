@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class MasterlistImport extends Model
 {
@@ -23,5 +24,11 @@ class MasterlistImport extends Model
     public function uploader(): BelongsTo
     {
         return $this->belongsTo(User::class, 'uploaded_by');
+    }
+
+    /** Table-detection metadata (only present for DOCX/PDF imports). */
+    public function detection(): HasOne
+    {
+        return $this->hasOne(MasterlistImportDetection::class);
     }
 }

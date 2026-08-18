@@ -78,7 +78,7 @@ const appChildren: RouteRecordRaw[] = [
   { path: "forms", component: () => import("@/modules/forms/Index.vue") },
   { path: "forms/new", component: () => import("@/modules/forms/Builder.vue") },
   { path: "forms/:id/edit", component: () => import("@/modules/forms/Builder.vue") },
-  { path: "forms/:id/responses", component: () => import("@/modules/forms/ResponseViewer.vue") },
+  { path: "forms/:id/responses", component: () => import("@/modules/forms/Builder.vue") },
   { path: "forms/:id/security", component: () => import("@/modules/forms/SecurityLog.vue") },
 ];
 

@@ -297,8 +297,8 @@ Route::middleware(['auth:sanctum', FormSecurityHeaders::class])->group(function 
             ->whereNumber('id')->whereNumber('rid');
     });
 
-    // ── Admin form management ────────────────────────────────────────
-    Route::middleware('role:developer,admin')->prefix('forms')->group(function (): void {
+    // ── Form management (admin / staff) ──────────────────────────────
+    Route::middleware('role:developer,admin,head,staff')->prefix('forms')->group(function (): void {
         // Form CRUD
         Route::get('/', [FormController::class, 'index'])->middleware('throttle:60,1');
         Route::post('/', [FormController::class, 'store'])->middleware('throttle:60,1');
@@ -308,11 +308,24 @@ Route::middleware(['auth:sanctum', FormSecurityHeaders::class])->group(function 
         Route::patch('/{id}/toggle', [FormController::class, 'toggle'])->whereNumber('id')->middleware('throttle:60,1');
         Route::patch('/{id}/regenerate-token', [FormController::class, 'regenerateToken'])->whereNumber('id')->middleware('throttle:20,1');
 
-        // Field management
-        Route::post('/{id}/fields', [FormFieldController::class, 'store'])->whereNumber('id')->middleware('throttle:60,1');
-        Route::put('/{id}/fields/{fid}', [FormFieldController::class, 'update'])->whereNumber('id')->whereNumber('fid')->middleware('throttle:60,1');
-        Route::delete('/{id}/fields/{fid}', [FormFieldController::class, 'destroy'])->whereNumber('id')->whereNumber('fid')->middleware('throttle:60,1');
-        Route::patch('/{id}/fields/reorder', [FormFieldController::class, 'reorder'])->whereNumber('id')->middleware('throttle:60,1');
+        // Publish workflow
+        Route::patch('/{id}/publish', [FormController::class, 'publish'])->whereNumber('id')->middleware('throttle:20,1');
+        Route::patch('/{id}/close', [FormController::class, 'close'])->whereNumber('id')->middleware('throttle:20,1');
+
+        // Analytics
+        Route::get('/{id}/analytics', [FormController::class, 'analytics'])->whereNumber('id');
+
+        // Sections
+        Route::post('/{id}/sections', [FormController::class, 'storeSections'])->whereNumber('id')->middleware('throttle:60,1');
+        Route::put('/{id}/sections/{sid}', [FormController::class, 'updateSection'])->whereNumber('id')->whereNumber('sid')->middleware('throttle:60,1');
+        Route::delete('/{id}/sections/{sid}', [FormController::class, 'destroySection'])->whereNumber('id')->whereNumber('sid')->middleware('throttle:60,1');
+        Route::patch('/{id}/sections/reorder', [FormController::class, 'reorderSections'])->whereNumber('id')->middleware('throttle:60,1');
+
+        // Field management (via FormController)
+        Route::post('/{id}/fields', [FormController::class, 'storeField'])->whereNumber('id')->middleware('throttle:60,1');
+        Route::put('/{id}/fields/{fid}', [FormController::class, 'updateField'])->whereNumber('id')->whereNumber('fid')->middleware('throttle:60,1');
+        Route::delete('/{id}/fields/{fid}', [FormController::class, 'destroyField'])->whereNumber('id')->whereNumber('fid')->middleware('throttle:60,1');
+        Route::patch('/{id}/fields/reorder', [FormController::class, 'reorderFields'])->whereNumber('id')->middleware('throttle:60,1');
 
         // Response export (admin only)
         Route::get('/{id}/responses/export', [FormResponseController::class, 'export'])->whereNumber('id');

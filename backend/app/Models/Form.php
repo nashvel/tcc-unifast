@@ -22,6 +22,11 @@ class Form extends Model
         ];
     }
 
+    public function sections(): HasMany
+    {
+        return $this->hasMany(FormSection::class)->orderBy('sort_order');
+    }
+
     public function fields(): HasMany
     {
         return $this->hasMany(FormField::class)->orderBy('sort_order');
@@ -68,7 +73,26 @@ class Form extends Model
 
         return $this->fields()
             ->whereIn('field_type', $choiceTypes)
+            ->with('fieldOptions')
             ->get()
-            ->every(fn (FormField $f) => is_array($f->options) && count($f->options) >= 2);
+            ->every(fn (FormField $f) => $f->fieldOptions->count() >= 2);
+    }
+
+    /** Publish the form. */
+    public function publish(): void
+    {
+        $this->update(['status' => 'published', 'is_active' => true]);
+    }
+
+    /** Close the form to new submissions. */
+    public function close(): void
+    {
+        $this->update(['status' => 'closed', 'is_active' => false]);
+    }
+
+    /** Archive the form. */
+    public function archive(): void
+    {
+        $this->update(['status' => 'archived', 'is_active' => false]);
     }
 }

@@ -30,7 +30,7 @@ class DocumentSubmissionController extends Controller
         'school_id' => 'School ID',
         'course_history' => 'Course History',
         'grade_slip' => 'Grade Slip',
-        'specimen_signatures' => 'Specimen',
+        'specimen_signatures' => 'ID (Back-to-Back) & Specimen',
     ];
 
     public function index(Request $request): JsonResponse

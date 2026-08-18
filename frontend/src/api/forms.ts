@@ -2,11 +2,13 @@ import { apiFetch, apiFetchBlob, buildQuery } from "./client";
 import type {
   Form,
   FormDetail,
+  FormSection,
   FormField,
   FormResponse,
   FormResponseDetail,
   FormSecurityLog,
   FormSchema,
+  FormAnalytics,
   AssignedForm,
   PaginatedResponse,
   ListQuery,
@@ -65,10 +67,62 @@ export async function regenerateFormToken(id: string | number): Promise<{ data: 
 }
 
 // ─────────────────────────────────────────────────────────
+// Admin: Publish Workflow
+// ─────────────────────────────────────────────────────────
+
+export async function publishForm(id: string | number): Promise<{ data: Form }> {
+  return apiFetch<{ data: Form }>(`/api/forms/${id}/publish`, { method: "PATCH" });
+}
+
+export async function closeForm(id: string | number): Promise<{ data: Form }> {
+  return apiFetch<{ data: Form }>(`/api/forms/${id}/close`, { method: "PATCH" });
+}
+
+// ─────────────────────────────────────────────────────────
+// Admin: Analytics
+// ─────────────────────────────────────────────────────────
+
+export async function getFormAnalytics(id: string | number): Promise<{ data: FormAnalytics }> {
+  return apiFetch<{ data: FormAnalytics }>(`/api/forms/${id}/analytics`);
+}
+
+// ─────────────────────────────────────────────────────────
+// Admin: Sections CRUD
+// ─────────────────────────────────────────────────────────
+
+export type SectionPayload = { title: string; description?: string | null };
+
+export async function createSection(formId: string | number, data: SectionPayload): Promise<{ data: FormSection }> {
+  return apiFetch<{ data: FormSection }>(`/api/forms/${formId}/sections`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateSection(formId: string | number, sectionId: number, data: Partial<SectionPayload>): Promise<{ data: FormSection }> {
+  return apiFetch<{ data: FormSection }>(`/api/forms/${formId}/sections/${sectionId}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteSection(formId: string | number, sectionId: number): Promise<{ message: string }> {
+  return apiFetch<{ message: string }>(`/api/forms/${formId}/sections/${sectionId}`, { method: "DELETE" });
+}
+
+export async function reorderSections(formId: string | number, order: number[]): Promise<{ message: string }> {
+  return apiFetch<{ message: string }>(`/api/forms/${formId}/sections/reorder`, {
+    method: "PATCH",
+    body: JSON.stringify({ order }),
+  });
+}
+
+// ─────────────────────────────────────────────────────────
 // Admin: Field management
 // ─────────────────────────────────────────────────────────
 
 export type FieldCreatePayload = {
+  section_id?: number | null;
   label: string;
   field_name: string;
   field_type: string;
@@ -112,7 +166,7 @@ export async function deleteField(
 
 export async function reorderFields(
   formId: string | number,
-  order: Record<number, number>,
+  order: number[],
 ): Promise<{ message: string }> {
   return apiFetch<{ message: string }>(`/api/forms/${formId}/fields/reorder`, {
     method: "PATCH",
@@ -180,7 +234,6 @@ export async function submitFormResponse(
   return apiFetch<{ success: boolean; message: string }>(`/api/forms/${id}/responses`, {
     method: "POST",
     body: isFormData ? data : JSON.stringify(data),
-    ...(isFormData ? {} : {}),
   });
 }
 

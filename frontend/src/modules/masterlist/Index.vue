@@ -8,11 +8,17 @@ import {
   IconSearch,
   IconUpload,
   IconTrash,
+  IconTableColumn,
+  IconCircleCheck,
+  IconCircleX,
 } from "@tabler/icons-vue";
 import DataTable from "@/components/tables/DataTable.vue";
 import TablePagination from "@/components/tables/TablePagination.vue";
 import PageHeader from "@/components/ui/PageHeader.vue";
 import AppDialog from "@/components/dialogs/AppDialog.vue";
+import Skeleton from "@/components/ui/Skeleton.vue";
+import TableSkeleton from "@/components/ui/TableSkeleton.vue";
+import CardSkeleton from "@/components/ui/CardSkeleton.vue";
 import {
   apiFetch,
   buildQuery,
@@ -74,10 +80,18 @@ type ImportDetail = {
     semester?: string;
     submission_deadline?: string | null;
   } | null;
+  detection_info?: {
+    table_index: number | null;
+    raw_headers: string[];
+    matched_columns: Record<string, string>;
+    unmatched_headers: string[];
+    row_count: number;
+  } | null;
 };
 
 const batches = ref<Batch[]>([]);
 const uploadBatchId = ref<number | null>(null);
+const loadingBatches = ref(true);
 const imports = ref<ImportSummary[]>([]);
 const importsMeta = ref<PaginationMeta | null>(null);
 const importsPage = ref(1);
@@ -112,6 +126,7 @@ const rows = computed(() => {
 });
 
 onMounted(async () => {
+  loadingBatches.value = true;
   try {
     const payload = await apiFetch<PaginatedResponse<Batch>>("/api/batches?per_page=50");
     batches.value = payload.data;
@@ -119,6 +134,8 @@ onMounted(async () => {
     uploadBatchId.value = firstDeadline;
   } catch {
     batches.value = [];
+  } finally {
+    loadingBatches.value = false;
   }
   await loadImports();
 });
@@ -201,6 +218,7 @@ function chooseFile(event: Event) {
   preview.value = null;
   selectedImportId.value = null;
   mailResult.value = null;
+  error.value = "";
 }
 
 async function previewImport() {
@@ -209,7 +227,7 @@ async function previewImport() {
     return;
   }
   if (!selectedFile.value) {
-    error.value = "Choose a CSV or XLSX masterlist file first.";
+    error.value = "Choose a CSV, XLSX, PDF, or DOCX masterlist file first.";
     return;
   }
 
@@ -344,11 +362,57 @@ function formatDate(value: string | null) {
         </span>
       </div>
 
-      <div v-if="!deadlineBatches.length" class="flex items-center gap-3 rounded-md border border-warning/30 bg-warning-soft p-4">
-        <IconAlertTriangle :size="20" class="text-warning" />
+      <!-- Skeleton state while batches are loading -->
+      <template v-if="loadingBatches">
+        <!-- Row 1 Skeleton: Batch selector & Deadline -->
+        <div class="grid gap-4 md:grid-cols-[1fr_auto]">
+          <div class="space-y-1.5">
+            <Skeleton class-name="h-3.5 w-36" />
+            <Skeleton class-name="h-10 w-full rounded-md" />
+          </div>
+          <div class="flex flex-col justify-center rounded-md border bg-surface-muted px-4 py-2 min-w-[200px] space-y-1.5">
+            <Skeleton class-name="h-2.5 w-24" />
+            <Skeleton class-name="h-4 w-32" />
+          </div>
+        </div>
+
+        <!-- Row 2 Skeleton: Upload Zone & Instructions -->
+        <div class="grid gap-6 md:grid-cols-[2fr_1fr]">
+          <div class="space-y-1.5">
+            <Skeleton class-name="h-3.5 w-36" />
+            <div class="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-border bg-surface-muted p-8 text-center space-y-3">
+              <Skeleton class-name="size-12 rounded-full" />
+              <Skeleton class-name="h-4 w-48" />
+              <Skeleton class-name="h-3 w-32" />
+              <div class="mt-2 flex gap-2">
+                <Skeleton class-name="h-6 w-20 rounded" />
+                <Skeleton class-name="h-6 w-16 rounded" />
+                <Skeleton class-name="h-6 w-16 rounded" />
+                <Skeleton class-name="h-6 w-20 rounded" />
+              </div>
+            </div>
+          </div>
+          <div class="flex flex-col justify-center gap-4">
+            <CardSkeleton :lines="4" class-name="bg-surface-muted border-border" />
+            <Skeleton class-name="h-9 w-full rounded-md" />
+          </div>
+        </div>
+      </template>
+
+      <!-- Warning if loaded and no batches with active submission deadline -->
+      <div v-else-if="!deadlineBatches.length" class="flex items-center gap-3 rounded-md border border-warning/30 bg-warning-soft p-4">
+        <IconAlertTriangle :size="20" class="text-warning shrink-0" />
         <div>
-          <p class="text-sm font-medium text-warning">No active batch detected</p>
-          <p class="mt-0.5 text-xs text-warning/80">You must <RouterLink to="/app/batches?create=true" class="underline font-semibold hover:text-warning-dark">create a batch</RouterLink> or activate a submission deadline before you can upload a masterlist.</p>
+          <p class="text-sm font-medium text-warning">
+            {{ batches.length ? "No active batch with submission deadline" : "No active batch detected" }}
+          </p>
+          <p class="mt-0.5 text-xs text-warning/80">
+            You must
+            <RouterLink to="/app/batches?create=true" class="underline font-semibold hover:text-warning-dark">
+              {{ batches.length ? "set a submission deadline on a batch" : "create a batch" }}
+            </RouterLink>
+            before you can upload a masterlist.
+          </p>
         </div>
       </div>
 
@@ -386,7 +450,7 @@ function formatDate(value: string | null) {
               <input
                 ref="fileInput"
                 type="file"
-                accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
+                accept=".csv,.xlsx,.xls,.pdf,.docx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                 class="hidden"
                 @change="chooseFile"
               />
@@ -399,6 +463,8 @@ function formatDate(value: string | null) {
               <div class="mt-4 flex flex-wrap justify-center gap-2 text-xs text-text-muted">
                 <span class="rounded bg-surface px-2 py-1 border shadow-sm">Excel (.xlsx)</span>
                 <span class="rounded bg-surface px-2 py-1 border shadow-sm">CSV (.csv)</span>
+                <span class="rounded bg-surface px-2 py-1 border shadow-sm">PDF (.pdf)</span>
+                <span class="rounded bg-surface px-2 py-1 border shadow-sm">Word (.docx)</span>
               </div>
             </div>
           </div>
@@ -443,6 +509,65 @@ function formatDate(value: string | null) {
             <IconUpload :size="16" />{{ busy ? "Processing..." : "3. Preview Import" }}
           </button>
         </div>
+
+        <!-- Detection Info Card (DOCX/PDF only) -->
+        <div
+          v-if="preview?.detection_info"
+          class="rounded-lg border border-blue-200 bg-blue-50 p-4"
+        >
+          <div class="mb-2 flex items-center gap-2">
+            <IconTableColumn :size="16" class="text-blue-600" />
+            <p class="text-xs font-semibold text-blue-800">
+              Table Detection Result
+              <span class="ml-1 rounded bg-blue-100 px-1.5 py-0.5 text-2xs font-normal">
+                Table {{ (preview.detection_info.table_index ?? 0) + 1 }} selected
+              </span>
+            </p>
+          </div>
+
+          <!-- Raw headers row -->
+          <div class="mb-2">
+            <p class="mb-1 text-2xs font-semibold uppercase tracking-wide text-blue-600">Columns found in file</p>
+            <div class="flex flex-wrap gap-1">
+              <span
+                v-for="h in preview.detection_info.raw_headers"
+                :key="h"
+                class="inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-2xs"
+                :class="Object.values(preview.detection_info.matched_columns).includes(h)
+                  ? 'border-green-300 bg-green-50 text-green-800'
+                  : 'border-border bg-surface-muted text-text-muted'"
+              >
+                <IconCircleCheck v-if="Object.values(preview.detection_info.matched_columns).includes(h)" :size="10" class="text-green-600" />
+                <IconCircleX v-else :size="10" class="text-text-muted" />
+                {{ h }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Matched columns -->
+          <div class="mb-2">
+            <p class="mb-1 text-2xs font-semibold uppercase tracking-wide text-blue-600">Mapped to system fields</p>
+            <div class="flex flex-wrap gap-1">
+              <span
+                v-for="(rawCol, field) in preview.detection_info.matched_columns"
+                :key="field"
+                class="rounded bg-green-100 px-1.5 py-0.5 text-2xs text-green-800"
+              >
+                {{ rawCol }} → <strong>{{ field }}</strong>
+              </span>
+            </div>
+          </div>
+
+          <!-- Unmatched warning -->
+          <div v-if="preview.detection_info.unmatched_headers.length" class="flex items-start gap-1.5 rounded border border-warning/30 bg-warning-soft p-2">
+            <IconAlertTriangle :size="12" class="mt-0.5 flex-shrink-0 text-warning" />
+            <p class="text-2xs text-warning">
+              <strong>Ignored columns</strong> (not mapped to any system field):
+              {{ preview.detection_info.unmatched_headers.join(', ') }}
+              — add aliases in <code>CHED_FORMAT.md</code> if needed.
+            </p>
+          </div>
+        </div>
       </template>
       <hr class="col-span-full my-2 border-t border-border/60" />
 
@@ -458,52 +583,52 @@ function formatDate(value: string | null) {
         </div>
 
       <DataTable :headings="['File', 'Status', 'Records', 'Imported', 'Uploaded', 'Actions']">
-        <tr
-          v-for="item in imports"
-          :key="item.id"
-          :class="[
-            'group hover:bg-primary/5 transition-colors',
-            selectedImportId === item.id ? 'bg-primary/5' : '',
-          ]"
-        >
-          <td class="px-3 py-3 font-medium">{{ item.original_name || `Import #${item.id}` }}</td>
-          <td class="px-3 py-3">
-            <span v-if="item.status === 'imported' || item.status === 'completed'" class="inline-flex rounded-full bg-success-soft px-2 py-0.5 text-xs font-semibold text-success">
-              ✓ Imported
-            </span>
-            <span v-else class="inline-flex rounded-full bg-surface-muted px-2 py-0.5 text-xs font-semibold text-text-muted capitalize">
-              {{ item.status }}
-            </span>
-          </td>
-          <td class="px-3 py-3">
-            <span v-if="item.invalid_rows > 0" class="inline-flex items-center gap-1 rounded-full bg-warning-soft px-2 py-0.5 text-xs font-semibold text-warning">
-              ⚠ {{ item.invalid_rows }} errors
-            </span>
-            <span v-else class="inline-flex rounded-full bg-surface-muted px-2 py-0.5 text-xs font-semibold text-text-muted">
-              {{ item.valid_rows }} valid
-            </span>
-          </td>
-          <td class="px-3 py-3 tabular-nums">{{ item.imported_rows }}</td>
-          <td class="px-3 py-3 text-text-muted">{{ formatDate(item.created_at) }}</td>
-          <td class="px-3 py-3 text-right">
-            <div class="flex items-center justify-end gap-2">
-              <button
-                class="text-xs font-semibold text-primary hover:underline"
-                @click="selectImport(item.id)"
-              >
-                View
-              </button>
-            </div>
-          </td>
-        </tr>
-        <tr v-if="!loadingList && !imports.length">
-          <td colspan="5" class="p-8 text-center text-text-muted">
-            No masterlist records yet. Upload from Onboarding Center or use the form below.
-          </td>
-        </tr>
-        <tr v-if="loadingList">
-          <td colspan="5" class="p-8 text-center text-text-muted">Loading records…</td>
-        </tr>
+        <TableSkeleton v-if="loadingList" :cols="6" :rows="4" />
+        <template v-else>
+          <tr
+            v-for="item in imports"
+            :key="item.id"
+            :class="[
+              'group hover:bg-primary/5 transition-colors',
+              selectedImportId === item.id ? 'bg-primary/5' : '',
+            ]"
+          >
+            <td class="px-3 py-3 font-medium">{{ item.original_name || `Import #${item.id}` }}</td>
+            <td class="px-3 py-3">
+              <span v-if="item.status === 'imported' || item.status === 'completed'" class="inline-flex rounded-full bg-success-soft px-2 py-0.5 text-xs font-semibold text-success">
+                ✓ Imported
+              </span>
+              <span v-else class="inline-flex rounded-full bg-surface-muted px-2 py-0.5 text-xs font-semibold text-text-muted capitalize">
+                {{ item.status }}
+              </span>
+            </td>
+            <td class="px-3 py-3">
+              <span v-if="item.invalid_rows > 0" class="inline-flex items-center gap-1 rounded-full bg-warning-soft px-2 py-0.5 text-xs font-semibold text-warning">
+                ⚠ {{ item.invalid_rows }} errors
+              </span>
+              <span v-else class="inline-flex rounded-full bg-surface-muted px-2 py-0.5 text-xs font-semibold text-text-muted">
+                {{ item.valid_rows }} valid
+              </span>
+            </td>
+            <td class="px-3 py-3 tabular-nums">{{ item.imported_rows }}</td>
+            <td class="px-3 py-3 text-text-muted">{{ formatDate(item.created_at) }}</td>
+            <td class="px-3 py-3 text-right">
+              <div class="flex items-center justify-end gap-2">
+                <button
+                  class="text-xs font-semibold text-primary hover:underline"
+                  @click="selectImport(item.id)"
+                >
+                  View
+                </button>
+              </div>
+            </td>
+          </tr>
+          <tr v-if="!imports.length">
+            <td colspan="6" class="p-8 text-center text-text-muted">
+              No masterlist records yet. Upload from Onboarding Center or use the form above.
+            </td>
+          </tr>
+        </template>
         <template v-if="importsMeta" #footer>
           <TablePagination
             :meta="importsMeta"
@@ -523,9 +648,15 @@ function formatDate(value: string | null) {
       <IconAlertTriangle :size="14" />{{ error }}
     </p>
 
-    <p v-if="loadingDetail" class="mb-4 text-xs text-text-muted">Loading import detail…</p>
+    <!-- Detail Skeleton while loading a selected import -->
+    <div v-if="loadingDetail" class="space-y-4">
+      <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <CardSkeleton v-for="i in 4" :key="i" :lines="1" />
+      </div>
+      <CardSkeleton :lines="5" />
+    </div>
 
-    <div v-if="preview" class="space-y-4">
+    <div v-else-if="preview" class="space-y-4">
       <section class="grid grid-cols-2 gap-3 sm:grid-cols-4" data-tour="masterlist-stats">
         <article
           v-for="item in [

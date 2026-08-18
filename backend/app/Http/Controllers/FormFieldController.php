@@ -25,13 +25,20 @@ class FormFieldController extends Controller
             'options'        => ['nullable', 'array'],
             'options.*'      => ['string', 'max:191'],
             'is_required'    => ['boolean'],
-            'min_value'      => ['nullable', 'string', 'max:50'],
-            'max_value'      => ['nullable', 'string', 'max:50'],
+            'min_value'      => ['nullable', 'max:50'],
+            'max_value'      => ['nullable', 'max:50'],
             'min_length'     => ['nullable', 'integer', 'min:0'],
             'max_length'     => ['nullable', 'integer', 'min:1'],
             'accepted_types' => ['nullable', 'string', 'max:191'],
             'max_file_size'  => ['nullable', 'integer', 'min:1'],
         ]);
+
+        if (array_key_exists('min_value', $validated)) {
+            $validated['min_value'] = ($validated['min_value'] !== null && $validated['min_value'] !== '') ? (string) $validated['min_value'] : null;
+        }
+        if (array_key_exists('max_value', $validated)) {
+            $validated['max_value'] = ($validated['max_value'] !== null && $validated['max_value'] !== '') ? (string) $validated['max_value'] : null;
+        }
 
         // Enforce unique field_name within this form
         $exists = FormField::where('form_id', $formId)
@@ -89,13 +96,20 @@ class FormFieldController extends Controller
                 'options'        => ['nullable', 'array'],
                 'options.*'      => ['string', 'max:191'],
                 'is_required'    => ['boolean'],
-                'min_value'      => ['nullable', 'string', 'max:50'],
-                'max_value'      => ['nullable', 'string', 'max:50'],
+                'min_value'      => ['nullable', 'max:50'],
+                'max_value'      => ['nullable', 'max:50'],
                 'min_length'     => ['nullable', 'integer', 'min:0'],
                 'max_length'     => ['nullable', 'integer', 'min:1'],
                 'accepted_types' => ['nullable', 'string', 'max:191'],
                 'max_file_size'  => ['nullable', 'integer', 'min:1'],
             ]);
+
+            if (array_key_exists('min_value', $validated)) {
+                $validated['min_value'] = ($validated['min_value'] !== null && $validated['min_value'] !== '') ? (string) $validated['min_value'] : null;
+            }
+            if (array_key_exists('max_value', $validated)) {
+                $validated['max_value'] = ($validated['max_value'] !== null && $validated['max_value'] !== '') ? (string) $validated['max_value'] : null;
+            }
 
             // Check unique field_name if being changed
             if (

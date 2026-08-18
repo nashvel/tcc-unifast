@@ -361,7 +361,7 @@ export type SubmissionWindow = {
   };
 };
 
-// ────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â// ────────────────────────────────────────────────────────────
 // Dynamic Forms
 // ────────────────────────────────────────────────────────────
 
@@ -376,9 +376,19 @@ export type FieldType =
   | "date"
   | "file";
 
+export type FormStatus = "draft" | "published" | "closed" | "archived";
+
+export type FormFieldCondition = {
+  id: number;
+  source_field_id: number;
+  operator: "equals" | "not_equals" | "contains" | "greater_than" | "less_than" | "is_answered" | "is_not_answered";
+  condition_value: string | null;
+};
+
 export type FormField = {
   id: number;
   form_id?: number;
+  section_id: number | null;
   label: string;
   field_name: string;
   field_type: FieldType;
@@ -393,12 +403,23 @@ export type FormField = {
   max_file_size: number | null;
   sort_order: number;
   is_locked: boolean;
+  conditions: FormFieldCondition[];
+};
+
+export type FormSection = {
+  id: number;
+  form_id: number;
+  title: string;
+  description: string | null;
+  sort_order: number;
+  fields: FormField[];
 };
 
 export type Form = {
   id: number;
   title: string;
   description: string | null;
+  status: FormStatus;
   visibility: "public" | "private";
   target_role: "grantee" | "staff" | "all";
   is_active: boolean;
@@ -414,7 +435,7 @@ export type Form = {
 };
 
 export type FormDetail = Form & {
-  fields: FormField[];
+  sections: FormSection[];
 };
 
 export type FormSchema = {
@@ -423,7 +444,8 @@ export type FormSchema = {
   description: string | null;
   closes_at: string | null;
   already_submitted?: boolean;
-  fields: Omit<FormField, "is_locked" | "sort_order" | "form_id">[];
+  sections?: FormSection[];
+  fields: Omit<FormField, "is_locked" | "sort_order" | "form_id" | "conditions">[];
 };
 
 export type FormResponse = {
@@ -461,3 +483,11 @@ export type AssignedForm = {
   responses_count: number;
 };
 
+export type FormAnalytics = {
+  total: number;
+  authenticated: number;
+  anonymous: number;
+  by_day: { date: string; count: number }[];
+  total_fields: number;
+  required_fields: number;
+};

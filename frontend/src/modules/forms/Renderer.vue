@@ -6,7 +6,7 @@
  * and rate-limit / 409 / 410 error handling.
  * Never uses v-html for user content.
  */
-import { ref, computed, reactive } from "vue";
+import { ref, computed, reactive, watch } from "vue";
 import type { FormSchema } from "@/api/types";
 
 const props = defineProps<{
@@ -28,18 +28,34 @@ const values = reactive<Record<string, any>>({});
 const errors = reactive<Record<string, string>>({});
 const touched = reactive<Record<string, boolean>>({});
 
-// Initialize values
-props.schema.fields.forEach((f) => {
-  if (f.field_type === "checkbox") {
-    values[f.field_name] = [];
-  } else {
-    values[f.field_name] = "";
-  }
-});
+// Initialize values reactively
+watch(
+  () => props.schema?.fields,
+  (fieldsList) => {
+    if (!fieldsList) return;
+    fieldsList.forEach((f) => {
+      if (values[f.field_name] === undefined) {
+        values[f.field_name] = f.field_type === "checkbox" ? [] : "";
+      }
+    });
+  },
+  { immediate: true },
+);
 
 const submitState = ref<"idle" | "loading" | "success" | "error">("idle");
 const submitMessage = ref("");
 const rateLimitCountdown = ref(0);
+
+const displaySections = computed(() => {
+  if (props.schema.sections && props.schema.sections.length > 0) {
+    return props.schema.sections.map(sec => ({
+      ...sec,
+      fields: props.schema.fields.filter(f => f.section_id === sec.id)
+    }));
+  }
+  // Fallback
+  return [{ id: 'default', title: '', fields: props.schema.fields }];
+});
 
 // ─── Validation ───────────────────────────────────────────────────────────────
 
@@ -124,6 +140,7 @@ function toggleCheckbox(fieldName: string, option: string) {
 // ─── Submit ───────────────────────────────────────────────────────────────────
 
 const isClosed = computed(() => {
+  if (props.previewMode) return false;
   if (!props.schema.closes_at) return false;
   return new Date(props.schema.closes_at) < new Date();
 });
@@ -200,15 +217,26 @@ defineExpose({ onSuccess, onError });
 
     <!-- Form -->
     <template v-else-if="!isClosed">
+      <!-- Preview notice if deadline is in the past -->
+      <div
+        v-if="previewMode && schema.closes_at && new Date(schema.closes_at) < new Date()"
+        class="rounded-lg border border-warning/30 bg-warning-soft p-3 text-xs text-warning"
+      >
+        ℹ <strong>Preview note:</strong> The set "Closes at" deadline is in the past. Live users will see the form as closed unless the closing date is updated or cleared.
+      </div>
+
       <!-- Already submitted banner -->
       <div v-if="schema.already_submitted" class="rounded-lg border border-warning/30 bg-warning-soft p-4 text-sm text-warning">
         You have already submitted this form.
       </div>
 
-      <div class="space-y-4">
-        <div v-for="field in schema.fields" :key="field.field_name" class="space-y-1">
-          <!-- Label -->
-          <label :for="`field-${field.field_name}`" class="block text-sm font-medium">
+      <div class="space-y-8">
+        <div v-for="(section, idx) in displaySections" :key="section.id" class="space-y-4">
+          <h3 v-if="section.title && displaySections.length > 1" class="text-lg font-bold border-b pb-2 text-primary">{{ section.title }}</h3>
+          
+          <div v-for="field in section.fields" :key="field.field_name" class="space-y-1">
+            <!-- Label -->
+            <label :for="`field-${field.field_name}`" class="block text-sm font-medium">
             {{ field.label }}
             <span v-if="field.is_required" class="ml-0.5 text-danger" aria-label="required">*</span>
           </label>
@@ -353,6 +381,7 @@ defineExpose({ onSuccess, onError });
           <p v-if="errors[field.field_name] && touched[field.field_name]" class="text-micro text-danger" role="alert">
             {{ errors[field.field_name] }}
           </p>
+        </div>
         </div>
       </div>
 

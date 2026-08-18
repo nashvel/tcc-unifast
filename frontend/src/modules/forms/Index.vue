@@ -2,8 +2,8 @@
 import { ref, computed } from "vue";
 import { useRouter } from "vue-router";
 import {
-  IconPlus, IconPencil, IconTrash, IconToggleLeft, IconToggleRight,
-  IconLink, IconRefresh, IconEye, IconShield, IconChevronLeft, IconChevronRight,
+  IconPlus, IconPencil, IconArchive, IconToggleLeft, IconToggleRight,
+  IconLink, IconRefresh, IconEye, IconShield, IconChevronLeft, IconChevronRight, IconDatabase
 } from "@tabler/icons-vue";
 import PageHeader from "@/components/ui/PageHeader.vue";
 import TableSkeleton from "@/components/ui/TableSkeleton.vue";
@@ -18,12 +18,14 @@ const page = ref(1);
 const search = ref("");
 const visibility = ref("all");
 const status = ref("all");
+const isArchivedView = ref(false);
 
 const params = computed(() => ({
   page: page.value,
   search: search.value || undefined,
   visibility: visibility.value !== "all" ? visibility.value : undefined,
   status: status.value !== "all" ? status.value : undefined,
+  archived: isArchivedView.value || undefined,
 }));
 
 const { data, isLoading, isError, refetch } = useFormList(params);
@@ -34,18 +36,20 @@ const deleteMutation = useDeleteForm();
 const toggleMutation = useToggleForm();
 const regenMutation = useRegenerateToken();
 
-// Delete confirmation
-const deleteTarget = ref<Form | null>(null);
-const confirmDelete = (form: Form) => { deleteTarget.value = form; };
-const doDelete = async () => {
-  if (!deleteTarget.value) return;
+// Archive confirmation
+const archiveTarget = ref<Form | null>(null);
+const confirmArchive = (form: Form) => { archiveTarget.value = form; };
+const doArchive = async () => {
+  if (!archiveTarget.value) return;
   try {
-    await deleteMutation.mutateAsync(deleteTarget.value.id);
-    toast.success("Form deleted.");
-    deleteTarget.value = null;
+    // Note: It's still using `deleteMutation` under the hood which maps to the destroy endpoint, 
+    // but the backend now archives it.
+    await deleteMutation.mutateAsync(archiveTarget.value.id);
+    toast.success("Form archived.");
+    archiveTarget.value = null;
   } catch (e) {
-    toast.error(e instanceof Error ? e.message : "Cannot delete form.");
-    deleteTarget.value = null;
+    toast.error(e instanceof Error ? e.message : "Cannot archive form.");
+    archiveTarget.value = null;
   }
 };
 
@@ -78,6 +82,14 @@ const copyLink = (token: string) => {
   navigator.clipboard.writeText(url).then(() => toast.success("Link copied!"));
 };
 
+const handlePreview = (form: Form) => {
+  if (form.public_token) {
+    window.open(`/forms/public/${form.public_token}`, '_blank');
+  } else {
+    toast.info("Publish the form to view the live version.");
+  }
+};
+
 function visibilityBadge(v: string) {
   return v === "public"
     ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
@@ -93,8 +105,14 @@ function statusBadge(active: boolean) {
 
 <template>
   <div>
-    <PageHeader title="Forms" description="Create and manage dynamic forms for grantees and staff.">
+    <PageHeader :title="isArchivedView ? 'Archived Forms' : 'Form Builder'" description="Create and manage dynamic forms for grantees and staff.">
       <template #actions>
+        <button
+          @click="isArchivedView = !isArchivedView"
+          class="inline-flex h-9 items-center gap-1.5 rounded-md border bg-surface px-3 text-xs font-medium transition hover:bg-surface-muted"
+        >
+          <IconArchive :size="14" /> {{ isArchivedView ? 'Back to Forms' : 'Archives' }}
+        </button>
         <button
           id="btn-create-form"
           class="inline-flex h-9 items-center gap-1.5 rounded-md bg-primary px-3 text-xs font-medium text-white transition hover:bg-primary/90"
@@ -145,7 +163,7 @@ function statusBadge(active: boolean) {
               <th class="px-4 py-3 text-left font-medium">Status</th>
               <th class="px-4 py-3 text-left font-medium">Responses</th>
               <th class="px-4 py-3 text-left font-medium">Closes</th>
-              <th class="px-4 py-3 text-right font-medium">Actions</th>
+              <th class="px-4 py-3 text-center font-medium">Actions</th>
             </tr>
           </thead>
           <tbody class="divide-y">
@@ -175,74 +193,73 @@ function statusBadge(active: boolean) {
                 {{ form.closes_at ? new Date(form.closes_at).toLocaleDateString() : '—' }}
               </td>
               <td class="px-4 py-3">
-                <div class="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition">
+                <div class="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition">
                   <!-- Edit -->
                   <button
                     :id="`btn-edit-form-${form.id}`"
-                    class="grid size-7 place-items-center rounded hover:bg-surface-muted"
+                    class="grid size-9 place-items-center rounded hover:bg-surface-muted"
                     title="Edit form"
                     @click="router.push(`/app/forms/${form.id}/edit`)"
                   >
-                    <IconPencil :size="14" />
+                    <IconPencil :size="18" />
                   </button>
                   <!-- Responses -->
                   <button
                     :id="`btn-responses-form-${form.id}`"
-                    class="grid size-7 place-items-center rounded hover:bg-surface-muted"
-                    title="View responses"
+                    class="grid size-9 place-items-center rounded hover:bg-surface-muted"
+                    title="View data"
                     @click="router.push(`/app/forms/${form.id}/responses`)"
                   >
-                    <IconEye :size="14" />
+                    <IconEye :size="18" />
                   </button>
                   <!-- Security logs -->
                   <button
                     :id="`btn-security-form-${form.id}`"
-                    class="grid size-7 place-items-center rounded hover:bg-surface-muted"
+                    class="grid size-9 place-items-center rounded hover:bg-surface-muted"
                     title="Security log"
                     @click="router.push(`/app/forms/${form.id}/security`)"
                   >
-                    <IconShield :size="14" />
+                    <IconShield :size="18" />
                   </button>
                   <!-- Toggle active -->
                   <button
                     :id="`btn-toggle-form-${form.id}`"
-                    class="grid size-7 place-items-center rounded hover:bg-surface-muted"
+                    class="grid size-9 place-items-center rounded hover:bg-surface-muted"
                     :title="form.is_active ? 'Deactivate' : 'Activate'"
                     @click="doToggle(form)"
                   >
-                    <IconToggleRight v-if="form.is_active" :size="14" class="text-success" />
-                    <IconToggleLeft v-else :size="14" class="text-text-muted" />
+                    <IconToggleRight v-if="form.is_active" :size="18" class="text-success" />
+                    <IconToggleLeft v-else :size="18" class="text-text-muted" />
                   </button>
                   <!-- Copy public link -->
                   <button
                     v-if="form.visibility === 'public' && form.public_token"
                     :id="`btn-copy-link-form-${form.id}`"
-                    class="grid size-7 place-items-center rounded hover:bg-surface-muted"
+                    class="grid size-9 place-items-center rounded hover:bg-surface-muted"
                     title="Copy public link"
                     @click="copyLink(form.public_token!)"
                   >
-                    <IconLink :size="14" />
+                    <IconLink :size="18" />
                   </button>
                   <!-- Regen token -->
                   <button
                     v-if="form.visibility === 'public'"
                     :id="`btn-regen-form-${form.id}`"
-                    class="grid size-7 place-items-center rounded hover:bg-surface-muted"
+                    class="grid size-9 place-items-center rounded hover:bg-surface-muted"
                     title="Regenerate public token"
                     @click="confirmRegen(form)"
                   >
-                    <IconRefresh :size="14" />
+                    <IconRefresh :size="18" />
                   </button>
-                  <!-- Delete -->
+                  <!-- Archive -->
                   <button
-                    :id="`btn-delete-form-${form.id}`"
-                    class="grid size-7 place-items-center rounded hover:bg-danger-soft text-danger"
-                    :title="form.responses_count > 0 ? 'Cannot delete — form has responses' : 'Delete form'"
-                    :disabled="form.responses_count > 0"
-                    :class="{ 'opacity-30 cursor-not-allowed': form.responses_count > 0 }"
-                    @click="form.responses_count === 0 && confirmDelete(form)"
+                    v-if="form.status !== 'archived'"
+                    :id="`btn-archive-form-${form.id}`"
+                    class="grid size-9 place-items-center rounded hover:bg-surface-muted text-text-muted transition"
+                    title="Archive form"
+                    @click="confirmArchive(form)"
                   >
-                    <IconTrash :size="14" />
+                    <IconArchive :size="18" />
                   </button>
                 </div>
               </td>
@@ -276,19 +293,19 @@ function statusBadge(active: boolean) {
       </template>
     </div>
 
-    <!-- Delete confirm modal -->
-    <AppDialog :model-value="!!deleteTarget" title="Delete form" @update:model-value="deleteTarget = null">
+    <!-- Archive confirm modal -->
+    <AppDialog :model-value="!!archiveTarget" title="Archive form" @update:model-value="archiveTarget = null">
       <p class="text-sm text-text-muted">
-        Are you sure you want to delete <strong>{{ deleteTarget?.title }}</strong>? This action cannot be undone.
+        Are you sure you want to archive <strong>{{ archiveTarget?.title }}</strong>? Archiving will hide it from the active list but preserve its responses.
       </p>
       <template #footer="{ close }">
         <button class="rounded border px-4 py-2 text-xs" @click="close">Cancel</button>
         <button
-          class="rounded bg-danger px-4 py-2 text-xs text-white disabled:opacity-60"
+          class="rounded bg-primary px-4 py-2 text-xs text-white disabled:opacity-60"
           :disabled="deleteMutation.isPending.value"
-          @click="doDelete"
+          @click="doArchive"
         >
-          {{ deleteMutation.isPending.value ? "Deleting…" : "Delete" }}
+          {{ deleteMutation.isPending.value ? "Archiving…" : "Archive" }}
         </button>
       </template>
     </AppDialog>

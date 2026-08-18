@@ -9,6 +9,7 @@ import {
   IconFileInvoice,
   IconFolder,
   IconFolders,
+  IconForms,
   IconHistory,
   IconLifebuoy,
   IconReportAnalytics,
@@ -38,6 +39,7 @@ export const adminNavigation: NavigationSection[] = [
     labelKey: "nav.communication",
     items: [
       { labelKey: "nav.announcements", path: "/app/announcements", icon: IconSpeakerphone },
+      { labelKey: "nav.formBuilder", path: "/app/forms", icon: IconForms },
       { labelKey: "nav.monitoringReports", path: "/app/reports", icon: IconReportAnalytics },
       { labelKey: "nav.billing", path: "/app/billing", icon: IconFileInvoice },
       { labelKey: "nav.distributionReport", path: "/app/distribution", icon: IconReportMoney },
@@ -94,6 +96,7 @@ export const staffNavigation: NavigationSection[] = [
       { labelKey: "nav.batches", path: "/app/batches", icon: IconFolders },
       { labelKey: "nav.programs", path: "/app/programs", icon: IconSchool },
       { labelKey: "nav.grantees", path: "/app/grantees", icon: IconUsersGroup },
+      { labelKey: "nav.formBuilder", path: "/app/forms", icon: IconForms },
     ],
   },
   {
@@ -130,6 +133,7 @@ export const studentNavigation: NavigationSection[] = [
     items: [
       { labelKey: "common.dashboard", path: "/student", icon: IconDashboard },
       { labelKey: "nav.requiredDocuments", path: "/student/documents", icon: IconFileCheck },
+      { labelKey: "nav.studentForms", path: "/student/forms", icon: IconForms },
       { labelKey: "common.profile", path: "/student/profile", icon: IconUserCircle },
       { labelKey: "nav.announcements", path: "/student/announcements", icon: IconSpeakerphone },
       { labelKey: "common.settings", path: "/student/settings", icon: IconSettings },

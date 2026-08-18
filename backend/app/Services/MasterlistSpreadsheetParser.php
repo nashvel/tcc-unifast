@@ -4,6 +4,8 @@ namespace App\Services;
 
 use App\Imports\MasterlistRowsImport;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Str;
 use Maatwebsite\Excel\Facades\Excel;
 use RuntimeException;
@@ -13,6 +15,8 @@ use ZipArchive;
 class MasterlistSpreadsheetParser
 {
     /**
+     * Parse a masterlist file and return its rows.
+     *
      * @return list<array<string, string>>
      */
     public function parse(UploadedFile $file): array
@@ -20,10 +24,54 @@ class MasterlistSpreadsheetParser
         $extension = strtolower($file->getClientOriginalExtension());
 
         return match ($extension) {
-            'csv' => $this->parseCsv($file->getRealPath()),
+            'csv'        => $this->parseCsv($file->getRealPath()),
             'xlsx', 'xls' => $this->parseWithLaravelExcel($file),
-            default => throw new RuntimeException('Upload a CSV or XLSX masterlist file.'),
+            'docx'       => $this->parseBridge($file->getRealPath(), 'docx')['rows'],
+            'pdf'        => $this->parseBridge($file->getRealPath(), 'pdf')['rows'],
+            default      => throw new RuntimeException(
+                'Upload a CSV, XLSX, PDF, or DOCX masterlist file.'
+            ),
         };
+    }
+
+    /**
+     * Parse a DOCX or PDF masterlist via the Python bridge and return both
+     * the rows array and the detection metadata (for the UI detection card).
+     *
+     * @return array{
+     *   rows: list<array<string, string>>,
+     *   detection_info: array<string, mixed>
+     * }
+     */
+    public function parseWithDetection(UploadedFile $file): array
+    {
+        $extension = strtolower($file->getClientOriginalExtension());
+
+        if (in_array($extension, ['docx', 'pdf'], true)) {
+            $result = $this->parseBridge($file->getRealPath(), $extension);
+
+            return [
+                'rows'           => $result['rows'],
+                'detection_info' => [
+                    'table_index'      => $result['table_index'] ?? null,
+                    'raw_headers'      => $result['raw_headers'] ?? [],
+                    'matched_columns'  => $result['matched_columns'] ?? [],
+                    'unmatched_headers' => $result['unmatched_headers'] ?? [],
+                    'row_count'        => $result['row_count'] ?? 0,
+                ],
+            ];
+        }
+
+        // CSV / XLSX: no detection metadata
+        $rows = match ($extension) {
+            'csv'         => $this->parseCsv($file->getRealPath()),
+            'xlsx', 'xls' => $this->parseWithLaravelExcel($file),
+            default       => throw new RuntimeException(
+                'Upload a CSV, XLSX, PDF, or DOCX masterlist file.'
+            ),
+        };
+
+        return ['rows' => $rows, 'detection_info' => null];
     }
 
     /**
@@ -223,5 +271,102 @@ class MasterlistSpreadsheetParser
         }
 
         return $row;
+    }
+
+    // ──────────────────────────────────────────────────────────────────────
+    // DOCX / PDF — Python bridge (masterlist_extract.py)
+    // ──────────────────────────────────────────────────────────────────────
+
+    /**
+     * Call masterlist_extract.py for DOCX or PDF files.
+     * Returns the full JSON payload from the script (rows + detection metadata).
+     *
+     * @return array<string, mixed>
+     */
+    private function parseBridge(string $path, string $type): array
+    {
+        $python = $this->resolvePythonBinary();
+        $script = base_path('python/masterlist_extract.py');
+
+        if (! is_file($script)) {
+            throw new RuntimeException(
+                'masterlist_extract.py not found. Run git pull to get the latest backend scripts.'
+            );
+        }
+
+        try {
+            $result = Process::timeout(60)->run([$python, $script, $path]);
+        } catch (\Throwable $exc) {
+            Log::warning('masterlist_extract.process_failed', [
+                'type'  => $type,
+                'error' => $exc->getMessage(),
+            ]);
+            throw new RuntimeException(
+                'Could not start the masterlist extraction process: '.$exc->getMessage()
+            );
+        }
+
+        $raw = trim($result->output());
+
+        // Isolate outermost JSON object (script may emit warnings to stdout before JSON)
+        $start = strpos($raw, '{');
+        $end   = strrpos($raw, '}');
+        if ($start !== false && $end !== false && $end >= $start) {
+            $raw = substr($raw, $start, $end - $start + 1);
+        }
+
+        $payload = json_decode($raw, true, 512, JSON_INVALID_UTF8_SUBSTITUTE);
+
+        if (! is_array($payload)) {
+            Log::warning('masterlist_extract.bad_json', [
+                'type'        => $type,
+                'exit'        => $result->exitCode(),
+                'stderr'      => Str::limit(trim($result->errorOutput()), 300),
+                'stdout_head' => Str::limit($raw, 200),
+            ]);
+            throw new RuntimeException(
+                'The masterlist extractor returned an unexpected response. Check the file format.'
+            );
+        }
+
+        if (! ($payload['success'] ?? false)) {
+            $error = (string) ($payload['error'] ?? 'Unknown extraction error.');
+            $tablesFound = (int) ($payload['tables_found'] ?? 0);
+            $hint = $tablesFound > 0
+                ? " ({$tablesFound} table(s) found but none matched known masterlist columns — see CHED_FORMAT.md)"
+                : ' (no tables found in document)';
+            throw new RuntimeException($error.$hint);
+        }
+
+        // Normalize rows to match the format expected by the existing row pipeline
+        $rows = [];
+        foreach ((array) ($payload['rows'] ?? []) as $row) {
+            if (is_array($row)) {
+                $rows[] = array_map('strval', array_filter($row, fn ($v) => $v !== null));
+            }
+        }
+
+        return array_merge($payload, ['rows' => $rows]);
+    }
+
+    private function resolvePythonBinary(): string
+    {
+        $configured = trim((string) config('services.gradeslip_qr.python', ''));
+        if ($configured !== '') {
+            return $configured;
+        }
+
+        foreach ([
+            base_path('python/.venv/Scripts/python.exe'),
+            base_path('python/.venv/bin/python'),
+            base_path('ocr-service/.venv/Scripts/python.exe'),
+            base_path('ocr-service/.venv/bin/python'),
+        ] as $candidate) {
+            if (is_file($candidate)) {
+                return $candidate;
+            }
+        }
+
+        return PHP_OS_FAMILY === 'Windows' ? 'python' : 'python3';
     }
 }

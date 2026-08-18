@@ -59,11 +59,83 @@ export function useToggleForm() {
   });
 }
 
+export function usePublishForm() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string | number) => formsApi.publishForm(id),
+    onSuccess: (_data, id) => {
+      qc.invalidateQueries({ queryKey: queryKeys.form(id) });
+      qc.invalidateQueries({ queryKey: ["forms"] });
+    },
+  });
+}
+
+export function useCloseForm() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string | number) => formsApi.closeForm(id),
+    onSuccess: (_data, id) => {
+      qc.invalidateQueries({ queryKey: queryKeys.form(id) });
+      qc.invalidateQueries({ queryKey: ["forms"] });
+    },
+  });
+}
+
 export function useRegenerateToken() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string | number) => formsApi.regenerateFormToken(id),
     onSuccess: (_data, id) => qc.invalidateQueries({ queryKey: queryKeys.form(id) }),
+  });
+}
+
+// ─────────────────────────────────────────────────────────
+// Analytics
+// ─────────────────────────────────────────────────────────
+
+export function useFormAnalytics(id: Ref<string | number>) {
+  return useQuery({
+    queryKey: computed(() => ["forms", id.value, "analytics"]),
+    queryFn: () => formsApi.getFormAnalytics(id.value),
+    enabled: computed(() => !!id.value),
+    select: (res) => res.data,
+  });
+}
+
+// ─────────────────────────────────────────────────────────
+// Sections
+// ─────────────────────────────────────────────────────────
+
+export function useCreateSection(formId: Ref<string | number>) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: Parameters<typeof formsApi.createSection>[1]) => formsApi.createSection(formId.value, data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.form(formId.value) }),
+  });
+}
+
+export function useUpdateSection(formId: Ref<string | number>) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ sectionId, data }: { sectionId: number; data: Parameters<typeof formsApi.updateSection>[2] }) =>
+      formsApi.updateSection(formId.value, sectionId, data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.form(formId.value) }),
+  });
+}
+
+export function useDeleteSection(formId: Ref<string | number>) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (sectionId: number) => formsApi.deleteSection(formId.value, sectionId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.form(formId.value) }),
+  });
+}
+
+export function useReorderSections(formId: Ref<string | number>) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (order: number[]) => formsApi.reorderSections(formId.value, order),
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.form(formId.value) }),
   });
 }
 
@@ -100,7 +172,7 @@ export function useDeleteField(formId: Ref<string | number>) {
 export function useReorderFields(formId: Ref<string | number>) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (order: Record<number, number>) => formsApi.reorderFields(formId.value, order),
+    mutationFn: (order: number[]) => formsApi.reorderFields(formId.value, order),
     onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.form(formId.value) }),
   });
 }

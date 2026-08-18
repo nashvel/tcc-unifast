@@ -75,7 +75,7 @@ class ProcessRequirementSubmissionPipeline implements ShouldQueue
                         : [],
                     [
                         'enrollment_slip_warning' => true,
-                        'message' => 'This Grade Slip looks like a current-enrollment slip with no grades. Upload the last Grade Slip that already has grades (usually the 2nd-to-last term on Course History).',
+                        'message' => 'This Grade Slip has pending or late instructor grades. It is accepted for review as long as it is the official current Grade Slip.',
                     ],
                 );
             }
