@@ -22,6 +22,7 @@ import {
 } from "../../vercel/mocks";
 
 import mockChangelogs from "./changelogs.json";
+import { hasMockSession, setMockSession } from "@/auth/session";
 
 type MockResponse = { status: number; body: unknown };
 type MockHandler = (body?: string) => MockResponse;
@@ -79,8 +80,7 @@ function makeUser(email: string) {
 const handlers: Record<string, MockHandler> = {
   // Auth
   "GET /api/auth/me": () => {
-    const token = typeof localStorage !== "undefined" ? localStorage.getItem("unifast_auth_token") : null;
-    if (!token) return { status: 401, body: { message: "Unauthenticated." } };
+    if (!hasMockSession()) return { status: 401, body: { message: "Unauthenticated." } };
     return { status: 200, body: { user: makeUser("admin@unifast.gov.ph") } };
   },
   
@@ -108,9 +108,13 @@ const handlers: Record<string, MockHandler> = {
   "POST /api/auth/login": (body) => {
     const parsed = body ? JSON.parse(body) : {};
     const user = makeUser(parsed.email || "admin@unifast.gov.ph");
-    return { status: 200, body: { user, token: "mock-token-12345" } };
+    setMockSession(true);
+    return { status: 200, body: { user } };
   },
-  "POST /api/auth/logout": () => ({ status: 200, body: { message: "Signed out." } }),
+  "POST /api/auth/logout": () => {
+    setMockSession(false);
+    return { status: 200, body: { message: "Signed out." } };
+  },
 
   // Batches
   "GET /api/batches": () => ({

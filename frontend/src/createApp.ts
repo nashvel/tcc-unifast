@@ -36,6 +36,7 @@ const appChildren: RouteRecordRaw[] = [
   { path: "users", component: () => import("@/modules/users/Index.vue") },
   { path: "users/permissions", component: () => import("@/modules/users/Permissions.vue") },
   { path: "settings", component: () => import("@/modules/settings/Index.vue") },
+  { path: "activation-seeder", component: () => import("@/modules/activation-seeder/ActivationSeeder.vue") },
   { path: "appearance", component: () => import("@/modules/appearance/Index.vue") },
   { path: "style-guide", component: () => import("@/modules/style-guide/Index.vue") },
   { path: "masterlist", component: () => import("@/modules/masterlist/Index.vue") },
@@ -74,6 +75,12 @@ const appChildren: RouteRecordRaw[] = [
   { path: "eligibility", component: () => import("@/modules/eligibility/Index.vue") },
   { path: "eligibility/:id", component: () => import("@/modules/eligibility/Detail.vue") },
   { path: "files", component: () => import("@/modules/files/Index.vue") },
+  // Dynamic Forms
+  { path: "forms", component: () => import("@/modules/forms/Index.vue") },
+  { path: "forms/new", component: () => import("@/modules/forms/Builder.vue") },
+  { path: "forms/:id/edit", component: () => import("@/modules/forms/Builder.vue") },
+  { path: "forms/:id/responses", component: () => import("@/modules/forms/Builder.vue") },
+  { path: "forms/:id/security", component: () => import("@/modules/forms/SecurityLog.vue") },
 ];
 
 const studentChildren: RouteRecordRaw[] = [
@@ -107,11 +114,15 @@ const studentChildren: RouteRecordRaw[] = [
   },
   { path: "upload", redirect: (to) => withLang("/student/documents", to.query.lang) },
   { path: "announcements", component: () => import("@/modules/announcements/StudentIndex.vue") },
+  { path: "announcements/:id", component: () => import("@/modules/announcements/StudentDetail.vue") },
   {
     path: "notifications",
     component: () => import("@/modules/notifications/StudentNotifications.vue"),
   },
   { path: "settings", component: () => import("@/modules/settings/StudentSettings.vue") },
+  // Student Forms
+  { path: "forms", component: () => import("@/modules/forms/StudentForms.vue") },
+  { path: "forms/:id", component: () => import("@/modules/forms/StudentFormRenderer.vue") },
 ];
 
 function scrollBehavior(
@@ -145,6 +156,11 @@ function createAppRouter(): Router {
         path: "/student",
         component: () => import("@/layouts/AppShell.vue"),
         children: studentChildren,
+      },
+      // Public form — no authentication shell
+      {
+        path: "/forms/public/:token",
+        component: () => import("@/modules/forms/PublicForm.vue"),
       },
       { path: "/:pathMatch(.*)*", redirect: (to) => withLang("/login", to.query.lang) },
     ],

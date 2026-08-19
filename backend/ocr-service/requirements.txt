@@ -13,3 +13,5 @@ httpx
 # libzbar-64.dll; if import fails, install VC++ Redistributable and place
 # libiconv.dll under ocr-service/native/ (or set ZBAR_DLL_PATH). Soft-fails OCR.
 pyzbar>=0.1.9
+# DOCX masterlist table extraction (CHED uploads)
+python-docx>=1.1.2

@@ -15,7 +15,6 @@ import {
 import AppDialog from "@/components/dialogs/AppDialog.vue";
 import PageHeader from "@/components/ui/PageHeader.vue";
 import { markStudentVerified } from "@/auth/studentVerification";
-import { getAuthToken } from "@/auth/session";
 import { getUserMediaSafe } from "@/modules/requirements/cameraAccess";
 import sampleStudentId from "@/assets/sample-student-id.png";
 import sampleStudentIdBack from "@/assets/sample-student-id-back.png";
@@ -126,7 +125,8 @@ async function captureAndVerify() {
 
     const response = await fetch(apiUrl("/api/student/identity/face-verify"), {
       method: "POST",
-      headers: { Authorization: `Bearer ${getAuthToken()}`, Accept: "application/json" },
+      headers: { Accept: "application/json" },
+      credentials: "include",
       body,
     });
     const payload = await response.json();

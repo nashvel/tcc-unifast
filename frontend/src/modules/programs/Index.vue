@@ -137,7 +137,7 @@ async function deleteProgram() {
             <span v-else class="inline-flex rounded-full bg-surface-muted px-2 py-0.5 text-xs font-semibold text-text-muted">Inactive</span>
           </td>
           <td class="px-4 py-3 text-sm">
-            <div class="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div class="flex items-center gap-2">
               <button class="text-text-muted hover:text-primary" @click="openEditDialog(program)" title="Edit">
                 <IconEdit :size="16" />
               </button>

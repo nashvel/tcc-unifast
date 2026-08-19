@@ -10,25 +10,20 @@ import { authSession } from "@/auth/session";
 import { studentHomePath } from "@/auth/onboardingResume";
 import { login } from "@/api/auth";
 import { apiFetch } from "@/api/client";
+import { useTheme } from "@/composables/useTheme";
 import LanguageSwitcher from "@/components/LanguageSwitcher.vue";
 import { withLang } from "@/i18n/routeLang";
 import VueRecaptcha from "vue3-recaptcha2";
 
-const activeSlide = ref<'text' | 'image'>('text');
-let slideInterval: number | ReturnType<typeof setInterval>;
-
 // Force light mode on login page - never use dark mode here
 onMounted(() => {
-  slideInterval = setInterval(() => {
-    activeSlide.value = activeSlide.value === 'text' ? 'image' : 'text';
-  }, 5000);
-
   document.documentElement.classList.remove("dark", "dev-dark");
 });
 
 const route = useRoute();
 const router = useRouter();
 const { t } = useI18n();
+const { isFlare } = useTheme();
 const email = ref("");
 const password = ref("");
 const showPassword = ref(false);
@@ -140,65 +135,48 @@ onMounted(async () => {
   } catch {}
 });
 
-onUnmounted(() => {
-  clearInterval(slideInterval);
-});
 </script>
 
 <template>
   <div class="grid h-screen overflow-hidden bg-surface lg:h-[80vh] lg:grid-cols-[1.08fr_.92fr]">
     <section
-      class="relative hidden h-screen overflow-hidden px-8 py-5 lg:flex lg:h-[80vh] lg:flex-col xl:px-10 xl:py-6 transition-colors duration-1000"
-      :class="activeSlide === 'text' ? 'bg-[#57151f]' : 'bg-white'"
+      :class="[
+        'relative hidden h-screen overflow-hidden px-8 py-5 lg:flex lg:h-[80vh] lg:flex-col xl:px-10 xl:py-6',
+        isFlare ? 'bg-surface' : 'bg-[#4a141d]'
+      ]"
     >
-      <!-- Dynamic Header Bar -->
-      <div 
-        class="absolute top-0 left-0 w-full h-[76px] xl:h-[84px] transition-colors duration-1000 z-40"
-        :class="activeSlide === 'image' ? 'bg-[#57151f]' : 'bg-white'"
-      ></div>
-
       <div
-        class="absolute inset-0 transition-opacity duration-1000 z-0"
-        :class="activeSlide === 'text' ? 'opacity-100' : 'opacity-0'"
-        style="
-          background:
-            radial-gradient(circle at 41% 44%, rgba(126, 31, 44, 0.9), transparent 34%),
-            radial-gradient(circle at 96% 3%, rgba(255, 255, 255, 0.08), transparent 20%),
-            radial-gradient(circle at 58% 58%, rgba(154, 42, 42, 0.46), transparent 14%),
-            linear-gradient(135deg, #4a141d 0%, #681b29 52%, #4a141d 100%);
+        class="absolute inset-0 z-0"
+        :style="
+          isFlare
+            ? 'background: radial-gradient(circle at 41% 44%, rgba(255, 97, 21, 0.08), transparent 34%), radial-gradient(circle at 58% 58%, rgba(255, 97, 21, 0.04), transparent 14%), linear-gradient(135deg, #ffffff 0%, #fff5f0 52%, #ffffff 100%);'
+            : 'background: radial-gradient(circle at 41% 44%, rgba(126, 31, 44, 0.9), transparent 34%), radial-gradient(circle at 96% 3%, rgba(255, 255, 255, 0.08), transparent 20%), radial-gradient(circle at 58% 58%, rgba(154, 42, 42, 0.46), transparent 14%), linear-gradient(135deg, #4a141d 0%, #681b29 52%, #4a141d 100%);'
         "
       />
       <div
-        class="absolute bottom-32 right-10 h-36 w-36 transition-opacity duration-1000 z-0"
-        :class="activeSlide === 'text' ? 'opacity-20' : 'opacity-0'"
-        style="
-          background-image: radial-gradient(rgba(255, 255, 255, 0.48) 1px, transparent 1px);
+        class="absolute bottom-32 right-10 h-36 w-36 z-0 opacity-20"
+        :style="`
+          background-image: radial-gradient(${isFlare ? 'rgba(255, 97, 21, 0.3)' : 'rgba(255, 255, 255, 0.48)'} 1px, transparent 1px);
           background-size: 14px 14px;
-        "
+        `"
       />
       
-      <div 
-        class="relative z-50 flex items-center gap-3 transition-all duration-1000 w-full"
-        :class="activeSlide === 'image' ? 'justify-center mt-3 text-white' : 'justify-start mt-0 text-[#57151f]'"
-      >
-        <div class="h-10 w-10 rounded-lg p-1.5 shadow-sm border border-transparent transition-colors duration-1000"
-             :class="activeSlide === 'image' ? 'bg-white shadow-sm' : 'bg-[#57151f]'">
+      <div :class="['relative z-50 flex items-center gap-3 w-full justify-start mt-0', isFlare ? 'text-text' : 'text-white']">
+        <div :class="['h-10 w-10 rounded-lg p-1.5 shadow-sm bg-white', isFlare ? 'border border-surface-muted' : '']">
           <img :src="logo" class="h-full w-full object-contain" alt="UniFAST TES" />
         </div>
-        <div class="transition-colors duration-1000">
-          <p class="text-base font-semibold transition-all duration-1000" :class="activeSlide === 'image' ? 'text-xl uppercase tracking-widest' : ''">
-            {{ activeSlide === 'image' ? 'Meet the Faculties' : 'UniFAST TES' }}
+        <div>
+          <p class="text-base font-semibold">
+            UniFAST TES
           </p>
-          <p v-show="activeSlide === 'text'" class="text-xs transition-opacity duration-1000" :class="activeSlide === 'image' ? 'text-white/80' : 'text-[#57151f]/80'">
+          <p :class="['text-xs', isFlare ? 'text-text-muted' : 'text-white/80']">
             {{ t("app.granteeManagement") }}
           </p>
         </div>
       </div>
-      <div 
-        class="relative z-10 mt-16 max-w-xl xl:mt-20 transition-all duration-1000 absolute text-white"
-        :class="activeSlide === 'text' ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-8 pointer-events-none absolute'"
-      >
-        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-white/90">
+
+      <div :class="['relative z-20 mt-12 max-w-xl xl:mt-16', isFlare ? 'text-text' : 'text-white']">
+        <p :class="['text-xs font-semibold uppercase tracking-[0.2em]', isFlare ? 'text-primary' : 'text-white/90']">
           {{ t("app.college") }}
         </p>
         <h1
@@ -206,7 +184,7 @@ onUnmounted(() => {
         >
           {{ t("auth.heroTitle") }}
         </h1>
-        <p class="mt-4 max-w-md text-sm leading-6 text-white/82">
+        <p :class="['mt-4 max-w-md text-sm leading-6', isFlare ? 'text-text-muted' : 'text-white/82']">
           {{ t("auth.heroDescription") }}
         </p>
       </div>
@@ -215,15 +193,13 @@ onUnmounted(() => {
       <img
         :src="backgroundLogo"
         alt="Watermark"
-        class="absolute left-1/2 top-1/2 z-0 w-[80%] max-w-lg -translate-x-1/2 -translate-y-[35%] object-contain transition-all duration-1000"
-        :class="activeSlide === 'image' ? 'scale-100 opacity-100' : 'scale-75 opacity-0 pointer-events-none'"
+        class="absolute right-0 bottom-0 z-0 w-[90%] max-w-[600px] object-contain opacity-10 mix-blend-overlay pointer-events-none translate-x-[15%] translate-y-[15%]"
       />
 
       <img
         :src="studentsCutout"
         alt="Tagoloan Community College students"
-        class="absolute bottom-0 left-1/2 z-10 w-[94%] max-w-none -translate-x-1/2 object-contain drop-shadow-2xl brightness-105 contrast-105 transition-all duration-1000 hover:scale-[1.02] hover:brightness-110 xl:w-[90%]"
-        :class="activeSlide === 'image' ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12 pointer-events-none'"
+        class="absolute bottom-0 right-[-5%] z-10 w-[85%] max-w-[650px] object-contain drop-shadow-2xl brightness-105 contrast-105 hover:scale-[1.02] hover:brightness-110 transition-all duration-500 xl:w-[80%]"
       />
     </section>
 

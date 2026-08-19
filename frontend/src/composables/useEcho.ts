@@ -1,6 +1,6 @@
 import { onMounted, onUnmounted, ref, shallowRef } from "vue";
 import type Echo from "laravel-echo";
-import { authSession, getAuthToken } from "@/auth/session";
+import { authSession } from "@/auth/session";
 import { API_BASE } from "@/config";
 
 type EchoInstance = Echo<"reverb" | "pusher">;
@@ -29,6 +29,18 @@ function broadcastConfig() {
   };
 }
 
+/** Tear down Echo so the next ensureEcho() re-auths with current cookies. */
+export function resetEcho() {
+  try {
+    echoRef.value?.disconnect();
+  } catch {
+    // ignore
+  }
+  echoRef.value = null;
+  connected.value = false;
+  connecting = null;
+}
+
 export async function ensureEcho(): Promise<EchoInstance | null> {
   if (import.meta.env.SSR) return null;
   if (echoRef.value) return echoRef.value;
@@ -55,12 +67,13 @@ export async function ensureEcho(): Promise<EchoInstance | null> {
       enabledTransports: ["ws", "wss"],
       cluster: config.cluster,
       authEndpoint: `${API_BASE}/broadcasting/auth`,
+      // Cookie session: browser sends HttpOnly access cookie; no Bearer from JS.
       auth: {
         headers: {
-          Authorization: `Bearer ${getAuthToken() || ""}`,
           Accept: "application/json",
         },
       },
+      withCredentials: true,
     }) as EchoInstance;
 
     echoRef.value = echo;
@@ -78,7 +91,7 @@ export function useEcho() {
     void ensureEcho();
   });
 
-  return { echo: echoRef, connected, configured, ensureEcho };
+  return { echo: echoRef, connected, configured, ensureEcho, resetEcho };
 }
 
 export type NotificationPayload = {

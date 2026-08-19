@@ -95,6 +95,18 @@ return [
             'LOGIN_THROTTLE_PER_MINUTE',
             env('APP_ENV') === 'local' ? 60 : 5
         )),
+        'access_cookie' => env('AUTH_ACCESS_COOKIE', 'unifast_access'),
+        'refresh_cookie' => env('AUTH_REFRESH_COOKIE', 'unifast_refresh'),
+        'access_token_ttl_minutes' => max(1, (int) env('AUTH_ACCESS_TTL_MINUTES', 20)),
+        'refresh_token_ttl_days' => max(1, (int) env('AUTH_REFRESH_TTL_DAYS', 7)),
+        // lax for same-origin (Vite proxy); none + Secure for cross-origin SPA.
+        'cookie_same_site' => env('AUTH_COOKIE_SAMESITE', 'lax'),
+        'cookie_secure' => filter_var(
+            env('AUTH_COOKIE_SECURE', env('APP_ENV') === 'production'),
+            FILTER_VALIDATE_BOOLEAN
+        ),
+        'cookie_domain' => env('AUTH_COOKIE_DOMAIN'),
+        'refresh_throttle_per_minute' => max(1, (int) env('AUTH_REFRESH_THROTTLE_PER_MINUTE', 30)),
     ],
 
     'requirement_vault' => [

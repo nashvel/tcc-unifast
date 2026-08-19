@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { apiUrl } from "@/api/client";
+import { apiFetch, apiUrl } from "@/api/client";
 import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import CardSkeleton from "@/components/ui/CardSkeleton.vue";
-import { getAuthToken } from "@/auth/session";
 import { toast } from "@/composables/useToast";
 import { withLang } from "@/i18n/routeLang";
 import SchoolIdCaptureFlow, {
@@ -26,14 +25,11 @@ onMounted(async () => {
   }
 
   try {
-    const token = getAuthToken();
-    if (!token) throw new Error("Unauthenticated.");
-    const response = await fetch(apiUrl("/api/student/requirement-vault"), {
-      headers: { Accept: "application/json", Authorization: `Bearer ${token}` },
-      credentials: "include",
-    });
-    const payload = await response.json();
-    if (!response.ok) throw new Error(payload.message || "Unable to load requirement vault.");
+    const payload = await apiFetch<{
+      window?: { open?: boolean; message?: string };
+      onboarding_refs?: { completed?: boolean };
+      message?: string;
+    }>("/api/student/requirement-vault");
     if (!payload.window?.open) {
       toast.info(payload.window?.message || "Submission window is closed.");
       clearVaultSchoolIdScanReady();
@@ -64,17 +60,12 @@ function payloadMessage(payload: unknown, fallback: string) {
 
 /** Front OCR gate via vault ocr-front — does not persist Slot 1; fail → retake front. */
 async function onFrontOcr(blob: Blob) {
-  const token = getAuthToken();
-  if (!token) {
-    throw new Error("Unauthenticated. Sign in again, then retry the School ID scan.");
-  }
-
   const body = new FormData();
   body.append("id_frame", new File([blob], "id_vault_front.jpg", { type: "image/jpeg" }));
 
   const response = await fetch(apiUrl("/api/student/requirement-vault/id/ocr-front"), {
     method: "POST",
-    headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+    headers: { Accept: "application/json" },
     body,
     credentials: "include",
   });
@@ -88,11 +79,6 @@ async function onFrontOcr(blob: Blob) {
 }
 
 async function onComplete(payload: SchoolIdCaptureComplete) {
-  const token = getAuthToken();
-  if (!token) {
-    throw new Error("Unauthenticated. Sign in again, then retry the School ID scan.");
-  }
-
   const body = new FormData();
   body.append("id_frame", new File([payload.front], "id_frame.jpg", { type: "image/jpeg" }));
   body.append("id_back", new File([payload.back], "id_back.jpg", { type: "image/jpeg" }));
@@ -112,7 +98,7 @@ async function onComplete(payload: SchoolIdCaptureComplete) {
 
   const response = await fetch(apiUrl("/api/student/requirement-vault/id"), {
     method: "POST",
-    headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+    headers: { Accept: "application/json" },
     body,
     credentials: "include",
   });
@@ -127,7 +113,11 @@ async function onComplete(payload: SchoolIdCaptureComplete) {
 
 async function onExit() {
   clearVaultSchoolIdScanReady();
-  await router.push(withLang("/student/documents"));
+  try {
+    await router.replace(withLang("/student/documents"));
+  } catch {
+    await router.push(withLang("/student/documents"));
+  }
 }
 </script>
 

@@ -16,7 +16,21 @@ use Illuminate\Support\Facades\DB;
 
 class DocumentSubmissionController extends Controller
 {
-    public function __construct(private readonly DocumentSubmissionPresenter $presenter) {}
+    /** @var list<string> */
+    private const EXPECTED_SLOTS = [
+        'school_id',
+        'course_history',
+        'grade_slip',
+        'specimen_signatures',
+    ];
+
+    /** @var array<string, string> */
+    private const SLOT_TAB_LABELS = [
+        'school_id' => 'School ID',
+        'course_history' => 'Course History',
+        'grade_slip' => 'Grade Slip',
+        'specimen_signatures' => 'ID (Back-to-Back) & Specimen',
+    ];
 
     public function index(Request $request): JsonResponse
     {

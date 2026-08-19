@@ -3,16 +3,21 @@
 namespace App\Http\Controllers;
 
 use App\Models\AuditLog;
+use App\Services\AuthTokenService;
 use App\Services\StudentOnboardingNavigator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
+use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 
 class AuthController extends Controller
 {
-    public function login(Request $request, StudentOnboardingNavigator $navigator): JsonResponse
-    {
+    public function login(
+        Request $request,
+        StudentOnboardingNavigator $navigator,
+        AuthTokenService $tokens,
+    ): JsonResponse {
         $bypassCaptcha = (bool) config('services.auth.dev_bypass_captcha', false);
 
         $credentials = $request->validate([
@@ -51,7 +56,14 @@ class AuthController extends Controller
             return response()->json(['message' => $message], 403);
         }
 
-        $token = $user->createToken('auth-token')->plainTextToken;
+        // Drop the web-session login; auth continues via HttpOnly access/refresh cookies.
+        Auth::logout();
+        if ($request->hasSession()) {
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+        }
+
+        $tokens->issuePair($user, $request);
 
         AuditLog::create([
             'actor'      => $user->name,
@@ -59,13 +71,28 @@ class AuthController extends Controller
             'action'     => 'auth_login',
             'module'     => 'Authentication',
             'target'     => $user->email,
-            'context'    => ['method' => 'sanctum_token'],
+            'context'    => ['method' => 'cookie_access_refresh'],
             'ip_address' => $request->ip(),
         ]);
 
         return response()->json([
-            'user'  => $this->presentUser($user, $navigator),
-            'token' => $token,
+            'user' => $this->presentUser($user, $navigator),
+        ]);
+    }
+
+    public function refresh(
+        Request $request,
+        StudentOnboardingNavigator $navigator,
+        AuthTokenService $tokens,
+    ): JsonResponse {
+        try {
+            $user = $tokens->rotate($request);
+        } catch (UnauthorizedHttpException) {
+            return response()->json(['message' => 'Unauthenticated.'], 401);
+        }
+
+        return response()->json([
+            'user' => $this->presentUser($user, $navigator),
         ]);
     }
 
@@ -76,7 +103,7 @@ class AuthController extends Controller
             : response()->json(['message' => 'Unauthenticated.'], 401);
     }
 
-    public function logout(Request $request): JsonResponse
+    public function logout(Request $request, AuthTokenService $tokens): JsonResponse
     {
         if ($request->user()) {
             AuditLog::create([
@@ -85,12 +112,12 @@ class AuthController extends Controller
                 'action'     => 'auth_logout',
                 'module'     => 'Authentication',
                 'target'     => $request->user()->email,
-                'context'    => ['method' => 'sanctum_token'],
+                'context'    => ['method' => 'cookie_access_refresh'],
                 'ip_address' => $request->ip(),
             ]);
-
-            $request->user()->currentAccessToken()->delete();
         }
+
+        $tokens->revokeCurrent($request);
 
         return response()->json(['message' => 'Signed out.']);
     }

@@ -1,10 +1,13 @@
-import { apiFetch } from "./client";
-import { setAuthToken, clearAuthToken } from "@/auth/session";
-import type { AuthUser } from "@/auth/session";
+import { apiFetch, ensureCsrfCookie } from "./client";
+import { clearAuthSession, setMockSession, type AuthUser } from "@/auth/session";
 
 export async function fetchCurrentUser(): Promise<AuthUser | null> {
   try {
-    const payload = await apiFetch<{ user: AuthUser }>("/api/auth/me");
+    // Abort after 5 s — if the backend is dead/frozen we must not block the router forever.
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    const payload = await apiFetch<{ user: AuthUser }>("/api/auth/me", { signal: controller.signal });
+    clearTimeout(timeout);
     return payload.user;
   } catch {
     return null;
@@ -12,19 +15,23 @@ export async function fetchCurrentUser(): Promise<AuthUser | null> {
 }
 
 export async function login(email: string, password: string, captcha?: string): Promise<AuthUser> {
-  const payload = await apiFetch<{ user: AuthUser; token: string }>("/api/auth/login", {
+  await ensureCsrfCookie();
+  const payload = await apiFetch<{ user: AuthUser }>("/api/auth/login", {
     method: "POST",
     body: JSON.stringify({ email, password, captcha: captcha ?? "" }),
   });
-  setAuthToken(payload.token);
+  setMockSession(true);
   return payload.user;
 }
 
 export async function logout(): Promise<void> {
   try {
+    await ensureCsrfCookie();
     await apiFetch("/api/auth/logout", { method: "POST" });
   } finally {
-    clearAuthToken();
+    clearAuthSession();
+    const { resetEcho } = await import("@/composables/useEcho");
+    resetEcho();
   }
 }
 

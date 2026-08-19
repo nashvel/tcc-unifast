@@ -4,7 +4,6 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue"
 import { IconAlertTriangle, IconCamera, IconCheck, IconId, IconInfoCircle, IconRefresh } from "@tabler/icons-vue";
 import AppDialog from "@/components/dialogs/AppDialog.vue";
 import PageHeader from "@/components/ui/PageHeader.vue";
-import { getAuthToken } from "@/auth/session";
 import { useSuccessOverlay } from "@/composables/useSuccessOverlay";
 import { toast } from "@/composables/useToast";
 import { getUserMediaSafe } from "@/modules/requirements/cameraAccess";
@@ -293,11 +292,11 @@ function setPreview(which: CaptureSide, blob: Blob) {
 
 async function checkOcrHealth() {
   ocrHealthChecking.value = true;
-  const token = getAuthToken();
   try {
-    const headers: HeadersInit = { Accept: "application/json" };
-    if (token) headers.Authorization = `Bearer ${token}`;
-    const response = await fetch(apiUrl("/api/student/identity-onboarding/ocr-health"), { headers });
+    const response = await fetch(apiUrl("/api/student/identity-onboarding/ocr-health"), {
+      headers: { Accept: "application/json" },
+      credentials: "include",
+    });
     const payload = await response.json();
     const ok = Boolean(payload?.data?.ok);
     ocrHealthOk.value = ok;
@@ -869,7 +868,7 @@ function onPrimaryClick() {
         <div class="flex shrink-0 items-center gap-1.5">
           <button
             v-if="frontBlob && !idScanVerified"
-            class="inline-flex h-8 items-center rounded-md border px-2 text-xs sm:px-3"
+            class="inline-flex h-8 items-center rounded-md border px-2 text-xs sm:px-3 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
             type="button"
             :disabled="busy"
             @click="retakeFront"
@@ -878,7 +877,7 @@ function onPrimaryClick() {
           </button>
           <button
             v-if="backBlob && !idScanVerified"
-            class="inline-flex h-8 items-center rounded-md border px-2 text-xs sm:px-3"
+            class="inline-flex h-8 items-center rounded-md border px-2 text-xs sm:px-3 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
             type="button"
             :disabled="busy"
             @click="retakeBack"
@@ -887,19 +886,21 @@ function onPrimaryClick() {
           </button>
           <button
             v-if="phase === 'live'"
-            class="inline-flex h-8 items-center gap-1.5 rounded-md border px-2 text-xs sm:px-3"
+            class="inline-flex h-8 items-center gap-1.5 rounded-md border px-2 text-xs sm:px-3 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
             type="button"
             title="Restart camera"
+            :disabled="busy"
             @click="startCamera"
           >
             <IconRefresh :size="14" />
             <span class="hidden sm:inline">Restart camera</span>
           </button>
           <button
-            class="inline-flex h-8 w-8 items-center justify-center rounded-md border text-primary"
+            class="inline-flex h-8 w-8 items-center justify-center rounded-md border text-primary disabled:opacity-50 disabled:cursor-not-allowed"
             type="button"
             aria-label="Scan guidelines"
             title="Scan guidelines"
+            :disabled="busy"
             @click="guideOpen = true"
           >
             <IconInfoCircle :size="18" />

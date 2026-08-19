@@ -26,4 +26,11 @@ interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
 
+// Suppress missing type declarations for libraries that don't ship proper exports-compatible types
+declare module "vue3-recaptcha2" {
+  import { DefineComponent } from "vue";
+  const VueRecaptcha: DefineComponent<{ sitekey: string; theme?: string; size?: string }, object, unknown>;
+  export default VueRecaptcha;
+}
+
 export {};

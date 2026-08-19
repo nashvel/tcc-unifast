@@ -7,9 +7,8 @@ import PageHeader from "@/components/ui/PageHeader.vue";
 import CardSkeleton from "@/components/ui/CardSkeleton.vue";
 import EmptyState from "@/components/ui/EmptyState.vue";
 import { useDocumentDetail, useDocumentPackage } from "@/composables/useDocuments";
-import { apiFetch, queryKeys } from "@/api";
+import { apiFetch, apiFetchBlob, queryKeys } from "@/api";
 import type { DocSubmissionDetail } from "@/api";
-import { getAuthToken } from "@/auth/session";
 import { toast } from "@/composables/useToast";
 import { scheduleUndo } from "@/composables/useUndo";
 import { useBreadcrumbTail } from "@/composables/useBreadcrumbTail";
@@ -266,9 +265,9 @@ const gradeSummary = computed(() => {
 const gradeBlankHelp = computed(() => {
   if (!isGradeDocument.value || !gradeSummary.value) return "";
   if (isCourseHistory.value) {
-    return "Course History blanks on the Grade Slip term and any newer enrollment term are Pending (not retention). Older-term blanks count as Dropped. Upload the last graded Grade Slip (not an empty current-enrollment slip) so pending terms are anchored correctly.";
+    return "Course History blanks on the Grade Slip term and any newer enrollment term are Pending (not retention). Older-term blanks count as Dropped. Current semester Grade Slip with pending/late grades is accepted.";
   }
-  return "Upload the last Grade Slip that already has grades. Blank grades on Grade Slip are review-only and are not counted toward eligibility.";
+  return "Current semester Grade Slip from TCC SIS. Blank or pending grades (P) from instructors are review-only and do not count toward retention failure.";
 });
 
 const gradeCountsLine = computed(() => {
@@ -529,12 +528,8 @@ function revokePreviewUrls() {
 
 async function fetchAuthBlob(url: string | null | undefined): Promise<string | null> {
   if (!url) return null;
-  const response = await fetch(url, {
-    headers: {
-      Accept: "*/*",
-      Authorization: `Bearer ${getAuthToken()}`,
-    },
-    credentials: "include",
+  const response = await apiFetchBlob(url, {
+    headers: { Accept: "*/*" },
   });
   if (!response.ok) return null;
   const blob = await response.blob();
@@ -544,25 +539,37 @@ async function fetchAuthBlob(url: string | null | undefined): Promise<string | n
 async function loadPreviews(
   doc: {
     file_url?: string | null;
+    file_preview_url?: string | null;
     secondary_file_url?: string | null;
+    secondary_file_preview_url?: string | null;
   } | null,
 ) {
   revokePreviewUrls();
   previewError.value = "";
   if (!doc) return;
 
-  try {
-    // Auth blob URLs are same-origin to the SPA and bypass X-Frame-Options on the API host.
-    primaryObjectUrl = await fetchAuthBlob(doc.file_url);
-    primaryPreviewUrl.value = primaryObjectUrl;
-    if (!primaryPreviewUrl.value) {
+  // Prefer the signed URL (no Bearer / cookie needed — safe for <iframe> / <img>)
+  // Fall back to the auth-blob endpoint if signed URL is absent.
+  const primarySrc = doc.file_preview_url || null;
+  const secondarySrc = doc.secondary_file_preview_url || null;
+
+  if (primarySrc) {
+    primaryPreviewUrl.value = primarySrc;
+  } else {
+    try {
+      primaryObjectUrl = await fetchAuthBlob(doc.file_url);
+      primaryPreviewUrl.value = primaryObjectUrl;
+      if (!primaryPreviewUrl.value) {
+        previewError.value = "Unable to load file preview.";
+      }
+    } catch {
       previewError.value = "Unable to load file preview.";
     }
-  } catch {
-    previewError.value = "Unable to load file preview.";
   }
 
-  if (doc.secondary_file_url) {
+  if (secondarySrc) {
+    secondaryPreviewUrl.value = secondarySrc;
+  } else if (doc.secondary_file_url) {
     try {
       secondaryObjectUrl = await fetchAuthBlob(doc.secondary_file_url);
       secondaryPreviewUrl.value = secondaryObjectUrl;

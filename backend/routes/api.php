@@ -13,7 +13,7 @@ use App\Http\Controllers\ChangelogController;
 use App\Http\Controllers\CollaboratorController;
 use App\Http\Controllers\DatabaseController;
 use App\Http\Controllers\DistributionReportController;
-use App\Http\Controllers\DocumentFileController;
+use App\Http\Controllers\DeveloperServicesController;
 use App\Http\Controllers\DocumentSubmissionController;
 use App\Http\Controllers\EligibilityController;
 use App\Http\Controllers\FaceReviewController;
@@ -36,24 +36,29 @@ use App\Http\Controllers\SystemHealthController;
 use App\Http\Controllers\TccPublicHomeController;
 use App\Http\Controllers\TccUnifastStudentsController;
 use App\Http\Controllers\TccUnifastSyncController;
-use App\Http\Controllers\TermController;
+use App\Http\Controllers\ActivationSeederController;
+use App\Http\Controllers\FormController;
+use App\Http\Controllers\FormFieldController;
+use App\Http\Controllers\FormResponseController;
+use App\Http\Controllers\FormSecurityLogController;
+use App\Http\Controllers\GranteeFormController;
+use App\Http\Controllers\PublicFormController;
+use App\Http\Middleware\FormSecurityHeaders;
 use App\Support\VaultFileStorage;
-use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
-use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Route;
 
-// Public routes (no auth required)
+// Public auth routes (session for CSRF; cookies via api middleware stack)
 Route::middleware([
-    EncryptCookies::class,
-    AddQueuedCookiesToResponse::class,
     StartSession::class,
 ])->group(function (): void {
     Route::post('/auth/login', [AuthController::class, 'login'])
         ->middleware('throttle:'.config('services.auth.login_throttle_per_minute', 5).',1');
+    Route::post('/auth/refresh', [AuthController::class, 'refresh'])
+        ->middleware('throttle:'.config('services.auth.refresh_throttle_per_minute', 30).',1');
+    Route::get('/activation/{token}', [ActivationController::class, 'show'])->middleware('throttle:20,1');
+    Route::post('/activation/{token}', [ActivationController::class, 'activate'])->middleware('throttle:10,1');
 });
-Route::get('/activation/{token}', [ActivationController::class, 'show'])->middleware('throttle:20,1');
-Route::post('/activation/{token}', [ActivationController::class, 'activate'])->middleware('throttle:10,1');
 
 // Public content (for login page)
 Route::get('/terms/active', [TermController::class, 'active']);
@@ -78,7 +83,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
     // Student routes
     Route::middleware('role:student')->group(function (): void {
         Route::get('/student/kyc', [StudentKycController::class, 'show'])->middleware('throttle:30,1');
-        Route::post('/student/kyc', [StudentKycController::class, 'store'])->middleware('throttle:5,1');
+        Route::post('/student/kyc', [StudentKycController::class, 'store'])->middleware('throttle:60,1');
         Route::get('/student/identity-onboarding', [IdentityOnboardingController::class, 'show']);
         Route::get('/student/identity-onboarding/ocr-health', [IdentityOnboardingController::class, 'ocrHealth'])->middleware('throttle:30,1');
         Route::post('/student/identity-onboarding/id-scan/ocr-front', [IdentityOnboardingController::class, 'validateFrontIdOcr'])->middleware('throttle:30,1');
@@ -189,17 +194,26 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::post('/batches/{batch}/deactivate', [BatchController::class, 'deactivate'])->middleware('throttle:10,1');
         Route::post('/batches/{batch}/extend-deadline', [BatchController::class, 'extendDeadline'])->middleware('throttle:10,1');
         Route::post('/masterlist/imports/{import}/confirm', [MasterlistImportController::class, 'confirm'])->middleware('throttle:10,1');
+
+        Route::get('/onboarding-center/batches/{batch}/stats', [\App\Http\Controllers\OnboardingCenterController::class, 'stats']);
+        Route::get('/onboarding-center/batches/{batch}/grantees', [\App\Http\Controllers\OnboardingCenterController::class, 'grantees']);
+        Route::post('/onboarding-center/batches/{batch}/blast-invites', [\App\Http\Controllers\OnboardingCenterController::class, 'blastInvites'])->middleware('throttle:5,1');
+        Route::post('/onboarding-center/grantees/{grantee}/resend-invite', [\App\Http\Controllers\OnboardingCenterController::class, 'resendInvite'])->middleware('throttle:20,1');
     });
 
-    Route::middleware('permission:view_database')->group(function (): void {
-        Route::get('/database/tables', [DatabaseController::class, 'tables']);
-        Route::get('/database/stats', [DatabaseController::class, 'stats']);
-        Route::get('/database/tables/{table}', [DatabaseController::class, 'table']);
-        Route::get('/database/tables/{table}/rows', [DatabaseController::class, 'rows']);
-    });
-
-    // RBAC and admin tools (developer/admin)
+    // RBAC + database viewer (developer/admin)
     Route::middleware('role:developer,admin')->group(function (): void {
+        // Activation Seeder — create activation-ready grantees from the browser
+        Route::get('/activation-seeder/batches', [ActivationSeederController::class, 'batches']);
+        Route::get('/activation-seeder/history', [ActivationSeederController::class, 'history']);
+        Route::post('/activation-seeder', [ActivationSeederController::class, 'seed'])->middleware('throttle:30,1');
+        Route::post('/activation-seeder/regenerate/{grantee}', [ActivationSeederController::class, 'regenerate'])->middleware('throttle:10,1');
+
+        // Service Manager
+        Route::get('/services/status', [DeveloperServicesController::class, 'status']);
+        Route::post('/services/start-ocr', [DeveloperServicesController::class, 'startOcr'])->middleware('throttle:20,1');
+        Route::post('/services/start-cloudflare', [DeveloperServicesController::class, 'startCloudflare'])->middleware('throttle:20,1');
+
         Route::get('/changelogs', [ChangelogController::class, 'index']);
         Route::get('/rbac/roles', [RbacController::class, 'index']);
         Route::post('/rbac/roles', [RbacController::class, 'store']);
@@ -260,7 +274,72 @@ Route::get('/integrations/n8n/tcc-unifast/students', TccUnifastStudentsControlle
     ->middleware('throttle:120,1')
     ->name('integrations.n8n.tcc-unifast.students');
 
-Route::post('/integrations/n8n/social-media-posts/{socialMediaPost}/status', [SocialMediaPostController::class, 'receiveStatus'])
-    ->whereNumber('socialMediaPost')
-    ->middleware('throttle:60,1')
-    ->name('integrations.n8n.social-media-posts.status');
+// ══════════════════════════════════════════════════════════════
+// Dynamic Form Creation Module
+// ══════════════════════════════════════════════════════════════
+
+// Public form endpoints — no authentication required
+Route::middleware(['throttle:30,1', FormSecurityHeaders::class])->group(function (): void {
+    Route::get('/forms/public/{token}', [PublicFormController::class, 'show']);
+    Route::post('/forms/public/{token}/responses', [PublicFormController::class, 'store'])
+        ->middleware('throttle:5,1');
+});
+
+// Authenticated form endpoints
+Route::middleware(['auth:sanctum', FormSecurityHeaders::class])->group(function (): void {
+
+    // ── Grantee portal ───────────────────────────────────────────────
+    Route::middleware('role:student')->group(function (): void {
+        Route::get('/forms/assigned', [GranteeFormController::class, 'assigned']);
+        Route::get('/forms/{id}/schema', [GranteeFormController::class, 'schema'])
+            ->whereNumber('id');
+        Route::post('/forms/{id}/responses', [GranteeFormController::class, 'submit'])
+            ->whereNumber('id')
+            ->middleware('throttle:10,1');
+    });
+
+    // ── Staff — response viewing only ────────────────────────────────
+    Route::middleware('role:developer,admin,head,staff')->group(function (): void {
+        Route::get('/forms/{id}/responses', [FormResponseController::class, 'index'])
+            ->whereNumber('id');
+        Route::get('/forms/{id}/responses/{rid}', [FormResponseController::class, 'show'])
+            ->whereNumber('id')->whereNumber('rid');
+    });
+
+    // ── Form management (admin / staff) ──────────────────────────────
+    Route::middleware('role:developer,admin,head,staff')->prefix('forms')->group(function (): void {
+        // Form CRUD
+        Route::get('/', [FormController::class, 'index'])->middleware('throttle:60,1');
+        Route::post('/', [FormController::class, 'store'])->middleware('throttle:60,1');
+        Route::get('/{id}', [FormController::class, 'show'])->whereNumber('id');
+        Route::put('/{id}', [FormController::class, 'update'])->whereNumber('id')->middleware('throttle:60,1');
+        Route::delete('/{id}', [FormController::class, 'destroy'])->whereNumber('id')->middleware('throttle:60,1');
+        Route::patch('/{id}/toggle', [FormController::class, 'toggle'])->whereNumber('id')->middleware('throttle:60,1');
+        Route::patch('/{id}/regenerate-token', [FormController::class, 'regenerateToken'])->whereNumber('id')->middleware('throttle:20,1');
+
+        // Publish workflow
+        Route::patch('/{id}/publish', [FormController::class, 'publish'])->whereNumber('id')->middleware('throttle:20,1');
+        Route::patch('/{id}/close', [FormController::class, 'close'])->whereNumber('id')->middleware('throttle:20,1');
+
+        // Analytics
+        Route::get('/{id}/analytics', [FormController::class, 'analytics'])->whereNumber('id');
+
+        // Sections
+        Route::post('/{id}/sections', [FormController::class, 'storeSections'])->whereNumber('id')->middleware('throttle:60,1');
+        Route::put('/{id}/sections/{sid}', [FormController::class, 'updateSection'])->whereNumber('id')->whereNumber('sid')->middleware('throttle:60,1');
+        Route::delete('/{id}/sections/{sid}', [FormController::class, 'destroySection'])->whereNumber('id')->whereNumber('sid')->middleware('throttle:60,1');
+        Route::patch('/{id}/sections/reorder', [FormController::class, 'reorderSections'])->whereNumber('id')->middleware('throttle:60,1');
+
+        // Field management (via FormController)
+        Route::post('/{id}/fields', [FormController::class, 'storeField'])->whereNumber('id')->middleware('throttle:60,1');
+        Route::put('/{id}/fields/{fid}', [FormController::class, 'updateField'])->whereNumber('id')->whereNumber('fid')->middleware('throttle:60,1');
+        Route::delete('/{id}/fields/{fid}', [FormController::class, 'destroyField'])->whereNumber('id')->whereNumber('fid')->middleware('throttle:60,1');
+        Route::patch('/{id}/fields/reorder', [FormController::class, 'reorderFields'])->whereNumber('id')->middleware('throttle:60,1');
+
+        // Response export (admin only)
+        Route::get('/{id}/responses/export', [FormResponseController::class, 'export'])->whereNumber('id');
+
+        // Security logs (admin only)
+        Route::get('/{id}/security-logs', [FormSecurityLogController::class, 'index'])->whereNumber('id');
+    });
+});

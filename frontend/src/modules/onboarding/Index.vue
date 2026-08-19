@@ -1,20 +1,18 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
-import { useQuery, useQueryClient } from "@tanstack/vue-query";
+import { computed, ref, watch } from "vue";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/vue-query";
 import {
-  IconAlertTriangle,
+  IconMail,
   IconCheck,
-  IconFileSpreadsheet,
-  IconPower,
-  IconUpload,
+  IconSend,
+  IconUsers,
+  IconAlertTriangle,
 } from "@tabler/icons-vue";
 import PageHeader from "@/components/ui/PageHeader.vue";
 import DataTable from "@/components/tables/DataTable.vue";
-import AppDialog from "@/components/dialogs/AppDialog.vue";
 import { apiFetch, apiUrl } from "@/api/client";
 import type { PaginatedResponse } from "@/api/types";
 import { queryKeys } from "@/api/queryKeys";
-import { getAuthToken } from "@/auth/session";
 import { toast } from "@/composables/useToast";
 
 type Batch = {
@@ -22,63 +20,36 @@ type Batch = {
   name: string;
   academic_year: string;
   semester: string;
-  submission_deadline: string | null;
-  is_active: boolean;
   window_status: "draft" | "active" | "closed" | "expired";
-  grantees_count: number;
 };
 
-type ImportRow = {
+type OnboardingStats = {
+  total: number;
+  invited: number;
+  uninvited: number;
+  active: number;
+  pending_face_review: number;
+};
+
+type GranteeRow = {
   id: number;
-  row_number: number;
-  student_id: string | null;
-  full_name: string | null;
-  email: string | null;
-  program: string | null;
-  year_level: string | null;
-  status: "valid" | "invalid";
-  errors: string[];
+  student_id: string;
+  full_name: string;
+  email: string;
+  program: string;
+  is_invited: boolean;
+  account_status: string;
 };
-
-type ImportPreview = {
-  id: number;
-  status: string;
-  total_rows: number;
-  valid_rows: number;
-  invalid_rows: number;
-  imported_rows: number;
-  rows: ImportRow[];
-  batch: { id: number; name: string } | null;
-};
-
-type ImportSummary = {
-  id: number;
-  status: string;
-  original_name: string | null;
-  total_rows: number;
-  valid_rows: number;
-  invalid_rows: number;
-  imported_rows: number;
-  created_at: string | null;
-};
-
-const step = ref(1);
-const batchDialog = ref(false);
-const selectedBatchId = ref<number | null>(null);
-const selectedImportId = ref<number | null>(null);
-const preview = ref<ImportPreview | null>(null);
-const busy = ref(false);
-const confirming = ref(false);
-const activating = ref(false);
-const error = ref("");
-const form = ref({
-  name: "",
-  academic_year: "AY 2026-2027",
-  semester: "1st Semester",
-  submission_deadline: "",
-});
 
 const queryClient = useQueryClient();
+const selectedBatchId = ref<number | null>(null);
+const page = ref(1);
+const searchQuery = ref("");
+const statusFilter = ref("");
+
+watch([selectedBatchId, searchQuery, statusFilter], () => {
+  page.value = 1;
+});
 
 const batchesQuery = useQuery({
   queryKey: computed(() => [...queryKeys.batches, { page: 1, onboarding: true }]),
@@ -86,333 +57,240 @@ const batchesQuery = useQuery({
 });
 
 const batches = computed(() => batchesQuery.data.value?.data ?? []);
-const selectedBatch = computed(
-  () => batches.value.find((batch) => batch.id === selectedBatchId.value) ?? null,
-);
 
-const importsQuery = useQuery({
-  queryKey: computed(() => ["masterlist_imports", { batch_id: selectedBatchId.value }]),
-  queryFn: () =>
-    apiFetch<PaginatedResponse<ImportSummary>>(
-      `/api/masterlist/imports?per_page=50&batch_id=${selectedBatchId.value}`,
-    ),
+// Stats Query
+const statsQuery = useQuery({
+  queryKey: computed(() => ["onboarding_stats", selectedBatchId.value]),
+  queryFn: () => apiFetch<{ data: OnboardingStats }>(`/api/onboarding-center/batches/${selectedBatchId.value}/stats`),
   enabled: computed(() => selectedBatchId.value !== null),
 });
 
-const imports = computed(() => importsQuery.data.value?.data ?? []);
+const stats = computed(() => statsQuery.data.value?.data);
 
-async function createBatch() {
-  busy.value = true;
-  error.value = "";
-  try {
-    const payload = await apiFetch<{ data: Batch }>("/api/batches", {
+// Grantees Query
+const granteesQuery = useQuery({
+  queryKey: computed(() => ["onboarding_grantees", selectedBatchId.value, page.value, searchQuery.value, statusFilter.value]),
+  queryFn: () => {
+    const params = new URLSearchParams({ page: page.value.toString() });
+    if (searchQuery.value) params.append("search", searchQuery.value);
+    if (statusFilter.value) params.append("status", statusFilter.value);
+    return apiFetch<PaginatedResponse<GranteeRow>>(`/api/onboarding-center/batches/${selectedBatchId.value}/grantees?${params.toString()}`);
+  },
+  enabled: computed(() => selectedBatchId.value !== null),
+});
+
+const grantees = computed(() => granteesQuery.data.value?.data ?? []);
+const granteesMeta = computed(() => granteesQuery.data.value?.meta);
+
+// Blast Invites Mutation
+const blastInvitesMutation = useMutation({
+  mutationFn: async () => {
+    return apiFetch(`/api/onboarding-center/batches/${selectedBatchId.value}/blast-invites`, {
       method: "POST",
-      body: JSON.stringify(form.value),
     });
-    await queryClient.invalidateQueries({ queryKey: queryKeys.batches });
-    selectedBatchId.value = payload.data.id;
-    batchDialog.value = false;
-    form.value = {
-      name: "",
-      academic_year: "AY 2026-2027",
-      semester: "1st Semester",
-      submission_deadline: "",
-    };
-    step.value = 2;
-    toast.success("Batch created");
-  } catch (exception) {
-    error.value = exception instanceof Error ? exception.message : "Unable to create batch.";
-    toast.error(error.value);
-  } finally {
-    busy.value = false;
-  }
-}
+  },
+  onSuccess: (data: any) => {
+    toast.success(data.message || "Invites blasted successfully!");
+    queryClient.invalidateQueries({ queryKey: ["onboarding_stats"] });
+    queryClient.invalidateQueries({ queryKey: ["onboarding_grantees"] });
+  },
+  onError: (error: any) => {
+    toast.error(error.message || "Failed to blast invites.");
+  },
+});
 
-function selectExistingBatch(id: number) {
-  selectedBatchId.value = id;
-  selectedImportId.value = null;
-  preview.value = null;
-  step.value = 2;
-}
-
-async function loadPreview(importId: number) {
-  selectedImportId.value = importId;
-  busy.value = true;
-  error.value = "";
-  try {
-    const payload = await apiFetch<{ data: ImportPreview }>(`/api/masterlist/imports/${importId}`);
-    preview.value = payload.data;
-    step.value = 3;
-  } catch (exception) {
-    error.value = exception instanceof Error ? exception.message : "Unable to load import preview.";
-    toast.error(error.value);
-  } finally {
-    busy.value = false;
-  }
-}
-
-async function confirmImport() {
-  if (!preview.value) return;
-  confirming.value = true;
-  error.value = "";
-  try {
-    const response = await fetch(apiUrl(`/api/masterlist/imports/${preview.value.id}/confirm`), {
+// Resend Invite Mutation
+const resendInviteMutation = useMutation({
+  mutationFn: async (granteeId: number) => {
+    return apiFetch(`/api/onboarding-center/grantees/${granteeId}/resend-invite`, {
       method: "POST",
-      headers: { Authorization: `Bearer ${getAuthToken()}`, Accept: "application/json" },
     });
-    const payload = await response.json();
-    if (!response.ok && response.status !== 207) {
-      throw new Error(payload.message || "Unable to confirm import.");
-    }
-    preview.value = payload.data;
-    toast.success(
-      `Imported ${payload.data.imported_rows} grantees. Invites sent: ${payload.mail?.sent ?? 0}.`,
-    );
-    await queryClient.invalidateQueries({ queryKey: queryKeys.batches });
-    step.value = 4;
-  } catch (exception) {
-    error.value = exception instanceof Error ? exception.message : "Unable to confirm import.";
-    toast.error(error.value);
-  } finally {
-    confirming.value = false;
-  }
-}
-
-async function activateBatch() {
-  if (!selectedBatchId.value) return;
-  activating.value = true;
-  error.value = "";
-  try {
-    await apiFetch(`/api/batches/${selectedBatchId.value}/activate`, { method: "POST" });
-    await queryClient.invalidateQueries({ queryKey: queryKeys.batches });
-    toast.success("Batch activated — only one submission window is active.");
-  } catch (exception) {
-    error.value = exception instanceof Error ? exception.message : "Unable to activate batch.";
-    toast.error(error.value);
-  } finally {
-    activating.value = false;
-  }
-}
-
-
-function formatDate(date: string | null) {
-  return date ? new Date(date).toLocaleString() : "—";
-}
+  },
+  onSuccess: () => {
+    toast.success("Invite resent successfully!");
+    queryClient.invalidateQueries({ queryKey: ["onboarding_grantees"] });
+  },
+  onError: (error: any) => {
+    toast.error(error.message || "Failed to resend invite.");
+  },
+});
 </script>
 
 <template>
-  <div>
+  <div class="space-y-6">
     <PageHeader
       title="Onboarding Center"
-      description="Create a batch, import the CHED masterlist, send invites, then open one active submission window."
+      description="Manage the rollout of the onboarding process. Track which students have received invitations and send activation emails to the batch."
     />
 
-    <ol class="mb-4 grid gap-2 md:grid-cols-4">
-      <li
-        v-for="item in [
-          [1, 'Create / select batch'],
-          [2, 'Select master list'],
-          [3, 'Preview & confirm'],
-          [4, 'Activate window'],
-        ]"
-        :key="item[0]"
-        :class="[
-          'rounded-lg border px-3 py-2 text-xs',
-          step === item[0] ? 'border-primary bg-primary/5 font-semibold' : 'bg-surface text-text-muted',
-        ]"
-      >
-        Step {{ item[0] }}: {{ item[1] }}
-      </li>
-    </ol>
-
-    <div v-if="error" class="mb-4 flex gap-2 rounded-md border border-danger/30 bg-danger-soft p-3 text-xs text-danger">
-      <IconAlertTriangle :size="14" />{{ error }}
+    <!-- Batch Selection Card -->
+    <div class="rounded-xl border bg-surface p-5 shadow-sm">
+      <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h2 class="text-sm font-semibold text-text">Select Target Batch</h2>
+          <p class="text-xs text-text-muted">Choose the batch you want to manage invitations for.</p>
+        </div>
+        <div class="w-full md:w-72">
+          <select
+            v-model="selectedBatchId"
+            class="h-10 w-full rounded-md border bg-surface px-3 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+          >
+            <option :value="null">-- Select a Batch --</option>
+            <option v-for="batch in batches" :key="batch.id" :value="batch.id">
+              {{ batch.name }} ({{ batch.academic_year }})
+            </option>
+          </select>
+        </div>
+      </div>
     </div>
 
-    <section class="mb-4 rounded-lg border bg-surface p-4">
-      <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <h2 class="text-sm font-semibold">1. Batch</h2>
-        <button
-          class="inline-flex h-9 items-center gap-1.5 rounded-md bg-primary px-3 text-xs text-white"
-          @click="batchDialog = true"
-        >
-          New batch
-        </button>
-      </div>
-      <p class="mb-3 text-xs text-text-muted">
-        Only one batch can be active at a time. Import requires an existing batch with a deadline.
-      </p>
-      <div class="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
-        <button
-          v-for="batch in batches"
-          :key="batch.id"
-          type="button"
-          :class="[
-            'relative rounded-md border p-3 text-left text-xs',
-            selectedBatchId === batch.id ? 'border-primary bg-primary/5' : 'hover:border-primary/40',
-          ]"
-          @click="selectExistingBatch(batch.id)"
-        >
-          <div v-if="selectedBatchId === batch.id" class="absolute right-2 top-2 text-primary">
-            <IconCheck :size="16" />
+    <template v-if="selectedBatchId">
+      <!-- Stats Dashboard -->
+      <div class="grid gap-4 md:grid-cols-4">
+        <div class="rounded-xl border bg-surface p-4 shadow-sm">
+          <p class="text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">Total Grantees</p>
+          <div class="flex items-center gap-2">
+            <IconUsers :size="24" class="text-text-muted" />
+            <span class="text-2xl font-bold text-text">{{ stats?.total || 0 }}</span>
           </div>
-          <p class="font-semibold pr-6">{{ batch.name }}</p>
-          <p class="mt-1 text-text-muted">
-            {{ batch.academic_year }} · {{ batch.semester }} · {{ batch.window_status }}
-          </p>
-          <p class="mt-1 text-text-muted">
-            Deadline:
-            {{
-              batch.submission_deadline
-                ? new Date(batch.submission_deadline).toLocaleString()
-                : "missing"
-            }}
-          </p>
-        </button>
+        </div>
+        <div class="rounded-xl border bg-surface p-4 shadow-sm">
+          <p class="text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">Invites Sent</p>
+          <div class="flex items-center gap-2">
+            <IconMail :size="24" class="text-primary" />
+            <span class="text-2xl font-bold text-text">{{ stats?.invited || 0 }}</span>
+          </div>
+        </div>
+        <div class="rounded-xl border bg-surface p-4 shadow-sm">
+          <p class="text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">Active Accounts</p>
+          <div class="flex items-center gap-2">
+            <IconCheck :size="24" class="text-success" />
+            <span class="text-2xl font-bold text-text">{{ stats?.active || 0 }}</span>
+          </div>
+        </div>
+        <div class="rounded-xl border bg-surface p-4 shadow-sm flex flex-col justify-center">
+          <button
+            class="w-full inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-primary px-4 font-semibold text-white shadow hover:bg-primary-600 disabled:opacity-60 transition"
+            :disabled="!stats || stats.uninvited === 0 || blastInvitesMutation.isPending.value"
+            @click="blastInvitesMutation.mutate()"
+          >
+            <IconSend :size="18" />
+            <span v-if="blastInvitesMutation.isPending.value">Sending...</span>
+            <span v-else-if="stats?.uninvited === 0">All Invited</span>
+            <span v-else>Blast {{ stats?.uninvited }} Invites</span>
+          </button>
+        </div>
       </div>
-    </section>
 
-    <section class="mb-4 rounded-lg border bg-surface p-4">
-      <h2 class="mb-3 text-sm font-semibold">2. Select a master list</h2>
-      <p class="mb-3 text-xs text-text-muted">
-        Select a masterlist that was uploaded to this batch. To upload a new one, go to the Masterlist menu.
-      </p>
-      
-      <div v-if="!selectedBatchId" class="text-xs text-text-muted">Select a batch first.</div>
-      <div v-else-if="importsQuery.isPending.value" class="text-xs text-text-muted">Loading imports...</div>
-      <div v-else-if="!imports.length" class="flex flex-col items-center gap-2 rounded-md border border-dashed p-6 text-center text-xs text-text-muted">
-        <IconFileSpreadsheet :size="24" class="text-text-soft" />
-        No masterlists uploaded to this batch yet.<br />
-        <RouterLink to="/app/masterlist" class="mt-1 font-semibold text-primary hover:underline">Go to Masterlist</RouterLink>
-      </div>
-      <div v-else class="grid gap-2">
-        <button
-          v-for="item in imports"
-          :key="item.id"
-          type="button"
-          :class="[
-            'flex items-center justify-between rounded-md border p-3 text-left text-xs transition-colors',
-            selectedImportId === item.id ? 'border-primary bg-primary/5' : 'hover:border-primary/40',
-          ]"
-          @click="loadPreview(item.id)"
-        >
+      <!-- Grantees List -->
+      <div class="rounded-xl border bg-surface shadow-sm overflow-hidden">
+        <div class="border-b px-5 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <p class="font-semibold text-text">{{ item.original_name || `Import #${item.id}` }}</p>
-            <p class="mt-0.5 text-text-muted capitalize">
-              {{ item.status }} · {{ item.total_rows }} rows · Uploaded {{ formatDate(item.created_at) }}
-            </p>
+            <h2 class="font-semibold text-text flex items-center gap-2">
+              Batch Grantees
+              <span v-if="selectedBatchId" class="inline-flex items-center rounded-full bg-surface-muted px-2.5 py-0.5 text-xs font-medium text-text-muted border">
+                {{ batches.find(b => b.id === selectedBatchId)?.name }}
+              </span>
+            </h2>
+            <p class="text-xs text-text-muted mt-1">Manage individual invitations for this batch.</p>
           </div>
-          <IconCheck v-if="selectedImportId === item.id" :size="16" class="text-primary" />
-        </button>
-      </div>
-    </section>
-
-    <section v-if="preview" class="mb-4 rounded-lg border bg-surface p-4">
-      <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <h2 class="text-sm font-semibold">3. Preview</h2>
-        <p class="text-xs text-text-muted">
-          {{ preview.valid_rows }} valid · {{ preview.invalid_rows }} errors · batch
-          {{ preview.batch?.name }}
-        </p>
-      </div>
-      <DataTable
-        :headings="['Row', 'Student ID', 'Name', 'Email', 'Program', 'Year', 'Status', 'Errors']"
-      >
-        <tr
-          v-for="row in preview.rows"
-          :key="row.id"
-          :class="row.status === 'invalid' ? 'bg-danger-soft/60' : ''"
+          <div class="flex items-center gap-2">
+            <input
+              v-model="searchQuery"
+              type="search"
+              placeholder="Search ID, name, email..."
+              class="h-9 w-64 rounded-md border bg-surface px-3 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+            <select
+              v-model="statusFilter"
+              class="h-9 rounded-md border bg-surface px-3 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            >
+              <option value="">All Statuses</option>
+              <option value="unverified">Unverified</option>
+              <option value="pending_face_review">Pending Face Review</option>
+              <option value="active">Active</option>
+            </select>
+          </div>
+        </div>
+        <DataTable
+          :headings="['Student ID', 'Name', 'Email', 'Account Status', 'Invitation', 'Actions']"
         >
-          <td class="px-3 py-2">{{ row.row_number }}</td>
-          <td class="px-3 py-2 font-mono">{{ row.student_id }}</td>
-          <td class="px-3 py-2">{{ row.full_name }}</td>
-          <td class="px-3 py-2">{{ row.email }}</td>
-          <td class="px-3 py-2">{{ row.program }}</td>
-          <td class="px-3 py-2">{{ row.year_level }}</td>
-          <td class="px-3 py-2 capitalize">{{ row.status }}</td>
-          <td class="px-3 py-2 text-danger">{{ row.errors.join(" ") }}</td>
-        </tr>
-      </DataTable>
-      <button
-        class="mt-3 inline-flex h-9 items-center gap-1.5 rounded-md bg-primary px-3 text-xs text-white disabled:opacity-60"
-        :disabled="confirming || preview.valid_rows < 1 || preview.status === 'imported'"
-        @click="confirmImport"
-      >
-        <IconCheck :size="14" />
-        {{
-          preview.status === "imported"
-            ? "Already imported"
-            : confirming
-              ? "Importing..."
-              : "Confirm import & send invites"
-        }}
-      </button>
-    </section>
-
-    <section class="rounded-lg border bg-surface p-4">
-      <h2 class="mb-2 text-sm font-semibold">4. Activate submission window</h2>
-      <p class="mb-3 text-xs text-text-muted">
-        Activating opens the window for grantees in
-        <strong>{{ selectedBatch?.name || "the selected batch" }}</strong>
-        and notifies them. Any other active batch is closed automatically.
-      </p>
-      <button
-        class="inline-flex h-9 items-center gap-1.5 rounded-md bg-primary px-3 text-xs text-white disabled:opacity-60"
-        :disabled="activating || !selectedBatchId || selectedBatch?.window_status === 'active'"
-        @click="activateBatch"
-      >
-        <IconPower :size="14" />
-        {{
-          selectedBatch?.window_status === "active"
-            ? "Already active"
-            : activating
-              ? "Activating..."
-              : "Activate batch"
-        }}
-      </button>
-    </section>
-
-    <AppDialog
-      v-model="batchDialog"
-      title="Create batch"
-      description="Name, academic year, semester, and submission deadline are required."
-      size="sm"
-    >
-      <div class="grid gap-3">
-        <label class="block text-xs font-medium"
-          >Batch name
-          <input v-model="form.name" class="mt-1.5 h-10 w-full rounded-md border px-3 text-sm" />
-        </label>
-        <label class="block text-xs font-medium"
-          >Academic year
-          <input
-            v-model="form.academic_year"
-            class="mt-1.5 h-10 w-full rounded-md border px-3 text-sm"
-          />
-        </label>
-        <label class="block text-xs font-medium"
-          >Semester
-          <input v-model="form.semester" class="mt-1.5 h-10 w-full rounded-md border px-3 text-sm" />
-        </label>
-        <label class="block text-xs font-medium"
-          >Submission deadline
-          <input
-            v-model="form.submission_deadline"
-            type="datetime-local"
-            class="mt-1.5 h-10 w-full rounded-md border px-3 text-sm"
-          />
-        </label>
+          <template v-if="granteesQuery.isPending.value">
+            <tr v-for="i in 5" :key="i" class="border-t">
+              <td class="px-5 py-4"><div class="h-4 w-24 animate-pulse rounded bg-surface-muted"></div></td>
+              <td class="px-5 py-4"><div class="h-4 w-40 animate-pulse rounded bg-surface-muted"></div></td>
+              <td class="px-5 py-4"><div class="h-4 w-48 animate-pulse rounded bg-surface-muted"></div></td>
+              <td class="px-5 py-4"><div class="h-5 w-24 animate-pulse rounded-full bg-surface-muted"></div></td>
+              <td class="px-5 py-4"><div class="h-4 w-16 animate-pulse rounded bg-surface-muted"></div></td>
+              <td class="px-5 py-4 text-right"><div class="ml-auto h-4 w-20 animate-pulse rounded bg-surface-muted"></div></td>
+            </tr>
+          </template>
+          <tr v-else-if="grantees.length === 0">
+            <td colspan="6" class="px-5 py-8 text-center text-sm text-text-muted">No grantees found in this batch. (Did you upload the Masterlist?)</td>
+          </tr>
+          <tr v-for="grantee in grantees" :key="grantee.id" class="border-t hover:bg-surface-muted transition">
+            <td class="px-5 py-3 text-sm font-mono text-text-muted">{{ grantee.student_id }}</td>
+            <td class="px-5 py-3 text-sm font-medium text-text">{{ grantee.full_name }}</td>
+            <td class="px-5 py-3 text-sm text-text-muted">{{ grantee.email }}</td>
+            <td class="px-5 py-3 text-sm">
+              <span
+                :class="[
+                  'inline-flex items-center rounded-full px-2 py-0.5 text-2xs font-semibold uppercase tracking-wider',
+                  grantee.account_status === 'active'
+                    ? 'bg-success/10 text-success'
+                    : grantee.account_status === 'pending_face_review'
+                      ? 'bg-warning/10 text-warning'
+                      : 'bg-surface-muted text-text-muted',
+                ]"
+              >
+                {{ grantee.account_status.replace(/_/g, ' ') }}
+              </span>
+            </td>
+            <td class="px-5 py-3 text-sm">
+              <span v-if="grantee.is_invited" class="inline-flex items-center gap-1 text-xs font-semibold text-success">
+                <IconCheck :size="14" /> Sent
+              </span>
+              <span v-else class="text-xs text-text-muted">Uninvited</span>
+            </td>
+            <td class="px-5 py-3 text-right">
+              <button
+                v-if="grantee.account_status !== 'active'"
+                class="text-xs font-semibold text-primary hover:underline disabled:opacity-50"
+                :disabled="resendInviteMutation.isPending.value"
+                @click="resendInviteMutation.mutate(grantee.id)"
+              >
+                Resend Invite
+              </button>
+            </td>
+          </tr>
+        </DataTable>
+        
+        <!-- Pagination Controls -->
+        <div v-if="granteesMeta && granteesMeta.last_page > 1" class="flex items-center justify-between border-t px-5 py-3 bg-surface">
+          <p class="text-xs text-text-muted">
+            Showing <span class="font-medium text-text">{{ granteesMeta.from || 0 }}</span> to <span class="font-medium text-text">{{ granteesMeta.to || 0 }}</span> of <span class="font-medium text-text">{{ granteesMeta.total }}</span> grantees
+          </p>
+          <div class="flex items-center gap-2">
+            <button
+              class="rounded-md border px-3 py-1.5 text-xs font-medium disabled:opacity-50 transition-colors"
+              :class="page === 1 ? 'bg-surface-muted text-text-soft' : 'bg-surface text-text hover:bg-surface-muted'"
+              :disabled="page === 1"
+              @click="page--"
+            >
+              Previous
+            </button>
+            <span class="text-xs text-text-muted px-2">Page {{ granteesMeta.current_page }} of {{ granteesMeta.last_page }}</span>
+            <button
+              class="rounded-md border px-3 py-1.5 text-xs font-medium disabled:opacity-50 transition-colors"
+              :class="page === granteesMeta.last_page ? 'bg-surface-muted text-text-soft' : 'bg-surface text-text hover:bg-surface-muted'"
+              :disabled="page === granteesMeta.last_page"
+              @click="page++"
+            >
+              Next
+            </button>
+          </div>
+        </div>
       </div>
-      <template #footer="{ close }">
-        <button class="rounded-md border px-4 py-2 text-xs" @click="close">Cancel</button>
-        <button
-          class="rounded-md bg-primary px-4 py-2 text-xs text-white disabled:opacity-60"
-          :disabled="busy || !form.name || !form.submission_deadline"
-          @click="createBatch"
-        >
-          {{ busy ? "Saving..." : "Create batch" }}
-        </button>
-      </template>
-    </AppDialog>
+    </template>
   </div>
 </template>

@@ -20,7 +20,7 @@ use Illuminate\Support\Str;
  * Run:
  *   C:\php84\php.exe artisan db:seed --class=MobileActivationSeeder
  *
- * Flow on phone: open URL → enter temp password → set new password → KYC → ID scan → liveness.
+ * Flow on phone: open URL → set new password (token-only) → KYC → ID scan → liveness.
  *
  * Frontend base resolution (mobile-first):
  *   1. ACTIVATION_FRONTEND_URL (explicit override)
@@ -188,7 +188,7 @@ class MobileActivationSeeder extends Seeder
             $lines[] = '';
         }
 
-        $lines[] = 'Mobile flow: open URL on phone → temp password → set new password → KYC → ID scan → liveness → vault.';
+        $lines[] = 'Mobile flow: open URL on phone → set new password (no temp password) → KYC → ID scan → liveness → vault.';
         $lines[] = 'Vite must listen on 0.0.0.0 (already in vite.config). If needed: npm run dev -- --host 0.0.0.0';
         $lines[] = '';
 
@@ -200,7 +200,7 @@ class MobileActivationSeeder extends Seeder
     /**
      * @return array{mobile: string, localhost: string, lan: ?string, source: string}
      */
-    private function resolveFrontendBases(): array
+    protected function resolveFrontendBases(): array
     {
         $vitePort = $this->detectVitePort();
         $lanIp = $this->detectLanIpv4();

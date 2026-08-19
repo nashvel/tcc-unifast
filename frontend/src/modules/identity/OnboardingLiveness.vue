@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { apiUrl } from "@/api/client";
+import { apiFetch, apiUrl } from "@/api/client";
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { IconAlertTriangle, IconRefresh, IconUserCheck } from "@tabler/icons-vue";
 import PageHeader from "@/components/ui/PageHeader.vue";
-import { authSession, getAuthToken } from "@/auth/session";
+import { authSession } from "@/auth/session";
 import { useSuccessOverlay } from "@/composables/useSuccessOverlay";
 import { toast } from "@/composables/useToast";
 import { getUserMediaSafe } from "@/modules/requirements/cameraAccess";
@@ -199,15 +199,14 @@ function onVisibilityChange() {
 }
 
 async function loadStatus(): Promise<boolean> {
-  const token = getAuthToken();
-  if (!token) {
-    throw new Error("Unauthenticated. Activate or sign in again to continue liveness.");
-  }
-  const response = await fetch(apiUrl("/api/student/identity-onboarding"), {
-    headers: { Accept: "application/json", Authorization: `Bearer ${token}` },
-  });
-  const payload = await response.json();
-  if (!response.ok) throw new Error(payload.message || "Unable to load onboarding status.");
+  const payload = await apiFetch<{
+    data: {
+      next_step: string;
+      account_status?: string;
+      onboarding_path?: string;
+      identity?: { id_reference_face_url?: string | null };
+    };
+  }>("/api/student/identity-onboarding");
 
   const next = payload.data.next_step as string;
   const accountStatus = payload.data.account_status as string | undefined;
@@ -492,13 +491,10 @@ async function finishLiveness() {
     live.descriptor.forEach((value, index) => body.append(`face_descriptor[${index}]`, String(value)));
     body.append("liveness_confirmed", "1");
 
-    const token = getAuthToken();
-    if (!token) {
-      throw new Error("Unauthenticated. Activate or sign in again to continue liveness.");
-    }
     const response = await fetch(apiUrl("/api/student/identity-onboarding/liveness"), {
       method: "POST",
-      headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+      headers: { Accept: "application/json" },
+      credentials: "include",
       body,
     });
     const payload = await response.json();

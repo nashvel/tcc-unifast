@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { apiUrl } from "@/api/client";
+import { apiFetch } from "@/api/client";
 import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import PageHeader from "@/components/ui/PageHeader.vue";
 import CardSkeleton from "@/components/ui/CardSkeleton.vue";
-import { authSession, getAuthToken } from "@/auth/session";
+import { authSession } from "@/auth/session";
 
 const router = useRouter();
 const error = ref("");
@@ -17,15 +17,7 @@ onMounted(async () => {
       return;
     }
 
-    const token = getAuthToken();
-    if (!token) {
-      throw new Error("Unauthenticated. Activate or sign in again to continue identity onboarding.");
-    }
-    const response = await fetch(apiUrl("/api/student/identity-onboarding"), {
-      headers: { Accept: "application/json", Authorization: `Bearer ${token}` },
-    });
-    const payload = await response.json();
-    if (!response.ok) throw new Error(payload.message || "Unable to load identity onboarding.");
+    const payload = await apiFetch<{ data: { next_step: string } }>("/api/student/identity-onboarding");
     const next = payload.data.next_step as string;
     if (next === "kyc") await router.replace("/student/kyc");
     else if (next === "liveness") await router.replace("/student/onboarding/liveness");

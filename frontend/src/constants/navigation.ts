@@ -9,11 +9,13 @@ import {
   IconFileInvoice,
   IconFolder,
   IconFolders,
+  IconForms,
   IconHistory,
   IconLifebuoy,
   IconReportAnalytics,
   IconReportMoney,
   IconSchool,
+  IconSeedling,
   IconSettings,
   IconShieldCheck,
   IconSpeakerphone,
@@ -38,7 +40,7 @@ export const adminNavigation: NavigationSection[] = [
     labelKey: "nav.communication",
     items: [
       { labelKey: "nav.announcements", path: "/app/announcements", icon: IconSpeakerphone },
-      { labelKey: "nav.socialPosts", path: "/app/social-posts", icon: IconBrandFacebook },
+      { labelKey: "nav.formBuilder", path: "/app/forms", icon: IconForms },
       { labelKey: "nav.monitoringReports", path: "/app/reports", icon: IconReportAnalytics },
       { labelKey: "nav.billing", path: "/app/billing", icon: IconFileInvoice },
       { labelKey: "nav.distributionReport", path: "/app/distribution", icon: IconReportMoney },
@@ -52,6 +54,7 @@ export const adminNavigation: NavigationSection[] = [
       { labelKey: "nav.securityFindings", path: "/app/security", icon: IconShieldCheck },
       { labelKey: "nav.securityMemory", path: "/app/security/memory", icon: IconShieldCheck },
       { labelKey: "nav.usersRoles", path: "/app/users", icon: IconUserCog },
+      { labelKey: "nav.activationSeeder", path: "/app/activation-seeder", icon: IconSeedling },
       { labelKey: "common.settings", path: "/app/settings", icon: IconSettings },
     ],
   },
@@ -94,6 +97,7 @@ export const staffNavigation: NavigationSection[] = [
       { labelKey: "nav.batches", path: "/app/batches", icon: IconFolders },
       { labelKey: "nav.programs", path: "/app/programs", icon: IconSchool },
       { labelKey: "nav.grantees", path: "/app/grantees", icon: IconUsersGroup },
+      { labelKey: "nav.formBuilder", path: "/app/forms", icon: IconForms },
     ],
   },
   {
@@ -131,13 +135,14 @@ export const studentNavigation: NavigationSection[] = [
     items: [
       { labelKey: "common.dashboard", path: "/student", icon: IconDashboard },
       { labelKey: "nav.requiredDocuments", path: "/student/documents", icon: IconFileCheck },
+      { labelKey: "nav.studentForms", path: "/student/forms", icon: IconForms },
       { labelKey: "common.profile", path: "/student/profile", icon: IconUserCircle },
       { labelKey: "nav.announcements", path: "/student/announcements", icon: IconSpeakerphone },
-      { labelKey: "shell.notifications", path: "/student/notifications", icon: IconBell },
       { labelKey: "common.settings", path: "/student/settings", icon: IconSettings },
     ],
   },
 ];
+
 
 export const lockedStudentNavigation: NavigationSection[] = [
   {

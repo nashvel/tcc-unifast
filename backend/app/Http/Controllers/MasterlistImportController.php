@@ -7,6 +7,8 @@ use App\Models\ActivationToken;
 use App\Models\Batch;
 use App\Models\Grantee;
 use App\Models\MasterlistImport;
+use App\Models\MasterlistImportDetection;
+use App\Models\MasterlistImportDetectedHeader;
 use App\Models\MasterlistRow;
 use App\Models\User;
 use App\Services\MasterlistImportPresenter;
@@ -56,7 +58,12 @@ class MasterlistImportController extends Controller
     public function preview(Request $request, MasterlistSpreadsheetParser $parser): JsonResponse
     {
         $validated = $request->validate([
-            'file' => ['required', 'file', 'mimes:csv,xlsx,xls', 'max:20480'],
+            'file' => [
+                'required',
+                'file',
+                'mimes:csv,xlsx,xls,pdf,docx',
+                'max:20480',
+            ],
             'batch_id' => ['required', 'integer', 'exists:batches,id'],
         ]);
 
@@ -69,15 +76,49 @@ class MasterlistImportController extends Controller
 
         $file = $validated['file'];
         $storedPath = $file->store('masterlist-imports', 'local');
-        $parsedRows = $parser->parse($file);
+
+        // Use parseWithDetection so DOCX/PDF uploads return table detection metadata.
+        $parsed = $parser->parseWithDetection($file);
+        $parsedRows      = $parsed['rows'];
+        $detectionInfo   = $parsed['detection_info'];
 
         $import = MasterlistImport::create([
-            'batch_id' => $batch->id,
-            'uploaded_by' => $request->user()->id,
+            'batch_id'      => $batch->id,
+            'uploaded_by'   => $request->user()->id,
             'original_name' => $file->getClientOriginalName(),
-            'stored_path' => $storedPath,
-            'status' => 'previewed',
+            'stored_path'   => $storedPath,
+            'status'        => 'previewed',
         ]);
+
+        // Persist detection metadata in 3NF-normalized tables (DOCX/PDF only).
+        if (is_array($detectionInfo)) {
+            $detection = MasterlistImportDetection::create([
+                'masterlist_import_id' => $import->id,
+                'table_index'          => $detectionInfo['table_index'] ?? 0,
+                'detected_row_count'   => $detectionInfo['row_count']   ?? 0,
+            ]);
+
+            $rawHeaders     = (array) ($detectionInfo['raw_headers']     ?? []);
+            $matchedColumns = (array) ($detectionInfo['matched_columns'] ?? []);
+            // matched_columns: { field => raw_header } — invert to { raw_header => field }
+            $rawToField = array_flip($matchedColumns);
+
+            $headerRows = [];
+            foreach ($rawHeaders as $position => $rawHeader) {
+                $headerRows[] = [
+                    'detection_id' => $detection->id,
+                    'position'     => $position,
+                    'raw_header'   => (string) $rawHeader,
+                    'mapped_field' => $rawToField[$rawHeader] ?? null,
+                    'created_at'   => now(),
+                    'updated_at'   => now(),
+                ];
+            }
+
+            if ($headerRows !== []) {
+                MasterlistImportDetectedHeader::insert($headerRows);
+            }
+        }
 
         $seenStudentIds = [];
         $seenStudentNumbers = [];
@@ -116,12 +157,12 @@ class MasterlistImportController extends Controller
             'invalid_rows' => $invalidRows,
         ]);
 
-        return response()->json(['data' => $this->presenter->import($import->fresh(['batch', 'rows']))]);
+        return response()->json(['data' => $this->presentImport($import->fresh(['batch', 'rows', 'detection.headers']))]);
     }
 
     public function show(MasterlistImport $import): JsonResponse
     {
-        return response()->json(['data' => $this->presenter->import($import->load(['batch', 'rows']))]);
+        return response()->json(['data' => $this->presentImport($import->load(['batch', 'rows', 'detection.headers']))]);
     }
 
     public function confirm(Request $request, MasterlistImport $import): JsonResponse
@@ -167,20 +208,8 @@ class MasterlistImportController extends Controller
                     'status' => 'unverified',
                 ]);
 
-                $plainToken = Str::random(48);
-                ActivationToken::create([
-                    'user_id' => $user->id,
-                    'token_hash' => hash('sha256', $plainToken),
-                    'expires_at' => now()->addDays(7),
-                ]);
-
-                try {
-                    $this->sendActivationEmail($user, $temporaryPassword, $plainToken);
-                    $sent++;
-                } catch (Throwable $exception) {
-                    report($exception);
-                    $failed[] = ['email' => $user->email, 'message' => $exception->getMessage()];
-                }
+                // Emails and activation tokens are no longer generated here.
+                // They will be generated when the staff uses the Onboarding Center to blast invites.
             }
 
             $import->update([
@@ -190,9 +219,9 @@ class MasterlistImportController extends Controller
         });
 
         return response()->json([
-            'data' => $this->presenter->import($import->fresh(['batch', 'rows'])),
-            'mail' => ['sent' => $sent, 'failed' => $failed],
-        ], $failed === [] ? 200 : 207);
+            'data' => $this->presentImport($import->fresh(['batch', 'rows'])),
+            'message' => 'Successfully staged accounts for invitation.',
+        ], 200);
     }
 
     public function destroy(Request $request, MasterlistImport $import): JsonResponse
@@ -226,5 +255,68 @@ class MasterlistImportController extends Controller
         $frontend = rtrim((string) (config('app.frontend_url') ?: env('FRONTEND_URL', 'http://localhost:5173')), '/');
 
         return $frontend.'/activate/'.$plainToken.'?lang=en';
+    }
+
+    private function presentImport(MasterlistImport $import): array
+    {
+        return [
+            'id' => $import->id,
+            'status' => $import->status,
+            'original_name' => $import->original_name,
+            'total_rows' => $import->total_rows,
+            'valid_rows' => $import->valid_rows,
+            'invalid_rows' => $import->invalid_rows,
+            'imported_rows' => $import->imported_rows,
+            'batch' => $import->batch ? [
+                'id'                  => $import->batch->id,
+                'name'                => $import->batch->name,
+                'academic_year'       => $import->batch->academic_year,
+                'semester'            => $import->batch->semester,
+                'submission_deadline' => $import->batch->submission_deadline,
+            ] : null,
+            'detection_info' => $this->presentDetection($import),
+            'rows' => $import->rows->map(fn (MasterlistRow $row) => [
+                'id' => $row->id,
+                'row_number' => $row->row_number,
+                'student_id' => $row->student_id,
+                'student_number' => $row->student_number,
+                'full_name' => $row->full_name,
+                'email' => $row->email,
+                'program' => $row->program,
+                'year_level' => $row->year_level,
+                'status' => $row->status,
+                'errors' => $row->errors ?? [],
+            ])->values(),
+        ];
+    }
+
+    /**
+     * Serialize the normalized detection metadata to the same shape
+     * the frontend expects (mirrors the old JSON structure).
+     *
+     * @return array<string, mixed>|null
+     */
+    private function presentDetection(MasterlistImport $import): ?array
+    {
+        $detection = $import->detection;
+        if (! $detection) {
+            return null;
+        }
+
+        $headers   = $detection->headers;  // already ordered by position
+        $rawHeaders     = $headers->pluck('raw_header')->all();
+        $matched        = $headers->whereNotNull('mapped_field');
+        $unmatched      = $headers->whereNull('mapped_field')->pluck('raw_header')->all();
+        $matchedColumns = $matched->mapWithKeys(
+            fn (MasterlistImportDetectedHeader $h) => [$h->mapped_field => $h->raw_header]
+        )->all();
+
+        return [
+            'table_index'       => $detection->table_index,
+            'raw_headers'       => $rawHeaders,
+            'matched_columns'   => $matchedColumns,
+            'unmatched_headers' => array_values($unmatched),
+            'row_count'         => $detection->detected_row_count,
+        ];
     }
 }
