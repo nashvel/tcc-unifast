@@ -4,6 +4,14 @@
 # that declare php >=8.4.1.
 FROM dunglas/frankenphp:1-php8.4
 
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        libzbar0 \
+        python3 \
+        python3-pip \
+        python3-venv \
+    && rm -rf /var/lib/apt/lists/*
+
 # gd    -> phpoffice/phpspreadsheet (via maatwebsite/excel) and barryvdh/laravel-dompdf
 # zip   -> phpspreadsheet xlsx read/write
 # intl  -> phpspreadsheet formatting
@@ -31,6 +39,10 @@ RUN composer install \
         --no-interaction
 
 COPY . .
+
+RUN python3 -m venv python/.venv \
+    && python/.venv/bin/pip install --no-cache-dir --upgrade pip \
+    && python/.venv/bin/pip install --no-cache-dir -r python/requirements.txt
 
 # Runs package:discover via post-autoload-dump.
 RUN composer dump-autoload --optimize --no-dev --no-interaction

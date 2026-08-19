@@ -44,6 +44,14 @@ return [
         'student_table' => env('TCC_UNIFAST_STUDENT_TABLE', 'students'),
     ],
 
+    'tcc_public' => [
+        'home_url' => env('TCC_PUBLIC_HOME_URL', 'https://api.tcc.edu.ph/api/v1/home'),
+        'site_url' => env('TCC_PUBLIC_SITE_URL', 'https://tcc.edu.ph'),
+        'api_url' => env('TCC_PUBLIC_API_URL', 'https://api.tcc.edu.ph'),
+        'timeout' => (int) env('TCC_PUBLIC_TIMEOUT', 10),
+        'cache_seconds' => (int) env('TCC_PUBLIC_CACHE_SECONDS', 300),
+    ],
+
     'ocr' => [
         'url' => env('OCR_SERVICE_URL', 'http://127.0.0.1:8001'),
         'timeout' => (int) env('OCR_SERVICE_TIMEOUT', 120),
@@ -96,6 +104,22 @@ return [
             'VAULT_CONFIRM_THROTTLE_PER_MINUTE',
             env('APP_ENV') === 'local' ? 60 : 20
         )),
+    ],
+
+    'database_viewer' => [
+        // Developer convenience surface. Keep disabled unless explicitly enabled
+        // outside local/testing because it can expose raw table data.
+        'enabled' => filter_var(
+            env('FEATURE_DATABASE_VIEWER', in_array(env('APP_ENV'), ['local', 'testing'], true)),
+            FILTER_VALIDATE_BOOLEAN
+        ),
+        'allowed_tables' => array_values(array_filter(array_map(
+            'trim',
+            explode(',', (string) env(
+                'DATABASE_VIEWER_ALLOWED_TABLES',
+                'users,roles,permissions,role_user,permission_role,batches,masterlist_imports,masterlist_rows,grantees,kyc_profiles,academic_records,document_submissions,requirement_identity_checks,submission_pipeline_results,billing_reports,billing_report_items,audit_logs'
+            ))
+        ))),
     ],
 
 ];

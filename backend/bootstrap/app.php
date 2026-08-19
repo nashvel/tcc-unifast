@@ -1,5 +1,9 @@
 <?php
 
+use App\Http\Middleware\RequirePermission;
+use App\Http\Middleware\RequireRole;
+use App\Http\Middleware\SecurityHeaders;
+use App\Http\Middleware\SetLocaleFromUrl;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -20,9 +24,12 @@ return Application::configure(basePath: dirname(__DIR__))
         // Railway/Vercel terminate TLS at their edge and forward over HTTP.
         // Without this, generated URLs (activation emails, signed routes) use http://.
         $middleware->trustProxies(at: '*');
-        $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
-        $middleware->alias(['role' => \App\Http\Middleware\RequireRole::class]);
-        $middleware->web(append: [\App\Http\Middleware\SetLocaleFromUrl::class]);
+        $middleware->append(SecurityHeaders::class);
+        $middleware->alias([
+            'permission' => RequirePermission::class,
+            'role' => RequireRole::class,
+        ]);
+        $middleware->web(append: [SetLocaleFromUrl::class]);
         $middleware->redirectGuestsTo(fn (Request $request) => $request->is('api/*') ? null : '/login');
     })
     ->withExceptions(function (Exceptions $exceptions): void {

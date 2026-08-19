@@ -9,6 +9,7 @@ export const queryKeys = {
   documentPackage: (granteeId: string | number, batchId: string | number) =>
     ["document-submission-packages", String(granteeId), String(batchId)] as const,
   notifications: ["notifications"] as const,
+  socialMediaPosts: (params?: unknown) => ["social-media-posts", params] as const,
   grantees: (params?: unknown) => ["grantees", params] as const,
   grantee: (id: string | number) => ["grantees", String(id)] as const,
 eligibility: (params?: unknown) => ["eligibility", params] as const,

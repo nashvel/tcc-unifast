@@ -242,7 +242,7 @@ if (dark.value && typeof document !== "undefined") {
           </p>
         </div>
       </div>
-      <nav class="flex-1 overflow-y-auto py-3">
+      <nav class="scrollbar-none flex-1 overflow-y-auto py-3">
         <div v-for="(section, sectionIndex) in sections" :key="sectionIndex" class="mb-3 px-2">
           <p
             v-if="section.labelKey"

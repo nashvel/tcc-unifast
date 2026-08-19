@@ -14,9 +14,11 @@ mkdir -p \
 
 chmod -R 775 storage bootstrap/cache
 
-# public/storage lives in the ephemeral layer, so the symlink into the volume
-# has to be recreated each boot.
-php artisan storage:link --force
+# public/storage lives in the ephemeral layer, so ensure the symlink into the
+# volume exists without treating an already-correct link as a boot error.
+if [ ! -e public/storage ]; then
+	php artisan storage:link --force
+fi
 
 # Cache at runtime, not build time: Railway only injects environment
 # variables when the container runs, so a build-time cache would bake in

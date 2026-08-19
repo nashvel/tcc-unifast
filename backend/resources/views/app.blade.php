@@ -36,7 +36,9 @@
             'fallbackLanguage' => $fallbackLocale,
         ]) }};
     </script>
-    @vite(['resources/css/app.css', 'resources/js/app.ts'])
+    @if (file_exists(public_path('build/manifest.json')) || file_exists(public_path('hot')))
+        @vite(['resources/css/app.css', 'resources/js/app.ts'])
+    @endif
 </head>
 <body><div id="app"></div></body>
 </html>

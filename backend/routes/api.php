@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 use App\Http\Controllers\AcademicProgramController;
 use App\Http\Controllers\AcademicRecordController;
@@ -13,27 +13,30 @@ use App\Http\Controllers\ChangelogController;
 use App\Http\Controllers\CollaboratorController;
 use App\Http\Controllers\DatabaseController;
 use App\Http\Controllers\DistributionReportController;
-use App\Http\Controllers\DocumentSubmissionController;
 use App\Http\Controllers\DocumentFileController;
+use App\Http\Controllers\DocumentSubmissionController;
 use App\Http\Controllers\EligibilityController;
 use App\Http\Controllers\FaceReviewController;
 use App\Http\Controllers\FaqController;
+use App\Http\Controllers\FileManagerController;
 use App\Http\Controllers\GranteeController;
 use App\Http\Controllers\IdentityOnboardingController;
 use App\Http\Controllers\MasterlistImportController;
 use App\Http\Controllers\PolicySettingsController;
 use App\Http\Controllers\RbacController;
 use App\Http\Controllers\RequirementVaultController;
-use App\Http\Controllers\SupportTicketController;
-use App\Http\Controllers\SystemHealthController;
-use App\Http\Controllers\TermController;
+use App\Http\Controllers\SocialMediaPostController;
 use App\Http\Controllers\StudentDocumentOcrController;
 use App\Http\Controllers\StudentFaceVerificationController;
 use App\Http\Controllers\StudentKycController;
 use App\Http\Controllers\StudentNotificationController;
 use App\Http\Controllers\StudentSubmissionWindowController;
+use App\Http\Controllers\SupportTicketController;
+use App\Http\Controllers\SystemHealthController;
+use App\Http\Controllers\TccPublicHomeController;
 use App\Http\Controllers\TccUnifastStudentsController;
 use App\Http\Controllers\TccUnifastSyncController;
+use App\Http\Controllers\TermController;
 use App\Support\VaultFileStorage;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
@@ -55,6 +58,7 @@ Route::post('/activation/{token}', [ActivationController::class, 'activate'])->m
 // Public content (for login page)
 Route::get('/terms/active', [TermController::class, 'active']);
 Route::get('/faqs', [FaqController::class, 'index']);
+Route::get('/public/tcc-home', TccPublicHomeController::class)->middleware('throttle:30,1');
 
 // Time-limited signed file access (no bearer token; HMAC signature required)
 Route::get('/signed/document-files/{submission}/{variant}', [DocumentFileController::class, 'showSigned'])
@@ -145,8 +149,8 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('/grantees/{grantee}/identity-photos/{filename}', [DocumentFileController::class, 'showStaffIdentityPhoto'])
             ->where('filename', VaultFileStorage::identityFilenameRoutePattern())
             ->middleware('throttle:60,1');
-        Route::get('/files', [\App\Http\Controllers\FileManagerController::class, 'index']);
-        Route::get('/files/imports/{import}/download', [\App\Http\Controllers\FileManagerController::class, 'downloadImport'])
+        Route::get('/files', [FileManagerController::class, 'index']);
+        Route::get('/files/imports/{import}/download', [FileManagerController::class, 'downloadImport'])
             ->middleware('throttle:60,1');
         Route::get('/document-submissions/{submission}', [DocumentSubmissionController::class, 'show']);
         Route::get('/document-submissions/{submission}/file/{variant?}', [DocumentFileController::class, 'showAuthenticated'])
@@ -155,12 +159,24 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('/audit-logs', [AuditEventController::class, 'index']);
 
         Route::get('/billing-reports', [BillingReportController::class, 'index']);
-        Route::post('/billing-reports', [BillingReportController::class, 'store'])->middleware('throttle:10,1');
+        Route::post('/billing-reports', [BillingReportController::class, 'store'])
+            ->middleware(['role:developer,admin,head', 'throttle:10,1']);
         Route::get('/billing-reports/{report}', [BillingReportController::class, 'show']);
         Route::get('/billing-reports/{report}/download', [BillingReportController::class, 'download']);
 
+        Route::get('/social-media-posts', [SocialMediaPostController::class, 'index']);
+        Route::get('/social-media-posts/integration-status', [SocialMediaPostController::class, 'integrationStatus']);
+        Route::get('/social-media-posts/template', [SocialMediaPostController::class, 'template']);
+        Route::post('/social-media-posts', [SocialMediaPostController::class, 'store'])->middleware('throttle:20,1');
+        Route::get('/social-media-posts/{socialMediaPost}', [SocialMediaPostController::class, 'show'])
+            ->whereNumber('socialMediaPost');
+        Route::post('/social-media-posts/{socialMediaPost}/dispatch', [SocialMediaPostController::class, 'dispatch'])
+            ->whereNumber('socialMediaPost')
+            ->middleware('throttle:10,1');
+
         Route::get('/distribution-reports', [DistributionReportController::class, 'index']);
-        Route::post('/distribution-reports', [DistributionReportController::class, 'store'])->middleware('throttle:10,1');
+        Route::post('/distribution-reports', [DistributionReportController::class, 'store'])
+            ->middleware(['role:developer,admin,head', 'throttle:10,1']);
         Route::get('/distribution-reports/{report}', [DistributionReportController::class, 'show']);
         Route::get('/distribution-reports/{report}/download', [DistributionReportController::class, 'download']);
     });
@@ -175,7 +191,14 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::post('/masterlist/imports/{import}/confirm', [MasterlistImportController::class, 'confirm'])->middleware('throttle:10,1');
     });
 
-    // RBAC + database viewer (developer/admin)
+    Route::middleware('permission:view_database')->group(function (): void {
+        Route::get('/database/tables', [DatabaseController::class, 'tables']);
+        Route::get('/database/stats', [DatabaseController::class, 'stats']);
+        Route::get('/database/tables/{table}', [DatabaseController::class, 'table']);
+        Route::get('/database/tables/{table}/rows', [DatabaseController::class, 'rows']);
+    });
+
+    // RBAC and admin tools (developer/admin)
     Route::middleware('role:developer,admin')->group(function (): void {
         Route::get('/changelogs', [ChangelogController::class, 'index']);
         Route::get('/rbac/roles', [RbacController::class, 'index']);
@@ -191,11 +214,6 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::delete('/rbac/users/{user}/roles/{role}', [RbacController::class, 'removeUserRole']);
         Route::put('/rbac/users/{user}/roles', [RbacController::class, 'syncUserRoles']);
         Route::post('/rbac/check-permission', [RbacController::class, 'checkPermission']);
-
-        Route::get('/database/tables', [DatabaseController::class, 'tables']);
-        Route::get('/database/stats', [DatabaseController::class, 'stats']);
-        Route::get('/database/tables/{table}', [DatabaseController::class, 'table']);
-        Route::get('/database/tables/{table}/rows', [DatabaseController::class, 'rows']);
 
         // Terms & Conditions management
         Route::get('/terms', [TermController::class, 'index']);
@@ -241,3 +259,8 @@ Route::post('/integrations/n8n/tcc-unifast/sync', TccUnifastSyncController::clas
 Route::get('/integrations/n8n/tcc-unifast/students', TccUnifastStudentsController::class)
     ->middleware('throttle:120,1')
     ->name('integrations.n8n.tcc-unifast.students');
+
+Route::post('/integrations/n8n/social-media-posts/{socialMediaPost}/status', [SocialMediaPostController::class, 'receiveStatus'])
+    ->whereNumber('socialMediaPost')
+    ->middleware('throttle:60,1')
+    ->name('integrations.n8n.social-media-posts.status');

@@ -209,6 +209,15 @@ a {
   background: var(--border-strong);
   border-radius: 4px;
 }
+.scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
 @keyframes enter {
   from {
     opacity: 0;

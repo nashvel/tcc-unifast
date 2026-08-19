@@ -36,6 +36,90 @@ export type BatchDetail = Batch & {
   grantees: BatchGrantee[];
 };
 
+export type SocialMediaPostStatus = "draft" | "queued" | "sent_to_n8n" | "scheduled" | "failed" | "published";
+
+export type SocialMediaPost = {
+  id: number;
+  title: string;
+  message: string;
+  channel: "facebook";
+  campaign: string | null;
+  status: SocialMediaPostStatus;
+  approval_mode: "approval_required" | "pre_approved";
+  scheduled_for: string | null;
+  submitted_at: string | null;
+  published_at: string | null;
+  n8n_request_id: string | null;
+  n8n_status: string | null;
+  error_message: string | null;
+  external_post_id: string | null;
+  external_permalink: string | null;
+  created_at: string;
+  updated_at: string;
+  batch: Pick<Batch, "id" | "name" | "academic_year" | "semester" | "submission_deadline"> | null;
+  creator: { id: number; name: string | null; email: string } | null;
+};
+
+export type SocialMediaIntegrationStatus = {
+  n8n_configured: boolean;
+  n8n_reachable: boolean;
+  facebook_confirmed: boolean;
+  state:
+    | "not_configured"
+    | "ready_for_first_post"
+    | "draft_saved"
+    | "awaiting_approval"
+    | "awaiting_facebook_callback"
+    | "failed"
+    | "connected";
+  page: {
+    id?: string | null;
+    name?: string | null;
+    url?: string | null;
+    picture_url?: string | null;
+    cover_url?: string | null;
+    followers_count?: number | null;
+    fan_count?: number | null;
+  } | null;
+  latest_post: {
+    id: number;
+    status: SocialMediaPost["status"];
+    approval_mode: SocialMediaPost["approval_mode"];
+    n8n_status: string | null;
+    error_message: string | null;
+    updated_at: string;
+  } | null;
+  counts: {
+    total: number;
+    drafts: number;
+    processing: number;
+    published: number;
+    failed: number;
+  };
+  last_activity_at: string | null;
+  last_published_at: string | null;
+};
+
+export type SocialMediaPostTemplate = {
+  title: string;
+  message: string;
+  channel: "facebook";
+  campaign: string;
+  batch_id: number | null;
+  approval_mode: "approval_required" | "pre_approved";
+  scheduled_for: string | null;
+  facts: {
+    portal_url: string;
+    support_email: string;
+    deadline: string | null;
+    deadline_label: string;
+    grantees_count: number;
+    window_status: string | null;
+    generated_at: string;
+  };
+  batch: (Pick<Batch, "id" | "name" | "academic_year" | "semester" | "submission_deadline" | "is_active" | "window_status" | "grantees_count">) | null;
+};
+
 export type BatchGrantee = {
   id: number;
   student_id: string;

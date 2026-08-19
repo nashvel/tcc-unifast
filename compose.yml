@@ -1,0 +1,209 @@
+name: tcc-unifast
+
+x-backend-env: &backend-env
+  APP_NAME: "TCC UniFAST"
+  APP_ENV: local
+  APP_KEY: ${APP_KEY:-base64:HvR4MQk6lANp2cDRv97fIUx2uI3lN0h8YpXOY4uTnWE=}
+  APP_DEBUG: ${APP_DEBUG:-true}
+  APP_URL: ${APP_URL:-http://localhost:8000}
+  FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+  LOG_CHANNEL: stderr
+  DB_CONNECTION: mysql
+  DB_HOST: mysql
+  DB_PORT: 3306
+  DB_DATABASE: ${DB_DATABASE:-tcc_unifast}
+  DB_USERNAME: ${DB_USERNAME:-tcc_unifast}
+  DB_PASSWORD: ${DB_PASSWORD:-tcc_unifast}
+  SESSION_DRIVER: database
+  QUEUE_CONNECTION: database
+  CACHE_STORE: database
+  REDIS_CLIENT: phpredis
+  REDIS_HOST: redis
+  REDIS_PORT: 6379
+  MAIL_MAILER: log
+  DEV_BYPASS_CAPTCHA: ${DEV_BYPASS_CAPTCHA:-true}
+  LOGIN_THROTTLE_PER_MINUTE: ${LOGIN_THROTTLE_PER_MINUTE:-60}
+  VAULT_CONFIRM_THROTTLE_PER_MINUTE: ${VAULT_CONFIRM_THROTTLE_PER_MINUTE:-60}
+  OCR_SERVICE_URL: http://ocr-service:8001
+  OCR_SERVICE_TIMEOUT: 120
+  OCR_SPACE_API_KEY: ""
+  OCR_SPACE_TIMEOUT: 60
+  GRADESLIP_QR_TIMEOUT: 60
+  TCC_REGISTRAR_DOMAINS: registrar.tcc.edu.ph,sis.tcc.edu.ph,tcc.edu.ph
+  VITE_TCC_REGISTRAR_DOMAINS: registrar.tcc.edu.ph,sis.tcc.edu.ph,tcc.edu.ph
+  FACE_API_PROVIDER: mock
+  TCC_UNIFAST_N8N_WEBHOOK_HEADER: X-TCC-UniFAST-Key
+  TCC_UNIFAST_N8N_WEBHOOK_URL: ${TCC_UNIFAST_N8N_WEBHOOK_URL:-}
+  TCC_UNIFAST_N8N_WEBHOOK_SECRET: ${TCC_UNIFAST_N8N_WEBHOOK_SECRET:-}
+  TCC_UNIFAST_SYNC_ENDPOINT_SECRET: ${TCC_UNIFAST_SYNC_ENDPOINT_SECRET:-}
+  TCC_UNIFAST_N8N_TIMEOUT: 15
+  TCC_UNIFAST_STUDENT_TABLE: grantees
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+    image: tcc-unifast/frontend:local
+    container_name: tcc-unifast-frontend
+    depends_on:
+      backend:
+        condition: service_started
+    ports:
+      - "${FRONTEND_PORT:-5173}:80"
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+    image: tcc-unifast/backend:local
+    container_name: tcc-unifast-backend
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      ocr-service:
+        condition: service_started
+      n8n:
+        condition: service_started
+    environment:
+      <<: *backend-env
+      PORT: 8080
+    ports:
+      - "${BACKEND_PORT:-8000}:8080"
+    volumes:
+      - backend_storage:/app/storage
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/health >/dev/null"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+
+  migrate:
+    image: tcc-unifast/backend:local
+    container_name: tcc-unifast-migrate
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: ["php", "artisan", "migrate", "--force"]
+    environment:
+      <<: *backend-env
+    volumes:
+      - backend_storage:/app/storage
+    restart: "no"
+    healthcheck:
+      disable: true
+
+  queue:
+    image: tcc-unifast/backend:local
+    container_name: tcc-unifast-queue
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    command: ["php", "artisan", "queue:work", "--queue=default", "--tries=3", "--timeout=120"]
+    environment:
+      <<: *backend-env
+    volumes:
+      - backend_storage:/app/storage
+    healthcheck:
+      disable: true
+    restart: unless-stopped
+
+  scheduler:
+    image: tcc-unifast/backend:local
+    container_name: tcc-unifast-scheduler
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    command: ["sh", "-lc", "while true; do php artisan schedule:run --no-interaction; sleep 60; done"]
+    environment:
+      <<: *backend-env
+    volumes:
+      - backend_storage:/app/storage
+    healthcheck:
+      disable: true
+    restart: unless-stopped
+
+  mysql:
+    image: mysql:8.4
+    container_name: tcc-unifast-mysql
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE:-tcc_unifast}
+      MYSQL_USER: ${DB_USERNAME:-tcc_unifast}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-tcc_unifast}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-tcc_unifast_root}
+    ports:
+      - "${MYSQL_PORT:-3307}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u$${MYSQL_USER} -p$${MYSQL_PASSWORD} --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  redis:
+    image: redis:7.4-alpine
+    container_name: tcc-unifast-redis
+    ports:
+      - "${REDIS_PORT:-6380}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  ocr-service:
+    build:
+      context: ./backend/ocr-service
+    image: tcc-unifast/ocr-service:local
+    container_name: tcc-unifast-ocr-service
+    environment:
+      TESSERACT_CMD: /usr/bin/tesseract
+      TESSERACT_PSM: ${TESSERACT_PSM:-6}
+      SAVE_DEBUG_IMAGES: ${SAVE_DEBUG_IMAGES:-false}
+    ports:
+      - "${OCR_SERVICE_PORT:-8001}:8001"
+    volumes:
+      - ocr_outputs:/app/outputs
+    restart: unless-stopped
+
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:latest
+    container_name: tcc-unifast-n8n
+    env_file:
+      - path: ./n8n/.env
+        required: false
+    environment:
+      N8N_HOST: ${N8N_HOST:-localhost}
+      N8N_PORT: 5678
+      N8N_PROTOCOL: ${N8N_PROTOCOL:-http}
+      N8N_WEBHOOK_URL: ${N8N_WEBHOOK_URL:-http://localhost:5678/}
+      GENERIC_TIMEZONE: ${GENERIC_TIMEZONE:-Asia/Manila}
+      TZ: ${TZ:-Asia/Manila}
+      N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS: "true"
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:-}
+      N8N_BLOCK_ENV_ACCESS_IN_NODE: "false"
+    ports:
+      - "${N8N_PORT:-5678}:5678"
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./n8n/local-files:/files
+    restart: unless-stopped
+
+volumes:
+  backend_storage:
+  mysql_data:
+  redis_data:
+  ocr_outputs:
+    name: n8n_ocr_outputs
+  n8n_data:
+    name: n8n_n8n_data

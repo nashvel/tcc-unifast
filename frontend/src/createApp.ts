@@ -18,6 +18,7 @@ import { installSeoUpdates } from "@/i18n/seo";
 const appChildren: RouteRecordRaw[] = [
   { path: "", component: () => import("@/modules/dashboard/Index.vue") },
   { path: "announcements", component: () => import("@/modules/announcements/Index.vue") },
+  { path: "social-posts", component: () => import("@/modules/social-posts/Index.vue") },
   { path: "announcements/new", component: () => import("@/modules/announcements/Create.vue") },
   { path: "announcements/logs", component: () => import("@/modules/announcements/Logs.vue") },
   { path: "announcements/:id/edit", component: () => import("@/modules/announcements/Edit.vue") },
@@ -129,7 +130,9 @@ function createAppRouter(): Router {
   const router = createRouter({
     history: createWebHistory(),
     routes: [
-      { path: "/", redirect: (to) => withLang("/login", to.query.lang) },
+      { path: "/", component: () => import("@/public/Landing.vue") },
+      { path: "/unifast", component: () => import("@/public/UnifastInfo.vue") },
+      { path: "/tagoloan-community-college", component: () => import("@/public/TccInfo.vue") },
       { path: "/login", component: () => import("@/auth/Login.vue") },
       { path: "/forgot-password", component: () => import("@/auth/ForgotPassword.vue") },
       { path: "/activate", component: () => import("@/auth/Activate.vue") },

@@ -2,7 +2,7 @@
 import { onMounted, onUnmounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
-import { ArrowRight, ChevronDown, ChevronUp, Eye, EyeOff, HelpCircle, Lock, Mail, ShieldCheck, UserRound } from "lucide-vue-next";
+import { ArrowLeft, ArrowRight, ChevronDown, ChevronUp, Eye, EyeOff, HelpCircle, Lock, Mail, ShieldCheck, UserRound } from "lucide-vue-next";
 import logo from "@/assets/system-logo.webp";
 import backgroundLogo from "@/assets/auth/imresizer-TCC_UNIFAST.png";
 import studentsCutout from "@/assets/auth/Faculties_UNifast1.webp";
@@ -230,6 +230,15 @@ onUnmounted(() => {
     <main
       class="relative flex h-screen items-center justify-center overflow-hidden bg-white p-5 sm:p-6 lg:h-[80vh]"
     >
+      <RouterLink
+        :to="withLang('/', route.query.lang)"
+        class="absolute left-5 top-5 inline-flex items-center gap-2 rounded-full border border-[#e7dde0] bg-white px-3 py-2 text-xs font-black text-[#6b1020] shadow-sm transition hover:bg-[#fff9f6] sm:left-6 sm:top-6"
+        aria-label="Back to home"
+      >
+        <ArrowLeft :size="15" aria-hidden="true" />
+        Back
+      </RouterLink>
+
       <div class="absolute right-6 top-6 hidden lg:block">
         <LanguageSwitcher />
       </div>

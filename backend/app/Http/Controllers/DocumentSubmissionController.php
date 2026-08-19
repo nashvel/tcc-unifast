@@ -8,30 +8,15 @@ use App\Models\BatchNotification;
 use App\Models\DocumentSubmission;
 use App\Models\Grantee;
 use App\Models\User;
+use App\Services\DocumentSubmissionPresenter;
 use App\Support\PaginatedJson;
-use App\Support\VaultFileStorage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class DocumentSubmissionController extends Controller
 {
-    /** @var list<string> */
-    private const EXPECTED_SLOTS = [
-        'school_id',
-        'course_history',
-        'grade_slip',
-        'specimen_signatures',
-    ];
-
-    /** @var array<string, string> */
-    private const SLOT_TAB_LABELS = [
-        'school_id' => 'School ID',
-        'course_history' => 'Course History',
-        'grade_slip' => 'Grade Slip',
-        'specimen_signatures' => 'Specimen',
-    ];
+    public function __construct(private readonly DocumentSubmissionPresenter $presenter) {}
 
     public function index(Request $request): JsonResponse
     {
@@ -68,7 +53,10 @@ class DocumentSubmissionController extends Controller
         }
 
         $paginator = $query->orderBy($sort, $direction)->paginate($perPage);
-        $rows = collect($paginator->items())->map(fn (DocumentSubmission $item) => $this->present($item, $request));
+        $viewerId = $request->user()->id;
+        $rows = collect($paginator->items())->map(
+            fn (DocumentSubmission $item) => $this->presenter->submission($item, $viewerId)
+        );
 
         return PaginatedJson::from($paginator, $rows->values());
     }
@@ -89,13 +77,13 @@ class DocumentSubmissionController extends Controller
             ->whereNotNull('batch_id')
             // Incomplete packages must not appear in Document Validation (initial submit is all-4).
             ->whereExists(function ($query): void {
-                $expected = count(self::EXPECTED_SLOTS);
+                $expected = count(DocumentSubmissionPresenter::EXPECTED_SLOTS);
                 $query->select(DB::raw(1))
                     ->from('document_submissions as complete_slots')
                     ->whereColumn('complete_slots.grantee_id', 'document_submissions.grantee_id')
                     ->whereColumn('complete_slots.batch_id', 'document_submissions.batch_id')
                     ->where('complete_slots.status', '!=', 'draft')
-                    ->whereIn('complete_slots.slot_key', self::EXPECTED_SLOTS)
+                    ->whereIn('complete_slots.slot_key', DocumentSubmissionPresenter::EXPECTED_SLOTS)
                     ->groupBy('complete_slots.grantee_id', 'complete_slots.batch_id')
                     ->havingRaw('COUNT(DISTINCT complete_slots.slot_key) = '.$expected);
             });
@@ -147,7 +135,7 @@ class DocumentSubmissionController extends Controller
         $rows = $keys->map(function (object $key) use ($documents): array {
             $group = $documents->get($key->grantee_id.'|'.$key->batch_id, collect());
 
-            return $this->presentPackage($group);
+            return $this->presenter->package($group);
         })->values();
 
         return PaginatedJson::from($paginator, $rows);
@@ -168,7 +156,7 @@ class DocumentSubmissionController extends Controller
         // fewer than 4 slots are filled. List still hides incomplete packages.
         abort_if($documents->isEmpty(), 404);
 
-        return response()->json(['data' => $this->presentPackage($documents)]);
+        return response()->json(['data' => $this->presenter->package($documents)]);
     }
 
     public function show(Request $request, DocumentSubmission $submission): JsonResponse
@@ -177,7 +165,7 @@ class DocumentSubmissionController extends Controller
             abort_unless($submission->student_id === $request->user()->student_id, 403);
         }
 
-        return response()->json(['data' => $this->present($submission, $request)]);
+        return response()->json(['data' => $this->presenter->submission($submission, $request->user()->id)]);
     }
 
     public function review(Request $request, DocumentSubmission $submission): JsonResponse
@@ -207,7 +195,7 @@ class DocumentSubmissionController extends Controller
             'ip_address' => $request->ip(),
         ]);
 
-        return response()->json(['data' => $this->present($submission->fresh(), $request)]);
+        return response()->json(['data' => $this->presenter->submission($submission->fresh(), $request->user()->id)]);
     }
 
     private function notifyStudentOfResubmission(DocumentSubmission $submission, ?string $notes): void
@@ -242,129 +230,5 @@ class DocumentSubmissionController extends Controller
     public function audit(): JsonResponse
     {
         return response()->json(['data' => AuditLog::query()->latest()->limit(250)->get()]);
-    }
-
-    /**
-     * @param  Collection<int, DocumentSubmission>  $documents
-     * @return array<string, mixed>
-     */
-    private function presentPackage(Collection $documents): array
-    {
-        $ordered = $documents
-            ->sortBy(function (DocumentSubmission $doc): int {
-                $index = array_search((string) $doc->slot_key, self::EXPECTED_SLOTS, true);
-
-                return $index === false ? 99 : $index;
-            })
-            ->values();
-
-        /** @var DocumentSubmission $first */
-        $first = $ordered->first();
-        $statuses = $ordered->pluck('status')->filter()->values()->all();
-        $riskRank = ['high' => 3, 'medium' => 2, 'low' => 1];
-        $highestRisk = $ordered
-            ->sortByDesc(fn (DocumentSubmission $doc) => $riskRank[$doc->risk_level] ?? 0)
-            ->first();
-
-        $submitted = $ordered->count();
-        $expected = count(self::EXPECTED_SLOTS);
-        $reviewed = $ordered
-            ->filter(fn (DocumentSubmission $doc) => in_array($doc->status, ['approved', 'rejected', 'resubmission'], true))
-            ->count();
-
-        $submittedAtRaw = $ordered->max('created_at');
-        $submittedAt = $submittedAtRaw
-            ? \Illuminate\Support\Carbon::parse($submittedAtRaw)->toISOString()
-            : null;
-
-        return [
-            'grantee_id' => (int) $first->grantee_id,
-            'batch_id' => (int) $first->batch_id,
-            'batch_name' => $first->batch?->name,
-            'student_name' => $first->student_name,
-            'student_id' => $first->student_id,
-            'status' => $this->packageOverallStatus($statuses),
-            'risk_level' => $highestRisk?->risk_level ?? 'low',
-            'identity_review_required' => $ordered->contains(
-                fn (DocumentSubmission $doc) => (bool) $doc->identity_review_required
-            ),
-            'submitted_at' => $submittedAt,
-            'slots_expected' => $expected,
-            'slots_submitted' => $submitted,
-            'slots_reviewed' => $reviewed,
-            'progress' => "{$submitted}/{$expected}",
-            'documents' => $ordered->map(function (DocumentSubmission $doc): array {
-                $slot = (string) ($doc->slot_key ?? '');
-
-                return [
-                    'id' => $doc->id,
-                    'slot_key' => $doc->slot_key,
-                    'document_type' => $doc->document_type,
-                    'tab_label' => self::SLOT_TAB_LABELS[$slot] ?? $doc->document_type,
-                    'status' => $doc->status,
-                    'risk_level' => $doc->risk_level,
-                    'identity_review_required' => (bool) $doc->identity_review_required,
-                ];
-            })->values()->all(),
-        ];
-    }
-
-    /**
-     * @param  list<string>  $statuses
-     */
-    private function packageOverallStatus(array $statuses): string
-    {
-        $unique = array_values(array_unique($statuses));
-        if ($unique === []) {
-            return 'pending_review';
-        }
-        if (count($unique) === 1) {
-            return $unique[0];
-        }
-        if (in_array('rejected', $unique, true)) {
-            return 'rejected';
-        }
-        if (in_array('resubmission', $unique, true)) {
-            return 'resubmission';
-        }
-        if (in_array('pending_review', $unique, true) || in_array('processing', $unique, true)) {
-            return 'pending_review';
-        }
-
-        return 'partially_reviewed';
-    }
-
-    private function present(DocumentSubmission $item, ?Request $request = null): array
-    {
-        $latestCheck = $item->identityChecks()->latest('checked_at')->first();
-        $data = $item->toArray();
-        unset(
-            $data['face_descriptor_payload'],
-            $data['stored_path'],
-            $data['secondary_stored_path'],
-        );
-
-        // Drop internal absolute storage hints from metadata presented to clients.
-        if (isset($data['metadata_payload']) && is_array($data['metadata_payload'])) {
-            unset($data['metadata_payload']['frame_path']);
-        }
-
-        $userId = $request?->user()?->id;
-
-        return array_merge($data, [
-            'file_url' => VaultFileStorage::authSubmissionUrl($item, 'primary'),
-            'secondary_file_url' => VaultFileStorage::authSubmissionUrl($item, 'secondary'),
-            // Short-lived signed URLs for <img>/<iframe> without Bearer headers.
-            'file_preview_url' => VaultFileStorage::signedSubmissionUrl($item, 'primary', $userId),
-            'secondary_file_preview_url' => VaultFileStorage::signedSubmissionUrl($item, 'secondary', $userId),
-            'identity_check' => $latestCheck ? [
-                'result' => $latestCheck->result,
-                'distance' => $latestCheck->distance,
-                'confidence_score' => $latestCheck->confidence_score,
-                'manual_review_required' => $latestCheck->manual_review_required,
-                'challenge_sequence' => $latestCheck->challenge_sequence,
-                'checked_at' => $latestCheck->checked_at,
-            ] : null,
-        ]);
     }
 }
