@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Models\User;
+
 class DatabaseViewerPolicy
 {
     public const REDACTED_VALUE = '[redacted]';
@@ -9,6 +11,7 @@ class DatabaseViewerPolicy
     public function assertEnabled(): void
     {
         abort_unless((bool) config('services.database_viewer.enabled', false), 404);
+        abort_unless($this->currentUserCanViewDatabase(), 403);
     }
 
     public function assertAllowedTable(string $table): void
@@ -74,5 +77,18 @@ class DatabaseViewerPolicy
             'metadata_payload',
             'stored_path',
         ];
+    }
+
+    private function currentUserCanViewDatabase(): bool
+    {
+        $user = auth()->user();
+
+        if (! $user instanceof User) {
+            return false;
+        }
+
+        $user->loadMissing('roles.permissions');
+
+        return $user->hasPermission('view_database');
     }
 }

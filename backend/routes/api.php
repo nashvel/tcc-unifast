@@ -268,6 +268,12 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
         // System health telemetry
         Route::get('/system/health', [SystemHealthController::class, 'show']);
+
+        // Database viewer
+        Route::get('/database/stats', [DatabaseController::class, 'stats']);
+        Route::get('/database/tables', [DatabaseController::class, 'tables']);
+        Route::get('/database/tables/{table}', [DatabaseController::class, 'table']);
+        Route::get('/database/tables/{table}/rows', [DatabaseController::class, 'rows']);
     });
 
     // Document submission review (developer/admin/staff)

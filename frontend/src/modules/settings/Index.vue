@@ -17,7 +17,7 @@ import {
 import DiceBearAvatar from "@/components/ui/DiceBearAvatar.vue";
 import AppTour from "@/components/tour/AppTour.vue";
 import { apiFetch, ApiError } from "@/api";
-import { toast } from "vue-sonner";
+import { toast } from "@/composables/useToast";
 import { useRouter, useRoute } from "vue-router";
 import {
   disableTwoFactor,

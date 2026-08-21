@@ -14,6 +14,39 @@
   --color-text-soft: var(--text-soft);
 }
 
+[data-sonner-toaster].app-sonner {
+  --width: min(356px, calc(100vw - 32px));
+  font-family: inherit;
+}
+
+[data-sonner-toaster].app-sonner [data-sonner-toast] {
+  min-height: 56px;
+}
+
+[data-sonner-toaster].app-sonner [data-icon] {
+  color: var(--text-soft);
+}
+
+[data-sonner-toaster].app-sonner [data-type="success"] [data-icon] {
+  color: var(--success);
+}
+
+[data-sonner-toaster].app-sonner [data-type="error"] [data-icon] {
+  color: var(--danger);
+}
+
+[data-sonner-toaster].app-sonner [data-type="warning"] [data-icon] {
+  color: var(--warning);
+}
+
+[data-sonner-toaster].app-sonner [data-type="info"] [data-icon] {
+  color: var(--info);
+}
+
+[data-sonner-toaster].app-sonner [data-button] {
+  margin-top: 2px;
+}
+
 :root {
   --primary: #7a1e2b;
   --primary-hover: #611620;

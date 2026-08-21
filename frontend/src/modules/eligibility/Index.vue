@@ -7,7 +7,7 @@ import DataTable from "@/components/tables/DataTable.vue";
 import AppDialog from "@/components/dialogs/AppDialog.vue";
 import { apiFetch, ApiError } from "@/api";
 import { queryKeys } from "@/api/queryKeys";
-import { toast } from "vue-sonner";
+import { toast } from "@/composables/useToast";
 
 type EligibilityStatus = "Eligible" | "Needs update" | "Not eligible";
 
