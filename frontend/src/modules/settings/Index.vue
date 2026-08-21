@@ -19,7 +19,15 @@ import AppTour from "@/components/tour/AppTour.vue";
 import { apiFetch, ApiError } from "@/api";
 import { toast } from "vue-sonner";
 import { useRouter, useRoute } from "vue-router";
-import { logout } from "@/api/auth";
+import {
+  disableTwoFactor,
+  enableTwoFactor,
+  fetchTwoFactorStatus,
+  logout,
+  setupTwoFactor,
+  type TwoFactorSetup,
+  type TwoFactorStatus,
+} from "@/api/auth";
 import { authSession } from "@/auth/session";
 import { withLang } from "@/i18n/routeLang";
 
@@ -59,6 +67,17 @@ const dark = ref(
   typeof document !== "undefined" && document.documentElement.classList.contains("dark"),
 );
 const fullName = ref("System Administrator");
+const twoFactor = ref<TwoFactorStatus>({
+  enabled: false,
+  confirmed_at: null,
+  recovery_codes_remaining: 0,
+});
+const twoFactorSetup = ref<TwoFactorSetup | null>(null);
+const twoFactorCode = ref("");
+const twoFactorDisablePassword = ref("");
+const recoveryCodes = ref<string[]>([]);
+const loadingTwoFactor = ref(false);
+const savingTwoFactor = ref(false);
 const loadingOrg = ref(false);
 const savingOrg = ref(false);
 const programs = ref<ProgramFormRow[]>([]);
@@ -246,8 +265,74 @@ async function removeProgram(program: ProgramFormRow) {
   }
 }
 
+async function loadTwoFactor() {
+  loadingTwoFactor.value = true;
+  try {
+    twoFactor.value = await fetchTwoFactorStatus();
+  } catch (error) {
+    toast.error(error instanceof ApiError ? error.message : "Unable to load security settings.");
+  } finally {
+    loadingTwoFactor.value = false;
+  }
+}
+
+async function beginTwoFactorSetup() {
+  savingTwoFactor.value = true;
+  recoveryCodes.value = [];
+  twoFactorCode.value = "";
+  try {
+    twoFactorSetup.value = await setupTwoFactor();
+  } catch (error) {
+    toast.error(error instanceof ApiError ? error.message : "Unable to start two-factor setup.");
+  } finally {
+    savingTwoFactor.value = false;
+  }
+}
+
+async function confirmTwoFactorSetup() {
+  if (!twoFactorSetup.value || !twoFactorCode.value.trim()) {
+    toast.error("Enter the current authenticator code.");
+    return;
+  }
+
+  savingTwoFactor.value = true;
+  try {
+    const res = await enableTwoFactor(twoFactorSetup.value.secret, twoFactorCode.value);
+    recoveryCodes.value = res.recovery_codes;
+    twoFactorSetup.value = null;
+    twoFactorCode.value = "";
+    await loadTwoFactor();
+    toast.success("Two-factor authentication enabled");
+  } catch (error) {
+    toast.error(error instanceof ApiError ? error.message : "Unable to enable two-factor authentication.");
+  } finally {
+    savingTwoFactor.value = false;
+  }
+}
+
+async function turnOffTwoFactor() {
+  if (!twoFactorDisablePassword.value) {
+    toast.error("Enter your current password.");
+    return;
+  }
+
+  savingTwoFactor.value = true;
+  try {
+    await disableTwoFactor(twoFactorDisablePassword.value);
+    twoFactorDisablePassword.value = "";
+    recoveryCodes.value = [];
+    await loadTwoFactor();
+    toast.success("Two-factor authentication disabled. Sign in again on other devices.");
+  } catch (error) {
+    toast.error(error instanceof ApiError ? error.message : "Unable to disable two-factor authentication.");
+  } finally {
+    savingTwoFactor.value = false;
+  }
+}
+
 onMounted(() => {
   void loadOrganization();
+  void loadTwoFactor();
 });
 </script>
 
@@ -618,7 +703,126 @@ onMounted(() => {
             </p>
           </section></template
         >
-        <section v-else-if="section === 'security'" class="rounded-lg border bg-surface">
+        <template v-else-if="section === 'security'">
+        <section class="rounded-lg border bg-surface">
+          <div class="flex items-center justify-between border-b px-4 py-3">
+            <div>
+              <h2 class="text-sm font-semibold">Two-Factor Authentication</h2>
+              <p class="mt-0.5 text-xs text-text-muted">
+                Require an authenticator code after password or Google sign-in.
+              </p>
+            </div>
+            <span
+              :class="[
+                'rounded-full px-2.5 py-1 text-micro font-semibold uppercase',
+                twoFactor.enabled ? 'bg-success/10 text-success' : 'bg-surface-muted text-text-muted',
+              ]"
+            >
+              {{ twoFactor.enabled ? "Enabled" : "Off" }}
+            </span>
+          </div>
+          <div v-if="loadingTwoFactor" class="p-4 text-xs text-text-muted">Loading security settings...</div>
+          <div v-else class="space-y-4 p-4">
+            <div v-if="!twoFactor.enabled && !twoFactorSetup" class="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p class="text-sm font-medium">Authenticator app</p>
+                <p class="mt-1 text-xs text-text-muted">
+                  Use Google Authenticator, Microsoft Authenticator, 1Password, or any TOTP app.
+                </p>
+              </div>
+              <button
+                class="rounded-md bg-primary px-3 py-2 text-xs font-medium text-white disabled:opacity-60"
+                :disabled="savingTwoFactor"
+                @click="beginTwoFactorSetup"
+              >
+                Set up 2FA
+              </button>
+            </div>
+
+            <div v-if="twoFactorSetup" class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_260px]">
+              <div class="space-y-3">
+                <label class="block">
+                  <span class="mb-1.5 block text-xs font-medium">Manual setup key</span>
+                  <input
+                    :value="twoFactorSetup.secret"
+                    readonly
+                    class="h-9 w-full rounded-md border bg-surface-muted px-3 font-mono text-xs"
+                  />
+                </label>
+                <label class="block">
+                  <span class="mb-1.5 block text-xs font-medium">Current six-digit code</span>
+                  <input
+                    v-model="twoFactorCode"
+                    type="text"
+                    inputmode="numeric"
+                    autocomplete="one-time-code"
+                    placeholder="123456"
+                    class="h-9 w-full rounded-md border px-3 text-sm"
+                  />
+                </label>
+                <div class="flex gap-2">
+                  <button
+                    class="rounded-md bg-primary px-3 py-2 text-xs font-medium text-white disabled:opacity-60"
+                    :disabled="savingTwoFactor"
+                    @click="confirmTwoFactorSetup"
+                  >
+                    Verify and enable
+                  </button>
+                  <button
+                    class="rounded-md border px-3 py-2 text-xs font-medium hover:bg-surface-muted"
+                    @click="twoFactorSetup = null"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+              <div class="rounded-md border bg-surface-muted p-3">
+                <p class="text-xs font-semibold">Authenticator URI</p>
+                <p class="mt-2 break-all font-mono text-micro text-text-muted">
+                  {{ twoFactorSetup.otpauth_uri }}
+                </p>
+              </div>
+            </div>
+
+            <div v-if="recoveryCodes.length" class="rounded-md border border-warning/40 bg-warning/10 p-3">
+              <p class="text-xs font-semibold text-text">Save these recovery codes now.</p>
+              <div class="mt-2 grid gap-2 sm:grid-cols-2">
+                <code
+                  v-for="code in recoveryCodes"
+                  :key="code"
+                  class="rounded border bg-white px-2 py-1 text-xs"
+                >
+                  {{ code }}
+                </code>
+              </div>
+            </div>
+
+            <div v-if="twoFactor.enabled" class="space-y-3">
+              <p class="text-sm">
+                Your account requires a second factor. Recovery codes remaining:
+                <b>{{ twoFactor.recovery_codes_remaining }}</b>
+              </p>
+              <label class="block max-w-sm">
+                <span class="mb-1.5 block text-xs font-medium">Current password to disable</span>
+                <input
+                  v-model="twoFactorDisablePassword"
+                  type="password"
+                  placeholder="Password"
+                  class="h-9 w-full rounded-md border px-3"
+                />
+              </label>
+              <button
+                class="rounded-md border border-danger/40 px-3 py-2 text-xs font-medium text-danger hover:bg-danger/10 disabled:opacity-60"
+                :disabled="savingTwoFactor"
+                @click="turnOffTwoFactor"
+              >
+                Disable 2FA
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <section class="rounded-lg border bg-surface">
           <div class="flex items-center justify-between border-b px-4 py-3">
             <h2 class="text-sm font-semibold">Change Password</h2>
             <button class="inline-flex items-center gap-1 text-xs" @click="signOut">
@@ -649,6 +853,7 @@ onMounted(() => {
             </button>
           </form>
         </section>
+        </template>
         <template v-else
           ><section class="rounded-lg border bg-surface">
             <div class="flex justify-between border-b px-4 py-3">

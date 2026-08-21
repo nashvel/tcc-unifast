@@ -13,6 +13,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (! Schema::hasTable('form_answers')) {
+            return;
+        }
+
         // 1. Change to longText to accommodate encryption overhead
         Schema::table('form_answers', function (Blueprint $table) {
             $table->longText('answer_value')->nullable()->change();
@@ -46,6 +50,10 @@ return new class extends Migration
      */
     public function down(): void
     {
+        if (! Schema::hasTable('form_answers')) {
+            return;
+        }
+
         // Decrypt records back to plain text
         DB::table('form_answers')->orderBy('id')->chunk(100, function ($answers) {
             foreach ($answers as $answer) {

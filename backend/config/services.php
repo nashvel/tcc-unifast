@@ -107,6 +107,14 @@ return [
         ),
         'cookie_domain' => env('AUTH_COOKIE_DOMAIN'),
         'refresh_throttle_per_minute' => max(1, (int) env('AUTH_REFRESH_THROTTLE_PER_MINUTE', 30)),
+        'two_factor_challenge_ttl_minutes' => max(1, (int) env('AUTH_2FA_CHALLENGE_TTL_MINUTES', 10)),
+        'frontend_url' => rtrim((string) env('FRONTEND_URL', ''), '/'),
+    ],
+
+    'google' => [
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'redirect' => env('GOOGLE_REDIRECT_URI', '/api/auth/google/callback'),
     ],
 
     'requirement_vault' => [

@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
@@ -18,7 +19,7 @@ return new class extends Migration
             $table->foreignId('form_field_id')
                   ->constrained('form_fields')
                   ->cascadeOnDelete();
-            $table->text('answer_value')->nullable();
+            $table->longText('answer_value')->nullable();
             $table->timestamps();
 
             $table->unique(
@@ -55,7 +56,7 @@ return new class extends Migration
                     DB::table('form_answers')->insertOrIgnore([
                         'form_response_id' => $response->id,
                         'form_field_id'    => $fieldId,
-                        'answer_value'     => $serialized,
+                        'answer_value'     => $serialized !== '' ? Crypt::encryptString($serialized) : $serialized,
                         'created_at'       => now(),
                         'updated_at'       => now(),
                     ]);

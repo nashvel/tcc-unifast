@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\RefreshToken;
 use App\Models\User;
+use App\Services\TotpService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -257,5 +258,72 @@ class AuthCookieTest extends TestCase
         $this->getJson('/api/auth/me', [
             'Authorization' => 'Bearer '.$newAccess,
         ])->assertOk();
+    }
+
+    public function test_login_requires_two_factor_before_issuing_cookies(): void
+    {
+        $totp = app(TotpService::class);
+        $secret = $totp->generateSecret();
+        User::factory()->create([
+            'email' => 'mfa@example.test',
+            'password' => Hash::make('password'),
+            'role' => 'staff',
+            'account_status' => 'active',
+            'two_factor_secret' => $secret,
+            'two_factor_confirmed_at' => now(),
+        ]);
+
+        $challenge = $this->postJson('/api/auth/login', [
+            'email' => 'mfa@example.test',
+            'password' => 'password',
+            'captcha' => 'bypass',
+        ]);
+
+        $challenge->assertOk()
+            ->assertJsonPath('two_factor_required', true)
+            ->assertJsonStructure(['challenge_id', 'expires_at'])
+            ->assertCookieMissing(config('services.auth.access_cookie'))
+            ->assertCookieMissing(config('services.auth.refresh_cookie'));
+
+        $this->assertDatabaseCount('personal_access_tokens', 0);
+        $this->assertDatabaseCount('refresh_tokens', 0);
+    }
+
+    public function test_two_factor_challenge_verification_issues_cookies(): void
+    {
+        $totp = app(TotpService::class);
+        $secret = $totp->generateSecret();
+        User::factory()->create([
+            'email' => 'verify-mfa@example.test',
+            'password' => Hash::make('password'),
+            'role' => 'staff',
+            'account_status' => 'active',
+            'two_factor_secret' => $secret,
+            'two_factor_confirmed_at' => now(),
+        ]);
+
+        $challenge = $this->postJson('/api/auth/login', [
+            'email' => 'verify-mfa@example.test',
+            'password' => 'password',
+            'captcha' => 'bypass',
+        ])->assertOk()->json('challenge_id');
+
+        $response = $this->postJson('/api/auth/2fa/verify', [
+            'challenge_id' => $challenge,
+            'code' => $totp->currentCode($secret),
+        ]);
+
+        $response->assertOk()
+            ->assertJsonStructure(['user' => ['id', 'email']])
+            ->assertPlainCookie(config('services.auth.access_cookie'))
+            ->assertPlainCookie(config('services.auth.refresh_cookie'));
+
+        $this->assertDatabaseCount('personal_access_tokens', 1);
+        $this->assertDatabaseCount('refresh_tokens', 1);
+
+        $this->postJson('/api/auth/2fa/verify', [
+            'challenge_id' => $challenge,
+            'code' => $totp->currentCode($secret),
+        ])->assertStatus(422);
     }
 }

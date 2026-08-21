@@ -14,6 +14,7 @@ use App\Http\Controllers\CollaboratorController;
 use App\Http\Controllers\DatabaseController;
 use App\Http\Controllers\DistributionReportController;
 use App\Http\Controllers\DeveloperServicesController;
+use App\Http\Controllers\DocumentFileController;
 use App\Http\Controllers\DocumentSubmissionController;
 use App\Http\Controllers\EligibilityController;
 use App\Http\Controllers\FaceReviewController;
@@ -33,6 +34,7 @@ use App\Http\Controllers\StudentNotificationController;
 use App\Http\Controllers\StudentSubmissionWindowController;
 use App\Http\Controllers\SupportTicketController;
 use App\Http\Controllers\SystemHealthController;
+use App\Http\Controllers\TermController;
 use App\Http\Controllers\TccPublicHomeController;
 use App\Http\Controllers\TccUnifastStudentsController;
 use App\Http\Controllers\TccUnifastSyncController;
@@ -54,8 +56,14 @@ Route::middleware([
 ])->group(function (): void {
     Route::post('/auth/login', [AuthController::class, 'login'])
         ->middleware('throttle:'.config('services.auth.login_throttle_per_minute', 5).',1');
+    Route::post('/auth/2fa/verify', [AuthController::class, 'verifyTwoFactor'])
+        ->middleware('throttle:'.config('services.auth.login_throttle_per_minute', 5).',1');
     Route::post('/auth/refresh', [AuthController::class, 'refresh'])
         ->middleware('throttle:'.config('services.auth.refresh_throttle_per_minute', 30).',1');
+    Route::get('/auth/google/redirect', [AuthController::class, 'googleRedirect'])
+        ->middleware('throttle:20,1');
+    Route::get('/auth/google/callback', [AuthController::class, 'googleCallback'])
+        ->middleware('throttle:20,1');
     Route::get('/activation/{token}', [ActivationController::class, 'show'])->middleware('throttle:20,1');
     Route::post('/activation/{token}', [ActivationController::class, 'activate'])->middleware('throttle:10,1');
 });
@@ -79,6 +87,10 @@ Route::get('/signed/identity-photos/{grantee}/{filename}', [DocumentFileControll
 Route::middleware('auth:sanctum')->group(function (): void {
     Route::get('/auth/me', [AuthController::class, 'me']);
     Route::post('/auth/logout', [AuthController::class, 'logout']);
+    Route::get('/auth/2fa', [AuthController::class, 'twoFactorStatus']);
+    Route::post('/auth/2fa/setup', [AuthController::class, 'twoFactorSetup'])->middleware('throttle:10,1');
+    Route::post('/auth/2fa/enable', [AuthController::class, 'twoFactorEnable'])->middleware('throttle:10,1');
+    Route::delete('/auth/2fa', [AuthController::class, 'twoFactorDisable'])->middleware('throttle:10,1');
 
     // Student routes
     Route::middleware('role:student')->group(function (): void {

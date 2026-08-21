@@ -85,8 +85,10 @@ function shouldAttemptRefresh(path: string, init: RequestInit & { _authRetry?: b
   }
   const skip = [
     "/api/auth/login",
+    "/api/auth/2fa/verify",
     "/api/auth/refresh",
     "/api/auth/logout",
+    "/api/auth/google/redirect",
     "/sanctum/csrf-cookie",
     "/api/auth/captcha",
   ];
