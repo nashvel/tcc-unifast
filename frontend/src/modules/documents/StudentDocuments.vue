@@ -21,6 +21,7 @@ import CardSkeleton from "@/components/ui/CardSkeleton.vue";
 import { toast } from "@/composables/useToast";
 import { withLang } from "@/i18n/routeLang";
 import { markVaultSchoolIdScanReady } from "@/modules/documents/vaultSchoolIdScanGate";
+import vaultClosedVideo from "@/assets/student-vault-closed.webm";
 
 const router = useRouter();
 
@@ -580,12 +581,65 @@ async function resubmitSlot(
     </div>
 
     <CardSkeleton v-if="loading" :lines="4" class-name="rounded-2xl p-6" />
-    <section v-else-if="!windowOpen" class="rounded-2xl border bg-surface p-6 shadow-sm">
-      <span class="inline-flex items-center gap-2 rounded-full bg-warning-soft px-3 py-1 text-xs font-semibold text-warning">
-        <IconLock :size="14" /> Locked vault
-      </span>
-      <h2 class="mt-4 text-2xl font-semibold tracking-tight">Submission window is closed</h2>
-      <p class="mt-2 max-w-2xl text-sm text-text-muted">{{ windowMessage }}</p>
+    <section v-else-if="!windowOpen" class="rounded-2xl border bg-surface p-6 sm:p-8 shadow-sm">
+      <div class="flex flex-col items-center text-center">
+        <video
+          class="h-44 w-44 object-contain"
+          :src="vaultClosedVideo"
+          autoplay
+          loop
+          muted
+          playsinline
+          aria-hidden="true"
+        />
+
+        <span class="mt-2 inline-flex items-center gap-2 rounded-full bg-warning-soft px-3.5 py-1 text-xs font-semibold text-warning">
+          <IconLock :size="14" /> Locked vault
+        </span>
+
+        <h2 class="mt-3 text-2xl font-bold tracking-tight">Submission window is currently closed</h2>
+        <p class="mt-2 max-w-xl text-sm text-text-muted">
+          {{ windowMessage || "The scholarship office has temporarily locked document submissions for your batch, but you can prepare your documents now so you're ready when it opens!" }}
+        </p>
+
+        <!-- Preparation Checklist Guide Card -->
+        <div class="mt-6 w-full max-w-2xl rounded-xl border bg-surface-muted/60 p-5 text-left">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="grid size-7 place-items-center rounded-lg bg-primary-soft text-primary font-bold text-xs">
+              📋
+            </span>
+            <h3 class="text-sm font-semibold text-text">Documents to gather &amp; prepare while you wait:</h3>
+          </div>
+
+          <div class="grid gap-3 sm:grid-cols-2">
+            <div
+              v-for="doc in [
+                { title: '1. Official School ID', desc: 'Front copy — ensure photo & student number are clear', icon: IconId },
+                { title: '2. Course History / COR', desc: 'Certificate of Registration showing enrolled units', icon: IconFileText },
+                { title: '3. Official Grade Slip', desc: 'Copy of your grades for the previous semester', icon: IconCheck },
+                { title: '4. ID Back-to-Back + Specimen', desc: 'Back of ID with 3 specimen signatures below', icon: IconSignature },
+              ]"
+              :key="doc.title"
+              class="flex items-start gap-3 rounded-lg border bg-surface p-3 transition shadow-2xs"
+            >
+              <span class="grid size-8 shrink-0 place-items-center rounded-md bg-primary-soft text-primary mt-0.5">
+                <component :is="doc.icon" :size="16" />
+              </span>
+              <div>
+                <p class="text-xs font-semibold text-text">{{ doc.title }}</p>
+                <p class="mt-0.5 text-micro text-text-muted leading-relaxed">{{ doc.desc }}</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-4 flex items-center gap-2.5 rounded-lg border border-primary/20 bg-primary-soft/40 p-3 text-xs text-text">
+            <IconInfoCircle :size="18" class="shrink-0 text-primary" />
+            <p class="leading-relaxed">
+              <strong class="font-medium text-primary">Pro Tip:</strong> Snap clear, well-lit photos or PDF scans of these 4 files on your phone today. Once staff opens your batch window, you'll be able to upload everything in seconds!
+            </p>
+          </div>
+        </div>
+      </div>
     </section>
 
     <template v-else>
