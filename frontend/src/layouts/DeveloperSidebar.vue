@@ -95,7 +95,7 @@ function go(path: string) {
     </div>
 
     <!-- Navigation -->
-    <nav class="flex-1 overflow-y-auto px-2 py-2">
+    <nav class="scrollbar-none flex-1 overflow-y-auto px-2 py-2">
       <div v-for="(section, sIdx) in sections" :key="sIdx" class="mb-1">
         <!-- Section with title -->
         <template v-if="section.title">

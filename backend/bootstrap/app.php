@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\AuthenticateFromAccessCookie;
+use App\Http\Middleware\RequirePermission;
 use App\Http\Middleware\RequireRole;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\SetLocaleFromUrl;
@@ -27,7 +28,10 @@ return Application::configure(basePath: dirname(__DIR__))
         // Without this, generated URLs (activation emails, signed routes) use http://.
         $middleware->trustProxies(at: '*');
         $middleware->append(SecurityHeaders::class);
-        $middleware->alias(['role' => RequireRole::class]);
+        $middleware->alias([
+            'role' => RequireRole::class,
+            'permission' => RequirePermission::class,
+        ]);
         $middleware->web(append: [SetLocaleFromUrl::class]);
         // Decrypt cookies + promote access cookie → Bearer for Sanctum on all API routes.
         // Access/refresh auth cookies stay unencrypted so Sanctum can use the raw PAT;

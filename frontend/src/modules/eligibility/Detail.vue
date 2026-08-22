@@ -6,7 +6,7 @@ import { IconArrowLeft, IconBellRinging, IconCheck, IconSend, IconX } from "@tab
 import PageHeader from "@/components/ui/PageHeader.vue";
 import { apiFetch, ApiError } from "@/api";
 import { queryKeys } from "@/api/queryKeys";
-import { toast } from "vue-sonner";
+import { toast } from "@/composables/useToast";
 
 type Criterion = { label: string; passed: boolean; note: string };
 type Notice = { date: string; title: string; status: string };

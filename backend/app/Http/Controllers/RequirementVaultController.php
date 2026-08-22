@@ -2,26 +2,30 @@
 
 namespace App\Http\Controllers;
 
-use App\Jobs\ProcessRequirementSubmissionPipeline;
-use App\Models\AuditLog;
 use App\Models\DocumentSubmission;
 use App\Models\Grantee;
 use App\Models\GranteeIdentityProfile;
-use App\Models\RequirementIdentityCheck;
 use App\Models\User;
 use App\Services\BatchWindowService;
-use App\Support\SecureUpload;
-use App\Support\VaultFileStorage;
+use App\Services\IdCardOcrService;
+use App\Services\MasterlistTruthService;
+use App\Services\RequirementVault\ConfirmRequirementPackageService;
+use App\Services\RequirementVault\RequirementVaultPresenter;
+use App\Services\RequirementVault\ResubmitRequirementSlotService;
+use App\Services\RequirementVault\StoreVaultDocumentSlotService;
+use App\Services\RequirementVault\StoreVaultIdentityCheckService;
+use App\Services\RequirementVault\StoreVaultSchoolIdService;
+use App\Services\RequirementVault\ValidateVaultFrontIdOcrService;
+use App\Services\TccRegistrarQrService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class RequirementVaultController extends Controller
 {
+    private const SCHOOL_ID_SLOT = 'school_id';
+
     private const COURSE_HISTORY_SLOT = 'course_history';
 
     private const GRADE_SLIP_SLOT = 'grade_slip';
@@ -30,6 +34,7 @@ class RequirementVaultController extends Controller
 
     /** @var list<string> */
     private const REQUIRED_SLOTS = [
+        self::SCHOOL_ID_SLOT,
         self::COURSE_HISTORY_SLOT,
         self::GRADE_SLIP_SLOT,
         self::SPECIMEN_SIGNATURES_SLOT,
@@ -44,29 +49,254 @@ class RequirementVaultController extends Controller
     public function show(Request $request, BatchWindowService $windows): JsonResponse
     {
         $context = $this->studentContext($request, $windows, false);
-        $identity = $context['grantee']
-            ? GranteeIdentityProfile::query()->where('grantee_id', $context['grantee']->id)->first()
-            : null;
+
+        return response()->json($this->presenter->show($context['window'], $context['grantee']));
+    }
+
+    public function validateFrontIdOcr(
+        Request $request,
+        BatchWindowService $windows,
+        ValidateVaultFrontIdOcrService $validateFrontIdOcr,
+    ): JsonResponse {
+        $context = $this->studentContext($request, $windows);
+        $grantee = $context['grantee'];
+        $this->assertCanMutateVault($grantee, self::SCHOOL_ID_SLOT);
+        $validateFrontIdOcr->assertIdentityComplete($grantee);
+
+        $validated = $request->validate([
+            'id_frame' => ['required', 'file', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
+        ]);
 
         return response()->json([
-            'window' => $context['window'],
-            'grantee' => $context['grantee'] ? $this->presentGrantee($context['grantee']) : null,
-            'slots' => $context['grantee'] ? $this->presentSlots($context['grantee']) : [],
-            'identity_check' => $context['grantee'] ? $this->latestIdentityCheck($context['grantee']) : null,
-            'onboarding_refs' => ($identity && $context['grantee']) ? [
-                'id_reference_face_url' => $identity->id_reference_face_path
-                    ? VaultFileStorage::authIdentityUrl('id_reference_face.jpg')
-                    : null,
-                'id_onboarding_frame_url' => is_string(data_get($identity->id_ocr_payload, 'frame_path'))
-                    && data_get($identity->id_ocr_payload, 'frame_path') !== ''
-                    ? VaultFileStorage::authIdentityUrl('id_onboarding_frame.jpg')
-                    : null,
-                'onboarding_selfie_url' => $identity->onboarding_selfie_path
-                    ? VaultFileStorage::authIdentityUrl('onboarding_selfie.jpg')
-                    : null,
-                'completed' => $identity->isComplete(),
-            ] : null,
+            'data' => $validateFrontIdOcr->validate($request->user(), $grantee, $validated['id_frame']),
         ]);
+    }
+
+    public function storeId(
+        Request $request,
+        BatchWindowService $windows,
+        IdCardOcrService $ocr,
+        TccRegistrarQrService $qr,
+        MasterlistTruthService $truth,
+        StoreVaultSchoolIdService $storeSchoolId,
+    ): JsonResponse {
+        $context = $this->studentContext($request, $windows);
+        $grantee = $context['grantee'];
+        $this->assertCanMutateVault($grantee, self::SCHOOL_ID_SLOT);
+        $batchId = (int) $context['window']['batch']['id'];
+        $identity = GranteeIdentityProfile::query()->where('grantee_id', $grantee->id)->first();
+
+        if (! $identity?->isComplete()) {
+            throw ValidationException::withMessages([
+                'onboarding' => 'Complete identity onboarding (ID scan + liveness) before submitting requirements.',
+            ]);
+        }
+
+        $validated = $request->validate([
+            'id_frame' => ['required', 'file', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
+            'id_face_crop' => ['required', 'file', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'id_back' => ['required', 'file', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
+            // QR is best-effort for Slot 1 — store flags for staff; never hard-block submit.
+            'qr_payload' => ['nullable', 'string', 'max:2000'],
+            'face_descriptor' => ['required', 'array', 'size:128'],
+            'face_descriptor.*' => ['required', 'numeric'],
+            'face_quality_score' => ['required', 'numeric', 'min:0', 'max:1'],
+            // Client-reported distances are ignored; kept optional for older clients.
+            'distance_vs_reference' => ['nullable', 'numeric', 'min:0'],
+            'distance_vs_onboarding_selfie' => ['nullable', 'numeric', 'min:0'],
+            'consent_accepted' => ['accepted'],
+            'precheck_accepted' => ['accepted'],
+        ]);
+
+        SecureUpload::assertAllowedMime($validated['id_frame'], self::IMAGE_MIMES, 'id_frame');
+        $faceMime = SecureUpload::assertAllowedMime($validated['id_face_crop'], self::IMAGE_MIMES, 'id_face_crop');
+        SecureUpload::assertAllowedMime($validated['id_back'], self::IMAGE_MIMES, 'id_back');
+
+        $probe = FaceDescriptorMath::normalize($validated['face_descriptor']);
+        if (! is_array($identity->id_reference_face_descriptor) || ! is_array($identity->onboarding_selfie_descriptor)) {
+            throw ValidationException::withMessages([
+                'onboarding' => 'Onboarding face references are incomplete. Re-run identity onboarding.',
+            ]);
+        }
+        $referenceDescriptor = FaceDescriptorMath::normalize(
+            $identity->id_reference_face_descriptor,
+            'id_reference_face_descriptor',
+        );
+        $selfieDescriptor = FaceDescriptorMath::normalize(
+            $identity->onboarding_selfie_descriptor,
+            'onboarding_selfie_descriptor',
+        );
+        $vsReference = FaceDescriptorMath::euclidean($probe, $referenceDescriptor);
+        $vsSelfie = FaceDescriptorMath::euclidean($probe, $selfieDescriptor);
+        $worstDistance = max($vsReference, $vsSelfie);
+        $classification = FaceDescriptorMath::classify($worstDistance);
+
+        if ($classification === FaceDescriptorMath::ZONE_MISMATCH) {
+            $matchScore = round(max(0, 1 - $worstDistance) * 100);
+            $reqScore = round(max(0, 1 - FaceDescriptorMath::reviewMax()) * 100);
+            throw ValidationException::withMessages([
+                'face_match' => sprintf(
+                    'Face match failed. You scored %d%% (requires %d%% or higher). Retake the ID scan.',
+                    $matchScore,
+                    $reqScore
+                ),
+            ]);
+        }
+
+        $front = $this->assertFrontOcrMatches(
+            $validated['id_frame'],
+            $request->user(),
+            $grantee,
+            $batchId,
+            $identity,
+            $validated,
+            $ocr,
+            $qr,
+            $truth,
+        );
+        $ocrResult = $front['ocr'];
+        $match = $front['match'];
+
+        // Back OCR always runs. Service down → hard fail. Empty/sparse text → accept + soft AY flags.
+        try {
+            $backOcr = $ocr->extractTextAllowEmpty($validated['id_back']);
+        } catch (\RuntimeException $exception) {
+            throw ValidationException::withMessages([
+                'id_back' => 'Back ID OCR is unavailable. Retry when the OCR service is online.',
+            ]);
+        }
+
+        $backFields = $ocr->parseBackFields((string) ($backOcr['text'] ?? ''));
+        $backQr = is_array($backOcr['qr'] ?? null) ? $backOcr['qr'] : $ocr->emptyQr();
+        $frontQr = is_array($ocrResult['qr'] ?? null) ? $ocrResult['qr'] : $ocr->emptyQr();
+
+        $clientQr = isset($validated['qr_payload']) ? trim((string) $validated['qr_payload']) : '';
+        $decodedQr = ($backQr['found'] ?? false) ? (string) ($backQr['value'] ?? '') : '';
+        if ($decodedQr === '' && ($frontQr['found'] ?? false)) {
+            $decodedQr = (string) ($frontQr['value'] ?? '');
+        }
+        $qrPayload = $clientQr !== '' ? $clientQr : $decodedQr;
+        $qrFound = $qrPayload !== '';
+        $qrValid = $qrFound && $qr->isValid($qrPayload);
+        $qrExtraction = $qrFound ? $qr->extract($qrPayload) : $qr->emptyExtraction();
+
+        $expectedAy = PolicySetting::organizationAcademicYear();
+        $ocrAyRaw = is_string($backFields['school_year'] ?? null) ? $backFields['school_year'] : null;
+        $ocrAy = $ocr->normalizeSchoolYear($ocrAyRaw);
+        $expectedAyNorm = $ocr->normalizeSchoolYear($expectedAy);
+        $academicYearMatch = ($ocrAy !== null && $expectedAyNorm !== null)
+            ? $ocrAy === $expectedAyNorm
+            : null;
+
+        $quality = (float) $validated['face_quality_score'];
+        $manualReview = $quality < 0.7 || $classification === FaceDescriptorMath::ZONE_UNCERTAIN;
+
+        $facePath = VaultFileStorage::storeIdentity(
+            $validated['id_face_crop'],
+            $grantee->id,
+            'id_scan_submission',
+        );
+        $framePath = VaultFileStorage::storeDocument($validated['id_frame'], $grantee->id, $batchId);
+        $backPath = VaultFileStorage::storeDocument($validated['id_back'], $grantee->id, $batchId);
+
+        $prior = DocumentSubmission::query()
+            ->where('student_id', $request->user()->student_id)
+            ->where('batch_id', $batchId)
+            ->where('slot_key', self::SCHOOL_ID_SLOT)
+            ->first();
+        // Legacy incomplete packages: never-submitted School ID goes straight to staff.
+        $slotStatus = (! $prior && $this->packageAlreadySentToStaff($grantee))
+            ? 'pending_review'
+            : 'draft';
+
+        $ocrPayload = [
+            'provider' => $ocrResult['provider'],
+            'extracted_name' => $match['extracted_name'],
+            'extracted_student_id' => $match['extracted_student_id'],
+            'back_fields' => $backFields,
+            'qr_found' => $qrFound,
+            'qr_valid' => $qrValid,
+            'qr_extraction' => $qrExtraction,
+            'academic_year_match' => $academicYearMatch,
+            'academic_year_expected' => $expectedAyNorm,
+            'academic_year_ocr' => $ocrAy,
+        ];
+
+        $submission = DocumentSubmission::updateOrCreate(
+            [
+                'student_id' => $request->user()->student_id,
+                'batch_id' => $batchId,
+                'slot_key' => self::SCHOOL_ID_SLOT,
+            ],
+            [
+                'grantee_id' => $grantee->id,
+                'student_name' => $request->user()->name,
+                'document_type' => 'School ID',
+                'original_name' => 'id_scan_submission.jpg',
+                'stored_path' => $facePath,
+                'mime_type' => $faceMime,
+                'file_size' => $validated['id_face_crop']->getSize(),
+                'secondary_original_name' => SecureUpload::sanitizeOriginalName(
+                    $validated['id_back']->getClientOriginalName(),
+                    'id_back',
+                ),
+                'secondary_stored_path' => $backPath,
+                'secondary_mime_type' => SecureUpload::detectMime($validated['id_back']->getRealPath()),
+                'secondary_file_size' => $validated['id_back']->getSize(),
+                'status' => $slotStatus,
+                'risk_level' => $manualReview ? 'medium' : 'low',
+                'face_descriptor_payload' => $probe,
+                'face_quality_score' => $quality,
+                'identity_review_required' => $manualReview,
+                'identity_review_reason' => $manualReview ? 'School ID face quality is below 0.70.' : null,
+                'ocr_payload' => $ocrPayload,
+                'metadata_payload' => [
+                    'qr_payload' => $qrFound ? $qrPayload : null,
+                    'qr_found' => $qrFound,
+                    'qr_valid' => $qrValid,
+                    'qr_extraction' => $qrExtraction,
+                    'ocr' => [
+                        'provider' => $ocrResult['provider'],
+                        'extracted_name' => $match['extracted_name'],
+                        'extracted_student_id' => $match['extracted_student_id'],
+                    ],
+                    'back_fields' => $backFields,
+                    'back_ocr' => [
+                        'provider' => $backOcr['provider'],
+                        'text_empty' => $backOcr['text_empty'],
+                        'warning' => $backOcr['warning'],
+                        'qr' => $backQr,
+                    ],
+                    'academic_year_match' => $academicYearMatch,
+                    'academic_year_expected' => $expectedAyNorm,
+                    'academic_year_ocr' => $ocrAy,
+                    'face_distances' => [
+                        'vs_id_reference' => $vsReference,
+                        'vs_onboarding_selfie' => $vsSelfie,
+                    ],
+                    'frame_path' => $framePath,
+                    'back_path' => $backPath,
+                    'authenticity' => 'disabled', // Pillow moiré off until AUTHENTICITY_SERVICE_URL is set
+                ],
+            ],
+        );
+
+        if ($slotStatus === 'pending_review') {
+            ProcessRequirementSubmissionPipeline::dispatch($grantee->id, $batchId, false);
+        }
+
+        $this->audit($request, 'school_id_live_scan_uploaded', $submission, [
+            'quality' => $quality,
+            'vs_reference' => $vsReference,
+            'vs_onboarding_selfie' => $vsSelfie,
+            'manual_review_required' => $manualReview,
+            'status' => $slotStatus,
+            'qr_found' => $qrFound,
+            'qr_valid' => $qrValid,
+            'academic_year_match' => $academicYearMatch,
+        ]);
+
+        return response()->json(['data' => $this->presentVaultDocument($submission)]);
     }
 
     public function storeDocument(Request $request, BatchWindowService $windows): JsonResponse
@@ -76,7 +306,6 @@ class RequirementVaultController extends Controller
         $batchId = (int) $context['window']['batch']['id'];
 
         $slotKey = (string) $request->input('slot_key');
-        $this->assertCanMutateVault($grantee, $slotKey !== '' ? $slotKey : null);
         $isSpecimen = $slotKey === self::SPECIMEN_SIGNATURES_SLOT;
 
         $validated = $request->validate([
@@ -152,82 +381,43 @@ class RequirementVaultController extends Controller
             'status' => $slotStatus,
         ]);
 
-        return response()->json(['data' => $this->presentVaultDocument($submission->fresh())]);
+        return response()->json(['data' => $this->presenter->document($submission)]);
     }
 
     /**
      * Resubmit a single returned slot after the student replaced the file (draft → pending_review).
      */
-    public function resubmitSlot(Request $request, BatchWindowService $windows): JsonResponse
-    {
+    public function resubmitSlot(
+        Request $request,
+        BatchWindowService $windows,
+        ResubmitRequirementSlotService $resubmitRequirementSlot,
+    ): JsonResponse {
         $context = $this->studentContext($request, $windows);
         $grantee = $context['grantee'];
         $batchId = (int) $context['window']['batch']['id'];
-        $studentId = $request->user()->student_id;
 
         $validated = $request->validate([
             'slot_key' => [
                 'required',
                 Rule::in([
+                    self::SCHOOL_ID_SLOT,
                     self::COURSE_HISTORY_SLOT,
                     self::GRADE_SLIP_SLOT,
                     self::SPECIMEN_SIGNATURES_SLOT,
                 ]),
             ],
         ]);
-        $slotKey = $validated['slot_key'];
-
-        $this->assertCanMutateVault($grantee, $slotKey);
-
-        $submission = $this->requireSlot($studentId, $batchId, $slotKey);
-        if ($submission->status !== 'draft') {
-            throw ValidationException::withMessages([
-                'slot_key' => 'Replace the returned document before resubmitting this slot.',
-            ]);
-        }
-
-        if (($grantee->submission_status ?? '') !== 'resubmission_requested') {
-            throw ValidationException::withMessages([
-                'submission' => 'Single-slot resubmit is only available after staff requests a resubmission.',
-            ]);
-        }
-
-        $submission->update(['status' => 'pending_review']);
-
-        $stillOpen = DocumentSubmission::query()
-            ->where('grantee_id', $grantee->id)
-            ->where('batch_id', $batchId)
-            ->whereIn('status', ['resubmission', 'draft'])
-            ->exists();
-
-        $grantee->update([
-            'submission_status' => $stillOpen ? 'resubmission_requested' : 'docs_submitted',
-            'submitted_at' => $grantee->submitted_at ?? now(),
-        ]);
-
-        ProcessRequirementSubmissionPipeline::dispatch(
-            $grantee->id,
+        $result = $resubmitRequirementSlot->resubmit(
+            $request->user(),
+            $grantee,
             $batchId,
-            false,
+            $validated['slot_key'],
+            $request->ip(),
         );
 
-        AuditLog::create([
-            'actor' => $request->user()->name,
-            'role' => 'Student',
-            'action' => 'requirement_slot_resubmitted',
-            'module' => 'Requirements Submission',
-            'target' => "Submission #{$submission->id}",
-            'context' => [
-                'batch_id' => $batchId,
-                'slot_key' => $slotKey,
-                'pipeline' => 'queued',
-            ],
-            'ip_address' => $request->ip(),
-        ]);
-
         return response()->json([
-            'data' => $this->presentVaultDocument($submission->fresh()),
-            'grantee' => $this->presentGrantee($grantee->fresh()),
+            'data' => $this->presenter->document($result['submission']),
+            'grantee' => $this->presenter->grantee($result['grantee']),
             'resubmitted' => true,
         ]);
     }
@@ -235,59 +425,150 @@ class RequirementVaultController extends Controller
     /**
      * Optional submission liveness log. Does not promote drafts — confirm() is the submit gate.
      */
-
-    /**
-     * Final submit gate: all slots + Slot 1 face bind + name consistency. No submission liveness required.
-     */
-    public function confirm(Request $request, BatchWindowService $windows): JsonResponse
-    {
+    public function storeIdentityCheck(
+        Request $request,
+        BatchWindowService $windows,
+        StoreVaultIdentityCheckService $storeIdentityCheck,
+    ): JsonResponse {
         $context = $this->studentContext($request, $windows);
         $grantee = $context['grantee'];
         $this->assertCanMutateVault($grantee);
         $batchId = (int) $context['window']['batch']['id'];
         $studentId = $request->user()->student_id;
+        $schoolId = $this->requireSlot($studentId, $batchId, self::SCHOOL_ID_SLOT);
 
-        $status = $grantee->submission_status ?? 'not_submitted';
-        if (in_array($status, ['docs_submitted', 'under_review', 'verified'], true)) {
+        $validated = $request->validate([
+            'challenge_sequence' => ['required', 'array', 'size:3'],
+            'challenge_sequence.*' => ['required', Rule::in(['blink', 'turn_left', 'turn_right'])],
+            'face_descriptor' => ['required', 'array', 'size:128'],
+            'face_descriptor.*' => ['required', 'numeric'],
+            // Client match flags/distances are ignored; kept optional for older clients.
+            'result' => ['nullable', Rule::in(['match', 'no_match'])],
+            'distance' => ['nullable', 'numeric', 'min:0'],
+            'distances' => ['nullable', 'array'],
+            'distances.vs_submission_id' => ['nullable', 'numeric', 'min:0'],
+            'distances.vs_id_reference' => ['nullable', 'numeric', 'min:0'],
+            'distances.vs_onboarding_selfie' => ['nullable', 'numeric', 'min:0'],
+            'confidence_score' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'consent_accepted' => ['accepted'],
+            'liveness_confirmed' => ['accepted'],
+            'selfie' => ['required', 'file', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+        ]);
+
+        SecureUpload::assertAllowedMime($validated['selfie'], self::IMAGE_MIMES, 'selfie');
+
+        $identity = GranteeIdentityProfile::query()->where('grantee_id', $grantee->id)->first();
+        if (! is_array($schoolId->face_descriptor_payload)
+            || ! is_array($identity?->id_reference_face_descriptor)
+            || ! is_array($identity?->onboarding_selfie_descriptor)) {
             throw ValidationException::withMessages([
-                'submission' => 'Requirements were already confirmed for this batch.',
+                'face_descriptor' => 'Stored face references are missing. Re-scan School ID and complete onboarding.',
             ]);
         }
-        if ($status === 'resubmission_requested') {
+
+        $live = FaceDescriptorMath::normalize($validated['face_descriptor']);
+        $submissionDescriptor = FaceDescriptorMath::normalize(
+            $schoolId->face_descriptor_payload,
+            'submission_face_descriptor',
+        );
+        $selfieDescriptor = FaceDescriptorMath::normalize(
+            $identity->onboarding_selfie_descriptor,
+            'onboarding_selfie_descriptor',
+        );
+
+        $match4 = FaceDescriptorMath::euclidean($live, $submissionDescriptor);
+        $match5 = FaceDescriptorMath::euclidean($live, $selfieDescriptor);
+        
+        $worstDistance = max($match4, $match5);
+        $classification = FaceDescriptorMath::classify($worstDistance);
+
+        if ($classification === FaceDescriptorMath::ZONE_MISMATCH) {
+            $matchScore = round(max(0, 1 - $worstDistance) * 100);
+            $reqScore = round(max(0, 1 - FaceDescriptorMath::reviewMax()) * 100);
             throw ValidationException::withMessages([
-                'submission' => 'Staff requested a resubmission. Resubmit only returned document(s) — use Replace then Resubmit on each returned slot.',
+                'face_match' => sprintf(
+                    'Liveness check failed. You scored %d%% (requires %d%% or higher). Please retry under better lighting.',
+                    $matchScore,
+                    $reqScore
+                ),
             ]);
         }
 
-        $missing = $this->missingRequiredSlotLabels($studentId, $batchId);
-        if ($missing !== []) {
-            throw ValidationException::withMessages([
-                'submission' => 'Submit all required documents to staff before confirming. Missing: '
-                    .implode(', ', $missing).'.',
+        $distances = [
+            'vs_submission_id' => $match4,
+            'vs_onboarding_selfie' => $match5,
+        ];
+        $manualReview = $classification === FaceDescriptorMath::ZONE_UNCERTAIN;
+        $confidence = max(0, min(100, (1 - $worstDistance) * 100));
+        $checkedAt = now();
+
+        $selfiePath = VaultFileStorage::storeIdentity(
+            $validated['selfie'],
+            $grantee->id,
+            'submission_selfie',
+        );
+
+        $check = RequirementIdentityCheck::create([
+            'user_id' => $request->user()->id,
+            'grantee_id' => $grantee->id,
+            'batch_id' => $batchId,
+            'document_submission_id' => $schoolId->id,
+            'challenge_sequence' => $validated['challenge_sequence'],
+            'result' => $manualReview ? 'no_match' : 'match',
+            'distance' => $worstDistance,
+            'distances' => $distances,
+            'selfie_path' => $selfiePath,
+            'liveness_confirmed' => true,
+            'confidence_score' => $confidence,
+            'manual_review_required' => $manualReview,
+            'consent_accepted_at' => $checkedAt,
+            'checked_at' => $checkedAt,
+            'ip_address' => $request->ip(),
+        ]);
+
+        if ($manualReview) {
+            $schoolId->update([
+                'identity_review_required' => true,
+                'identity_review_reason' => 'Submission liveness failed one or more face matches — flagged for manual review.',
+                'risk_level' => 'high',
             ]);
         }
 
-        $user = $request->user();
-        if (! empty($user->security_pin)) {
-            $request->validate([
-                'pin' => ['required', 'string'],
-            ], [
-                'pin.required' => 'A Security PIN is required to confirm your submission.',
-            ]);
-
-            if (! Hash::check($request->input('pin'), $user->security_pin)) {
-                throw ValidationException::withMessages([
-                    'pin' => 'The provided Security PIN is incorrect.',
-                ]);
-            }
-        }
-
-        $identityFailed = false;
-
-        $grantee = $this->promoteDraftsAndQueuePipeline($request, $grantee, $batchId, null, $identityFailed);
+        $this->audit($request, 'identity_check_logged', $schoolId, [
+            'result' => $check->result,
+            'distances' => $distances,
+            'distance_source' => 'server',
+            'manual_review_required' => $manualReview,
+        ]);
 
         return response()->json([
-            'grantee' => $this->presentGrantee($grantee),
+            'data' => $this->presenter->identityCheck($check),
+            'grantee' => $this->presenter->grantee($grantee->fresh()),
+            'submitted' => false,
+        ]);
+    }
+
+    /**
+     * Final submit gate: all slots + Slot 1 face bind + name consistency. No submission liveness required.
+     */
+    public function confirm(
+        Request $request,
+        BatchWindowService $windows,
+        ConfirmRequirementPackageService $confirmPackage,
+    ): JsonResponse {
+        $context = $this->studentContext($request, $windows);
+        $grantee = $context['grantee'];
+        $this->assertCanMutateVault($grantee);
+        $batchId = (int) $context['window']['batch']['id'];
+
+        $result = $confirmPackage->confirm($request->user(), $grantee, $batchId, $request->ip());
+
+        return response()->json([
+            'grantee' => $this->presenter->grantee($result['grantee']),
+            'identity_check' => $result['identity_check']
+                ? $this->presenter->identityCheck($result['identity_check'])
+                : null,
+            'name_consistency' => $result['name_consistency'],
             'submitted' => true,
         ]);
     }
@@ -336,18 +617,169 @@ class RequirementVaultController extends Controller
         return $grantee->fresh();
     }
 
+    private function assertSchoolIdFaceBound(Grantee $grantee, DocumentSubmission $schoolId): void
+    {
+        $identity = GranteeIdentityProfile::query()->where('grantee_id', $grantee->id)->first();
+        if (! $identity?->isComplete()
+            || ! is_array($schoolId->face_descriptor_payload)
+            || ! is_array($identity->id_reference_face_descriptor)
+            || ! is_array($identity->onboarding_selfie_descriptor)) {
+            throw ValidationException::withMessages([
+                'face_match' => 'School ID face bind is incomplete. Re-scan Slot 1 after finishing identity onboarding.',
+            ]);
+        }
+
+        $probe = FaceDescriptorMath::normalize($schoolId->face_descriptor_payload, 'submission_face_descriptor');
+        $reference = FaceDescriptorMath::normalize(
+            $identity->id_reference_face_descriptor,
+            'id_reference_face_descriptor',
+        );
+        $selfie = FaceDescriptorMath::normalize(
+            $identity->onboarding_selfie_descriptor,
+            'onboarding_selfie_descriptor',
+        );
+        $vsReference = FaceDescriptorMath::euclidean($probe, $reference);
+        $vsSelfie = FaceDescriptorMath::euclidean($probe, $selfie);
+        $worstDistance = max($vsReference, $vsSelfie);
+
+        if (FaceDescriptorMath::isMismatch($worstDistance)) {
+            throw ValidationException::withMessages([
+                'face_match' => 'School ID face does not match onboarding reference photos. Re-scan Slot 1 before submitting.',
+            ]);
+        }
+    }
+
     /**
      * Require profile ≈ masterlist/grantee ≈ school ID OCR name.
      * Grade slip name is best-effort: soft-flag when OCR text already exists; never block if missing.
      *
      * @return array{profile: string, grantee: string, school_id: ?string, grade_slip: ?string, gradeslip_mismatch: bool}
      */
+    private function assertNameConsistency(
+        Request $request,
+        Grantee $grantee,
+        int $batchId,
+        DocumentSubmission $schoolId,
+    ): array {
+        $profileName = trim((string) $request->user()->name);
+        $granteeName = trim((string) $grantee->full_name);
+
+        if ($profileName === '' || $granteeName === '') {
+            throw ValidationException::withMessages([
+                'name_match' => 'Profile and masterlist names are required before submit.',
+            ]);
+        }
+
+        if (! $this->namesLooselyMatch($profileName, $granteeName)) {
+            throw ValidationException::withMessages([
+                'name_match' => 'Your account name does not match the CHED masterlist / grantee name.',
+            ]);
+        }
+
+        $identity = GranteeIdentityProfile::query()->where('grantee_id', $grantee->id)->first();
+        $schoolIdName = data_get($schoolId->metadata_payload, 'ocr.extracted_name')
+            ?: data_get($identity?->id_ocr_payload, 'extracted_name');
+        $schoolIdName = is_string($schoolIdName) ? trim($schoolIdName) : null;
+        if ($schoolIdName === '') {
+            $schoolIdName = null;
+        }
+
+        if ($schoolIdName !== null && ! $this->namesLooselyMatch($profileName, $schoolIdName)) {
+            throw ValidationException::withMessages([
+                'name_match' => 'School ID OCR name does not match your profile / masterlist name. Re-scan Slot 1.',
+            ]);
+        }
+
+        $gradeSlip = DocumentSubmission::query()
+            ->where('student_id', $request->user()->student_id)
+            ->where('batch_id', $batchId)
+            ->where('slot_key', self::GRADE_SLIP_SLOT)
+            ->first();
+
+        [$gradeSlipName, $gradeslipMismatch] = $this->gradeSlipNameCheck($gradeSlip, $profileName);
+        if ($gradeslipMismatch) {
+            $gradeSlip?->update([
+                'identity_review_required' => true,
+                'identity_review_reason' => 'Grade slip name (from existing OCR/text) does not match profile / masterlist.',
+                'risk_level' => 'medium',
+            ]);
+        }
+
+        return [
+            'profile' => $profileName,
+            'grantee' => $granteeName,
+            'school_id' => $schoolIdName,
+            'grade_slip' => $gradeSlipName,
+            'gradeslip_mismatch' => $gradeslipMismatch,
+        ];
+    }
 
     /**
      * Soft check only when draft already has OCR/extracted text. Missing text does not block submit.
      *
      * @return array{0: ?string, 1: bool}
      */
+    private function gradeSlipNameCheck(?DocumentSubmission $doc, string $profileName): array
+    {
+        if (! $doc) {
+            return [null, false];
+        }
+
+        $explicit = data_get($doc->metadata_payload, 'ocr.extracted_name')
+            ?: data_get($doc->ocr_payload, 'extracted_name')
+            ?: data_get($doc->ocr_payload, 'result.extracted_name');
+        if (is_string($explicit) && trim($explicit) !== '') {
+            $name = trim($explicit);
+
+            return [$name, ! $this->namesLooselyMatch($profileName, $name)];
+        }
+
+        $text = trim((string) ($doc->extracted_text ?? ''));
+        if ($text === '') {
+            $text = trim((string) data_get($doc->ocr_payload, 'result.combined_text', ''));
+        }
+        if ($text === '') {
+            return [null, false];
+        }
+
+        $haystack = $this->nameKey($text);
+        $expected = $this->nameKey($profileName);
+        if ($expected !== '' && str_contains($haystack, $expected)) {
+            return [$profileName, false];
+        }
+
+        $parts = array_values(array_filter(explode(' ', $expected), fn (string $p) => strlen($p) > 1));
+        if ($parts === []) {
+            return [null, false];
+        }
+        $hits = count(array_filter($parts, fn (string $p) => str_contains($haystack, $p)));
+        $ok = $hits >= max(2, (int) floor(count($parts) * 0.6));
+
+        return [null, ! $ok];
+    }
+
+    private function namesLooselyMatch(string $left, string $right): bool
+    {
+        $expected = $this->nameKey($left);
+        $candidate = $this->nameKey($right);
+        if ($expected === '' || $candidate === '') {
+            return false;
+        }
+        if ($expected === $candidate) {
+            return true;
+        }
+
+        $expectedParts = array_values(array_filter(explode(' ', $expected)));
+        $candidateParts = array_values(array_filter(explode(' ', $candidate)));
+        if (count($expectedParts) < 2 || count($candidateParts) < 2) {
+            return $expected === $candidate;
+        }
+
+        $overlap = count(array_intersect($expectedParts, $candidateParts));
+
+        return $overlap >= max(2, (int) floor(count($expectedParts) * 0.6));
+    }
+
     private function nameKey(string $value): string
     {
         return Str::of($value)->lower()->replaceMatches('/\s+/', ' ')->trim()->toString();
@@ -453,6 +885,7 @@ class RequirementVaultController extends Controller
         foreach (self::REQUIRED_SLOTS as $slotKey) {
             if (! in_array($slotKey, $present, true)) {
                 $missing[] = match ($slotKey) {
+                    self::SCHOOL_ID_SLOT => 'School ID',
                     self::COURSE_HISTORY_SLOT => 'Course History',
                     self::GRADE_SLIP_SLOT => 'Grade Slip',
                     self::SPECIMEN_SIGNATURES_SLOT => 'ID Back-to-Back with Specimen',
@@ -495,6 +928,7 @@ class RequirementVaultController extends Controller
 
         if (! $submission) {
             $label = match ($slotKey) {
+                self::SCHOOL_ID_SLOT => 'School ID',
                 self::COURSE_HISTORY_SLOT => 'Course History',
                 self::GRADE_SLIP_SLOT => 'Grade Slip',
                 self::SPECIMEN_SIGNATURES_SLOT => 'ID Back-to-Back with Specimen',
@@ -508,132 +942,4 @@ class RequirementVaultController extends Controller
 
         return $submission;
     }
-
-    private function presentSlots(Grantee $grantee): array
-    {
-        $rows = DocumentSubmission::query()
-            ->where('batch_id', $grantee->batch_id)
-            ->where(function ($query) use ($grantee): void {
-                $query->where('grantee_id', $grantee->id);
-                if ($grantee->student_id) {
-                    $query->orWhere('student_id', $grantee->student_id);
-                }
-            })
-            ->orderBy('id')
-            ->get();
-
-        $slots = [];
-        foreach ($rows as $item) {
-            $slotKey = (string) $item->slot_key;
-            if ($slotKey === '') {
-                continue;
-            }
-
-            try {
-                $slots[$slotKey] = $this->presentVaultDocument($item);
-            } catch (\Throwable $exception) {
-                report($exception);
-                // Keep the slot visible even if encrypted face payload cannot be decoded.
-                $slots[$slotKey] = [
-                    'id' => $item->id,
-                    'slot_key' => $slotKey,
-                    'document_type' => $item->document_type,
-                    'original_name' => $item->original_name,
-                    'secondary_original_name' => $item->secondary_original_name,
-                    'status' => $item->status,
-                    'risk_level' => $item->risk_level,
-                    'face_quality_score' => $item->face_quality_score,
-                    'identity_review_required' => (bool) $item->identity_review_required,
-                    'identity_review_reason' => $item->identity_review_reason,
-                    'review_notes' => $item->review_notes,
-                    'created_at' => $item->created_at,
-                    'file_url' => VaultFileStorage::authStudentSubmissionUrl($item, 'primary'),
-                    'secondary_file_url' => VaultFileStorage::authStudentSubmissionUrl($item, 'secondary'),
-                    'face_descriptor' => null,
-                ];
-            }
-        }
-
-        return $slots;
-    }
-
-    private function latestIdentityCheck(Grantee $grantee): ?array
-    {
-        $check = RequirementIdentityCheck::query()
-            ->where('grantee_id', $grantee->id)
-            ->where('batch_id', $grantee->batch_id)
-            ->latest('checked_at')
-            ->first();
-
-        return $check ? $this->presentIdentityCheck($check) : null;
-    }
-
-    private function presentGrantee(Grantee $grantee): array
-    {
-        return [
-            'id' => $grantee->id,
-            'student_id' => $grantee->student_id,
-            'full_name' => $grantee->full_name,
-            'submission_status' => $grantee->submission_status ?? 'not_submitted',
-            'submitted_at' => $grantee->submitted_at,
-        ];
-    }
-
-    private function presentVaultDocument(DocumentSubmission $item): array
-    {
-        return [
-            'id' => $item->id,
-            'slot_key' => $item->slot_key,
-            'document_type' => $item->document_type,
-            'original_name' => $item->original_name,
-            'secondary_original_name' => $item->secondary_original_name,
-            'status' => $item->status,
-            'risk_level' => $item->risk_level,
-            'face_quality_score' => $item->face_quality_score,
-            'identity_review_required' => $item->identity_review_required,
-            'identity_review_reason' => $item->identity_review_reason,
-            'review_notes' => $item->review_notes,
-            'created_at' => $item->created_at,
-            'file_url' => VaultFileStorage::authStudentSubmissionUrl($item, 'primary'),
-            'secondary_file_url' => VaultFileStorage::authStudentSubmissionUrl($item, 'secondary'),
-        ];
-    }
-
-    private function presentIdentityCheck(RequirementIdentityCheck $check): array
-    {
-        $selfieFilename = $check->selfie_path ? basename((string) $check->selfie_path) : null;
-
-        return [
-            'id' => $check->id,
-            'challenge_sequence' => $check->challenge_sequence,
-            'result' => $check->result,
-            'distance' => $check->distance,
-            'distances' => $check->distances,
-            'selfie_url' => $selfieFilename
-                ? VaultFileStorage::authIdentityUrl($selfieFilename)
-                : null,
-            'liveness_confirmed' => (bool) $check->liveness_confirmed,
-            'confidence_score' => $check->confidence_score,
-            'manual_review_required' => $check->manual_review_required,
-            'consent_accepted_at' => $check->consent_accepted_at,
-            'checked_at' => $check->checked_at,
-        ];
-    }
-
-    private function audit(Request $request, string $action, DocumentSubmission $submission, array $context): void
-    {
-        AuditLog::create([
-            'actor' => $request->user()->name,
-            'role' => 'Student',
-            'action' => $action,
-            'module' => 'Requirements Submission',
-            'target' => "Submission #{$submission->id}",
-            'context' => $context,
-            'ip_address' => $request->ip(),
-        ]);
-    }
-
-    /**
-     * @return array{ocr: array<string, mixed>, match: array<string, mixed>}
-     */
 }

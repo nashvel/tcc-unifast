@@ -1,0 +1,61 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ocr-outputs
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ocr-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ocr-service
+  template:
+    metadata:
+      labels:
+        app: ocr-service
+    spec:
+      containers:
+        - name: ocr-service
+          image: tcc-unifast/ocr-service:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8001
+          env:
+            - name: TESSERACT_CMD
+              value: /usr/bin/tesseract
+            - name: TESSERACT_PSM
+              value: "6"
+            - name: SAVE_DEBUG_IMAGES
+              value: "false"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8001
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          volumeMounts:
+            - name: ocr-outputs
+              mountPath: /app/outputs
+      volumes:
+        - name: ocr-outputs
+          persistentVolumeClaim:
+            claimName: ocr-outputs
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ocr-service
+spec:
+  selector:
+    app: ocr-service
+  ports:
+    - port: 8001
+      targetPort: 8001

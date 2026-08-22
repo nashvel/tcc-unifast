@@ -27,6 +27,44 @@ import { hasMockSession, setMockSession } from "@/auth/session";
 type MockResponse = { status: number; body: unknown };
 type MockHandler = (body?: string) => MockResponse;
 
+const mockSocialPosts: unknown[] = [];
+
+function socialPostTemplate(batchId?: number | null) {
+  const batch = mockBatches.find((item) => item.id === batchId) ?? mockBatches[0];
+  const deadline = batch?.submission_deadline ? new Date(batch.submission_deadline) : null;
+  const deadlineLabel = deadline ? deadline.toLocaleString() : "the deadline announced by the UniFAST/TES office";
+  const campaign = batch?.name?.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "") || "unifast_tes_announcement";
+
+  return {
+    title: `${batch?.name ?? "UniFAST TES"} Facebook Advisory`,
+    channel: "facebook",
+    campaign,
+    batch_id: batch?.id ?? null,
+    approval_mode: "approval_required",
+    scheduled_for: null,
+    message: [
+      `TCC UniFAST TES Advisory: ${batch?.name ?? "UniFAST TES"}`,
+      `Tagoloan Community College informs qualified TES grantees for ${batch?.academic_year ?? "the current application period"} ${batch?.semester ?? ""} that the student portal is ready for account access, verification, and requirements submission.`,
+      batch ? `Linked batch: ${batch.name}\nSubmission window status: ${batch.window_status}\nListed grantees: ${batch.grantees_count.toLocaleString()}` : null,
+      `Deadline: ${deadlineLabel}`,
+      "Students are advised to sign in through the official portal, review their requirements, and complete submissions before the deadline. Use only official TCC and UniFAST channels for updates.",
+      "Portal: http://localhost:5173/login",
+      "For assistance, contact the UniFAST/TES office or email no-reply@tcc-unifast.local.",
+      "#TCCUniFAST #TES #TagoloanCommunityCollege",
+    ].filter(Boolean).join("\n\n"),
+    facts: {
+      portal_url: "http://localhost:5173/login",
+      support_email: "no-reply@tcc-unifast.local",
+      deadline: batch?.submission_deadline ?? null,
+      deadline_label: deadlineLabel,
+      grantees_count: batch?.grantees_count ?? 0,
+      window_status: batch?.window_status ?? null,
+      generated_at: new Date().toISOString(),
+    },
+    batch: batch ?? null,
+  };
+}
+
 function makeUser(email: string) {
   const match = roleFromEmail[email] || roleFromEmail["admin@unifast.gov.ph"];
   return {
@@ -88,6 +126,40 @@ const handlers: Record<string, MockHandler> = {
     status: 200,
     body: { data: { ...mockBatches[0], id: 99, name: "New Batch" } },
   }),
+
+  // Social media posts
+  "GET /api/social-media-posts": () => ({
+    status: 200,
+    body: {
+      data: mockSocialPosts,
+      meta: { current_page: 1, last_page: 1, per_page: 8, total: mockSocialPosts.length, from: mockSocialPosts.length ? 1 : null, to: mockSocialPosts.length || null },
+    },
+  }),
+  "GET /api/social-media-posts/template": () => ({
+    status: 200,
+    body: { data: socialPostTemplate(mockBatches[0]?.id ?? null) },
+  }),
+  "POST /api/social-media-posts": (body) => {
+    const parsed = body ? JSON.parse(body) : {};
+    const batch = mockBatches.find((item) => item.id === parsed.batch_id) ?? null;
+    const post = {
+      ...parsed,
+      id: Date.now(),
+      status: "draft",
+      submitted_at: null,
+      n8n_request_id: null,
+      n8n_status: null,
+      error_message: null,
+      external_post_id: null,
+      external_permalink: null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      batch,
+      creator: { id: 1, name: "Office Administrator", email: "admin@unifast.gov.ph" },
+    };
+    mockSocialPosts.unshift(post);
+    return { status: 201, body: { data: post } };
+  },
 
   // Grantees
   "GET /api/grantees": () => ({
@@ -380,6 +452,13 @@ export function handleMockRequest(method: string, path: string, body?: string): 
   if (path.match(/^\/api\/document-submissions\/\d+/)) return handlers["GET /api/document-submissions/1"]?.();
   if (path.match(/^\/api\/terms\/\d+/)) return handlers["GET /api/terms/active"]?.();
   if (path.match(/^\/api\/faqs\/\d+/)) return handlers["GET /api/faqs/all"]?.();
+  if (path.startsWith("/api/social-media-posts/template") && method === "GET") {
+    const batchId = Number(new URL(`http://mock.local${path}`).searchParams.get("batch_id") || mockBatches[0]?.id);
+    return { status: 200, body: { data: socialPostTemplate(Number.isFinite(batchId) ? batchId : null) } };
+  }
+  if (path.match(/^\/api\/social-media-posts\/\d+\/dispatch/) && method === "POST") {
+    return { status: 202, body: { message: "Sent to n8n", request_id: "mock-request", data: mockSocialPosts[0] ?? {} } };
+  }
 
   return null;
 }

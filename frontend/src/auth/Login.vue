@@ -2,13 +2,13 @@
 import { onMounted, onUnmounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
-import { ArrowRight, ChevronDown, ChevronUp, Eye, EyeOff, HelpCircle, Lock, Mail, ShieldCheck, UserRound } from "lucide-vue-next";
+import { ArrowLeft, ArrowRight, ChevronDown, ChevronUp, Eye, EyeOff, HelpCircle, Lock, Mail, ShieldCheck, UserRound } from "lucide-vue-next";
 import logo from "@/assets/system-logo.webp";
 import backgroundLogo from "@/assets/auth/imresizer-TCC_UNIFAST.png";
 import studentsCutout from "@/assets/auth/Faculties_UNifast1.webp";
 import { authSession } from "@/auth/session";
 import { studentHomePath } from "@/auth/onboardingResume";
-import { login } from "@/api/auth";
+import { beginGoogleLogin, login, verifyTwoFactor } from "@/api/auth";
 import { apiFetch } from "@/api/client";
 import { useTheme } from "@/composables/useTheme";
 import LanguageSwitcher from "@/components/LanguageSwitcher.vue";
@@ -30,9 +30,13 @@ const password = ref("");
 const showPassword = ref(false);
 const showCaptchaModal = ref(false);
 const captchaCode = ref("");
+const twoFactorCode = ref("");
+const twoFactorChallenge = ref("");
+const twoFactorExpiresAt = ref("");
 const recaptcha = ref<any>(null); // Ref to reset captcha
 const error = ref("");
 const busy = ref(false);
+const isTwoFactorStep = ref(false);
 const mode = route.path.includes("forgot")
   ? "forgot"
   : route.path.includes("activate")
@@ -92,13 +96,19 @@ async function submit() {
   busy.value = true;
   error.value = "";
   try {
-    const user = await login(email.value, password.value, captchaCode.value);
+    const result = await login(email.value, password.value, captchaCode.value);
+    if ("two_factor_required" in result) {
+      twoFactorChallenge.value = result.challenge_id;
+      twoFactorExpiresAt.value = result.expires_at;
+      isTwoFactorStep.value = true;
+      showCaptchaModal.value = false;
+      return;
+    }
+
+    const user = result.user;
     // Success — close modal and navigate
     showCaptchaModal.value = false;
-    authSession.user = user;
-    authSession.loaded = true;
-    // Mid-onboarding students resume at KYC / ID scan / liveness (no reactivation).
-    await router.push(withLang(studentHomePath(user), route.query.lang));
+    await finishSignIn(user);
   } catch (exception) {
     error.value = exception instanceof Error ? exception.message : t("auth.signInFailed");
     // Reset captcha on failure since tokens are single-use
@@ -111,6 +121,42 @@ async function submit() {
   } finally {
     busy.value = false;
   }
+}
+
+async function submitTwoFactor() {
+  if (!twoFactorChallenge.value || !twoFactorCode.value.trim()) {
+    error.value = "Enter your six-digit authenticator code or a recovery code.";
+    return;
+  }
+
+  busy.value = true;
+  error.value = "";
+  try {
+    const user = await verifyTwoFactor(twoFactorChallenge.value, twoFactorCode.value);
+    await finishSignIn(user);
+  } catch (exception) {
+    error.value = exception instanceof Error ? exception.message : "Two-factor verification failed.";
+  } finally {
+    busy.value = false;
+  }
+}
+
+async function startGoogleLogin() {
+  busy.value = true;
+  error.value = "";
+  try {
+    window.location.assign(await beginGoogleLogin());
+  } catch (exception) {
+    error.value = exception instanceof Error ? exception.message : "Google sign-in is unavailable.";
+    busy.value = false;
+  }
+}
+
+async function finishSignIn(user: typeof authSession.user) {
+  if (!user) return;
+  authSession.user = user;
+  authSession.loaded = true;
+  await router.push(withLang(studentHomePath(user), route.query.lang));
 }
 
 async function quickLogin(label: string) {
@@ -130,6 +176,27 @@ function demoAccountLabel(role: string) {
 }
 
 onMounted(async () => {
+  const oauthError = route.query.oauth_error;
+  const oauth2fa = route.query.oauth_2fa;
+  if (typeof oauthError === "string") {
+    const messages: Record<string, string> = {
+      state: "Google sign-in could not be verified. Please try again.",
+      denied: "Google sign-in was cancelled.",
+      token: "Google did not complete sign-in. Please try again.",
+      email: "Google must return a verified email address.",
+      unknown: "No active UniFAST account matches that Google email.",
+      inactive: "This account cannot sign in yet. Contact the UniFAST office.",
+    };
+    error.value = messages[oauthError] ?? "Google sign-in failed.";
+  } else if (typeof oauth2fa === "string") {
+    twoFactorChallenge.value = oauth2fa;
+    twoFactorExpiresAt.value = typeof route.query.expires_at === "string" ? route.query.expires_at : "";
+    isTwoFactorStep.value = true;
+  } else if (route.query.signed_in === "google") {
+    const user = await import("@/api/auth").then((mod) => mod.fetchCurrentUser());
+    if (user) await finishSignIn(user);
+  }
+
   try {
     const termsRes = await apiFetch<{ data: Term }>("/api/terms/active");
     terms.value = termsRes.data;
@@ -207,6 +274,15 @@ onMounted(async () => {
     <main
       class="relative flex h-screen items-center justify-center overflow-hidden bg-white p-5 sm:p-6 lg:h-[80vh]"
     >
+      <RouterLink
+        :to="withLang('/', route.query.lang)"
+        class="absolute left-5 top-5 inline-flex items-center gap-2 rounded-full border border-[#e7dde0] bg-white px-3 py-2 text-xs font-black text-[#6b1020] shadow-sm transition hover:bg-[#fff9f6] sm:left-6 sm:top-6"
+        aria-label="Back to home"
+      >
+        <ArrowLeft :size="15" aria-hidden="true" />
+        Back
+      </RouterLink>
+
       <div class="absolute right-6 top-6 hidden lg:block">
         <LanguageSwitcher />
       </div>
@@ -227,7 +303,9 @@ onMounted(async () => {
 
         <h2 class="text-xl font-semibold tracking-tight text-text">
           {{
-            mode === "forgot"
+            isTwoFactorStep
+              ? "Two-factor verification"
+              : mode === "forgot"
               ? t("auth.forgotTitle")
               : mode === "activate"
                 ? t("auth.activateTitle")
@@ -236,14 +314,16 @@ onMounted(async () => {
         </h2>
         <p class="mt-1 text-sm text-text-muted">
           {{
-            mode === "login"
+            isTwoFactorStep
+              ? "Enter the code from your authenticator app to finish signing in."
+              : mode === "login"
               ? t("auth.loginDescription")
               : t("auth.emailDescription")
           }}
         </p>
 
-        <form class="mt-5 space-y-3.5">
-          <label class="block">
+        <form class="mt-5 space-y-3.5" @submit.prevent="isTwoFactorStep ? submitTwoFactor() : mode === 'login' ? openCaptchaModal() : submit()">
+          <label v-if="!isTwoFactorStep" class="block">
             <span class="mb-1.5 block text-xs font-medium text-text">{{ t("common.email") }} <b class="text-danger">*</b></span>
             <div class="relative">
               <Mail :size="17" class="absolute left-3 top-1/2 -translate-y-1/2 text-text-soft" />
@@ -255,7 +335,7 @@ onMounted(async () => {
               />
             </div>
           </label>
-          <label v-if="mode === 'login'" class="block">
+          <label v-if="mode === 'login' && !isTwoFactorStep" class="block">
             <span class="mb-1.5 block text-xs font-medium text-text"
               >{{ t("common.password") }} <b class="text-danger">*</b></span
             >
@@ -280,20 +360,58 @@ onMounted(async () => {
               </button>
             </div>
           </label>
+          <label v-if="isTwoFactorStep" class="block">
+            <span class="mb-1.5 block text-xs font-medium text-text">Authenticator code <b class="text-danger">*</b></span>
+            <div class="relative">
+              <ShieldCheck :size="17" class="absolute left-3 top-1/2 -translate-y-1/2 text-text-soft" />
+              <input
+                v-model="twoFactorCode"
+                type="text"
+                inputmode="numeric"
+                autocomplete="one-time-code"
+                placeholder="123456"
+                class="h-10 w-full rounded-md border bg-[#f1f5fb] pl-10 pr-3 text-sm text-text shadow-inner shadow-slate-200/40"
+              />
+            </div>
+            <span v-if="twoFactorExpiresAt" class="mt-1 block text-micro text-text-muted">
+              This challenge expires at {{ new Date(twoFactorExpiresAt).toLocaleTimeString() }}.
+            </span>
+          </label>
           <p v-if="error" class="text-xs text-danger mb-2">{{ error }}</p>
 
           <button
-            type="button"
+            type="submit"
             :disabled="busy"
             class="flex h-10 w-full items-center justify-center gap-2 rounded-md bg-primary text-sm font-semibold text-white shadow-sm hover:bg-primary-hover disabled:opacity-60"
-            @click="mode === 'login' ? openCaptchaModal() : submit()"
           >
-            {{ busy ? t("auth.signingIn") : mode === "login" ? t("common.signIn") : t("common.continue") }}
+            {{ busy ? t("auth.signingIn") : isTwoFactorStep ? "Verify code" : mode === "login" ? t("common.signIn") : t("common.continue") }}
             <ArrowRight :size="15" />
+          </button>
+          <button
+            v-if="mode === 'login' && !isTwoFactorStep"
+            type="button"
+            :disabled="busy"
+            class="flex h-10 w-full items-center justify-center gap-2 rounded-md border bg-white text-sm font-semibold text-text hover:bg-surface-muted disabled:opacity-60"
+            @click="startGoogleLogin"
+          >
+            <span class="grid h-5 w-5 place-items-center rounded-full border text-[11px] font-black text-[#4285f4]">G</span>
+            Continue with Google
+          </button>
+          <button
+            v-if="isTwoFactorStep"
+            type="button"
+            class="w-full rounded-md border py-2 text-sm font-medium hover:bg-surface-muted"
+            @click="
+              isTwoFactorStep = false;
+              twoFactorCode = '';
+              twoFactorChallenge = '';
+            "
+          >
+            Back to sign in
           </button>
         </form>
 
-        <div v-if="mode === 'login'" class="mt-4 flex justify-between text-xs text-primary">
+        <div v-if="mode === 'login' && !isTwoFactorStep" class="mt-4 flex justify-between text-xs text-primary">
           <RouterLink :to="withLang('/forgot-password', route.query.lang)">{{ t("auth.forgotPassword") }}</RouterLink>
           <RouterLink :to="withLang('/activate', route.query.lang)">{{ t("auth.activateAccount") }}</RouterLink>
         </div>
@@ -301,7 +419,7 @@ onMounted(async () => {
           <RouterLink :to="withLang('/login', route.query.lang)" class="text-primary">{{ t("auth.backToSignIn") }}</RouterLink>
         </div>
 
-        <div v-if="mode === 'login'" class="mt-6 border-t pt-4">
+        <div v-if="mode === 'login' && !isTwoFactorStep" class="mt-6 border-t pt-4">
           <p class="mb-2.5 text-2xs font-semibold uppercase tracking-wider text-text-soft">
             {{ t("auth.demoAccounts") }}
           </p>
@@ -327,7 +445,7 @@ onMounted(async () => {
         </div>
 
         <!-- Terms & Conditions -->
-        <div v-if="terms && mode === 'login'" class="mt-6 border-t pt-4">
+        <div v-if="terms && mode === 'login' && !isTwoFactorStep" class="mt-6 border-t pt-4">
           <button class="flex w-full items-center gap-2 text-xs font-medium text-text-muted hover:text-text" @click="showTerms = !showTerms">
             <ShieldCheck :size="14" />
             <span>{{ terms.title }} (v{{ terms.version }})</span>

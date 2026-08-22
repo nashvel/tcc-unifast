@@ -1,0 +1,29 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: migrate
+spec:
+  template:
+    metadata:
+      labels:
+        app: migrate
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: migrate
+          image: tcc-unifast/backend:local
+          imagePullPolicy: IfNotPresent
+          command: ["entrypoint"]
+          args: ["php", "artisan", "migrate", "--force"]
+          envFrom:
+            - configMapRef:
+                name: tcc-unifast-config
+            - secretRef:
+                name: tcc-unifast-secrets
+          volumeMounts:
+            - name: backend-storage
+              mountPath: /app/storage
+      volumes:
+        - name: backend-storage
+          persistentVolumeClaim:
+            claimName: backend-storage

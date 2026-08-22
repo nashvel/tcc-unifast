@@ -33,6 +33,7 @@ use App\Http\Controllers\PolicySettingsController;
 use App\Http\Controllers\PublicFormController;
 use App\Http\Controllers\RbacController;
 use App\Http\Controllers\RequirementVaultController;
+use App\Http\Controllers\SocialMediaPostController;
 use App\Http\Controllers\StudentDocumentOcrController;
 use App\Http\Controllers\StudentFaceVerificationController;
 use App\Http\Controllers\StudentKycController;
@@ -41,6 +42,7 @@ use App\Http\Controllers\StudentSettingsController;
 use App\Http\Controllers\StudentSubmissionWindowController;
 use App\Http\Controllers\SupportTicketController;
 use App\Http\Controllers\SystemHealthController;
+use App\Http\Controllers\TccPublicHomeController;
 use App\Http\Controllers\TccUnifastStudentsController;
 use App\Http\Controllers\TccUnifastSyncController;
 use App\Http\Controllers\TermController;
@@ -55,8 +57,14 @@ Route::middleware([
 ])->group(function (): void {
     Route::post('/auth/login', [AuthController::class, 'login'])
         ->middleware('throttle:'.config('services.auth.login_throttle_per_minute', 5).',1');
+    Route::post('/auth/2fa/verify', [AuthController::class, 'verifyTwoFactor'])
+        ->middleware('throttle:'.config('services.auth.login_throttle_per_minute', 5).',1');
     Route::post('/auth/refresh', [AuthController::class, 'refresh'])
         ->middleware('throttle:'.config('services.auth.refresh_throttle_per_minute', 30).',1');
+    Route::get('/auth/google/redirect', [AuthController::class, 'googleRedirect'])
+        ->middleware('throttle:20,1');
+    Route::get('/auth/google/callback', [AuthController::class, 'googleCallback'])
+        ->middleware('throttle:20,1');
     Route::get('/activation/{token}', [ActivationController::class, 'show'])->middleware('throttle:20,1');
     Route::post('/activation/{token}', [ActivationController::class, 'activate'])->middleware('throttle:10,1');
 });
@@ -64,6 +72,7 @@ Route::middleware([
 // Public content (for login page)
 Route::get('/terms/active', [TermController::class, 'active']);
 Route::get('/faqs', [FaqController::class, 'index']);
+Route::get('/public/tcc-home', TccPublicHomeController::class)->middleware('throttle:30,1');
 
 // Time-limited signed file access (no bearer token; HMAC signature required)
 Route::get('/signed/document-files/{submission}/{variant}', [DocumentFileController::class, 'showSigned'])
@@ -79,6 +88,10 @@ Route::get('/signed/identity-photos/{grantee}/{filename}', [DocumentFileControll
 Route::middleware('auth:sanctum')->group(function (): void {
     Route::get('/auth/me', [AuthController::class, 'me']);
     Route::post('/auth/logout', [AuthController::class, 'logout']);
+    Route::get('/auth/2fa', [AuthController::class, 'twoFactorStatus']);
+    Route::post('/auth/2fa/setup', [AuthController::class, 'twoFactorSetup'])->middleware('throttle:10,1');
+    Route::post('/auth/2fa/enable', [AuthController::class, 'twoFactorEnable'])->middleware('throttle:10,1');
+    Route::delete('/auth/2fa', [AuthController::class, 'twoFactorDisable'])->middleware('throttle:10,1');
 
     // Student routes
     Route::middleware('role:student')->group(function (): void {
@@ -162,12 +175,24 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('/audit-logs', [AuditEventController::class, 'index']);
 
         Route::get('/billing-reports', [BillingReportController::class, 'index']);
-        Route::post('/billing-reports', [BillingReportController::class, 'store'])->middleware('throttle:10,1');
+        Route::post('/billing-reports', [BillingReportController::class, 'store'])
+            ->middleware(['role:developer,admin,head', 'throttle:10,1']);
         Route::get('/billing-reports/{report}', [BillingReportController::class, 'show']);
         Route::get('/billing-reports/{report}/download', [BillingReportController::class, 'download']);
 
+        Route::get('/social-media-posts', [SocialMediaPostController::class, 'index']);
+        Route::get('/social-media-posts/integration-status', [SocialMediaPostController::class, 'integrationStatus']);
+        Route::get('/social-media-posts/template', [SocialMediaPostController::class, 'template']);
+        Route::post('/social-media-posts', [SocialMediaPostController::class, 'store'])->middleware('throttle:20,1');
+        Route::get('/social-media-posts/{socialMediaPost}', [SocialMediaPostController::class, 'show'])
+            ->whereNumber('socialMediaPost');
+        Route::post('/social-media-posts/{socialMediaPost}/dispatch', [SocialMediaPostController::class, 'dispatch'])
+            ->whereNumber('socialMediaPost')
+            ->middleware('throttle:10,1');
+
         Route::get('/distribution-reports', [DistributionReportController::class, 'index']);
-        Route::post('/distribution-reports', [DistributionReportController::class, 'store'])->middleware('throttle:10,1');
+        Route::post('/distribution-reports', [DistributionReportController::class, 'store'])
+            ->middleware(['role:developer,admin,head', 'throttle:10,1']);
         Route::get('/distribution-reports/{report}', [DistributionReportController::class, 'show']);
         Route::get('/distribution-reports/{report}/download', [DistributionReportController::class, 'download']);
     });
@@ -215,11 +240,6 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::put('/rbac/users/{user}/roles', [RbacController::class, 'syncUserRoles'])->middleware('throttle:30,1');
         Route::post('/rbac/check-permission', [RbacController::class, 'checkPermission'])->middleware('throttle:60,1');
 
-        Route::get('/database/tables', [DatabaseController::class, 'tables']);
-        Route::get('/database/stats', [DatabaseController::class, 'stats']);
-        Route::get('/database/tables/{table}', [DatabaseController::class, 'table']);
-        Route::get('/database/tables/{table}/rows', [DatabaseController::class, 'rows']);
-
         // Terms & Conditions management
         Route::get('/terms', [TermController::class, 'index']);
         Route::post('/terms', [TermController::class, 'store'])->middleware('throttle:20,1');
@@ -247,6 +267,12 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
         // System health telemetry
         Route::get('/system/health', [SystemHealthController::class, 'show']);
+
+        // Database viewer
+        Route::get('/database/stats', [DatabaseController::class, 'stats']);
+        Route::get('/database/tables', [DatabaseController::class, 'tables']);
+        Route::get('/database/tables/{table}', [DatabaseController::class, 'table']);
+        Route::get('/database/tables/{table}/rows', [DatabaseController::class, 'rows']);
     });
 
     // Document submission review (developer/admin/staff)

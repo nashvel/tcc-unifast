@@ -1,0 +1,400 @@
+{
+  "name": "TCC UniFAST - Facebook Social Post Publisher",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "tcc-unifast/social-posts/facebook",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "c3a6cfa4-dab3-4d01-82d3-2f7b94c9f001",
+      "name": "Laravel Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -900,
+        120
+      ],
+      "webhookId": "tcc-unifast-social-posts-facebook"
+    },
+    {
+      "parameters": {
+        "jsCode": "const incoming = $input.first().json;\nconst headers = incoming.headers || {};\nconst body = incoming.body || incoming;\n\nconst expectedSecret = $env.TCC_UNIFAST_N8N_WEBHOOK_SECRET || '';\nconst providedSecret = headers['x-tcc-unifast-key'] || headers['X-TCC-UniFAST-Key'] || headers['x-tcc-unifast-webhook-secret'] || '';\n\nif (!expectedSecret) {\n  return [{\n    json: {\n      ok: false,\n      statusCode: 500,\n      error: 'TCC_UNIFAST_N8N_WEBHOOK_SECRET is not configured in n8n.',\n      request_id: body.request_id || null\n    }\n  }];\n}\n\nif (providedSecret !== expectedSecret) {\n  return [{\n    json: {\n      ok: false,\n      statusCode: 401,\n      error: 'Invalid webhook secret.',\n      request_id: body.request_id || null\n    }\n  }];\n}\n\nif (body.event !== 'social_post_publish_requested') {\n  return [{\n    json: {\n      ok: false,\n      statusCode: 422,\n      error: `Unsupported event: ${body.event || 'missing'}`,\n      request_id: body.request_id || null\n    }\n  }];\n}\n\nconst socialPost = body.social_post || {};\nconst batch = body.batch || null;\nconst message = String(socialPost.message || '').trim();\n\nif (!message || message.length < 20) {\n  return [{\n    json: {\n      ok: false,\n      statusCode: 422,\n      error: 'Facebook message is required and must be at least 20 characters.',\n      request_id: body.request_id || null\n    }\n  }];\n}\n\nreturn [{\n  json: {\n    ok: true,\n    statusCode: 200,\n    event: body.event,\n    request_id: body.request_id,\n    requested_at: body.requested_at,\n    requested_by: body.requested_by || null,\n    social_post: socialPost,\n    batch,\n    facebook: {\n      page_id: $env.FACEBOOK_PAGE_ID || '<SET_FACEBOOK_PAGE_ID>',\n      message,\n      publish_now: !socialPost.scheduled_for,\n      scheduled_for: socialPost.scheduled_for || null,\n      // Facebook scheduled posts require a Unix timestamp. This is passed only when scheduled_for exists.\n      scheduled_publish_time: socialPost.scheduled_for ? Math.floor(new Date(socialPost.scheduled_for).getTime() / 1000) : null\n    }\n  }\n}];"
+      },
+      "id": "a11bda08-bf7d-4415-a964-115bd3d87352",
+      "name": "Validate and Normalize",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -660,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "1adbbd9f-56ec-42ec-a930-ed69099c9870",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "e90dadc1-9497-4c24-8b99-7f6f0126de02",
+      "name": "Valid Request?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -420,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { accepted: false, request_id: $json.request_id, error: $json.error } }}",
+        "options": {
+          "responseCode": "={{ $json.statusCode || 400 }}"
+        }
+      },
+      "id": "b349653f-f955-4d98-a213-a625e362da21",
+      "name": "Reject Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        -160,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { accepted: true, request_id: $json.request_id, status: 'received_by_n8n', next_step: $json.social_post.approval_mode === 'approval_required' ? 'approval_or_review_before_publish' : 'facebook_publish' } }}",
+        "options": {
+          "responseCode": 202
+        }
+      },
+      "id": "a66e04d7-6878-48c7-bef6-355c83967641",
+      "name": "Acknowledge Laravel",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        -160,
+        20
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "2b36d49d-e281-4947-98fa-f0501c59e6bd",
+              "leftValue": "={{ $json.social_post.approval_mode }}",
+              "rightValue": "pre_approved",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "f53615f0-cf81-4782-bfc7-c75620db24c8",
+      "name": "Pre-approved?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        120,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\nconst reviewText = [\n  'TCC UniFAST Facebook post is waiting for approval.',\n  '',\n  `Request ID: ${item.request_id}`,\n  `Title: ${item.social_post.title || '(untitled)'}`,\n  `Campaign: ${item.social_post.campaign || '(none)'}`,\n  `Batch: ${item.batch ? item.batch.name : '(none)'}`,\n  `Schedule: ${item.social_post.scheduled_for || 'Publish immediately after approval'}`,\n  '',\n  'Message preview:',\n  item.facebook.message\n].join('\\n');\n\nreturn [{\n  json: {\n    ...item,\n    approval_required: true,\n    review_text: reviewText,\n    manual_step: 'Review this payload, then rerun/send with social_post.approval_mode = pre_approved to publish.'\n  }\n}];"
+      },
+      "id": "d91aac91-e969-4139-a30a-ab4795d56a18",
+      "name": "Prepare Approval Review",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        390,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// This node intentionally stops auto-publishing when approval is required.\n// Connect this node to Email/Slack/Discord if your n8n instance has those credentials.\nconst item = $input.first().json;\nreturn [{\n  json: {\n    status: 'approval_required',\n    request_id: item.request_id,\n    review_text: item.review_text,\n    manual_step: item.manual_step\n  }\n}];"
+      },
+      "id": "e77989d3-1e3d-4741-b20a-b0925c71a4db",
+      "name": "Stop for Manual Approval",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ 'https://graph.facebook.com/v20.0/' + $env.FACEBOOK_PAGE_ID }}",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "fields",
+              "value": "id,name,link,picture.type(large){url},cover,followers_count,fan_count"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ 'Bearer ' + $env.FACEBOOK_PAGE_ACCESS_TOKEN }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "5a2a578e-e6a7-4a5f-af5f-cd696223185f",
+      "name": "Get Facebook Page",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        390,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://graph.facebook.com/v20.0/' + $env.FACEBOOK_PAGE_ID + '/feed' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ 'Bearer ' + $env.FACEBOOK_PAGE_ACCESS_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $('Validate and Normalize').item.json.facebook.scheduled_for ? { message: $('Validate and Normalize').item.json.facebook.message, published: false, scheduled_publish_time: $('Validate and Normalize').item.json.facebook.scheduled_publish_time } : { message: $('Validate and Normalize').item.json.facebook.message, published: true } }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "b5ab74a7-490f-472c-8f22-c74395537dd1",
+      "name": "Publish to Facebook Page",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        650,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const fb = $input.first().json;\nconst source = $('Validate and Normalize').first().json;\nconst page = $('Get Facebook Page').first().json;\nconst parts = String(fb.id || '').split('_');\nconst permalink = parts.length === 2 ? `https://www.facebook.com/${parts[0]}/posts/${parts[1]}` : null;\nconst scheduled = Boolean(source.social_post.scheduled_for);\n\nreturn [{\n  json: {\n    callback_url: source.callback?.url || `${String($env.LARAVEL_API_URL || '').replace(/\\/$/, '')}/api/integrations/n8n/social-media-posts/${source.social_post.id}/status`,\n    callback_body: {\n      request_id: source.request_id,\n      status: scheduled ? 'scheduled' : 'published',\n      external_post_id: fb.id || null,\n      external_permalink: permalink,\n      published_at: scheduled ? null : new Date().toISOString(),\n      facebook_page: {\n        id: page.id || null,\n        name: page.name || null,\n        url: page.link || null,\n        picture_url: page.picture?.data?.url || null,\n        cover_url: page.cover?.source || null,\n        followers_count: page.followers_count ?? null,\n        fan_count: page.fan_count ?? null\n      },\n      response: fb\n    }\n  }\n}];"
+      },
+      "id": "f9e1c3f2-ce1f-4466-a08c-7f5250b75b5f",
+      "name": "Format Publish Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        910,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.callback_url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-TCC-UniFAST-Endpoint-Key",
+              "value": "={{ $env.TCC_UNIFAST_SYNC_ENDPOINT_SECRET }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.callback_body }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "cc521e0d-76da-4aa1-ab7b-b4e67f215461",
+      "name": "Update Laravel with Facebook Result",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1170,
+        -80
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Laravel Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate and Normalize",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate and Normalize": {
+      "main": [
+        [
+          {
+            "node": "Valid Request?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Valid Request?": {
+      "main": [
+        [
+          {
+            "node": "Acknowledge Laravel",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reject Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Acknowledge Laravel": {
+      "main": [
+        [
+          {
+            "node": "Pre-approved?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pre-approved?": {
+      "main": [
+        [
+          {
+            "node": "Get Facebook Page",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare Approval Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Facebook Page": {
+      "main": [
+        [
+          {
+            "node": "Publish to Facebook Page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Approval Review": {
+      "main": [
+        [
+          {
+            "node": "Stop for Manual Approval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Publish to Facebook Page": {
+      "main": [
+        [
+          {
+            "node": "Format Publish Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Publish Result": {
+      "main": [
+        [
+          {
+            "node": "Update Laravel with Facebook Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Asia/Manila"
+  },
+  "versionId": "b48b33d7-d16f-4e13-b590-560751377f59",
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "description": "Import into n8n and configure TCC_UNIFAST_N8N_WEBHOOK_SECRET, FACEBOOK_PAGE_ID, FACEBOOK_PAGE_ACCESS_TOKEN, LARAVEL_API_URL, and TCC_UNIFAST_SYNC_ENDPOINT_SECRET. The workflow fetches real Facebook Page metadata, publishes/schedules the post, and calls Laravel back with the Facebook post ID, permalink, Page profile, and final status."
+  },
+  "id": "TCCUniFASTFacebookSocialPostPublisher",
+  "tags": []
+}

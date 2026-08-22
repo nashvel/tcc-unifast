@@ -19,6 +19,7 @@ import {
   IconSettings,
   IconShieldCheck,
   IconSpeakerphone,
+  IconBrandFacebook,
   IconTerminal,
   IconUpload,
   IconUserCircle,
@@ -113,6 +114,7 @@ export const staffNavigation: NavigationSection[] = [
     labelKey: "nav.communication",
     items: [
       { labelKey: "nav.announcements", path: "/app/announcements", icon: IconSpeakerphone },
+      { labelKey: "nav.socialPosts", path: "/app/social-posts", icon: IconBrandFacebook },
       { labelKey: "nav.reports", path: "/app/reports", icon: IconReportAnalytics },
       { labelKey: "nav.billing", path: "/app/billing", icon: IconFileInvoice },
       { labelKey: "nav.distributionReport", path: "/app/distribution", icon: IconReportMoney },

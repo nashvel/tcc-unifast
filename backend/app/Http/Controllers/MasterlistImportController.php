@@ -11,6 +11,8 @@ use App\Models\MasterlistImportDetectedHeader;
 use App\Models\MasterlistImportDetection;
 use App\Models\MasterlistRow;
 use App\Models\User;
+use App\Services\MasterlistImportPresenter;
+use App\Services\MasterlistImportRowValidator;
 use App\Services\MasterlistSpreadsheetParser;
 use App\Support\PaginatedJson;
 use Illuminate\Http\JsonResponse;
@@ -23,6 +25,11 @@ use Illuminate\Validation\ValidationException;
 
 class MasterlistImportController extends Controller
 {
+    public function __construct(
+        private readonly MasterlistImportPresenter $presenter,
+        private readonly MasterlistImportRowValidator $rowValidator,
+    ) {}
+
     public function index(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -40,22 +47,9 @@ class MasterlistImportController extends Controller
         }
 
         $paginator = $query->paginate($perPage);
-        $rows = collect($paginator->items())->map(fn (MasterlistImport $import) => [
-            'id' => $import->id,
-            'status' => $import->status,
-            'original_name' => $import->original_name,
-            'total_rows' => $import->total_rows,
-            'valid_rows' => $import->valid_rows,
-            'invalid_rows' => $import->invalid_rows,
-            'imported_rows' => $import->imported_rows,
-            'created_at' => $import->created_at,
-            'batch' => $import->batch ? [
-                'id' => $import->batch->id,
-                'name' => $import->batch->name,
-                'academic_year' => $import->batch->academic_year,
-                'semester' => $import->batch->semester,
-            ] : null,
-        ]);
+        $rows = collect($paginator->items())->map(
+            fn (MasterlistImport $import) => $this->presenter->listRow($import)
+        );
 
         return PaginatedJson::from($paginator, $rows->values());
     }
@@ -130,17 +124,11 @@ class MasterlistImportController extends Controller
         $validRows = 0;
         $invalidRows = 0;
 
-        $validPrograms = AcademicProgram::query()
-            ->where('is_active', true)
-            ->get()
-            ->flatMap(fn ($p) => [strtoupper($p->name), strtoupper($p->code)])
-            ->unique()
-            ->values()
-            ->toArray();
+        $validPrograms = $this->rowValidator->activePrograms();
 
         foreach ($parsedRows as $index => $row) {
-            $normalized = $this->normalizeRow($row);
-            $errors = $this->rowErrors($normalized, $seenStudentIds, $seenStudentNumbers, $validPrograms);
+            $normalized = $this->rowValidator->normalize($row);
+            $errors = $this->rowValidator->errors($normalized, $seenStudentIds, $seenStudentNumbers, $validPrograms);
             $status = $errors === [] ? 'valid' : 'invalid';
             $validRows += $status === 'valid' ? 1 : 0;
             $invalidRows += $status === 'invalid' ? 1 : 0;
@@ -181,7 +169,7 @@ class MasterlistImportController extends Controller
         abort_unless(in_array($request->user()->role, ['developer', 'admin', 'head', 'staff'], true), 403);
 
         if ($import->status === 'imported') {
-            return response()->json(['data' => $this->presentImport($import->load(['batch', 'rows']))]);
+            return response()->json(['data' => $this->presenter->import($import->load(['batch', 'rows']))]);
         }
 
         $batch = $import->batch;
@@ -235,64 +223,6 @@ class MasterlistImportController extends Controller
         ], 200);
     }
 
-    /**
-     * @param  array<string, string>  $row
-     * @return array<string, string|null>
-     */
-    private function normalizeRow(array $row): array
-    {
-        return [
-            'student_id' => $row['student_id'] ?? null,
-            'student_number' => $row['student_number'] ?? null,
-            'full_name' => $row['full_name'] ?? null,
-            'email' => $row['email'] ?? null,
-            'program' => $row['program'] ?? null,
-            'year_level' => $row['year_level'] ?? null,
-        ];
-    }
-
-    /**
-     * @param  array<string, string|null>  $row
-     * @param  list<string>  $seenStudentIds
-     * @param  list<string>  $seenStudentNumbers
-     * @param  list<string>  $validPrograms
-     * @return list<string>
-     */
-    private function rowErrors(array $row, array $seenStudentIds, array $seenStudentNumbers, array $validPrograms): array
-    {
-        $errors = [];
-        foreach (['student_id', 'full_name', 'email', 'program', 'year_level'] as $field) {
-            if (($row[$field] ?? '') === '') {
-                $errors[] = "Missing {$field}.";
-            }
-        }
-        if (($row['program'] ?? '') !== '') {
-            $progStr = strtoupper(trim($row['program']));
-            if (! in_array($progStr, $validPrograms, true)) {
-                $errors[] = 'Program not recognized in the system (Caution: update system first).';
-            }
-        }
-        if (($row['email'] ?? '') !== '' && ! filter_var($row['email'], FILTER_VALIDATE_EMAIL)) {
-            $errors[] = 'Invalid email address.';
-        }
-        if (($row['student_id'] ?? '') !== '' && in_array($row['student_id'], $seenStudentIds, true)) {
-            $errors[] = 'Duplicate student ID in file.';
-        }
-        if (($row['student_number'] ?? '') !== '' && in_array($row['student_number'], $seenStudentNumbers, true)) {
-            $errors[] = 'Duplicate student number in file.';
-        }
-        if (($row['student_id'] ?? '') !== '' && User::query()->where('student_id', $row['student_id'])->exists()) {
-            $errors[] = 'Student ID already has an account.';
-        }
-        if (($row['student_id'] ?? '') !== '' && Grantee::query()->where('student_id', $row['student_id'])->exists()) {
-            $errors[] = 'Student ID already exists in grantees.';
-        }
-        if (($row['email'] ?? '') !== '' && User::query()->where('email', $row['email'])->exists()) {
-            $errors[] = 'Email already has an account.';
-        }
-
-        return $errors;
-    }
 
     public function destroy(Request $request, MasterlistImport $import): JsonResponse
     {

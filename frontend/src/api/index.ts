@@ -7,4 +7,5 @@ export * from "./grantees";
 export * from "./academic";
 export * from "./documents";
 export * from "./masterlist";
+export * from "./socialMediaPosts";
 export * from "./audit";

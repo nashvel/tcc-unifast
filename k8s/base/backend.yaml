@@ -1,0 +1,127 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: backend-storage
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+        - name: backend
+          image: tcc-unifast/backend:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: tcc-unifast-config
+            - secretRef:
+                name: tcc-unifast-secrets
+          env:
+            - name: PORT
+              value: "8080"
+          readinessProbe:
+            tcpSocket:
+              port: 8080
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          volumeMounts:
+            - name: backend-storage
+              mountPath: /app/storage
+      volumes:
+        - name: backend-storage
+          persistentVolumeClaim:
+            claimName: backend-storage
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+spec:
+  selector:
+    app: backend
+  ports:
+    - port: 8080
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: queue
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: queue
+  template:
+    metadata:
+      labels:
+        app: queue
+    spec:
+      containers:
+        - name: queue
+          image: tcc-unifast/backend:local
+          imagePullPolicy: IfNotPresent
+          command: ["entrypoint"]
+          args: ["php", "artisan", "queue:work", "--queue=default", "--tries=3", "--timeout=120"]
+          envFrom:
+            - configMapRef:
+                name: tcc-unifast-config
+            - secretRef:
+                name: tcc-unifast-secrets
+          volumeMounts:
+            - name: backend-storage
+              mountPath: /app/storage
+      volumes:
+        - name: backend-storage
+          persistentVolumeClaim:
+            claimName: backend-storage
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: scheduler
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: scheduler
+  template:
+    metadata:
+      labels:
+        app: scheduler
+    spec:
+      containers:
+        - name: scheduler
+          image: tcc-unifast/backend:local
+          imagePullPolicy: IfNotPresent
+          command: ["entrypoint"]
+          args: ["sh", "-lc", "while true; do php artisan schedule:run --no-interaction; sleep 60; done"]
+          envFrom:
+            - configMapRef:
+                name: tcc-unifast-config
+            - secretRef:
+                name: tcc-unifast-secrets
+          volumeMounts:
+            - name: backend-storage
+              mountPath: /app/storage
+      volumes:
+        - name: backend-storage
+          persistentVolumeClaim:
+            claimName: backend-storage

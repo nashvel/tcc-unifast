@@ -27,6 +27,7 @@ class RolePermissionSeeder extends Seeder
             ['name' => 'profile.write', 'description' => 'Update own profile', 'category' => 'Profile'],
             ['name' => 'kyc.submit', 'description' => 'Submit KYC verification', 'category' => 'KYC'],
             ['name' => 'rbac.manage', 'description' => 'Manage roles and permissions', 'category' => 'RBAC'],
+            ['name' => 'view_database', 'description' => 'View allowlisted database tables', 'category' => 'Developer Tools'],
         ];
 
         $permissionModels = [];

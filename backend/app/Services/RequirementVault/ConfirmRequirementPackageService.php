@@ -1,0 +1,347 @@
+<?php
+
+namespace App\Services\RequirementVault;
+
+use App\Jobs\ProcessRequirementSubmissionPipeline;
+use App\Models\AuditLog;
+use App\Models\DocumentSubmission;
+use App\Models\Grantee;
+use App\Models\GranteeIdentityProfile;
+use App\Models\RequirementIdentityCheck;
+use App\Models\User;
+use App\Support\FaceDescriptorMath;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
+
+class ConfirmRequirementPackageService
+{
+    private const SCHOOL_ID_SLOT = 'school_id';
+
+    private const COURSE_HISTORY_SLOT = 'course_history';
+
+    private const GRADE_SLIP_SLOT = 'grade_slip';
+
+    private const SPECIMEN_SIGNATURES_SLOT = 'specimen_signatures';
+
+    /** @var list<string> */
+    private const REQUIRED_SLOTS = [
+        self::SCHOOL_ID_SLOT,
+        self::COURSE_HISTORY_SLOT,
+        self::GRADE_SLIP_SLOT,
+        self::SPECIMEN_SIGNATURES_SLOT,
+    ];
+
+    /**
+     * @return array{grantee: Grantee, identity_check: ?RequirementIdentityCheck, name_consistency: array<string, mixed>}
+     */
+    public function confirm(User $user, Grantee $grantee, int $batchId, ?string $ipAddress): array
+    {
+        $status = $grantee->submission_status ?? 'not_submitted';
+        if (in_array($status, ['docs_submitted', 'under_review', 'verified'], true)) {
+            throw ValidationException::withMessages([
+                'submission' => 'Requirements were already confirmed for this batch.',
+            ]);
+        }
+        if ($status === 'resubmission_requested') {
+            throw ValidationException::withMessages([
+                'submission' => 'Staff requested a resubmission. Resubmit only returned document(s) — use Replace then Resubmit on each returned slot.',
+            ]);
+        }
+
+        $missing = $this->missingRequiredSlotLabels((string) $user->student_id, $batchId);
+        if ($missing !== []) {
+            throw ValidationException::withMessages([
+                'submission' => 'Submit all four documents to staff before confirming. Missing: '
+                    .implode(', ', $missing).'.',
+            ]);
+        }
+
+        $schoolId = $this->requireSlot((string) $user->student_id, $batchId, self::SCHOOL_ID_SLOT);
+        $this->assertSchoolIdFaceBound($grantee, $schoolId);
+        $nameFlags = $this->assertNameConsistency($user, $grantee, $batchId, $schoolId);
+
+        $check = RequirementIdentityCheck::query()
+            ->where('grantee_id', $grantee->id)
+            ->where('batch_id', $batchId)
+            ->where('user_id', $user->id)
+            ->latest('checked_at')
+            ->first();
+
+        $identityFailed = (bool) ($check?->manual_review_required)
+            || (bool) $schoolId->identity_review_required
+            || ($nameFlags['gradeslip_mismatch'] ?? false);
+
+        $grantee = $this->promoteDraftsAndQueuePipeline($user, $grantee, $batchId, $check, $identityFailed, $ipAddress);
+
+        return [
+            'grantee' => $grantee,
+            'identity_check' => $check,
+            'name_consistency' => $nameFlags,
+        ];
+    }
+
+    public function assertSchoolIdFaceBound(Grantee $grantee, DocumentSubmission $schoolId): void
+    {
+        $identity = GranteeIdentityProfile::query()->where('grantee_id', $grantee->id)->first();
+        if (! $identity?->isComplete()
+            || ! is_array($schoolId->face_descriptor_payload)
+            || ! is_array($identity->id_reference_face_descriptor)
+            || ! is_array($identity->onboarding_selfie_descriptor)) {
+            throw ValidationException::withMessages([
+                'face_match' => 'School ID face bind is incomplete. Re-scan Slot 1 after finishing identity onboarding.',
+            ]);
+        }
+
+        $probe = FaceDescriptorMath::normalize($schoolId->face_descriptor_payload, 'submission_face_descriptor');
+        $reference = FaceDescriptorMath::normalize(
+            $identity->id_reference_face_descriptor,
+            'id_reference_face_descriptor',
+        );
+        $selfie = FaceDescriptorMath::normalize(
+            $identity->onboarding_selfie_descriptor,
+            'onboarding_selfie_descriptor',
+        );
+        $threshold = FaceDescriptorMath::threshold();
+        $vsReference = FaceDescriptorMath::euclidean($probe, $reference);
+        $vsSelfie = FaceDescriptorMath::euclidean($probe, $selfie);
+
+        if ($vsReference >= $threshold || $vsSelfie >= $threshold) {
+            throw ValidationException::withMessages([
+                'face_match' => 'School ID face does not match onboarding reference photos. Re-scan Slot 1 before submitting.',
+            ]);
+        }
+    }
+
+    /**
+     * Require profile ~= masterlist/grantee ~= school ID OCR name.
+     * Grade slip name is best-effort: soft-flag when OCR text already exists; never block if missing.
+     *
+     * @return array{profile: string, grantee: string, school_id: ?string, grade_slip: ?string, gradeslip_mismatch: bool}
+     */
+    private function assertNameConsistency(
+        User $user,
+        Grantee $grantee,
+        int $batchId,
+        DocumentSubmission $schoolId,
+    ): array {
+        $profileName = trim((string) $user->name);
+        $granteeName = trim((string) $grantee->full_name);
+
+        if ($profileName === '' || $granteeName === '') {
+            throw ValidationException::withMessages([
+                'name_match' => 'Profile and masterlist names are required before submit.',
+            ]);
+        }
+
+        if (! $this->namesLooselyMatch($profileName, $granteeName)) {
+            throw ValidationException::withMessages([
+                'name_match' => 'Your account name does not match the CHED masterlist / grantee name.',
+            ]);
+        }
+
+        $identity = GranteeIdentityProfile::query()->where('grantee_id', $grantee->id)->first();
+        $schoolIdName = data_get($schoolId->metadata_payload, 'ocr.extracted_name')
+            ?: data_get($identity?->id_ocr_payload, 'extracted_name');
+        $schoolIdName = is_string($schoolIdName) ? trim($schoolIdName) : null;
+        if ($schoolIdName === '') {
+            $schoolIdName = null;
+        }
+
+        if ($schoolIdName !== null && ! $this->namesLooselyMatch($profileName, $schoolIdName)) {
+            throw ValidationException::withMessages([
+                'name_match' => 'School ID OCR name does not match your profile / masterlist name. Re-scan Slot 1.',
+            ]);
+        }
+
+        $gradeSlip = DocumentSubmission::query()
+            ->where('student_id', $user->student_id)
+            ->where('batch_id', $batchId)
+            ->where('slot_key', self::GRADE_SLIP_SLOT)
+            ->first();
+
+        [$gradeSlipName, $gradeslipMismatch] = $this->gradeSlipNameCheck($gradeSlip, $profileName);
+        if ($gradeslipMismatch) {
+            $gradeSlip?->update([
+                'identity_review_required' => true,
+                'identity_review_reason' => 'Grade slip name (from existing OCR/text) does not match profile / masterlist.',
+                'risk_level' => 'medium',
+            ]);
+        }
+
+        return [
+            'profile' => $profileName,
+            'grantee' => $granteeName,
+            'school_id' => $schoolIdName,
+            'grade_slip' => $gradeSlipName,
+            'gradeslip_mismatch' => $gradeslipMismatch,
+        ];
+    }
+
+    /**
+     * Soft check only when draft already has OCR/extracted text. Missing text does not block submit.
+     *
+     * @return array{0: ?string, 1: bool}
+     */
+    private function gradeSlipNameCheck(?DocumentSubmission $doc, string $profileName): array
+    {
+        if (! $doc) {
+            return [null, false];
+        }
+
+        $explicit = data_get($doc->metadata_payload, 'ocr.extracted_name')
+            ?: data_get($doc->ocr_payload, 'extracted_name')
+            ?: data_get($doc->ocr_payload, 'result.extracted_name');
+        if (is_string($explicit) && trim($explicit) !== '') {
+            $name = trim($explicit);
+
+            return [$name, ! $this->namesLooselyMatch($profileName, $name)];
+        }
+
+        $text = trim((string) ($doc->extracted_text ?? ''));
+        if ($text === '') {
+            $text = trim((string) data_get($doc->ocr_payload, 'result.combined_text', ''));
+        }
+        if ($text === '') {
+            return [null, false];
+        }
+
+        $haystack = $this->nameKey($text);
+        $expected = $this->nameKey($profileName);
+        if ($expected !== '' && str_contains($haystack, $expected)) {
+            return [$profileName, false];
+        }
+
+        $parts = array_values(array_filter(explode(' ', $expected), fn (string $p) => strlen($p) > 1));
+        if ($parts === []) {
+            return [null, false];
+        }
+        $hits = count(array_filter($parts, fn (string $p) => str_contains($haystack, $p)));
+        $ok = $hits >= max(2, (int) floor(count($parts) * 0.6));
+
+        return [null, ! $ok];
+    }
+
+    private function promoteDraftsAndQueuePipeline(
+        User $user,
+        Grantee $grantee,
+        int $batchId,
+        ?RequirementIdentityCheck $check,
+        bool $identityFailed,
+        ?string $ipAddress,
+    ): Grantee {
+        DocumentSubmission::query()
+            ->where('grantee_id', $grantee->id)
+            ->where('batch_id', $batchId)
+            ->whereIn('status', ['draft', 'resubmission'])
+            ->update(['status' => 'pending_review']);
+
+        $grantee->update([
+            'submission_status' => 'docs_submitted',
+            'submitted_at' => now(),
+        ]);
+
+        ProcessRequirementSubmissionPipeline::dispatch(
+            $grantee->id,
+            $batchId,
+            $identityFailed,
+        );
+
+        AuditLog::create([
+            'actor' => $user->name,
+            'role' => 'Student',
+            'action' => 'requirements_confirmed',
+            'module' => 'Requirements Submission',
+            'target' => "Grantee #{$grantee->id}",
+            'context' => [
+                'batch_id' => $batchId,
+                'identity_result' => $check?->result,
+                'pipeline' => 'queued',
+                'via' => 'confirm',
+                'identity_failed' => $identityFailed,
+            ],
+            'ip_address' => $ipAddress,
+        ]);
+
+        return $grantee->fresh();
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function missingRequiredSlotLabels(string $studentId, int $batchId): array
+    {
+        $present = DocumentSubmission::query()
+            ->where('student_id', $studentId)
+            ->where('batch_id', $batchId)
+            ->whereIn('slot_key', self::REQUIRED_SLOTS)
+            ->pluck('slot_key')
+            ->all();
+
+        $missing = [];
+        foreach (self::REQUIRED_SLOTS as $slotKey) {
+            if (! in_array($slotKey, $present, true)) {
+                $missing[] = match ($slotKey) {
+                    self::SCHOOL_ID_SLOT => 'School ID',
+                    self::COURSE_HISTORY_SLOT => 'Course History',
+                    self::GRADE_SLIP_SLOT => 'Grade Slip',
+                    self::SPECIMEN_SIGNATURES_SLOT => '3 Specimen Signatures',
+                    default => $slotKey,
+                };
+            }
+        }
+
+        return $missing;
+    }
+
+    private function requireSlot(string $studentId, int $batchId, string $slotKey): DocumentSubmission
+    {
+        $submission = DocumentSubmission::query()
+            ->where('student_id', $studentId)
+            ->where('batch_id', $batchId)
+            ->where('slot_key', $slotKey)
+            ->first();
+
+        if (! $submission) {
+            $label = match ($slotKey) {
+                self::SCHOOL_ID_SLOT => 'School ID',
+                self::COURSE_HISTORY_SLOT => 'Course History',
+                self::GRADE_SLIP_SLOT => 'Grade Slip',
+                self::SPECIMEN_SIGNATURES_SLOT => '3 Specimen Signatures',
+                default => 'required',
+            };
+
+            throw ValidationException::withMessages([
+                'slot_key' => "Complete the {$label} slot before continuing.",
+            ]);
+        }
+
+        return $submission;
+    }
+
+    private function namesLooselyMatch(string $left, string $right): bool
+    {
+        $expected = $this->nameKey($left);
+        $candidate = $this->nameKey($right);
+        if ($expected === '' || $candidate === '') {
+            return false;
+        }
+        if ($expected === $candidate) {
+            return true;
+        }
+
+        $expectedParts = array_values(array_filter(explode(' ', $expected)));
+        $candidateParts = array_values(array_filter(explode(' ', $candidate)));
+        if (count($expectedParts) < 2 || count($candidateParts) < 2) {
+            return $expected === $candidate;
+        }
+
+        $overlap = count(array_intersect($expectedParts, $candidateParts));
+
+        return $overlap >= max(2, (int) floor(count($expectedParts) * 0.6));
+    }
+
+    private function nameKey(string $value): string
+    {
+        return Str::of($value)->lower()->replaceMatches('/\s+/', ' ')->trim()->toString();
+    }
+}
