@@ -89,6 +89,6 @@ class DatabaseViewerPolicy
 
         $user->loadMissing('roles.permissions');
 
-        return $user->hasPermission('view_database');
+        return $user->role === 'developer' || $user->hasPermission('view_database');
     }
 }
