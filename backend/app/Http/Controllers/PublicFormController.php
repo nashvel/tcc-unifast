@@ -92,24 +92,24 @@ class PublicFormController extends Controller
     private function presentPublicSchema(Form $form): array
     {
         return [
-            'id'          => $form->id,
-            'title'       => $form->title,
+            'id' => $form->id,
+            'title' => $form->title,
             'description' => $form->description,
-            'closes_at'   => $form->closes_at?->toISOString(),
-            'fields'      => $form->fields->map(fn (FormField $f) => [
-                'id'             => $f->id,
-                'label'          => $f->label,
-                'field_name'     => $f->field_name,
-                'field_type'     => $f->field_type,
-                'placeholder'    => $f->placeholder,
-                'options'        => $f->options,
-                'is_required'    => $f->is_required,
-                'min_value'      => $f->min_value,
-                'max_value'      => $f->max_value,
-                'min_length'     => $f->min_length,
-                'max_length'     => $f->max_length,
+            'closes_at' => $form->closes_at?->toISOString(),
+            'fields' => $form->fields->map(fn (FormField $f) => [
+                'id' => $f->id,
+                'label' => $f->label,
+                'field_name' => $f->field_name,
+                'field_type' => $f->field_type,
+                'placeholder' => $f->placeholder,
+                'options' => $f->options,
+                'is_required' => $f->is_required,
+                'min_value' => $f->min_value,
+                'max_value' => $f->max_value,
+                'min_length' => $f->min_length,
+                'max_length' => $f->max_length,
                 'accepted_types' => $f->accepted_types,
-                'max_file_size'  => $f->max_file_size,
+                'max_file_size' => $f->max_file_size,
             ])->values(),
         ];
     }

@@ -157,7 +157,7 @@ class ActivationTestGranteesSeeder extends Seeder
 
             $url = $frontend.'/activate/'.$plainToken.'?lang=en';
             $lines[] = sprintf(
-                "%s | student_id=%s | email=%s | grantee_id=%d",
+                '%s | student_id=%s | email=%s | grantee_id=%d',
                 $row['full_name'],
                 $row['student_id'],
                 $row['email'],

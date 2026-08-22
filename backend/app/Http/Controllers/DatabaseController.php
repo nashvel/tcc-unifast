@@ -17,7 +17,7 @@ class DatabaseController extends Controller
 
         foreach ($tables as $tableInfo) {
             $table = is_array($tableInfo) ? ($tableInfo['name'] ?? null) : (is_object($tableInfo) ? ($tableInfo->name ?? null) : (string) $tableInfo);
-            if (!$table || in_array($table, $seen, true)) {
+            if (! $table || in_array($table, $seen, true)) {
                 continue;
             }
             $seen[] = $table;
@@ -44,7 +44,7 @@ class DatabaseController extends Controller
         $totalTables = count($tableData);
         $largest = null;
         foreach ($tableData as $t) {
-            if (!$largest || $t['rows'] > $largest['rows']) {
+            if (! $largest || $t['rows'] > $largest['rows']) {
                 $largest = $t;
             }
         }
@@ -62,7 +62,7 @@ class DatabaseController extends Controller
 
     public function table(string $table): JsonResponse
     {
-        if (!Schema::hasTable($table)) {
+        if (! Schema::hasTable($table)) {
             return response()->json(['message' => "Table '{$table}' not found."], 404);
         }
 
@@ -95,7 +95,7 @@ class DatabaseController extends Controller
 
     public function rows(Request $request, string $table): JsonResponse
     {
-        if (!Schema::hasTable($table)) {
+        if (! Schema::hasTable($table)) {
             return response()->json(['message' => "Table '{$table}' not found."], 404);
         }
 
@@ -155,7 +155,7 @@ class DatabaseController extends Controller
 
         foreach ($tables as $tableInfo) {
             $table = is_array($tableInfo) ? ($tableInfo['name'] ?? null) : (is_object($tableInfo) ? ($tableInfo->name ?? null) : (string) $tableInfo);
-            if (!$table || in_array($table, $seen, true)) {
+            if (! $table || in_array($table, $seen, true)) {
                 continue;
             }
             $seen[] = $table;

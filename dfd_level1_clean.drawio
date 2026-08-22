@@ -1,0 +1,278 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxGraphModel dx="1600" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2400" pageHeight="3200" math="0" shadow="0">
+  <root>
+    <mxCell id="0" />
+    <mxCell id="1" parent="0" />
+
+    <!-- ==================== EXTERNAL ENTITIES ==================== -->
+    <mxCell id="E_Admin_1" value="Admin" style="whiteSpace=wrap;html=1;fontSize=12;fontStyle=1;fillColor=#fff2cc;strokeColor=#000000;" vertex="1" parent="1">
+      <mxGeometry x="60" y="80" width="130" height="65" as="geometry" />
+    </mxCell>
+    <mxCell id="E_Admin_2" value="Admin" style="whiteSpace=wrap;html=1;fontSize=12;fontStyle=1;fillColor=#fff2cc;strokeColor=#000000;" vertex="1" parent="1">
+      <mxGeometry x="60" y="250" width="130" height="65" as="geometry" />
+    </mxCell>
+    <mxCell id="E_Grantee_1" value="Grantee" style="whiteSpace=wrap;html=1;fontSize=12;fontStyle=1;fillColor=#fff2cc;strokeColor=#000000;" vertex="1" parent="1">
+      <mxGeometry x="60" y="435" width="130" height="65" as="geometry" />
+    </mxCell>
+    <mxCell id="E_Grantee_2" value="Grantee" style="whiteSpace=wrap;html=1;fontSize=12;fontStyle=1;fillColor=#fff2cc;strokeColor=#000000;" vertex="1" parent="1">
+      <mxGeometry x="60" y="615" width="130" height="65" as="geometry" />
+    </mxCell>
+    <mxCell id="E_Grantee_3" value="Grantee" style="whiteSpace=wrap;html=1;fontSize=12;fontStyle=1;fillColor=#fff2cc;strokeColor=#000000;" vertex="1" parent="1">
+      <mxGeometry x="60" y="1130" width="130" height="65" as="geometry" />
+    </mxCell>
+    <mxCell id="E_Admin_3" value="Admin" style="whiteSpace=wrap;html=1;fontSize=12;fontStyle=1;fillColor=#fff2cc;strokeColor=#000000;" vertex="1" parent="1">
+      <mxGeometry x="60" y="1330" width="130" height="65" as="geometry" />
+    </mxCell>
+
+    <mxCell id="E_Staff_1" value="Staff" style="whiteSpace=wrap;html=1;fontSize=12;fontStyle=1;fillColor=#fff2cc;strokeColor=#000000;" vertex="1" parent="1">
+      <mxGeometry x="1160" y="435" width="130" height="65" as="geometry" />
+    </mxCell>
+    <mxCell id="E_Staff_2" value="Staff" style="whiteSpace=wrap;html=1;fontSize=12;fontStyle=1;fillColor=#fff2cc;strokeColor=#000000;" vertex="1" parent="1">
+      <mxGeometry x="1160" y="615" width="130" height="65" as="geometry" />
+    </mxCell>
+    <mxCell id="E_Staff_3" value="Staff" style="whiteSpace=wrap;html=1;fontSize=12;fontStyle=1;fillColor=#fff2cc;strokeColor=#000000;" vertex="1" parent="1">
+      <mxGeometry x="1160" y="795" width="130" height="65" as="geometry" />
+    </mxCell>
+
+
+    <!-- ==================== PROCESSES (GANE & SARSON ROUNDED DIVIDED) ==================== -->
+    <!-- 1.0 -->
+    <mxCell id="P1_box" value="User and Access&#xa;Management" style="swimlane;whiteSpace=wrap;html=1;fontSize=11;fontStyle=1;fillColor=#ffffff;strokeColor=#000000;startSize=26;collapsible=0;rounded=1;arcSize=14;" vertex="1" parent="1">
+      <mxGeometry x="490" y="75" width="220" height="75" as="geometry" />
+    </mxCell>
+    <mxCell id="P1_num" value="1.0" style="text;html=1;align=center;verticalAlign=middle;fontSize=11;fontStyle=1;fillColor=#ffe599;strokeColor=#000000;" vertex="1" parent="P1_box">
+      <mxGeometry x="0" y="0" width="220" height="26" as="geometry" />
+    </mxCell>
+
+    <!-- 2.0 -->
+    <mxCell id="P2_box" value="Grantee Masterlist and&#xa;Batch Management" style="swimlane;whiteSpace=wrap;html=1;fontSize=11;fontStyle=1;fillColor=#ffffff;strokeColor=#000000;startSize=26;collapsible=0;rounded=1;arcSize=14;" vertex="1" parent="1">
+      <mxGeometry x="490" y="245" width="220" height="75" as="geometry" />
+    </mxCell>
+    <mxCell id="P2_num" value="2.0" style="text;html=1;align=center;verticalAlign=middle;fontSize=11;fontStyle=1;fillColor=#ffe599;strokeColor=#000000;" vertex="1" parent="P2_box">
+      <mxGeometry x="0" y="0" width="220" height="26" as="geometry" />
+    </mxCell>
+
+    <!-- 3.0 -->
+    <mxCell id="P3_box" value="Grantee Onboarding &amp;&#xa;Identity Verification" style="swimlane;whiteSpace=wrap;html=1;fontSize=11;fontStyle=1;fillColor=#ffffff;strokeColor=#000000;startSize=26;collapsible=0;rounded=1;arcSize=14;" vertex="1" parent="1">
+      <mxGeometry x="490" y="430" width="220" height="75" as="geometry" />
+    </mxCell>
+    <mxCell id="P3_num" value="3.0" style="text;html=1;align=center;verticalAlign=middle;fontSize=11;fontStyle=1;fillColor=#ffe599;strokeColor=#000000;" vertex="1" parent="P3_box">
+      <mxGeometry x="0" y="0" width="220" height="26" as="geometry" />
+    </mxCell>
+
+    <!-- 4.0 -->
+    <mxCell id="P4_box" value="Document Submission&#xa;&amp; Review" style="swimlane;whiteSpace=wrap;html=1;fontSize=11;fontStyle=1;fillColor=#ffffff;strokeColor=#000000;startSize=26;collapsible=0;rounded=1;arcSize=14;" vertex="1" parent="1">
+      <mxGeometry x="490" y="610" width="220" height="75" as="geometry" />
+    </mxCell>
+    <mxCell id="P4_num" value="4.0" style="text;html=1;align=center;verticalAlign=middle;fontSize=11;fontStyle=1;fillColor=#ffe599;strokeColor=#000000;" vertex="1" parent="P4_box">
+      <mxGeometry x="0" y="0" width="220" height="26" as="geometry" />
+    </mxCell>
+
+    <!-- 5.0 -->
+    <mxCell id="P5_box" value="Eligibility Assessment" style="swimlane;whiteSpace=wrap;html=1;fontSize=11;fontStyle=1;fillColor=#ffffff;strokeColor=#000000;startSize=26;collapsible=0;rounded=1;arcSize=14;" vertex="1" parent="1">
+      <mxGeometry x="490" y="790" width="220" height="75" as="geometry" />
+    </mxCell>
+    <mxCell id="P5_num" value="5.0" style="text;html=1;align=center;verticalAlign=middle;fontSize=11;fontStyle=1;fillColor=#ffe599;strokeColor=#000000;" vertex="1" parent="P5_box">
+      <mxGeometry x="0" y="0" width="220" height="26" as="geometry" />
+    </mxCell>
+
+    <!-- 6.0 -->
+    <mxCell id="P6_box" value="Form and Survey&#xa;Management" style="swimlane;whiteSpace=wrap;html=1;fontSize=11;fontStyle=1;fillColor=#ffffff;strokeColor=#000000;startSize=26;collapsible=0;rounded=1;arcSize=14;" vertex="1" parent="1">
+      <mxGeometry x="490" y="960" width="220" height="75" as="geometry" />
+    </mxCell>
+    <mxCell id="P6_num" value="6.0" style="text;html=1;align=center;verticalAlign=middle;fontSize=11;fontStyle=1;fillColor=#ffe599;strokeColor=#000000;" vertex="1" parent="P6_box">
+      <mxGeometry x="0" y="0" width="220" height="26" as="geometry" />
+    </mxCell>
+
+    <!-- 7.0 -->
+    <mxCell id="P7_box" value="Notification Management" style="swimlane;whiteSpace=wrap;html=1;fontSize=11;fontStyle=1;fillColor=#ffffff;strokeColor=#000000;startSize=26;collapsible=0;rounded=1;arcSize=14;" vertex="1" parent="1">
+      <mxGeometry x="490" y="1125" width="220" height="75" as="geometry" />
+    </mxCell>
+    <mxCell id="P7_num" value="7.0" style="text;html=1;align=center;verticalAlign=middle;fontSize=11;fontStyle=1;fillColor=#ffe599;strokeColor=#000000;" vertex="1" parent="P7_box">
+      <mxGeometry x="0" y="0" width="220" height="26" as="geometry" />
+    </mxCell>
+
+    <!-- 8.0 -->
+    <mxCell id="P8_box" value="Reporting and Audit" style="swimlane;whiteSpace=wrap;html=1;fontSize=11;fontStyle=1;fillColor=#ffffff;strokeColor=#000000;startSize=26;collapsible=0;rounded=1;arcSize=14;" vertex="1" parent="1">
+      <mxGeometry x="490" y="1325" width="220" height="75" as="geometry" />
+    </mxCell>
+    <mxCell id="P8_num" value="8.0" style="text;html=1;align=center;verticalAlign=middle;fontSize=11;fontStyle=1;fillColor=#ffe599;strokeColor=#000000;" vertex="1" parent="P8_box">
+      <mxGeometry x="0" y="0" width="220" height="26" as="geometry" />
+    </mxCell>
+
+
+    <!-- ==================== DATA STORES ==================== -->
+    <!-- D1 -->
+    <mxCell id="D1_tag" value="D1" style="whiteSpace=wrap;html=1;fontSize=11;fontStyle=1;fillColor=#cccccc;strokeColor=#000000;" vertex="1" parent="1">
+      <mxGeometry x="860" y="75" width="35" height="36" as="geometry" />
+    </mxCell>
+    <mxCell id="D1_body" value="User Account Records" style="whiteSpace=wrap;html=1;fontSize=11;align=left;spacingLeft=8;fillColor=#fff2cc;strokeColor=#000000;" vertex="1" parent="1">
+      <mxGeometry x="895" y="75" width="210" height="36" as="geometry" />
+    </mxCell>
+
+    <!-- D3 Top -->
+    <mxCell id="D3a_tag" value="D3" style="whiteSpace=wrap;html=1;fontSize=11;fontStyle=1;fillColor=#cccccc;strokeColor=#000000;" vertex="1" parent="1">
+      <mxGeometry x="860" y="120" width="35" height="36" as="geometry" />
+    </mxCell>
+    <mxCell id="D3a_body" value="Batch &amp; Program Records" style="whiteSpace=wrap;html=1;fontSize=11;align=left;spacingLeft=8;fillColor=#fff2cc;strokeColor=#000000;" vertex="1" parent="1">
+      <mxGeometry x="895" y="120" width="210" height="36" as="geometry" />
+    </mxCell>
+
+    <!-- D2 -->
+    <mxCell id="D2_tag" value="D2" style="whiteSpace=wrap;html=1;fontSize=11;fontStyle=1;fillColor=#cccccc;strokeColor=#000000;" vertex="1" parent="1">
+      <mxGeometry x="860" y="245" width="35" height="36" as="geometry" />
+    </mxCell>
+    <mxCell id="D2_body" value="Grantee Records" style="whiteSpace=wrap;html=1;fontSize=11;align=left;spacingLeft=8;fillColor=#fff2cc;strokeColor=#000000;" vertex="1" parent="1">
+      <mxGeometry x="895" y="245" width="210" height="36" as="geometry" />
+    </mxCell>
+
+    <!-- D3 Mid -->
+    <mxCell id="D3b_tag" value="D3" style="whiteSpace=wrap;html=1;fontSize=11;fontStyle=1;fillColor=#cccccc;strokeColor=#000000;" vertex="1" parent="1">
+      <mxGeometry x="860" y="290" width="35" height="36" as="geometry" />
+    </mxCell>
+    <mxCell id="D3b_body" value="Batch &amp; Program Records" style="whiteSpace=wrap;html=1;fontSize=11;align=left;spacingLeft=8;fillColor=#fff2cc;strokeColor=#000000;" vertex="1" parent="1">
+      <mxGeometry x="895" y="290" width="210" height="36" as="geometry" />
+    </mxCell>
+
+    <!-- D4 -->
+    <mxCell id="D4_tag" value="D4" style="whiteSpace=wrap;html=1;fontSize=11;fontStyle=1;fillColor=#cccccc;strokeColor=#000000;" vertex="1" parent="1">
+      <mxGeometry x="860" y="430" width="35" height="36" as="geometry" />
+    </mxCell>
+    <mxCell id="D4_body" value="Identity &amp; Biometric Records" style="whiteSpace=wrap;html=1;fontSize=11;align=left;spacingLeft=8;fillColor=#fff2cc;strokeColor=#000000;" vertex="1" parent="1">
+      <mxGeometry x="895" y="430" width="210" height="36" as="geometry" />
+    </mxCell>
+
+    <!-- D5 -->
+    <mxCell id="D5_tag" value="D5" style="whiteSpace=wrap;html=1;fontSize=11;fontStyle=1;fillColor=#cccccc;strokeColor=#000000;" vertex="1" parent="1">
+      <mxGeometry x="860" y="610" width="35" height="36" as="geometry" />
+    </mxCell>
+    <mxCell id="D5_body" value="Document Submission Records" style="whiteSpace=wrap;html=1;fontSize=11;align=left;spacingLeft=8;fillColor=#fff2cc;strokeColor=#000000;" vertex="1" parent="1">
+      <mxGeometry x="895" y="610" width="210" height="36" as="geometry" />
+    </mxCell>
+
+    <!-- D6 -->
+    <mxCell id="D6_tag" value="D6" style="whiteSpace=wrap;html=1;fontSize=11;fontStyle=1;fillColor=#cccccc;strokeColor=#000000;" vertex="1" parent="1">
+      <mxGeometry x="860" y="790" width="35" height="36" as="geometry" />
+    </mxCell>
+    <mxCell id="D6_body" value="Eligibility Records" style="whiteSpace=wrap;html=1;fontSize=11;align=left;spacingLeft=8;fillColor=#fff2cc;strokeColor=#000000;" vertex="1" parent="1">
+      <mxGeometry x="895" y="790" width="210" height="36" as="geometry" />
+    </mxCell>
+
+    <!-- D7 -->
+    <mxCell id="D7_tag" value="D7" style="whiteSpace=wrap;html=1;fontSize=11;fontStyle=1;fillColor=#cccccc;strokeColor=#000000;" vertex="1" parent="1">
+      <mxGeometry x="860" y="960" width="35" height="36" as="geometry" />
+    </mxCell>
+    <mxCell id="D7_body" value="Form &amp; Survey Records" style="whiteSpace=wrap;html=1;fontSize=11;align=left;spacingLeft=8;fillColor=#fff2cc;strokeColor=#000000;" vertex="1" parent="1">
+      <mxGeometry x="895" y="960" width="210" height="36" as="geometry" />
+    </mxCell>
+
+    <!-- D8 -->
+    <mxCell id="D8_tag" value="D8" style="whiteSpace=wrap;html=1;fontSize=11;fontStyle=1;fillColor=#cccccc;strokeColor=#000000;" vertex="1" parent="1">
+      <mxGeometry x="860" y="1225" width="35" height="36" as="geometry" />
+    </mxCell>
+    <mxCell id="D8_body" value="Audit &amp; Report Records" style="whiteSpace=wrap;html=1;fontSize=11;align=left;spacingLeft=8;fillColor=#fff2cc;strokeColor=#000000;" vertex="1" parent="1">
+      <mxGeometry x="895" y="1225" width="210" height="36" as="geometry" />
+    </mxCell>
+
+
+    <!-- ==================== INTER-PROCESS FLOWS (CENTRAL SPINE) ==================== -->
+    <mxCell id="fp_2_3" value="Grantee Activation Info" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=9;fontStyle=1;strokeColor=#7030a0;fontColor=#7030a0;" edge="1" source="P2_box" target="P3_box" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="fp_3_4" value="Verified Profile Info" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=9;fontStyle=1;strokeColor=#7030a0;fontColor=#7030a0;" edge="1" source="P3_box" target="P4_box" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="fp_4_5" value="Reviewed Document Records" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=9;fontStyle=1;strokeColor=#7030a0;fontColor=#7030a0;" edge="1" source="P4_box" target="P5_box" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="fp_5_8" value="Eligibility Assessment Results" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=9;fontStyle=1;strokeColor=#7030a0;fontColor=#7030a0;" edge="1" source="P5_box" target="P8_box" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <Array points="450,825;450,1350"/>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="fp_2_7" value="Grantee Invitation Info" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=9;fontStyle=1;strokeColor=#7030a0;fontColor=#7030a0;" edge="1" source="P2_box" target="P7_box" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <Array points="430,290;430,1140"/>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="fp_3_7" value="Identity Verification Status" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=9;fontStyle=1;strokeColor=#7030a0;fontColor=#7030a0;" edge="1" source="P3_box" target="P7_box" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <Array points="410,470;410,1160"/>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="fp_4_7" value="Document Review Results" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=9;fontStyle=1;strokeColor=#7030a0;fontColor=#7030a0;" edge="1" source="P4_box" target="P7_box" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <Array points="390,650;390,1180"/>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="fp_5_7" value="Eligibility Results" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=9;fontStyle=1;strokeColor=#7030a0;fontColor=#7030a0;" edge="1" source="P5_box" target="P7_box" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="fp_6_7" value="Form Assignment Info" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=9;fontStyle=1;strokeColor=#7030a0;fontColor=#7030a0;" edge="1" source="P6_box" target="P7_box" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+
+    <!-- ==================== FLOWS: ADMIN / GRANTEE ==================== -->
+    <mxCell id="f_a1_p1" value="User Account &amp; Role Info" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=9;" edge="1" source="E_Admin_1" target="P1_box" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="f_a1_p1_2" value="Policy &amp; Terms Config" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=9;" edge="1" source="E_Admin_1" target="P1_box" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <Array points="340,125;340,125"/>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="f_a2_p2" value="Grantee Masterlist" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=9;" edge="1" source="E_Admin_2" target="P2_box" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="f_a2_p2_2" value="Batch Activation Config" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=9;" edge="1" source="E_Admin_2" target="P2_box" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <Array points="340,295;340,295"/>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="f_g1_p3" value="Activation Token &amp; KYC" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=9;" edge="1" source="E_Grantee_1" target="P3_box" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="f_g1_p3_2" value="ID Scan, Liveness &amp; PIN" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=9;" edge="1" source="E_Grantee_1" target="P3_box" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <Array points="340,480;340,480"/>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="f_g2_p4" value="Academic Documents" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=9;" edge="1" source="E_Grantee_2" target="P4_box" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="f_g2_p4_2" value="Vault Confirmation &amp; Resubmission" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=9;" edge="1" source="E_Grantee_2" target="P4_box" parent="1">
+      <mxGeometry relative="1" as="geometry">
+        <Array points="340,660;340,660"/>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="f_p7_g3" value="Account Activation, Status &amp; Alerts" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=9;" edge="1" source="P7_box" target="E_Grantee_3" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="f_p8_a3" value="Billing, Audit &amp; Progress Reports" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=9;" edge="1" source="P8_box" target="E_Admin_3" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+
+    <!-- ==================== FLOWS: DATA STORES ==================== -->
+    <mxCell id="f_p1_d1" value="User Account Data" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=9;" edge="1" source="P1_box" target="D1_tag" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="f_p1_d3" value="Policy &amp; Terms Data" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=9;" edge="1" source="P1_box" target="D3a_tag" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="f_p2_d2" value="Grantee Profile Info" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=9;" edge="1" source="P2_box" target="D2_tag" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="f_p2_d3" value="Batch &amp; Program Info" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=9;" edge="1" source="P2_box" target="D3b_tag" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="f_p3_d4" value="Identity &amp; Biometric Data" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=9;" edge="1" source="P3_box" target="D4_tag" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="f_p4_d5" value="Document &amp; OCR Data" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=9;" edge="1" source="P4_box" target="D5_tag" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="f_p5_d6" value="Eligibility Assessment Data" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=9;" edge="1" source="P5_box" target="D6_tag" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="f_p6_d7" value="Form Definitions &amp; Responses" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=9;" edge="1" source="P6_box" target="D7_tag" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="f_p7_d8" value="Notification Log" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=9;" edge="1" source="P7_box" target="D8_tag" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="f_p8_d8" value="Audit Events &amp; Reports" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=9;" edge="1" source="P8_box" target="D8_tag" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+
+    <!-- ==================== FLOWS: STAFF ==================== -->
+    <mxCell id="f_p3_s1" value="Identity Photos for Review" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=9;" edge="1" source="P3_box" target="E_Staff_1" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="f_s1_p3" value="Biometric Verification Decision" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=9;" edge="1" source="E_Staff_1" target="P3_box" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="f_p4_s2" value="Submitted Grantee Documents" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=9;" edge="1" source="P4_box" target="E_Staff_2" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="f_s2_p4" value="Approval / Return Decision" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=9;" edge="1" source="E_Staff_2" target="P4_box" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="f_p5_s3" value="Risk Assessment &amp; Status" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=9;" edge="1" source="P5_box" target="E_Staff_3" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+  </root>
+</mxGraphModel>

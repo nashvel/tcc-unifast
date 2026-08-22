@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Form;
 use App\Models\FormField;
-use App\Http\Controllers\FormResponseController;
 use App\Services\FormSecurityService;
 use App\Services\FormSubmissionService;
 use Illuminate\Http\JsonResponse;
@@ -24,7 +23,7 @@ class GranteeFormController extends Controller
      */
     public function assigned(Request $request): JsonResponse
     {
-        $user    = $request->user();
+        $user = $request->user();
         $grantee = $user->grantee;
 
         $query = Form::withCount('responses')
@@ -35,7 +34,7 @@ class GranteeFormController extends Controller
                 // Forms assigned to the grantee's specific batch
                 if ($grantee?->batch_id) {
                     $q->where('batch_id', $grantee->batch_id)
-                      ->orWhereNull('batch_id'); // or forms without batch restriction
+                        ->orWhereNull('batch_id'); // or forms without batch restriction
                 } else {
                     $q->whereNull('batch_id');
                 }
@@ -58,7 +57,7 @@ class GranteeFormController extends Controller
     {
         abort_if($id < 1, 400, 'Invalid form ID.');
 
-        $user    = $request->user();
+        $user = $request->user();
         $grantee = $user->grantee;
 
         // Always return 403 for private forms that fail access — never 404
@@ -92,25 +91,25 @@ class GranteeFormController extends Controller
 
         return response()->json([
             'data' => [
-                'id'               => $form->id,
-                'title'            => $form->title,
-                'description'      => $form->description,
-                'closes_at'        => $form->closes_at?->toISOString(),
+                'id' => $form->id,
+                'title' => $form->title,
+                'description' => $form->description,
+                'closes_at' => $form->closes_at?->toISOString(),
                 'already_submitted' => $alreadySubmitted,
-                'fields'           => $form->fields->map(fn (FormField $f) => [
-                    'id'             => $f->id,
-                    'label'          => $f->label,
-                    'field_name'     => $f->field_name,
-                    'field_type'     => $f->field_type,
-                    'placeholder'    => $f->placeholder,
-                    'options'        => $f->options,
-                    'is_required'    => $f->is_required,
-                    'min_value'      => $f->min_value,
-                    'max_value'      => $f->max_value,
-                    'min_length'     => $f->min_length,
-                    'max_length'     => $f->max_length,
+                'fields' => $form->fields->map(fn (FormField $f) => [
+                    'id' => $f->id,
+                    'label' => $f->label,
+                    'field_name' => $f->field_name,
+                    'field_type' => $f->field_type,
+                    'placeholder' => $f->placeholder,
+                    'options' => $f->options,
+                    'is_required' => $f->is_required,
+                    'min_value' => $f->min_value,
+                    'max_value' => $f->max_value,
+                    'min_length' => $f->min_length,
+                    'max_length' => $f->max_length,
                     'accepted_types' => $f->accepted_types,
-                    'max_file_size'  => $f->max_file_size,
+                    'max_file_size' => $f->max_file_size,
                 ])->values(),
             ],
         ]);
@@ -124,7 +123,7 @@ class GranteeFormController extends Controller
     {
         abort_if($id < 1, 400, 'Invalid form ID.');
 
-        $user    = $request->user();
+        $user = $request->user();
         $grantee = $user->grantee;
 
         $form = Form::with('fields')->find($id);
@@ -172,13 +171,13 @@ class GranteeFormController extends Controller
             : false;
 
         return [
-            'id'               => $form->id,
-            'title'            => $form->title,
-            'description'      => $form->description,
-            'closes_at'        => $form->closes_at?->toISOString(),
-            'is_closed'        => $form->closes_at?->isPast() ?? false,
+            'id' => $form->id,
+            'title' => $form->title,
+            'description' => $form->description,
+            'closes_at' => $form->closes_at?->toISOString(),
+            'is_closed' => $form->closes_at?->isPast() ?? false,
             'already_submitted' => $alreadySubmitted,
-            'responses_count'  => $form->responses_count ?? 0,
+            'responses_count' => $form->responses_count ?? 0,
         ];
     }
 }

@@ -11,10 +11,10 @@ return new class extends Migration
     {
         Schema::table('form_fields', function (Blueprint $table): void {
             $table->foreignId('section_id')
-                  ->nullable()
-                  ->after('form_id')
-                  ->constrained('form_sections')
-                  ->nullOnDelete();
+                ->nullable()
+                ->after('form_id')
+                ->constrained('form_sections')
+                ->nullOnDelete();
         });
 
         // For each form that already has fields, create a default "General" section
@@ -26,8 +26,8 @@ return new class extends Migration
 
         foreach ($formIds as $formId) {
             $sectionId = DB::table('form_sections')->insertGetId([
-                'form_id'    => $formId,
-                'title'      => 'General',
+                'form_id' => $formId,
+                'title' => 'General',
                 'description' => null,
                 'sort_order' => 0,
                 'created_at' => now(),

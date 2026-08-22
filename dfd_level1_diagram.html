@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DFD Level 1 - UniFAST TES Grantee Management System (Clean Vertical Layout)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body {
+            background-color: #f0f3f8;
+            color: #222;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            background: white;
+            padding: 16px 32px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            max-width: 1700px;
+            width: 100%;
+        }
+        .header h1 {
+            font-size: 24px;
+            color: #1a365d;
+            margin-bottom: 4px;
+        }
+        .header p {
+            color: #4a5568;
+            font-size: 13px;
+        }
+        .btn-container {
+            margin-top: 10px;
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+        .btn {
+            background: #2b6cb0;
+            color: white;
+            padding: 8px 18px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+        }
+        .diagram-wrapper {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+            max-width: 1700px;
+            width: 100%;
+            overflow-x: auto;
+        }
+        svg {
+            width: 100%;
+            height: auto;
+            min-width: 1600px;
+            display: block;
+        }
+        /* Gane & Sarson Styling */
+        .entity-box {
+            fill: #fff2cc;
+            stroke: #000000;
+            stroke-width: 1.6;
+        }
+        .entity-text {
+            font-size: 14px;
+            font-weight: bold;
+            text-anchor: middle;
+            dominant-baseline: middle;
+            fill: #000;
+        }
+        .process-head {
+            fill: #ffe599;
+            stroke: #000000;
+            stroke-width: 1.6;
+        }
+        .process-body {
+            fill: #ffffff;
+            stroke: #000000;
+            stroke-width: 1.6;
+        }
+        .process-num {
+            font-size: 13px;
+            font-weight: bold;
+            text-anchor: middle;
+            dominant-baseline: middle;
+            fill: #000;
+        }
+        .process-title {
+            font-size: 12px;
+            font-weight: bold;
+            text-anchor: middle;
+            dominant-baseline: middle;
+            fill: #000;
+        }
+        .store-tag {
+            fill: #d9d9d9;
+            stroke: #000000;
+            stroke-width: 1.5;
+        }
+        .store-body {
+            fill: #fff2cc;
+            stroke: #000000;
+            stroke-width: 1.5;
+        }
+        .store-text {
+            font-size: 11.5px;
+            font-weight: 500;
+            dominant-baseline: middle;
+            fill: #000;
+        }
+        .store-tag-text {
+            font-size: 12px;
+            font-weight: bold;
+            text-anchor: middle;
+            dominant-baseline: middle;
+            fill: #000;
+        }
+        .flow-line {
+            stroke: #000000;
+            stroke-width: 1.4;
+            fill: none;
+            marker-end: url(#arrow);
+        }
+        .flow-line-purple {
+            stroke: #7030a0;
+            stroke-width: 1.6;
+            fill: none;
+            marker-end: url(#arrow-purple);
+        }
+        .flow-label {
+            font-size: 10px;
+            font-weight: 500;
+            fill: #000;
+            text-anchor: middle;
+            dominant-baseline: middle;
+            font-family: Arial, sans-serif;
+        }
+        .flow-label-purple {
+            font-size: 10px;
+            font-weight: bold;
+            fill: #7030a0;
+            text-anchor: middle;
+            dominant-baseline: middle;
+            font-family: Arial, sans-serif;
+        }
+        .lbl-bg {
+            fill: #ffffff;
+            stroke: #cbd5e1;
+            stroke-width: 0.8;
+            rx: 3;
+        }
+        .lbl-bg-purple {
+            fill: #fdfaff;
+            stroke: #c084fc;
+            stroke-width: 0.9;
+            rx: 3;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>UniFAST TES Grantee Management System</h1>
+        <p><strong>Figure 4.2: Data Flow Diagram (DFD) Level 1</strong> — Clean Vertical Reference (Zero Overlaps)</p>
+        <div class="btn-container">
+            <button class="btn" onclick="window.print()">🖨️ Print / Save as PDF</button>
+        </div>
+    </div>
+
+    <div class="diagram-wrapper">
+        <svg viewBox="0 0 1660 1620" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                    <path d="M 0 1.5 L 10 5 L 0 8.5 z" fill="#000" />
+                </marker>
+                <marker id="arrow-purple" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                    <path d="M 0 1.5 L 10 5 L 0 8.5 z" fill="#7030a0" />
+                </marker>
+            </defs>
+
+            <!-- ==================== COLUMN 1: EXTERNAL ENTITIES (LEFT) ==================== -->
+            <!-- Admin for 1.0 -->
+            <rect x="40" y="65" width="130" height="65" class="entity-box" />
+            <text x="105" y="97" class="entity-text">Admin</text>
+
+            <!-- Admin for 2.0 -->
+            <rect x="40" y="235" width="130" height="65" class="entity-box" />
+            <text x="105" y="267" class="entity-text">Admin</text>
+
+            <!-- Grantee for 3.0 -->
+            <rect x="40" y="415" width="130" height="65" class="entity-box" />
+            <text x="105" y="447" class="entity-text">Grantee</text>
+
+            <!-- Grantee for 4.0 -->
+            <rect x="40" y="595" width="130" height="65" class="entity-box" />
+            <text x="105" y="627" class="entity-text">Grantee</text>
+
+            <!-- Admin & Grantee for 6.0 -->
+            <rect x="40" y="930" width="130" height="60" class="entity-box" />
+            <text x="105" y="960" class="entity-text">Admin</text>
+
+            <rect x="40" y="1010" width="130" height="60" class="entity-box" />
+            <text x="105" y="1040" class="entity-text">Grantee</text>
+
+            <!-- Grantee for 7.0 -->
+            <rect x="40" y="1190" width="130" height="65" class="entity-box" />
+            <text x="105" y="1222" class="entity-text">Grantee</text>
+
+            <!-- Admin for 8.0 -->
+            <rect x="40" y="1410" width="130" height="65" class="entity-box" />
+            <text x="105" y="1442" class="entity-text">Admin</text>
+
+
+            <!-- ==================== COLUMN 2: PROCESSES (CENTRAL SPINE) ==================== -->
+            <!-- 1.0 -->
+            <g transform="translate(560, 60)">
+                <rect x="0" y="0" width="240" height="28" rx="6" class="process-head" />
+                <rect x="0" y="28" width="240" height="50" rx="6" class="process-body" />
+                <text x="120" y="14" class="process-num">1.0</text>
+                <text x="120" y="53" class="process-title">User and Access Management</text>
+            </g>
+
+            <!-- 2.0 -->
+            <g transform="translate(560, 230)">
+                <rect x="0" y="0" width="240" height="28" rx="6" class="process-head" />
+                <rect x="0" y="28" width="240" height="50" rx="6" class="process-body" />
+                <text x="120" y="14" class="process-num">2.0</text>
+                <text x="120" y="45" class="process-title">Grantee Masterlist and</text>
+                <text x="120" y="61" class="process-title">Batch Management</text>
+            </g>
+
+            <!-- 3.0 -->
+            <g transform="translate(560, 410)">
+                <rect x="0" y="0" width="240" height="28" rx="6" class="process-head" />
+                <rect x="0" y="28" width="240" height="50" rx="6" class="process-body" />
+                <text x="120" y="14" class="process-num">3.0</text>
+                <text x="120" y="45" class="process-title">Grantee Onboarding &amp;</text>
+                <text x="120" y="61" class="process-title">Identity Verification</text>
+            </g>
+
+            <!-- 4.0 -->
+            <g transform="translate(560, 590)">
+                <rect x="0" y="0" width="240" height="28" rx="6" class="process-head" />
+                <rect x="0" y="28" width="240" height="50" rx="6" class="process-body" />
+                <text x="120" y="14" class="process-num">4.0</text>
+                <text x="120" y="45" class="process-title">Document Submission</text>
+                <text x="120" y="61" class="process-title">&amp; Review</text>
+            </g>
+
+            <!-- 5.0 -->
+            <g transform="translate(560, 770)">
+                <rect x="0" y="0" width="240" height="28" rx="6" class="process-head" />
+                <rect x="0" y="28" width="240" height="50" rx="6" class="process-body" />
+                <text x="120" y="14" class="process-num">5.0</text>
+                <text x="120" y="53" class="process-title">Eligibility Assessment</text>
+            </g>
+
+            <!-- 6.0 -->
+            <g transform="translate(560, 960)">
+                <rect x="0" y="0" width="240" height="28" rx="6" class="process-head" />
+                <rect x="0" y="28" width="240" height="50" rx="6" class="process-body" />
+                <text x="120" y="14" class="process-num">6.0</text>
+                <text x="120" y="45" class="process-title">Form and Survey</text>
+                <text x="120" y="61" class="process-title">Management</text>
+            </g>
+
+            <!-- 7.0 -->
+            <g transform="translate(560, 1180)">
+                <rect x="0" y="0" width="240" height="28" rx="6" class="process-head" />
+                <rect x="0" y="28" width="240" height="50" rx="6" class="process-body" />
+                <text x="120" y="14" class="process-num">7.0</text>
+                <text x="120" y="53" class="process-title">Notification Management</text>
+            </g>
+
+            <!-- 8.0 -->
+            <g transform="translate(560, 1400)">
+                <rect x="0" y="0" width="240" height="28" rx="6" class="process-head" />
+                <rect x="0" y="28" width="240" height="50" rx="6" class="process-body" />
+                <text x="120" y="14" class="process-num">8.0</text>
+                <text x="120" y="53" class="process-title">Reporting and Audit</text>
+            </g>
+
+
+            <!-- ==================== COLUMN 3: DATA STORES ==================== -->
+            <!-- D1 -->
+            <g transform="translate(970, 60)">
+                <rect x="0" y="0" width="35" height="36" class="store-tag" />
+                <text x="17" y="18" class="store-tag-text">D1</text>
+                <rect x="35" y="0" width="220" height="36" class="store-body" />
+                <text x="45" y="18" class="store-text">User Account Records</text>
+            </g>
+
+            <!-- D3 (P1) -->
+            <g transform="translate(970, 105)">
+                <rect x="0" y="0" width="35" height="36" class="store-tag" />
+                <text x="17" y="18" class="store-tag-text">D3</text>
+                <rect x="35" y="0" width="220" height="36" class="store-body" />
+                <text x="45" y="18" class="store-text">Batch &amp; Program Records</text>
+            </g>
+
+            <!-- D2 (P2) -->
+            <g transform="translate(970, 230)">
+                <rect x="0" y="0" width="35" height="36" class="store-tag" />
+                <text x="17" y="18" class="store-tag-text">D2</text>
+                <rect x="35" y="0" width="220" height="36" class="store-body" />
+                <text x="45" y="18" class="store-text">Grantee Records</text>
+            </g>
+
+            <!-- D3 (P2) -->
+            <g transform="translate(970, 275)">
+                <rect x="0" y="0" width="35" height="36" class="store-tag" />
+                <text x="17" y="18" class="store-tag-text">D3</text>
+                <rect x="35" y="0" width="220" height="36" class="store-body" />
+                <text x="45" y="18" class="store-text">Batch &amp; Program Records</text>
+            </g>
+
+            <!-- D4 (P3) -->
+            <g transform="translate(970, 430)">
+                <rect x="0" y="0" width="35" height="36" class="store-tag" />
+                <text x="17" y="18" class="store-tag-text">D4</text>
+                <rect x="35" y="0" width="220" height="36" class="store-body" />
+                <text x="45" y="18" class="store-text">Identity &amp; Biometric Records</text>
+            </g>
+
+            <!-- D5 (P4) -->
+            <g transform="translate(970, 610)">
+                <rect x="0" y="0" width="35" height="36" class="store-tag" />
+                <text x="17" y="18" class="store-tag-text">D5</text>
+                <rect x="35" y="0" width="220" height="36" class="store-body" />
+                <text x="45" y="18" class="store-text">Document Submission Records</text>
+            </g>
+
+            <!-- D6 (P5) -->
+            <g transform="translate(970, 790)">
+                <rect x="0" y="0" width="35" height="36" class="store-tag" />
+                <text x="17" y="18" class="store-tag-text">D6</text>
+                <rect x="35" y="0" width="220" height="36" class="store-body" />
+                <text x="45" y="18" class="store-text">Eligibility Records</text>
+            </g>
+
+            <!-- D7 (P6) -->
+            <g transform="translate(970, 980)">
+                <rect x="0" y="0" width="35" height="36" class="store-tag" />
+                <text x="17" y="18" class="store-tag-text">D7</text>
+                <rect x="35" y="0" width="220" height="36" class="store-body" />
+                <text x="45" y="18" class="store-text">Form &amp; Survey Records</text>
+            </g>
+
+            <!-- D8 (P7/P8) -->
+            <g transform="translate(970, 1290)">
+                <rect x="0" y="0" width="35" height="36" class="store-tag" />
+                <text x="17" y="18" class="store-tag-text">D8</text>
+                <rect x="35" y="0" width="220" height="36" class="store-body" />
+                <text x="45" y="18" class="store-text">Audit &amp; Report Records</text>
+            </g>
+
+
+            <!-- ==================== COLUMN 4: STAFF ENTITY (RIGHT) ==================== -->
+            <!-- Staff for 3.0 -->
+            <rect x="1430" y="415" width="130" height="65" class="entity-box" />
+            <text x="1495" y="447" class="entity-text">Staff</text>
+
+            <!-- Staff for 4.0 -->
+            <rect x="1430" y="595" width="130" height="65" class="entity-box" />
+            <text x="1495" y="627" class="entity-text">Staff</text>
+
+            <!-- Staff for 5.0 -->
+            <rect x="1430" y="775" width="130" height="65" class="entity-box" />
+            <text x="1495" y="807" class="entity-text">Staff</text>
+
+
+            <!-- ==================== FLOWS: CENTRAL VERTICAL SPINE ==================== -->
+            <!-- 2.0 -> 3.0 (Center) -->
+            <path d="M 680 308 L 680 410" class="flow-line-purple" />
+            <rect x="690" y="348" width="145" height="18" class="lbl-bg-purple" />
+            <text x="762" y="357" class="flow-label-purple">Grantee Activation Info</text>
+
+            <!-- 3.0 -> 4.0 (Center) -->
+            <path d="M 680 488 L 680 590" class="flow-line-purple" />
+            <rect x="690" y="528" width="135" height="18" class="lbl-bg-purple" />
+            <text x="757" y="537" class="flow-label-purple">Verified Profile Info</text>
+
+            <!-- 4.0 -> 5.0 (Center) -->
+            <path d="M 680 668 L 680 770" class="flow-line-purple" />
+            <rect x="690" y="708" width="160" height="18" class="lbl-bg-purple" />
+            <text x="770" y="717" class="flow-label-purple">Reviewed Document Records</text>
+
+            <!-- 5.0 -> 7.0 (Direct Down) -->
+            <path d="M 630 848 L 630 1180" class="flow-line-purple" />
+            <rect x="635" y="905" width="115" height="18" class="lbl-bg-purple" />
+            <text x="692" y="914" class="flow-label-purple">Eligibility Results</text>
+
+            <!-- 6.0 -> 7.0 (Direct Down) -->
+            <path d="M 680 1038 L 680 1180" class="flow-line-purple" />
+            <rect x="690" y="1100" width="140" height="18" class="lbl-bg-purple" />
+            <text x="760" y="1109" class="flow-label-purple">Form Assignment Info</text>
+
+
+            <!-- ==================== FLOWS: DEDICATED RIGHT-SIDE NOTIFICATION BUS ==================== -->
+            <!-- 2.0 -> 7.0 (Lane 1: x=840) -->
+            <path d="M 800 250 L 840 250 L 840 1200 L 800 1200" class="flow-line-purple" />
+            <rect x="850" y="320" width="140" height="18" class="lbl-bg-purple" />
+            <text x="920" y="329" class="flow-label-purple">Grantee Invitation Info</text>
+
+            <!-- 3.0 -> 7.0 (Lane 2: x=865) -->
+            <path d="M 800 450 L 865 450 L 865 1220 L 800 1220" class="flow-line-purple" />
+            <rect x="875" y="500" width="145" height="18" class="lbl-bg-purple" />
+            <text x="947" y="509" class="flow-label-purple">Identity Verification Status</text>
+
+            <!-- 4.0 -> 7.0 (Lane 3: x=890) -->
+            <path d="M 800 630 L 890 630 L 890 1240 L 800 1240" class="flow-line-purple" />
+            <rect x="900" y="680" width="140" height="18" class="lbl-bg-purple" />
+            <text x="970" y="689" class="flow-label-purple">Document Review Results</text>
+
+            <!-- 5.0 -> 8.0 (Lane 4: x=915) -->
+            <path d="M 800 810 L 915 810 L 915 1440 L 800 1440" class="flow-line-purple" />
+            <rect x="925" y="860" width="165" height="18" class="lbl-bg-purple" />
+            <text x="1007" y="869" class="flow-label-purple">Eligibility Assessment Results</text>
+
+
+            <!-- ==================== FLOWS: ADMIN / GRANTEE INPUTS (LEFT SIDE - 100% CLEAR) ==================== -->
+            <!-- Admin -> 1.0 -->
+            <path d="M 170 85 L 560 85" class="flow-line" />
+            <rect x="270" y="76" width="155" height="18" class="lbl-bg" />
+            <text x="347" y="85" class="flow-label">User Account &amp; Role Info</text>
+
+            <path d="M 170 110 L 560 110" class="flow-line" />
+            <rect x="270" y="112" width="150" height="18" class="lbl-bg" />
+            <text x="345" y="121" class="flow-label">Policy &amp; Terms Config</text>
+
+            <!-- Admin -> 2.0 -->
+            <path d="M 170 250 L 560 250" class="flow-line" />
+            <rect x="280" y="241" width="130" height="18" class="lbl-bg" />
+            <text x="345" y="250" class="flow-label">Grantee Masterlist</text>
+
+            <path d="M 170 280 L 560 280" class="flow-line" />
+            <rect x="265" y="282" width="160" height="18" class="lbl-bg" />
+            <text x="345" y="291" class="flow-label">Batch Activation Config</text>
+
+            <!-- Grantee -> 3.0 -->
+            <path d="M 170 430 L 560 430" class="flow-line" />
+            <rect x="260" y="421" width="170" height="18" class="lbl-bg" />
+            <text x="345" y="430" class="flow-label">Activation Token &amp; KYC Info</text>
+
+            <path d="M 170 460 L 560 460" class="flow-line" />
+            <rect x="270" y="462" width="150" height="18" class="lbl-bg" />
+            <text x="345" y="471" class="flow-label">ID Scan, Liveness &amp; PIN</text>
+
+            <!-- Grantee -> 4.0 -->
+            <path d="M 170 610 L 560 610" class="flow-line" />
+            <rect x="275" y="601" width="140" height="18" class="lbl-bg" />
+            <text x="345" y="610" class="flow-label">Academic Documents</text>
+
+            <path d="M 170 640 L 560 640" class="flow-line" />
+            <rect x="245" y="642" width="200" height="18" class="lbl-bg" />
+            <text x="345" y="651" class="flow-label">Vault Confirmation &amp; Resubmission</text>
+
+            <!-- Admin <-> 6.0 -->
+            <path d="M 170 950 L 560 975" class="flow-line" />
+            <rect x="270" y="942" width="150" height="18" class="lbl-bg" />
+            <text x="345" y="951" class="flow-label">Form &amp; Survey Definitions</text>
+
+            <path d="M 560 990 L 170 970" class="flow-line" />
+            <rect x="275" y="980" width="145" height="18" class="lbl-bg" />
+            <text x="347" y="989" class="flow-label">Form Analytics &amp; Reports</text>
+
+            <!-- Grantee -> 6.0 -->
+            <path d="M 170 1040 L 560 1010" class="flow-line" />
+            <rect x="260" y="1030" width="165" height="18" class="lbl-bg" />
+            <text x="342" y="1039" class="flow-label">Form &amp; Survey Responses</text>
+
+            <!-- 7.0 -> Grantee -->
+            <path d="M 560 1222 L 170 1222" class="flow-line" />
+            <rect x="235" y="1212" width="215" height="20" class="lbl-bg" />
+            <text x="342" y="1222" class="flow-label">Account Activation, Status &amp; Alerts</text>
+
+            <!-- 8.0 -> Admin -->
+            <path d="M 560 1442 L 170 1442" class="flow-line" />
+            <rect x="240" y="1432" width="205" height="20" class="lbl-bg" />
+            <text x="342" y="1442" class="flow-label">Billing, Audit &amp; Progress Reports</text>
+
+
+            <!-- ==================== FLOWS: PROCESSES TO DATA STORES ==================== -->
+            <!-- 1.0 -> D1 & D3 -->
+            <path d="M 800 78 L 970 78" class="flow-line" />
+            <path d="M 800 110 L 970 120" class="flow-line" />
+
+            <!-- 2.0 -> D2 & D3 -->
+            <path d="M 800 248 L 970 248" class="flow-line" />
+            <path d="M 800 280 L 970 290" class="flow-line" />
+
+            <!-- 3.0 -> D4 -->
+            <path d="M 800 448 L 970 448" class="flow-line" />
+
+            <!-- 4.0 -> D5 -->
+            <path d="M 800 628 L 970 628" class="flow-line" />
+
+            <!-- 5.0 -> D6 -->
+            <path d="M 800 808 L 970 808" class="flow-line" />
+
+            <!-- 6.0 -> D7 -->
+            <path d="M 800 998 L 970 998" class="flow-line" />
+
+            <!-- 7.0 -> D8 -->
+            <path d="M 800 1210 L 970 1300" class="flow-line" />
+            <rect x="840" y="1245" width="85" height="18" class="lbl-bg" />
+            <text x="882" y="1254" class="flow-label">Notification Log</text>
+
+            <!-- 8.0 -> D8 -->
+            <path d="M 800 1420 L 970 1315" class="flow-line" />
+            <rect x="835" y="1355" width="105" height="18" class="lbl-bg" />
+            <text x="887" y="1364" class="flow-label">Audit Events &amp; Logs</text>
+
+
+            <!-- ==================== FLOWS: PROCESSES TO STAFF ==================== -->
+            <!-- 3.0 <-> Staff (Routes ABOVE and BELOW D4) -->
+            <path d="M 800 425 L 920 395 L 1370 395 L 1430 435" class="flow-line" />
+            <rect x="1110" y="386" width="170" height="18" class="lbl-bg" />
+            <text x="1195" y="395" class="flow-label">Grantee Identity Photos for Review</text>
+
+            <path d="M 1430 460 L 1370 490 L 920 490 L 800 465" class="flow-line" />
+            <rect x="1115" y="481" width="160" height="18" class="lbl-bg" />
+            <text x="1195" y="490" class="flow-label">Biometric Verification Decision</text>
+
+            <!-- 4.0 <-> Staff (Routes ABOVE and BELOW D5) -->
+            <path d="M 800 605 L 920 575 L 1370 575 L 1430 615" class="flow-line" />
+            <rect x="1100" y="566" width="180" height="18" class="lbl-bg" />
+            <text x="1190" y="575" class="flow-label">Submitted Grantee Document Records</text>
+
+            <path d="M 1430 640 L 1370 670 L 920 670 L 800 645" class="flow-line" />
+            <rect x="1095" y="661" width="190" height="18" class="lbl-bg" />
+            <text x="1190" y="670" class="flow-label">Document Approval / Return Decision</text>
+
+            <!-- 5.0 -> Staff (Routes ABOVE D6) -->
+            <path d="M 800 785 L 920 755 L 1370 755 L 1430 795" class="flow-line" />
+            <rect x="1100" y="746" width="180" height="18" class="lbl-bg" />
+            <text x="1190" y="755" class="flow-label">Risk Assessment &amp; Eligibility Status</text>
+
+        </svg>
+    </div>
+
+</body>
+</html>

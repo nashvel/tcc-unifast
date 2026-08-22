@@ -17,7 +17,7 @@ class RbacService
     {
         $roles = Cache::get('rbac:roles');
 
-        if (!$roles instanceof EloquentCollection) {
+        if (! $roles instanceof EloquentCollection) {
             Cache::forget('rbac:roles');
             $roles = Role::with('permissions')->get();
             try {
@@ -34,7 +34,7 @@ class RbacService
     {
         $permissions = Cache::get('rbac:permissions');
 
-        if (!$permissions instanceof EloquentCollection) {
+        if (! $permissions instanceof EloquentCollection) {
             Cache::forget('rbac:permissions');
             $permissions = Permission::all();
             try {
@@ -56,7 +56,7 @@ class RbacService
     {
         $role = Role::create($data);
 
-        if (!empty($data['permission_ids'])) {
+        if (! empty($data['permission_ids'])) {
             $role->permissions()->sync($data['permission_ids']);
         }
 
@@ -95,7 +95,7 @@ class RbacService
 
     public function assignRoleToUser(User $user, Role $role): void
     {
-        if (!$user->roles->contains($role->id)) {
+        if (! $user->roles->contains($role->id)) {
             $user->roles()->attach($role);
             $this->clearUserCache($user);
         }
@@ -123,7 +123,7 @@ class RbacService
         $cacheKey = "rbac:user_permissions:{$user->id}";
         $permissions = Cache::get($cacheKey);
 
-        if (!$permissions instanceof SupportCollection) {
+        if (! $permissions instanceof SupportCollection) {
             Cache::forget($cacheKey);
             $permissions = $user->getAllPermissions();
             try {
@@ -150,6 +150,7 @@ class RbacService
     {
         $permission = Permission::create($data);
         $this->clearCache();
+
         return $permission;
     }
 
@@ -157,6 +158,7 @@ class RbacService
     {
         $permission->update($data);
         $this->clearCache();
+
         return $permission;
     }
 
@@ -165,6 +167,7 @@ class RbacService
         $permission->roles()->detach();
         $permission->delete();
         $this->clearCache();
+
         return true;
     }
 

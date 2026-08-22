@@ -3,6 +3,7 @@
 use App\Http\Controllers\AcademicProgramController;
 use App\Http\Controllers\AcademicRecordController;
 use App\Http\Controllers\ActivationController;
+use App\Http\Controllers\ActivationSeederController;
 use App\Http\Controllers\AdminStudentIdSampleController;
 use App\Http\Controllers\AuditEventController;
 use App\Http\Controllers\AuthController;
@@ -12,36 +13,37 @@ use App\Http\Controllers\BillingReportController;
 use App\Http\Controllers\ChangelogController;
 use App\Http\Controllers\CollaboratorController;
 use App\Http\Controllers\DatabaseController;
-use App\Http\Controllers\DistributionReportController;
 use App\Http\Controllers\DeveloperServicesController;
-use App\Http\Controllers\DocumentSubmissionController;
+use App\Http\Controllers\DistributionReportController;
 use App\Http\Controllers\DocumentFileController;
+use App\Http\Controllers\DocumentSubmissionController;
 use App\Http\Controllers\EligibilityController;
 use App\Http\Controllers\FaceReviewController;
 use App\Http\Controllers\FaqController;
+use App\Http\Controllers\FileManagerController;
+use App\Http\Controllers\FormController;
+use App\Http\Controllers\FormResponseController;
+use App\Http\Controllers\FormSecurityLogController;
 use App\Http\Controllers\GranteeController;
+use App\Http\Controllers\GranteeFormController;
 use App\Http\Controllers\IdentityOnboardingController;
 use App\Http\Controllers\MasterlistImportController;
+use App\Http\Controllers\OnboardingCenterController;
 use App\Http\Controllers\PolicySettingsController;
+use App\Http\Controllers\PublicFormController;
 use App\Http\Controllers\RbacController;
 use App\Http\Controllers\RequirementVaultController;
-use App\Http\Controllers\SupportTicketController;
-use App\Http\Controllers\SystemHealthController;
-use App\Http\Controllers\TermController;
 use App\Http\Controllers\StudentDocumentOcrController;
 use App\Http\Controllers\StudentFaceVerificationController;
 use App\Http\Controllers\StudentKycController;
 use App\Http\Controllers\StudentNotificationController;
+use App\Http\Controllers\StudentSettingsController;
 use App\Http\Controllers\StudentSubmissionWindowController;
+use App\Http\Controllers\SupportTicketController;
+use App\Http\Controllers\SystemHealthController;
 use App\Http\Controllers\TccUnifastStudentsController;
 use App\Http\Controllers\TccUnifastSyncController;
-use App\Http\Controllers\ActivationSeederController;
-use App\Http\Controllers\FormController;
-use App\Http\Controllers\FormFieldController;
-use App\Http\Controllers\FormResponseController;
-use App\Http\Controllers\FormSecurityLogController;
-use App\Http\Controllers\GranteeFormController;
-use App\Http\Controllers\PublicFormController;
+use App\Http\Controllers\TermController;
 use App\Http\Middleware\FormSecurityHeaders;
 use App\Support\VaultFileStorage;
 use Illuminate\Session\Middleware\StartSession;
@@ -93,10 +95,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
             ->middleware('throttle:60,1');
         Route::get('/student/submission-window', StudentSubmissionWindowController::class);
         Route::get('/student/requirement-vault', [RequirementVaultController::class, 'show']);
-        Route::post('/student/requirement-vault/id/ocr-front', [RequirementVaultController::class, 'validateFrontIdOcr'])->middleware('throttle:30,1');
-        Route::post('/student/requirement-vault/id', [RequirementVaultController::class, 'storeId'])->middleware('throttle:20,1');
         Route::post('/student/requirement-vault/document', [RequirementVaultController::class, 'storeDocument'])->middleware('throttle:20,1');
-        Route::post('/student/requirement-vault/identity-check', [RequirementVaultController::class, 'storeIdentityCheck'])->middleware('throttle:10,1');
         Route::post('/student/requirement-vault/confirm', [RequirementVaultController::class, 'confirm'])
             ->middleware('throttle:'.config('services.requirement_vault.confirm_throttle_per_minute', 20).',1');
         Route::post('/student/requirement-vault/resubmit-slot', [RequirementVaultController::class, 'resubmitSlot'])->middleware('throttle:10,1');
@@ -108,6 +107,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::post('/student/notifications/read-all', [StudentNotificationController::class, 'markAllRead']);
         Route::post('/student/submissions/ocr', StudentDocumentOcrController::class)->middleware('throttle:20,1');
         Route::post('/student/identity/face-verify', StudentFaceVerificationController::class)->middleware('throttle:10,1');
+        Route::post('/student/settings/pin', [StudentSettingsController::class, 'updateSecurityPin'])->middleware('throttle:10,1');
     });
 
     // Developer/Admin/Staff routes (includes legacy head role)
@@ -152,8 +152,8 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('/grantees/{grantee}/identity-photos/{filename}', [DocumentFileController::class, 'showStaffIdentityPhoto'])
             ->where('filename', VaultFileStorage::identityFilenameRoutePattern())
             ->middleware('throttle:60,1');
-        Route::get('/files', [\App\Http\Controllers\FileManagerController::class, 'index']);
-        Route::get('/files/imports/{import}/download', [\App\Http\Controllers\FileManagerController::class, 'downloadImport'])
+        Route::get('/files', [FileManagerController::class, 'index']);
+        Route::get('/files/imports/{import}/download', [FileManagerController::class, 'downloadImport'])
             ->middleware('throttle:60,1');
         Route::get('/document-submissions/{submission}', [DocumentSubmissionController::class, 'show']);
         Route::get('/document-submissions/{submission}/file/{variant?}', [DocumentFileController::class, 'showAuthenticated'])
@@ -181,10 +181,10 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::post('/batches/{batch}/extend-deadline', [BatchController::class, 'extendDeadline'])->middleware('throttle:10,1');
         Route::post('/masterlist/imports/{import}/confirm', [MasterlistImportController::class, 'confirm'])->middleware('throttle:10,1');
 
-        Route::get('/onboarding-center/batches/{batch}/stats', [\App\Http\Controllers\OnboardingCenterController::class, 'stats']);
-        Route::get('/onboarding-center/batches/{batch}/grantees', [\App\Http\Controllers\OnboardingCenterController::class, 'grantees']);
-        Route::post('/onboarding-center/batches/{batch}/blast-invites', [\App\Http\Controllers\OnboardingCenterController::class, 'blastInvites'])->middleware('throttle:5,1');
-        Route::post('/onboarding-center/grantees/{grantee}/resend-invite', [\App\Http\Controllers\OnboardingCenterController::class, 'resendInvite'])->middleware('throttle:20,1');
+        Route::get('/onboarding-center/batches/{batch}/stats', [OnboardingCenterController::class, 'stats']);
+        Route::get('/onboarding-center/batches/{batch}/grantees', [OnboardingCenterController::class, 'grantees']);
+        Route::post('/onboarding-center/batches/{batch}/blast-invites', [OnboardingCenterController::class, 'blastInvites'])->middleware('throttle:5,1');
+        Route::post('/onboarding-center/grantees/{grantee}/resend-invite', [OnboardingCenterController::class, 'resendInvite'])->middleware('throttle:20,1');
     });
 
     // RBAC + database viewer (developer/admin)
@@ -201,19 +201,19 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::post('/services/start-cloudflare', [DeveloperServicesController::class, 'startCloudflare'])->middleware('throttle:20,1');
 
         Route::get('/changelogs', [ChangelogController::class, 'index']);
-        Route::get('/rbac/roles', [RbacController::class, 'index']);
-        Route::post('/rbac/roles', [RbacController::class, 'store']);
-        Route::get('/rbac/roles/{role}', [RbacController::class, 'show']);
-        Route::put('/rbac/roles/{role}', [RbacController::class, 'update']);
-        Route::delete('/rbac/roles/{role}', [RbacController::class, 'destroy']);
-        Route::get('/rbac/permissions', [RbacController::class, 'permissions']);
-        Route::post('/rbac/permissions', [RbacController::class, 'storePermission']);
-        Route::delete('/rbac/permissions/{permission}', [RbacController::class, 'destroyPermission']);
-        Route::get('/rbac/users/{user}/roles', [RbacController::class, 'userRoles']);
-        Route::post('/rbac/users/{user}/roles', [RbacController::class, 'assignUserRole']);
-        Route::delete('/rbac/users/{user}/roles/{role}', [RbacController::class, 'removeUserRole']);
-        Route::put('/rbac/users/{user}/roles', [RbacController::class, 'syncUserRoles']);
-        Route::post('/rbac/check-permission', [RbacController::class, 'checkPermission']);
+        Route::get('/rbac/roles', [RbacController::class, 'index'])->middleware('throttle:60,1');
+        Route::post('/rbac/roles', [RbacController::class, 'store'])->middleware('throttle:30,1');
+        Route::get('/rbac/roles/{role}', [RbacController::class, 'show'])->middleware('throttle:60,1');
+        Route::put('/rbac/roles/{role}', [RbacController::class, 'update'])->middleware('throttle:30,1');
+        Route::delete('/rbac/roles/{role}', [RbacController::class, 'destroy'])->middleware('throttle:30,1');
+        Route::get('/rbac/permissions', [RbacController::class, 'permissions'])->middleware('throttle:60,1');
+        Route::post('/rbac/permissions', [RbacController::class, 'storePermission'])->middleware('throttle:30,1');
+        Route::delete('/rbac/permissions/{permission}', [RbacController::class, 'destroyPermission'])->middleware('throttle:30,1');
+        Route::get('/rbac/users/{user}/roles', [RbacController::class, 'userRoles'])->middleware('throttle:60,1');
+        Route::post('/rbac/users/{user}/roles', [RbacController::class, 'assignUserRole'])->middleware('throttle:30,1');
+        Route::delete('/rbac/users/{user}/roles/{role}', [RbacController::class, 'removeUserRole'])->middleware('throttle:30,1');
+        Route::put('/rbac/users/{user}/roles', [RbacController::class, 'syncUserRoles'])->middleware('throttle:30,1');
+        Route::post('/rbac/check-permission', [RbacController::class, 'checkPermission'])->middleware('throttle:60,1');
 
         Route::get('/database/tables', [DatabaseController::class, 'tables']);
         Route::get('/database/stats', [DatabaseController::class, 'stats']);
@@ -222,35 +222,36 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
         // Terms & Conditions management
         Route::get('/terms', [TermController::class, 'index']);
-        Route::post('/terms', [TermController::class, 'store']);
+        Route::post('/terms', [TermController::class, 'store'])->middleware('throttle:20,1');
         Route::get('/terms/{term}', [TermController::class, 'show']);
-        Route::put('/terms/{term}', [TermController::class, 'update']);
-        Route::delete('/terms/{term}', [TermController::class, 'destroy']);
+        Route::put('/terms/{term}', [TermController::class, 'update'])->middleware('throttle:20,1');
+        Route::delete('/terms/{term}', [TermController::class, 'destroy'])->middleware('throttle:20,1');
 
         // FAQ management
         Route::get('/faqs/all', [FaqController::class, 'all']);
-        Route::post('/faqs', [FaqController::class, 'store']);
+        Route::post('/faqs', [FaqController::class, 'store'])->middleware('throttle:20,1');
         Route::get('/faqs/{faq}', [FaqController::class, 'show']);
-        Route::put('/faqs/{faq}', [FaqController::class, 'update']);
-        Route::delete('/faqs/{faq}', [FaqController::class, 'destroy']);
-        Route::post('/faqs/reorder', [FaqController::class, 'reorder']);
+        Route::put('/faqs/{faq}', [FaqController::class, 'update'])->middleware('throttle:20,1');
+        Route::delete('/faqs/{faq}', [FaqController::class, 'destroy'])->middleware('throttle:20,1');
+        Route::post('/faqs/reorder', [FaqController::class, 'reorder'])->middleware('throttle:20,1');
 
         // Support tickets management
         Route::get('/support-tickets', [SupportTicketController::class, 'index']);
-        Route::post('/support-tickets', [SupportTicketController::class, 'store']);
-        Route::patch('/support-tickets/{supportTicket}', [SupportTicketController::class, 'update']);
+        Route::post('/support-tickets', [SupportTicketController::class, 'store'])->middleware('throttle:20,1');
+        Route::patch('/support-tickets/{supportTicket}', [SupportTicketController::class, 'update'])->middleware('throttle:20,1');
 
         // Collaborators management
-        Route::get('/collaborators', [CollaboratorController::class, 'index']);
-        Route::post('/collaborators/invite', [CollaboratorController::class, 'invite']);
-        Route::delete('/collaborators/{user}', [CollaboratorController::class, 'destroy']);
+        Route::get('/collaborators', [CollaboratorController::class, 'index'])->middleware('throttle:60,1');
+        Route::post('/collaborators/invite', [CollaboratorController::class, 'invite'])->middleware('throttle:20,1');
+        Route::delete('/collaborators/{user}', [CollaboratorController::class, 'destroy'])->middleware('throttle:20,1');
 
         // System health telemetry
         Route::get('/system/health', [SystemHealthController::class, 'show']);
     });
 
     // Document submission review (developer/admin/staff)
-    Route::post('/document-submissions/{submission}/review', [DocumentSubmissionController::class, 'review'])->middleware('role:developer,admin,head,staff');
+    Route::post('/document-submissions/{submission}/review', [DocumentSubmissionController::class, 'review'])
+        ->middleware(['role:developer,admin,head,staff', 'throttle:60,1']);
 
     // Audit events (any authenticated user)
     Route::post('/audit-events', [AuditEventController::class, 'store'])->middleware('throttle:240,1');

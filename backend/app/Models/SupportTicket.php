@@ -15,13 +15,23 @@ class SupportTicket extends Model
         'category',
         'priority',
         'status',
-        'reporter',
-        'assignee',
+        'reporter_id',
+        'assignee_id',
         'description',
-        'replies',
     ];
 
-    protected $casts = [
-        'replies' => 'array',
-    ];
+    public function reporter()
+    {
+        return $this->belongsTo(User::class, 'reporter_id');
+    }
+
+    public function assignee()
+    {
+        return $this->belongsTo(User::class, 'assignee_id');
+    }
+
+    public function replies()
+    {
+        return $this->hasMany(SupportTicketReply::class);
+    }
 }

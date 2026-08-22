@@ -13,12 +13,12 @@ class FormField extends Model
     protected function casts(): array
     {
         return [
-            'options'       => 'array', // kept for backward-compat; synced by controller
-            'is_required'   => 'boolean',
-            'is_locked'     => 'boolean',
-            'sort_order'    => 'integer',
-            'min_length'    => 'integer',
-            'max_length'    => 'integer',
+            'options' => 'array', // kept for backward-compat; synced by controller
+            'is_required' => 'boolean',
+            'is_locked' => 'boolean',
+            'sort_order' => 'integer',
+            'min_length' => 'integer',
+            'max_length' => 'integer',
             'max_file_size' => 'integer',
         ];
     }

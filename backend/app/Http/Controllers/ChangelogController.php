@@ -41,7 +41,7 @@ class ChangelogController extends Controller
         $responseData = [
             'data' => $commits,
             'repo' => $repo,
-            'has_token' => !empty($token),
+            'has_token' => ! empty($token),
         ];
 
         // In local environment, only generate the static mock JSON file when explicitly refreshing

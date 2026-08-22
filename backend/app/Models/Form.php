@@ -16,9 +16,9 @@ class Form extends Model
     protected function casts(): array
     {
         return [
-            'is_active'        => 'boolean',
-            'closes_at'        => 'datetime',
-            'max_submissions'  => 'integer',
+            'is_active' => 'boolean',
+            'closes_at' => 'datetime',
+            'max_submissions' => 'integer',
         ];
     }
 

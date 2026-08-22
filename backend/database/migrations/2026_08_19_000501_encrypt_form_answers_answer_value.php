@@ -2,9 +2,9 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -33,7 +33,7 @@ return new class extends Migration
                         DB::table('form_answers')
                             ->where('id', $answer->id)
                             ->update(['answer_value' => $encrypted]);
-                    } catch (\Exception $e) {
+                    } catch (Exception $e) {
                         // Skip unencryptable
                     }
                 }
@@ -55,7 +55,7 @@ return new class extends Migration
                         DB::table('form_answers')
                             ->where('id', $answer->id)
                             ->update(['answer_value' => $decrypted]);
-                    } catch (\Exception $e) {
+                    } catch (Exception $e) {
                         // Skip if not encrypted
                     }
                 }

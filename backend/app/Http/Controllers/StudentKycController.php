@@ -28,7 +28,7 @@ class StudentKycController extends Controller
         $reference = $truth->forGrantee($grantee);
         $profile = $request->user()->kycProfile;
         $nameParts = $profile
-            ? $this->splitStoredName($truth, $profile->full_name)
+            ? $this->splitStoredName($truth, $grantee->full_name)
             : ['first_name' => null, 'middle_name' => null, 'last_name' => null];
 
         return response()->json([
@@ -45,9 +45,9 @@ class StudentKycController extends Controller
                     'first_name' => $nameParts['first_name'],
                     'middle_name' => $nameParts['middle_name'],
                     'last_name' => $nameParts['last_name'],
-                    'full_name' => $profile?->full_name,
-                    'student_id' => $profile?->student_id,
-                    'program' => $profile?->program,
+                    'full_name' => $profile ? $grantee->full_name : null,
+                    'student_id' => $profile ? $grantee->student_id : null,
+                    'program' => $profile ? $grantee->program : null,
                     'year_level' => $profile?->year_level,
                     'birthdate' => $profile?->birthdate?->format('Y-m-d'),
                     'contact' => $profile?->contact,
@@ -118,9 +118,6 @@ class StudentKycController extends Controller
 
         // Persist canonical masterlist identity after successful cross-check.
         $bound = [
-            'full_name' => $reference['full_name'],
-            'student_id' => $reference['student_id'],
-            'program' => $reference['program'],
             'year_level' => $yearLevel,
             'birthdate' => $validated['birthdate'] ?? null,
             'contact' => $validated['contact'] ?? null,

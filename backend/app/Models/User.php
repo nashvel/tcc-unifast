@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Collection;
 use Laravel\Sanctum\HasApiTokens;
 
 #[Fillable(['name', 'email', 'role', 'student_id', 'account_status', 'activated_at', 'password', 'email_verified_at'])]
@@ -60,6 +61,7 @@ class User extends Authenticatable
                 return true;
             }
         }
+
         return false;
     }
 
@@ -70,10 +72,11 @@ class User extends Authenticatable
                 return true;
             }
         }
+
         return false;
     }
 
-    public function getAllPermissions(): \Illuminate\Support\Collection
+    public function getAllPermissions(): Collection
     {
         return $this->roles->flatMap->permissions->unique('id');
     }

@@ -11,6 +11,7 @@ class RequireRole
     public function handle(Request $request, Closure $next, string ...$roles): Response
     {
         abort_unless($request->user() && in_array($request->user()->role, $roles, true), 403);
+
         return $next($request);
     }
 }

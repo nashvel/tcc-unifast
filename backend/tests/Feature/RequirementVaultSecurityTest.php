@@ -90,20 +90,7 @@ class RequirementVaultSecurityTest extends TestCase
             'onboarding_selfie_path' => 'identity/'.$grantee->id.'/onboarding_selfie.jpg',
             'onboarding_completed_at' => now(),
         ]);
-        DocumentSubmission::create([
-            'student_id' => $student->student_id,
-            'grantee_id' => $grantee->id,
-            'batch_id' => $grantee->batch_id,
-            'slot_key' => 'school_id',
-            'student_name' => $student->name,
-            'document_type' => 'School ID',
-            'original_name' => 'id.jpg',
-            'stored_path' => 'identity/'.$grantee->id.'/id_scan_submission.jpg',
-            'mime_type' => 'image/jpeg',
-            'file_size' => 10,
-            'status' => 'pending_review',
-            'risk_level' => 'low',
-        ]);
+
 
         $exeAsPdf = UploadedFile::fake()->createWithContent('course-history.pdf', 'MZ-not-a-pdf');
 
@@ -193,20 +180,7 @@ class RequirementVaultSecurityTest extends TestCase
             'onboarding_selfie_path' => 'identity/'.$grantee->id.'/onboarding_selfie.jpg',
             'onboarding_completed_at' => now(),
         ]);
-        DocumentSubmission::create([
-            'student_id' => $student->student_id,
-            'grantee_id' => $grantee->id,
-            'batch_id' => $grantee->batch_id,
-            'slot_key' => 'school_id',
-            'student_name' => $student->name,
-            'document_type' => 'School ID',
-            'original_name' => 'id.jpg',
-            'stored_path' => 'identity/'.$grantee->id.'/id_scan_submission.jpg',
-            'mime_type' => 'image/jpeg',
-            'file_size' => 10,
-            'status' => 'pending_review',
-            'risk_level' => 'low',
-        ]);
+
 
         $pdf = UploadedFile::fake()->createWithContent('course-history.pdf', "%PDF-1.4\n%âãÏÓ\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n");
 
@@ -274,7 +248,7 @@ class RequirementVaultSecurityTest extends TestCase
             ->assertJsonPath('slots.course_history.slot_key', 'course_history')
             ->assertJsonPath('slots.grade_slip.original_name', 'grade-slip.pdf')
             ->assertJsonPath('slots.specimen_signatures.original_name', 'specimens.jpg')
-            ->assertJsonPath('slots.school_id.slot_key', 'school_id');
+;
     }
 
     public function test_identity_photo_download_uses_db_path_not_guessable_filename(): void

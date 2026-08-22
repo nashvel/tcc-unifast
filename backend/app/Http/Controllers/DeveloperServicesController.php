@@ -39,10 +39,10 @@ class DeveloperServicesController extends Controller
 
         return response()->json([
             'data' => [
-                'cloudflare'      => $cfRunning,
-                'ocr'             => $ocrRunning,
+                'cloudflare' => $cfRunning,
+                'ocr' => $ocrRunning,
                 'activation_base' => $activationUrl,
-            ]
+            ],
         ]);
     }
 
@@ -56,9 +56,9 @@ class DeveloperServicesController extends Controller
     {
         $executable = realpath(base_path('../tools/cloudflared.exe'));
 
-        if (!$executable || !file_exists($executable)) {
+        if (! $executable || ! file_exists($executable)) {
             return response()->json([
-                'message' => 'cloudflared.exe not found. Expected at: ' . base_path('../tools/cloudflared.exe'),
+                'message' => 'cloudflared.exe not found. Expected at: '.base_path('../tools/cloudflared.exe'),
             ], 404);
         }
 
@@ -71,11 +71,11 @@ class DeveloperServicesController extends Controller
 
         // Tunnel the Vue frontend (port 5173) and redirect output to log file
         // start /B detaches the process completely so PHP artisan serve won't deadlock
-        $cmd = 'cmd /c "start /B "" "' . escapeshellcmd($executable) . '" tunnel --url http://localhost:5173 > "' . escapeshellcmd($logFile) . '" 2>&1"';
+        $cmd = 'cmd /c "start /B "" "'.escapeshellcmd($executable).'" tunnel --url http://localhost:5173 > "'.escapeshellcmd($logFile).'" 2>&1"';
         pclose(popen($cmd, 'r'));
 
         $tunnelUrl = null;
-        $start     = time();
+        $start = time();
 
         // Wait up to 15 seconds for cloudflared to output the URL to the log
         while (time() - $start < 15) {
@@ -90,10 +90,10 @@ class DeveloperServicesController extends Controller
             usleep(300_000); // poll every 300ms
         }
 
-        if (!$tunnelUrl) {
+        if (! $tunnelUrl) {
             return response()->json([
                 'message' => 'Cloudflare tunnel started but could not capture the URL within 15 seconds. Check if it is running.',
-                'data'    => ['activation_base' => null],
+                'data' => ['activation_base' => null],
             ], 202);
         }
 
@@ -102,8 +102,8 @@ class DeveloperServicesController extends Controller
 
         return response()->json([
             'message' => 'Cloudflare tunnel started successfully.',
-            'data'    => [
-                'tunnel_url'      => $tunnelUrl,
+            'data' => [
+                'tunnel_url' => $tunnelUrl,
                 'activation_base' => $tunnelUrl,
             ],
         ]);
@@ -114,12 +114,12 @@ class DeveloperServicesController extends Controller
      */
     public function startOcr(): JsonResponse
     {
-        $ocrDir  = realpath(base_path('ocr-service'));
-        $uvicorn = $ocrDir . DIRECTORY_SEPARATOR . '.venv' . DIRECTORY_SEPARATOR . 'Scripts' . DIRECTORY_SEPARATOR . 'uvicorn.exe';
+        $ocrDir = realpath(base_path('ocr-service'));
+        $uvicorn = $ocrDir.DIRECTORY_SEPARATOR.'.venv'.DIRECTORY_SEPARATOR.'Scripts'.DIRECTORY_SEPARATOR.'uvicorn.exe';
 
-        if (!$ocrDir || !file_exists($uvicorn)) {
+        if (! $ocrDir || ! file_exists($uvicorn)) {
             return response()->json([
-                'message' => 'OCR service venv/uvicorn not found at: ' . $uvicorn,
+                'message' => 'OCR service venv/uvicorn not found at: '.$uvicorn,
             ], 404);
         }
 
@@ -127,7 +127,7 @@ class DeveloperServicesController extends Controller
         exec('taskkill /F /IM uvicorn.exe 2>NUL');
         sleep(1);
 
-        $cmd = 'cmd /c "cd /d "' . $ocrDir . '" && start /B "" "' . $uvicorn . '" app.main:app --host 127.0.0.1 --port 8001"';
+        $cmd = 'cmd /c "cd /d "'.$ocrDir.'" && start /B "" "'.$uvicorn.'" app.main:app --host 127.0.0.1 --port 8001"';
         pclose(popen($cmd, 'r'));
 
         return response()->json([

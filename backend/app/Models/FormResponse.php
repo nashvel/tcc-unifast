@@ -14,11 +14,11 @@ class FormResponse extends Model
     protected function casts(): array
     {
         return [
-            'responses'          => 'array',
-            'is_authenticated'   => 'boolean',
+            'responses' => 'array',
+            'is_authenticated' => 'boolean',
             'honeypot_triggered' => 'boolean',
-            'submitted_at'       => 'datetime',
-            'created_at'         => 'datetime',
+            'submitted_at' => 'datetime',
+            'created_at' => 'datetime',
         ];
     }
 

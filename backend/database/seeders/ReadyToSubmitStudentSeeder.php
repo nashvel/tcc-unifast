@@ -107,9 +107,6 @@ class ReadyToSubmitStudentSeeder extends Seeder
             ['grantee_id' => $grantee->id],
             [
                 'user_id' => $user->id,
-                'full_name' => 'Ready Submit Tester',
-                'student_id' => self::STUDENT_ID,
-                'program' => 'BSIT',
                 'year_level' => '2',
                 'status' => 'verified',
             ],

@@ -31,8 +31,7 @@ class TccUnifastSyncEndpointTest extends TestCase
             ->assertAccepted()
             ->assertJsonStructure(['message', 'request_id']);
 
-        Http::assertSent(fn ($request) =>
-            $request->url() === 'https://n8n.example.test/webhook/tcc-unifast/sync'
+        Http::assertSent(fn ($request) => $request->url() === 'https://n8n.example.test/webhook/tcc-unifast/sync'
             && $request->hasHeader('X-TCC-UniFAST-Key', 'n8n-secret')
             && $request['student_id'] === 'TCC-2026-0001'
             && $request['source'] === 'laravel'

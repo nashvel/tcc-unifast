@@ -9,7 +9,6 @@ use App\Models\DocumentSubmission;
 use App\Models\Faq;
 use App\Models\Grantee;
 use App\Models\SupportTicket;
-use App\Models\Term;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
@@ -32,7 +31,7 @@ class SystemHealthController extends Controller
         $storageStart = microtime(true);
         $storageWritable = is_writable(storage_path());
         $storageLatency = round((microtime(true) - $storageStart) * 1000, 2);
-        $freeDiskGb = function_exists('disk_free_space') ? round(disk_free_space(storage_path()) / 1024 / 1024 / 1024, 1) . ' GB free' : 'Available';
+        $freeDiskGb = function_exists('disk_free_space') ? round(disk_free_space(storage_path()) / 1024 / 1024 / 1024, 1).' GB free' : 'Available';
 
         $health = [
             [
@@ -42,7 +41,7 @@ class SystemHealthController extends Controller
                 'uptime' => '99.99%',
             ],
             [
-                'name' => 'Database Engine (' . strtoupper(DB::connection()->getDriverName()) . ')',
+                'name' => 'Database Engine ('.strtoupper(DB::connection()->getDriverName()).')',
                 'status' => $dbConnected ? 'healthy' : 'degraded',
                 'latency' => "{$dbLatency}ms",
                 'uptime' => $dbConnected ? '99.99%' : '90.0%',
@@ -66,28 +65,28 @@ class SystemHealthController extends Controller
             [
                 'title' => 'System Accounts',
                 'value' => (string) User::count(),
-                'change' => User::where('account_status', 'active')->count() . ' Active',
+                'change' => User::where('account_status', 'active')->count().' Active',
                 'trend' => 'up',
                 'subtitle' => 'Registered Accounts',
             ],
             [
                 'title' => 'Academic Batches',
                 'value' => (string) Batch::count(),
-                'change' => Batch::where('status', 'active')->count() . ' Open',
+                'change' => Batch::where('status', 'active')->count().' Open',
                 'trend' => 'up',
                 'subtitle' => 'System Batches',
             ],
             [
                 'title' => 'Document Vault',
                 'value' => (string) DocumentSubmission::count(),
-                'change' => DocumentSubmission::where('status', 'approved')->count() . ' Approved',
+                'change' => DocumentSubmission::where('status', 'approved')->count().' Approved',
                 'trend' => 'up',
                 'subtitle' => 'Uploaded Documents',
             ],
             [
                 'title' => 'Support Tickets',
                 'value' => (string) SupportTicket::count(),
-                'change' => SupportTicket::where('status', 'Open')->count() . ' Pending',
+                'change' => SupportTicket::where('status', 'Open')->count().' Pending',
                 'trend' => SupportTicket::where('status', 'Open')->count() > 0 ? 'down' : 'up',
                 'subtitle' => 'Developer Queue',
             ],
@@ -100,7 +99,7 @@ class SystemHealthController extends Controller
                 'method' => 'POST',
                 'p50' => '45ms',
                 'p95' => '110ms',
-                'calls' => User::count() . ' active users',
+                'calls' => User::count().' active users',
                 'errors' => '0.00%',
             ],
             [
@@ -108,7 +107,7 @@ class SystemHealthController extends Controller
                 'method' => 'GET',
                 'p50' => '18ms',
                 'p95' => '55ms',
-                'calls' => Batch::count() . ' batches',
+                'calls' => Batch::count().' batches',
                 'errors' => '0.00%',
             ],
             [
@@ -116,7 +115,7 @@ class SystemHealthController extends Controller
                 'method' => 'GET',
                 'p50' => '32ms',
                 'p95' => '95ms',
-                'calls' => DocumentSubmission::count() . ' submissions',
+                'calls' => DocumentSubmission::count().' submissions',
                 'errors' => '0.01%',
             ],
             [
@@ -124,7 +123,7 @@ class SystemHealthController extends Controller
                 'method' => 'GET',
                 'p50' => '24ms',
                 'p95' => '80ms',
-                'calls' => Grantee::count() . ' grantees',
+                'calls' => Grantee::count().' grantees',
                 'errors' => '0.00%',
             ],
             [
@@ -132,7 +131,7 @@ class SystemHealthController extends Controller
                 'method' => 'GET',
                 'p50' => '28ms',
                 'p95' => '85ms',
-                'calls' => AcademicRecord::count() . ' records',
+                'calls' => AcademicRecord::count().' records',
                 'errors' => '0.00%',
             ],
             [
@@ -140,7 +139,7 @@ class SystemHealthController extends Controller
                 'method' => 'GET',
                 'p50' => '15ms',
                 'p95' => '40ms',
-                'calls' => SupportTicket::count() . ' tickets',
+                'calls' => SupportTicket::count().' tickets',
                 'errors' => '0.00%',
             ],
             [
@@ -148,7 +147,7 @@ class SystemHealthController extends Controller
                 'method' => 'GET',
                 'p50' => '12ms',
                 'p95' => '35ms',
-                'calls' => AuditLog::count() . ' logs',
+                'calls' => AuditLog::count().' logs',
                 'errors' => '0.00%',
             ],
             [
@@ -156,21 +155,21 @@ class SystemHealthController extends Controller
                 'method' => 'GET',
                 'p50' => '10ms',
                 'p95' => '25ms',
-                'calls' => Faq::count() . ' faqs',
+                'calls' => Faq::count().' faqs',
                 'errors' => '0.00%',
             ],
         ];
 
         $systemInfo = [
-            'framework' => 'Laravel ' . app()->version() . ' + Vue 3',
-            'php_version' => 'PHP ' . PHP_VERSION,
+            'framework' => 'Laravel '.app()->version().' + Vue 3',
+            'php_version' => 'PHP '.PHP_VERSION,
             'auth' => 'Sanctum API Tokens',
             'database' => strtoupper(DB::connection()->getDriverName()),
             'users_count' => User::count(),
             'batches_count' => Batch::count(),
             'submissions_count' => DocumentSubmission::count(),
             'audit_events_count' => AuditLog::count(),
-            'memory_usage' => round(memory_get_usage(true) / 1024 / 1024, 2) . ' MB',
+            'memory_usage' => round(memory_get_usage(true) / 1024 / 1024, 2).' MB',
             'os' => PHP_OS_FAMILY,
         ];
 
@@ -188,7 +187,7 @@ class SystemHealthController extends Controller
                 return [
                     'time' => $log->created_at ? $log->created_at->format('H:i:s') : now()->format('H:i:s'),
                     'level' => $level,
-                    'message' => "{$log->actor} ({$log->role}) — {$log->action} in {$log->module}" . ($log->target ? ": {$log->target}" : ''),
+                    'message' => "{$log->actor} ({$log->role}) — {$log->action} in {$log->module}".($log->target ? ": {$log->target}" : ''),
                     'service' => strtolower($log->module),
                 ];
             });

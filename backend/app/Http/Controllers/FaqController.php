@@ -11,12 +11,14 @@ class FaqController extends Controller
     public function index(): JsonResponse
     {
         $faqs = Faq::active()->ordered()->get();
+
         return response()->json(['data' => $faqs]);
     }
 
     public function all(): JsonResponse
     {
         $faqs = Faq::orderBy('sort_order')->orderBy('id')->get();
+
         return response()->json(['data' => $faqs]);
     }
 
@@ -31,6 +33,7 @@ class FaqController extends Controller
         ]);
 
         $faq = Faq::create($validated);
+
         return response()->json(['data' => $faq], 201);
     }
 
@@ -50,12 +53,14 @@ class FaqController extends Controller
         ]);
 
         $faq->update($validated);
+
         return response()->json(['data' => $faq]);
     }
 
     public function destroy(Faq $faq): JsonResponse
     {
         $faq->update(['is_active' => false]);
+
         return response()->json(['message' => 'FAQ deactivated (soft deleted).']);
     }
 

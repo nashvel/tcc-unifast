@@ -15,6 +15,7 @@ export type AuthUser = {
     | "pending_face_review"
     | "blocked";
   kyc_status?: string | null;
+  has_security_pin?: boolean;
   onboarding_next_step?: "blocked" | "kyc" | "id_scan" | "liveness" | "face_review" | "done";
   onboarding_path?: string;
 };

@@ -15,6 +15,7 @@
     "@vitejs/plugin-vue": "^6.0.1",
     "@vueuse/core": "^14.4.0",
     "chart.js": "^4.5.1",
+    "dompurify": "^3.4.14",
     "face-api.js": "^0.22.2",
     "jsqr": "^1.4.0",
     "laravel-echo": "^2.4.0",
@@ -32,6 +33,7 @@
     "node-fetch": "^2.7.0"
   },
   "devDependencies": {
+    "@types/dompurify": "^3.0.5",
     "prettier": "^3.9.5",
     "typescript": "^5.8.3",
     "vite": "^7.0.0",

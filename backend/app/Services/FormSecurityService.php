@@ -2,9 +2,9 @@
 
 namespace App\Services;
 
-use App\Models\Form;
 use App\Models\FormSecurityLog;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class FormSecurityService
 {
@@ -51,6 +51,7 @@ class FormSecurityService
         $value = strip_tags($value);
         // Encode special characters
         $value = htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+
         // Trim
         return trim($value);
     }
@@ -113,7 +114,7 @@ class FormSecurityService
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      *
-     * @throws \Illuminate\Validation\ValidationException
+     * @throws ValidationException
      */
     public function sanitizeSubmission(array $data): array
     {
@@ -126,7 +127,7 @@ class FormSecurityService
                         return $item;
                     }
                     if (mb_strlen($item) > 10000) {
-                        throw \Illuminate\Validation\ValidationException::withMessages([
+                        throw ValidationException::withMessages([
                             $key => ['Field value exceeds the maximum allowed length.'],
                         ]);
                     }
@@ -135,7 +136,7 @@ class FormSecurityService
                 }, $value);
             } elseif (is_string($value)) {
                 if (mb_strlen($value) > 10000) {
-                    throw \Illuminate\Validation\ValidationException::withMessages([
+                    throw ValidationException::withMessages([
                         $key => ['Field value exceeds the maximum allowed length.'],
                     ]);
                 }
@@ -158,12 +159,12 @@ class FormSecurityService
         ?array $payload = null,
     ): void {
         FormSecurityLog::create([
-            'form_id'    => $formId,
+            'form_id' => $formId,
             'event_type' => $eventType,
             'ip_address' => $request->ip() ?? '0.0.0.0',
             'user_agent' => mb_substr((string) $request->userAgent(), 0, 500),
-            'payload'    => $payload,
-            'user_id'    => $request->user()?->id,
+            'payload' => $payload,
+            'user_id' => $request->user()?->id,
             'created_at' => now(),
         ]);
     }

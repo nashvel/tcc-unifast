@@ -4,18 +4,20 @@ namespace App\Jobs;
 
 use App\Models\DocumentSubmission;
 use App\Models\Grantee;
+use App\Models\PolicySetting;
 use App\Models\SubmissionPipelineResult;
 use App\Services\AcademicGradeParser;
 use App\Services\GradeslipQrService;
 use App\Services\PdfDocumentService;
 use App\Services\StaffSubmissionNotifier;
 use App\Services\SubmissionRiskScoringService;
+use App\Support\VaultFileStorage;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use App\Support\VaultFileStorage;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -213,7 +215,7 @@ class ProcessRequirementSubmissionPipeline implements ShouldQueue
         // Top-level aliases for staff Document Detail / API consumers.
         $meta['pdf_metadata'] = $rawMeta;
         $meta['pdf_metadata_analysis'] = $analysis;
-        $maxFailed = \App\Models\PolicySetting::maxFailedSubjects();
+        $maxFailed = PolicySetting::maxFailedSubjects();
         $retention = (int) $gradeSummary['retention_count'];
         $pendingCount = (int) ($gradeSummary['pending_count'] ?? 0);
         $blanksAsDropped = $slotKey === 'course_history';
@@ -305,7 +307,7 @@ class ProcessRequirementSubmissionPipeline implements ShouldQueue
      * GS term + newer CH terms (not newest+2-prior).
      *
      * @param  array<string, mixed>  $ocrSummary
-     * @param  \Illuminate\Support\Collection<string, DocumentSubmission>  $slots
+     * @param  Collection<string, DocumentSubmission>  $slots
      * @return array<string, mixed>
      */
     private function applyGradeSlipAnchorToCourseHistory(
@@ -336,7 +338,7 @@ class ProcessRequirementSubmissionPipeline implements ShouldQueue
             $gsTerm,
         );
 
-        $maxFailed = \App\Models\PolicySetting::maxFailedSubjects();
+        $maxFailed = PolicySetting::maxFailedSubjects();
         $retention = (int) $reparsed['retention_count'];
         $pendingCount = (int) ($reparsed['pending_count'] ?? 0);
         $gsCourses = is_array($gs['courses'] ?? null) ? $gs['courses'] : [];

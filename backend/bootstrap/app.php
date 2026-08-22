@@ -1,5 +1,11 @@
 <?php
 
+use App\Http\Middleware\AuthenticateFromAccessCookie;
+use App\Http\Middleware\RequireRole;
+use App\Http\Middleware\SecurityHeaders;
+use App\Http\Middleware\SetLocaleFromUrl;
+use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
+use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -14,15 +20,15 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withBroadcasting(
         __DIR__.'/../routes/channels.php',
-        ['middleware' => ['web', \App\Http\Middleware\AuthenticateFromAccessCookie::class, 'auth:sanctum']],
+        ['middleware' => ['web', AuthenticateFromAccessCookie::class, 'auth:sanctum']],
     )
     ->withMiddleware(function (Middleware $middleware): void {
         // Railway/Vercel terminate TLS at their edge and forward over HTTP.
         // Without this, generated URLs (activation emails, signed routes) use http://.
         $middleware->trustProxies(at: '*');
-        $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
-        $middleware->alias(['role' => \App\Http\Middleware\RequireRole::class]);
-        $middleware->web(append: [\App\Http\Middleware\SetLocaleFromUrl::class]);
+        $middleware->append(SecurityHeaders::class);
+        $middleware->alias(['role' => RequireRole::class]);
+        $middleware->web(append: [SetLocaleFromUrl::class]);
         // Decrypt cookies + promote access cookie → Bearer for Sanctum on all API routes.
         // Access/refresh auth cookies stay unencrypted so Sanctum can use the raw PAT;
         // XSS protection is HttpOnly + Secure + SameSite (not Laravel cookie encryption).
@@ -31,9 +37,9 @@ return Application::configure(basePath: dirname(__DIR__))
             env('AUTH_REFRESH_COOKIE', 'unifast_refresh'),
         ]);
         $middleware->api(prepend: [
-            \Illuminate\Cookie\Middleware\EncryptCookies::class,
-            \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
-            \App\Http\Middleware\AuthenticateFromAccessCookie::class,
+            EncryptCookies::class,
+            AddQueuedCookiesToResponse::class,
+            AuthenticateFromAccessCookie::class,
         ]);
         $middleware->redirectGuestsTo(fn (Request $request) => $request->is('api/*') ? null : '/login');
     })

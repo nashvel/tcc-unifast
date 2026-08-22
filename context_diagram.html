@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Context Diagram – UniFAST TES</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #fff;
+      font-family: "Times New Roman", Times, serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 30px;
+    }
+    h2 {
+      font-size: 18px;
+      font-weight: bold;
+      align-self: flex-start;
+      margin-bottom: 20px;
+    }
+    .canvas {
+      position: relative;
+      width: 960px;
+      height: 620px;
+    }
+    /* --- Center System Circle --- */
+    .system {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -55%);
+      width: 180px; height: 180px;
+      border-radius: 50%;
+      border: 2px solid #000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      font-size: 13px;
+      font-weight: bold;
+      line-height: 1.4;
+      background: #fff;
+      z-index: 10;
+    }
+    /* --- Entity Boxes --- */
+    .entity {
+      position: absolute;
+      border: 2px solid #000;
+      background: #fff;
+      padding: 8px 12px;
+      font-size: 12px;
+      font-weight: bold;
+      text-align: center;
+      min-width: 130px;
+      z-index: 10;
+    }
+    /* --- Arrow Labels --- */
+    .label {
+      position: absolute;
+      font-size: 9.5px;
+      line-height: 1.4;
+      color: #000;
+      text-align: center;
+      z-index: 20;
+    }
+    /* --- SVG Lines --- */
+    svg {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: 5;
+      overflow: visible;
+    }
+    line, polyline { stroke: #000; stroke-width: 1.5; fill: none; }
+    .caption {
+      margin-top: 30px;
+      font-size: 13px;
+      font-style: italic;
+      text-align: center;
+    }
+    @media print {
+      body { padding: 10px; }
+      .caption { margin-top: 15px; }
+    }
+  </style>
+</head>
+<body>
+
+<h2>Context Diagram</h2>
+
+<div class="canvas">
+
+  <!-- SVG Arrows -->
+  <svg>
+    <defs>
+      <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+        <path d="M0,0 L0,6 L8,3 z" fill="#000"/>
+      </marker>
+    </defs>
+
+    <!-- Office Administrator ↔ System -->
+    <!-- INTO system (right side of box → left of circle) -->
+    <line x1="178" y1="235" x2="368" y2="255" marker-end="url(#arrow)"/>
+    <line x1="178" y1="248" x2="368" y2="268" marker-end="url(#arrow)"/>
+    <line x1="178" y1="261" x2="368" y2="280" marker-end="url(#arrow)"/>
+    <!-- FROM system (left of circle → right side of box) -->
+    <line x1="368" y1="295" x2="178" y2="290" marker-end="url(#arrow)"/>
+    <line x1="368" y1="308" x2="178" y2="303" marker-end="url(#arrow)"/>
+
+    <!-- CHED → System -->
+    <line x1="790" y1="85" x2="610" y2="218" marker-end="url(#arrow)"/>
+
+    <!-- Grantee ↔ System -->
+    <!-- INTO system -->
+    <line x1="178" y1="440" x2="368" y2="340" marker-end="url(#arrow)"/>
+    <line x1="178" y1="455" x2="368" y2="350" marker-end="url(#arrow)"/>
+    <line x1="178" y1="470" x2="368" y2="360" marker-end="url(#arrow)"/>
+    <line x1="178" y1="485" x2="368" y2="370" marker-end="url(#arrow)"/>
+    <!-- FROM system -->
+    <line x1="368" y1="382" x2="178" y2="500" marker-end="url(#arrow)"/>
+    <line x1="368" y1="393" x2="178" y2="513" marker-end="url(#arrow)"/>
+    <line x1="368" y1="403" x2="178" y2="526" marker-end="url(#arrow)"/>
+
+    <!-- Staff ↔ System -->
+    <!-- INTO system -->
+    <line x1="790" y1="380" x2="602" y2="305" marker-end="url(#arrow)"/>
+    <line x1="790" y1="393" x2="602" y2="318" marker-end="url(#arrow)"/>
+    <line x1="790" y1="406" x2="602" y2="331" marker-end="url(#arrow)"/>
+    <!-- FROM system -->
+    <line x1="602" y1="255" x2="790" y2="340" marker-end="url(#arrow)"/>
+    <line x1="602" y1="268" x2="790" y2="353" marker-end="url(#arrow)"/>
+    <line x1="602" y1="280" x2="790" y2="365" marker-end="url(#arrow)"/>
+
+  </svg>
+
+  <!-- System Circle -->
+  <div class="system">UniFAST TES<br/>System</div>
+
+  <!-- External Entities -->
+  <div class="entity" style="top:200px; left:10px;">Office<br/>Administrator</div>
+  <div class="entity" style="top:40px; left:780px;">CHED<br/>(Commission on<br/>Higher Education)</div>
+  <div class="entity" style="top:440px; left:10px;">Grantee<br/>(Student)</div>
+  <div class="entity" style="top:330px; left:790px;">Staff<br/>(Document Validator)</div>
+
+
+  <!-- LABELS: Office Admin → System -->
+  <div class="label" style="top:224px; left:185px; width:165px;">Masterlist Import</div>
+  <div class="label" style="top:238px; left:185px; width:165px;">Batch &amp; Program Configuration</div>
+  <div class="label" style="top:252px; left:185px; width:165px;">Form &amp; Survey Definitions</div>
+
+  <!-- LABELS: System → Office Admin -->
+  <div class="label" style="top:287px; left:185px; width:165px;">Billing &amp; Distribution Reports</div>
+  <div class="label" style="top:301px; left:185px; width:165px;">Audit Logs &amp; Eligibility Summary</div>
+
+  <!-- LABELS: CHED → System -->
+  <div class="label" style="top:110px; left:630px; width:150px;">Official Grantee<br/>Masterlist</div>
+
+  <!-- LABELS: Grantee → System -->
+  <div class="label" style="top:430px; left:185px; width:165px;">Activation Token &amp; Credentials</div>
+  <div class="label" style="top:444px; left:185px; width:165px;">KYC Profile &amp; Identity Photos</div>
+  <div class="label" style="top:458px; left:185px; width:165px;">Document Submissions</div>
+  <div class="label" style="top:472px; left:185px; width:165px;">Survey Responses &amp; Security PIN</div>
+
+  <!-- LABELS: System → Grantee -->
+  <div class="label" style="top:492px; left:185px; width:165px;">Activation Link</div>
+  <div class="label" style="top:506px; left:185px; width:165px;">Submission Status &amp; Feedback</div>
+  <div class="label" style="top:520px; left:185px; width:165px;">Notifications</div>
+
+  <!-- LABELS: Staff → System -->
+  <div class="label" style="top:368px; left:620px; width:165px;">Approval / Return Decision</div>
+  <div class="label" style="top:382px; left:620px; width:165px;">Review Notes</div>
+  <div class="label" style="top:396px; left:620px; width:165px;">Face Match Review Decision</div>
+
+  <!-- LABELS: System → Staff -->
+  <div class="label" style="top:255px; left:620px; width:165px;">Document Packages &amp; OCR Results</div>
+  <div class="label" style="top:270px; left:620px; width:165px;">Risk Score &amp; Eligibility Assessment</div>
+  <div class="label" style="top:285px; left:620px; width:165px;">Submission Analytics</div>
+
+
+
+</div>
+
+<p class="caption">Figure X. Context Diagram of the UniFAST Tertiary Education Subsidy (TES) Management System</p>
+
+</body>
+</html>

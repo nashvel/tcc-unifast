@@ -14,6 +14,7 @@ import { useTheme } from "@/composables/useTheme";
 import LanguageSwitcher from "@/components/LanguageSwitcher.vue";
 import { withLang } from "@/i18n/routeLang";
 import VueRecaptcha from "vue3-recaptcha2";
+import DOMPurify from "dompurify";
 
 // Force light mode on login page - never use dark mode here
 onMounted(() => {
@@ -333,7 +334,7 @@ onMounted(async () => {
             <component :is="showTerms ? ChevronUp : ChevronDown" :size="14" class="ml-auto" />
           </button>
           <div v-if="showTerms" class="mt-3 max-h-48 overflow-y-auto rounded-md border bg-surface p-3 text-xs text-text-muted">
-            <div v-html="terms.content" />
+            <div v-html="DOMPurify.sanitize(terms.content)" />
           </div>
         </div>
       </div>

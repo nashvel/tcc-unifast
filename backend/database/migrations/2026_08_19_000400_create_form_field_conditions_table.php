@@ -12,12 +12,12 @@ return new class extends Migration
             $table->id();
             // The field that is SHOWN/HIDDEN based on the condition
             $table->foreignId('form_field_id')
-                  ->constrained('form_fields')
-                  ->cascadeOnDelete();
+                ->constrained('form_fields')
+                ->cascadeOnDelete();
             // The source field whose value is checked
             $table->foreignId('source_field_id')
-                  ->constrained('form_fields')
-                  ->cascadeOnDelete();
+                ->constrained('form_fields')
+                ->cascadeOnDelete();
             $table->enum('operator', [
                 'equals',
                 'not_equals',

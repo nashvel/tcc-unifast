@@ -3,12 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Mail\GranteeActivationInviteMail;
-use App\Models\ActivationToken;
+use App\Models\AcademicProgram;
 use App\Models\Batch;
 use App\Models\Grantee;
 use App\Models\MasterlistImport;
-use App\Models\MasterlistImportDetection;
 use App\Models\MasterlistImportDetectedHeader;
+use App\Models\MasterlistImportDetection;
 use App\Models\MasterlistRow;
 use App\Models\User;
 use App\Services\MasterlistSpreadsheetParser;
@@ -20,7 +20,6 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
-use Throwable;
 
 class MasterlistImportController extends Controller
 {
@@ -85,26 +84,26 @@ class MasterlistImportController extends Controller
 
         // Use parseWithDetection so DOCX/PDF uploads return table detection metadata.
         $parsed = $parser->parseWithDetection($file);
-        $parsedRows      = $parsed['rows'];
-        $detectionInfo   = $parsed['detection_info'];
+        $parsedRows = $parsed['rows'];
+        $detectionInfo = $parsed['detection_info'];
 
         $import = MasterlistImport::create([
-            'batch_id'      => $batch->id,
-            'uploaded_by'   => $request->user()->id,
+            'batch_id' => $batch->id,
+            'uploaded_by' => $request->user()->id,
             'original_name' => $file->getClientOriginalName(),
-            'stored_path'   => $storedPath,
-            'status'        => 'previewed',
+            'stored_path' => $storedPath,
+            'status' => 'previewed',
         ]);
 
         // Persist detection metadata in 3NF-normalized tables (DOCX/PDF only).
         if (is_array($detectionInfo)) {
             $detection = MasterlistImportDetection::create([
                 'masterlist_import_id' => $import->id,
-                'table_index'          => $detectionInfo['table_index'] ?? 0,
-                'detected_row_count'   => $detectionInfo['row_count']   ?? 0,
+                'table_index' => $detectionInfo['table_index'] ?? 0,
+                'detected_row_count' => $detectionInfo['row_count'] ?? 0,
             ]);
 
-            $rawHeaders     = (array) ($detectionInfo['raw_headers']     ?? []);
+            $rawHeaders = (array) ($detectionInfo['raw_headers'] ?? []);
             $matchedColumns = (array) ($detectionInfo['matched_columns'] ?? []);
             // matched_columns: { field => raw_header } — invert to { raw_header => field }
             $rawToField = array_flip($matchedColumns);
@@ -113,11 +112,11 @@ class MasterlistImportController extends Controller
             foreach ($rawHeaders as $position => $rawHeader) {
                 $headerRows[] = [
                     'detection_id' => $detection->id,
-                    'position'     => $position,
-                    'raw_header'   => (string) $rawHeader,
+                    'position' => $position,
+                    'raw_header' => (string) $rawHeader,
                     'mapped_field' => $rawToField[$rawHeader] ?? null,
-                    'created_at'   => now(),
-                    'updated_at'   => now(),
+                    'created_at' => now(),
+                    'updated_at' => now(),
                 ];
             }
 
@@ -131,7 +130,7 @@ class MasterlistImportController extends Controller
         $validRows = 0;
         $invalidRows = 0;
 
-        $validPrograms = \App\Models\AcademicProgram::query()
+        $validPrograms = AcademicProgram::query()
             ->where('is_active', true)
             ->get()
             ->flatMap(fn ($p) => [strtoupper($p->name), strtoupper($p->code)])
@@ -269,7 +268,7 @@ class MasterlistImportController extends Controller
         }
         if (($row['program'] ?? '') !== '') {
             $progStr = strtoupper(trim($row['program']));
-            if (!in_array($progStr, $validPrograms, true)) {
+            if (! in_array($progStr, $validPrograms, true)) {
                 $errors[] = 'Program not recognized in the system (Caution: update system first).';
             }
         }
@@ -303,6 +302,7 @@ class MasterlistImportController extends Controller
         }
 
         $import->delete();
+
         return response()->json(['message' => 'Import deleted successfully.']);
     }
 
@@ -338,10 +338,10 @@ class MasterlistImportController extends Controller
             'invalid_rows' => $import->invalid_rows,
             'imported_rows' => $import->imported_rows,
             'batch' => $import->batch ? [
-                'id'                  => $import->batch->id,
-                'name'                => $import->batch->name,
-                'academic_year'       => $import->batch->academic_year,
-                'semester'            => $import->batch->semester,
+                'id' => $import->batch->id,
+                'name' => $import->batch->name,
+                'academic_year' => $import->batch->academic_year,
+                'semester' => $import->batch->semester,
                 'submission_deadline' => $import->batch->submission_deadline,
             ] : null,
             'detection_info' => $this->presentDetection($import),
@@ -373,20 +373,20 @@ class MasterlistImportController extends Controller
             return null;
         }
 
-        $headers   = $detection->headers;  // already ordered by position
-        $rawHeaders     = $headers->pluck('raw_header')->all();
-        $matched        = $headers->whereNotNull('mapped_field');
-        $unmatched      = $headers->whereNull('mapped_field')->pluck('raw_header')->all();
+        $headers = $detection->headers;  // already ordered by position
+        $rawHeaders = $headers->pluck('raw_header')->all();
+        $matched = $headers->whereNotNull('mapped_field');
+        $unmatched = $headers->whereNull('mapped_field')->pluck('raw_header')->all();
         $matchedColumns = $matched->mapWithKeys(
             fn (MasterlistImportDetectedHeader $h) => [$h->mapped_field => $h->raw_header]
         )->all();
 
         return [
-            'table_index'       => $detection->table_index,
-            'raw_headers'       => $rawHeaders,
-            'matched_columns'   => $matchedColumns,
+            'table_index' => $detection->table_index,
+            'raw_headers' => $rawHeaders,
+            'matched_columns' => $matchedColumns,
             'unmatched_headers' => array_values($unmatched),
-            'row_count'         => $detection->detected_row_count,
+            'row_count' => $detection->detected_row_count,
         ];
     }
 }
