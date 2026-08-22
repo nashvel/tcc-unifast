@@ -136,9 +136,8 @@ export const studentNavigation: NavigationSection[] = [
       { labelKey: "common.dashboard", path: "/student", icon: IconDashboard },
       { labelKey: "nav.requiredDocuments", path: "/student/documents", icon: IconFileCheck },
       { labelKey: "nav.studentForms", path: "/student/forms", icon: IconForms },
-      { labelKey: "common.profile", path: "/student/profile", icon: IconUserCircle },
       { labelKey: "nav.announcements", path: "/student/announcements", icon: IconSpeakerphone },
-      { labelKey: "common.settings", path: "/student/settings", icon: IconSettings },
+      { labelKey: "common.profile", path: "/student/profile", icon: IconUserCircle },
     ],
   },
 ];

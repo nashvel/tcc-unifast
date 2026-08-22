@@ -119,7 +119,7 @@ const studentChildren: RouteRecordRaw[] = [
     path: "notifications",
     component: () => import("@/modules/notifications/StudentNotifications.vue"),
   },
-  { path: "settings", component: () => import("@/modules/settings/StudentSettings.vue") },
+  { path: "settings", redirect: (to) => withLang("/student/profile?tab=settings", to.query.lang) },
   // Student Forms
   { path: "forms", component: () => import("@/modules/forms/StudentForms.vue") },
   { path: "forms/:id", component: () => import("@/modules/forms/StudentFormRenderer.vue") },
