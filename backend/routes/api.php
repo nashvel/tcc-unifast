@@ -182,6 +182,10 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
         Route::get('/social-media-posts', [SocialMediaPostController::class, 'index']);
         Route::get('/social-media-posts/integration-status', [SocialMediaPostController::class, 'integrationStatus']);
+        Route::post('/social-media-posts/integration-status/refresh-page', [SocialMediaPostController::class, 'refreshPageProfile'])
+            ->middleware('throttle:10,1');
+        Route::post('/social-media-posts/sync-facebook', [SocialMediaPostController::class, 'syncFacebookPosts'])
+            ->middleware('throttle:10,1');
         Route::get('/social-media-posts/template', [SocialMediaPostController::class, 'template']);
         Route::post('/social-media-posts', [SocialMediaPostController::class, 'store'])->middleware('throttle:20,1');
         Route::get('/social-media-posts/{socialMediaPost}', [SocialMediaPostController::class, 'show'])
@@ -189,6 +193,15 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::post('/social-media-posts/{socialMediaPost}/dispatch', [SocialMediaPostController::class, 'dispatch'])
             ->whereNumber('socialMediaPost')
             ->middleware('throttle:10,1');
+        Route::post('/social-media-posts/{socialMediaPost}/react', [SocialMediaPostController::class, 'reactAsPage'])
+            ->whereNumber('socialMediaPost')
+            ->middleware('throttle:30,1');
+        Route::get('/social-media-posts/{socialMediaPost}/comments', [SocialMediaPostController::class, 'comments'])
+            ->whereNumber('socialMediaPost')
+            ->middleware('throttle:30,1');
+        Route::post('/social-media-posts/{socialMediaPost}/comments', [SocialMediaPostController::class, 'commentAsPage'])
+            ->whereNumber('socialMediaPost')
+            ->middleware('throttle:20,1');
 
         Route::get('/distribution-reports', [DistributionReportController::class, 'index']);
         Route::post('/distribution-reports', [DistributionReportController::class, 'store'])
@@ -291,6 +304,15 @@ Route::post('/integrations/n8n/tcc-unifast/sync', TccUnifastSyncController::clas
 Route::get('/integrations/n8n/tcc-unifast/students', TccUnifastStudentsController::class)
     ->middleware('throttle:120,1')
     ->name('integrations.n8n.tcc-unifast.students');
+
+Route::post('/integrations/n8n/social-media-page/status', [SocialMediaPostController::class, 'receivePageStatus'])
+    ->middleware('throttle:30,1')
+    ->name('integrations.n8n.social-media-page.status');
+
+Route::post('/integrations/n8n/social-media-posts/{socialMediaPost}/status', [SocialMediaPostController::class, 'receiveStatus'])
+    ->whereNumber('socialMediaPost')
+    ->middleware('throttle:30,1')
+    ->name('integrations.n8n.social-media-posts.status');
 
 // ══════════════════════════════════════════════════════════════
 // Dynamic Form Creation Module

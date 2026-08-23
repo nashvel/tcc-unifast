@@ -2,6 +2,7 @@ import { apiFetch, buildQuery } from "./client";
 import type {
   ListQuery,
   PaginatedResponse,
+  SocialMediaComment,
   SocialMediaIntegrationStatus,
   SocialMediaPost,
   SocialMediaPostTemplate,
@@ -38,6 +39,49 @@ export async function createSocialMediaPost(
 export async function getSocialMediaIntegrationStatus(): Promise<{ data: SocialMediaIntegrationStatus }> {
   return apiFetch<{ data: SocialMediaIntegrationStatus }>(
     "/api/social-media-posts/integration-status",
+  );
+}
+
+export async function refreshSocialMediaPageProfile(): Promise<{ message: string; request_id: string }> {
+  return apiFetch<{ message: string; request_id: string }>(
+    "/api/social-media-posts/integration-status/refresh-page",
+    { method: "POST" },
+  );
+}
+
+export async function syncFacebookPagePosts(): Promise<{ message: string; count: number; data: SocialMediaPost[] }> {
+  return apiFetch<{ message: string; count: number; data: SocialMediaPost[] }>(
+    "/api/social-media-posts/sync-facebook",
+    { method: "POST" },
+  );
+}
+
+export async function reactToSocialMediaPost(id: string | number): Promise<{ message: string; data: SocialMediaPost }> {
+  return apiFetch<{ message: string; data: SocialMediaPost }>(
+    `/api/social-media-posts/${id}/react`,
+    { method: "POST" },
+  );
+}
+
+export async function listSocialMediaPostComments(
+  id: string | number,
+  params: { limit?: number } = {},
+): Promise<{ message: string; count: number; data: SocialMediaComment[]; post: SocialMediaPost }> {
+  return apiFetch<{ message: string; count: number; data: SocialMediaComment[]; post: SocialMediaPost }>(
+    `/api/social-media-posts/${id}/comments${buildQuery(params)}`,
+  );
+}
+
+export async function commentOnSocialMediaPost(
+  id: string | number,
+  message: string,
+): Promise<{ message: string; data: SocialMediaComment; post: SocialMediaPost }> {
+  return apiFetch<{ message: string; data: SocialMediaComment; post: SocialMediaPost }>(
+    `/api/social-media-posts/${id}/comments`,
+    {
+      method: "POST",
+      body: JSON.stringify({ message }),
+    },
   );
 }
 
