@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DFD Level 2 - Process 3.0: Grantee Onboarding and Identity Verification</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body {
+            background-color: #f0f3f8;
+            color: #222;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            background: white;
+            padding: 16px 32px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            max-width: 1720px;
+            width: 100%;
+        }
+        .header h1 {
+            font-size: 22px;
+            color: #1a365d;
+            margin-bottom: 4px;
+        }
+        .header p {
+            color: #4a5568;
+            font-size: 13px;
+        }
+        .btn-container {
+            margin-top: 10px;
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+        .btn {
+            background: #2b6cb0;
+            color: white;
+            padding: 8px 18px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            transition: 0.2s;
+        }
+        .btn:hover {
+            background: #2c5282;
+        }
+        .diagram-wrapper {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+            max-width: 1720px;
+            width: 100%;
+            overflow-x: auto;
+        }
+        svg {
+            width: 100%;
+            height: auto;
+            min-width: 1600px;
+            display: block;
+        }
+        /* Gane & Sarson Styling */
+        .entity-box {
+            fill: #fff2cc;
+            stroke: #000000;
+            stroke-width: 1.8;
+        }
+        .entity-text {
+            font-size: 14px;
+            font-weight: bold;
+            text-anchor: middle;
+            dominant-baseline: middle;
+            fill: #000;
+        }
+        .adjacent-process-box {
+            fill: #eff6ff;
+            stroke: #1d4ed8;
+            stroke-width: 1.6;
+            stroke-dasharray: 5,4;
+        }
+        .adjacent-title {
+            font-size: 11.5px;
+            font-weight: bold;
+            text-anchor: middle;
+            dominant-baseline: middle;
+            fill: #1e40af;
+        }
+        .adjacent-sub {
+            font-size: 9px;
+            font-weight: bold;
+            text-anchor: middle;
+            dominant-baseline: middle;
+            fill: #3b82f6;
+            letter-spacing: 0.5px;
+        }
+        .process-head {
+            fill: #ffe599;
+            stroke: #000000;
+            stroke-width: 1.6;
+        }
+        .process-body {
+            fill: #ffffff;
+            stroke: #000000;
+            stroke-width: 1.6;
+        }
+        .process-num {
+            font-size: 13px;
+            font-weight: bold;
+            text-anchor: middle;
+            dominant-baseline: middle;
+            fill: #000;
+        }
+        .process-title {
+            font-size: 11.5px;
+            font-weight: bold;
+            text-anchor: middle;
+            dominant-baseline: middle;
+            fill: #000;
+        }
+        .store-tag {
+            fill: #d9d9d9;
+            stroke: #000000;
+            stroke-width: 1.5;
+        }
+        .store-body {
+            fill: #fff2cc;
+            stroke: #000000;
+            stroke-width: 1.5;
+        }
+        .store-text {
+            font-size: 11px;
+            font-weight: 600;
+            dominant-baseline: middle;
+            fill: #000;
+        }
+        .store-tag-text {
+            font-size: 11.5px;
+            font-weight: bold;
+            text-anchor: middle;
+            dominant-baseline: middle;
+            fill: #000;
+        }
+        .flow-line {
+            stroke: #000000;
+            stroke-width: 1.4;
+            fill: none;
+            marker-end: url(#arrow);
+        }
+        .flow-line-purple {
+            stroke: #7030a0;
+            stroke-width: 1.6;
+            fill: none;
+            marker-end: url(#arrow-purple);
+        }
+        .flow-label {
+            font-size: 9.5px;
+            font-weight: 500;
+            fill: #000;
+            text-anchor: middle;
+            dominant-baseline: middle;
+            font-family: Arial, sans-serif;
+        }
+        .flow-label-purple {
+            font-size: 9.5px;
+            font-weight: bold;
+            fill: #7030a0;
+            text-anchor: middle;
+            dominant-baseline: middle;
+            font-family: Arial, sans-serif;
+        }
+        .lbl-bg {
+            fill: #ffffff;
+            stroke: #cbd5e1;
+            stroke-width: 0.8;
+            rx: 3;
+        }
+        .lbl-bg-purple {
+            fill: #fdfaff;
+            stroke: #c084fc;
+            stroke-width: 0.9;
+            rx: 3;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>UniFAST TES Grantee Management System</h1>
+        <p><strong>Figure 4.3: Data Flow Diagram (DFD) Level 2</strong> — Decomposition of Process 3.0 (Grantee Onboarding &amp; Identity Verification)</p>
+        <div class="btn-container">
+            <button class="btn" onclick="window.print()">🖨️ Print / Save as PDF</button>
+        </div>
+    </div>
+
+    <div class="diagram-wrapper">
+        <svg viewBox="0 0 1700 1520" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                    <path d="M 0 1.5 L 10 5 L 0 8.5 z" fill="#000" />
+                </marker>
+                <marker id="arrow-purple" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                    <path d="M 0 1.5 L 10 5 L 0 8.5 z" fill="#7030a0" />
+                </marker>
+            </defs>
+
+            <!-- ==================== COLUMN 1: EXTERNAL ENTITIES & ADJACENT LEVEL 1 PROCESSES (LEFT) ==================== -->
+            <!-- Process 2.0 (Adjacent Level 1 Process) -->
+            <rect x="40" y="45" width="180" height="65" class="adjacent-process-box" rx="6" />
+            <text x="130" y="65" class="adjacent-sub">[ADJACENT LEVEL 1 PROCESS]</text>
+            <text x="130" y="82" class="adjacent-title">2.0 Grantee Masterlist &amp;</text>
+            <text x="130" y="97" class="adjacent-title">Batch Management</text>
+
+            <!-- Single Primary Grantee External Entity Box -->
+            <rect x="40" y="460" width="150" height="380" class="entity-box" rx="4" />
+            <text x="115" y="650" class="entity-text" style="font-size: 16px;">Grantee</text>
+
+            <!-- Process 4.0 (Adjacent Level 1 Process) -->
+            <rect x="40" y="1415" width="180" height="65" class="adjacent-process-box" rx="6" />
+            <text x="130" y="1435" class="adjacent-sub">[ADJACENT LEVEL 1 PROCESS]</text>
+            <text x="130" y="1452" class="adjacent-title">4.0 Document Submission</text>
+            <text x="130" y="1467" class="adjacent-title">&amp; Review</text>
+
+
+            <!-- ==================== COLUMN 2: SUBPROCESSES 3.1 TO 3.6 (CENTRAL SPINE) ==================== -->
+            <!-- 3.1 -->
+            <g transform="translate(560, 80)">
+                <rect x="0" y="0" width="240" height="26" rx="6" class="process-head" />
+                <rect x="0" y="26" width="240" height="50" rx="6" class="process-body" />
+                <text x="120" y="13" class="process-num">3.1</text>
+                <text x="120" y="44" class="process-title">Validate Token &amp;</text>
+                <text x="120" y="60" class="process-title">Initialize Account</text>
+            </g>
+
+            <!-- 3.2 -->
+            <g transform="translate(560, 320)">
+                <rect x="0" y="0" width="240" height="26" rx="6" class="process-head" />
+                <rect x="0" y="26" width="240" height="50" rx="6" class="process-body" />
+                <text x="120" y="13" class="process-num">3.2</text>
+                <text x="120" y="44" class="process-title">Process &amp; Cross-Match</text>
+                <text x="120" y="60" class="process-title">KYC Profile</text>
+            </g>
+
+            <!-- 3.3 -->
+            <g transform="translate(560, 570)">
+                <rect x="0" y="0" width="240" height="26" rx="6" class="process-head" />
+                <rect x="0" y="26" width="240" height="50" rx="6" class="process-body" />
+                <text x="120" y="13" class="process-num">3.3</text>
+                <text x="120" y="44" class="process-title">Extract &amp; Verify</text>
+                <text x="120" y="60" class="process-title">School ID Data</text>
+            </g>
+
+            <!-- 3.4 -->
+            <g transform="translate(560, 810)">
+                <rect x="0" y="0" width="240" height="26" rx="6" class="process-head" />
+                <rect x="0" y="26" width="240" height="50" rx="6" class="process-body" />
+                <text x="120" y="13" class="process-num">3.4</text>
+                <text x="120" y="44" class="process-title">Evaluate Biometric Liveness</text>
+                <text x="120" y="60" class="process-title">&amp; Face Match</text>
+            </g>
+
+            <!-- 3.5 -->
+            <g transform="translate(560, 1070)">
+                <rect x="0" y="0" width="240" height="26" rx="6" class="process-head" />
+                <rect x="0" y="26" width="240" height="50" rx="6" class="process-body" />
+                <text x="120" y="13" class="process-num">3.5</text>
+                <text x="120" y="44" class="process-title">Conduct Staff</text>
+                <text x="120" y="60" class="process-title">Biometric Review</text>
+            </g>
+
+            <!-- 3.6 -->
+            <g transform="translate(560, 1330)">
+                <rect x="0" y="0" width="240" height="26" rx="6" class="process-head" />
+                <rect x="0" y="26" width="240" height="50" rx="6" class="process-body" />
+                <text x="120" y="13" class="process-num">3.6</text>
+                <text x="120" y="44" class="process-title">Configure Document Vault</text>
+                <text x="120" y="60" class="process-title">Security PIN</text>
+            </g>
+
+
+            <!-- ==================== COLUMN 3: UNIQUE DATA STORES D1 TO D6 (RIGHT) ==================== -->
+            <!-- D1: User Account Records -->
+            <g transform="translate(980, 130)">
+                <rect x="0" y="0" width="35" height="36" class="store-tag" />
+                <text x="17" y="18" class="store-tag-text">D1</text>
+                <rect x="35" y="0" width="235" height="36" class="store-body" />
+                <text x="45" y="18" class="store-text">User Account Records</text>
+            </g>
+
+            <!-- D2: Grantee Records (Verified Masterlist) -->
+            <g transform="translate(980, 310)">
+                <rect x="0" y="0" width="35" height="36" class="store-tag" />
+                <text x="17" y="18" class="store-tag-text">D2</text>
+                <rect x="35" y="0" width="235" height="36" class="store-body" />
+                <text x="45" y="18" class="store-text">Grantee Records (Verified Masterlist)</text>
+            </g>
+
+            <!-- D3: Batch & Program Records -->
+            <g transform="translate(980, 365)">
+                <rect x="0" y="0" width="35" height="36" class="store-tag" />
+                <text x="17" y="18" class="store-tag-text">D3</text>
+                <rect x="35" y="0" width="235" height="36" class="store-body" />
+                <text x="45" y="18" class="store-text">Batch &amp; Program Records</text>
+            </g>
+
+            <!-- D4: Identity & Biometric Records -->
+            <g transform="translate(980, 600)">
+                <rect x="0" y="0" width="35" height="36" class="store-tag" />
+                <text x="17" y="18" class="store-tag-text">D4</text>
+                <rect x="35" y="0" width="235" height="36" class="store-body" />
+                <text x="45" y="18" class="store-text">Identity &amp; Biometric Records</text>
+            </g>
+
+            <!-- D5: Audit & Report Records -->
+            <g transform="translate(980, 1090)">
+                <rect x="0" y="0" width="35" height="36" class="store-tag" />
+                <text x="17" y="18" class="store-tag-text">D5</text>
+                <rect x="35" y="0" width="235" height="36" class="store-body" />
+                <text x="45" y="18" class="store-text">Audit &amp; Report Records</text>
+            </g>
+
+            <!-- D6: Document Vault Records -->
+            <g transform="translate(980, 1350)">
+                <rect x="0" y="0" width="35" height="36" class="store-tag" />
+                <text x="17" y="18" class="store-tag-text">D6</text>
+                <rect x="35" y="0" width="235" height="36" class="store-body" />
+                <text x="45" y="18" class="store-text">Document Vault Records</text>
+            </g>
+
+
+            <!-- ==================== COLUMN 4: STAFF & ADJACENT LEVEL 1 PROCESS (FAR RIGHT) ==================== -->
+            <!-- Process 7.0 (Adjacent Level 1 Process) -->
+            <rect x="1440" y="830" width="180" height="65" class="adjacent-process-box" rx="6" />
+            <text x="1530" y="850" class="adjacent-sub">[ADJACENT LEVEL 1 PROCESS]</text>
+            <text x="1530" y="867" class="adjacent-title">7.0 Notification</text>
+            <text x="1530" y="882" class="adjacent-title">Management</text>
+
+            <!-- Staff Entity Box -->
+            <rect x="1440" y="1065" width="140" height="65" class="entity-box" />
+            <text x="1510" y="1097" class="entity-text">Staff</text>
+
+
+            <!-- ==================== INTERNAL PROCESS FLOWS (CENTRAL VERTICAL SPINE) ==================== -->
+            <!-- 3.1 -> 3.2 -->
+            <path d="M 680 156 L 680 320" class="flow-line-purple" />
+            <rect x="690" y="225" width="145" height="18" class="lbl-bg-purple" />
+            <text x="762" y="234" class="flow-label-purple">Activated Account Context</text>
+
+            <!-- 3.2 -> 3.3 -->
+            <path d="M 680 396 L 680 570" class="flow-line-purple" />
+            <rect x="690" y="475" width="150" height="18" class="lbl-bg-purple" />
+            <text x="765" y="484" class="flow-label-purple">Validated KYC Profile Status</text>
+
+            <!-- 3.3 -> 3.4 -->
+            <path d="M 680 646 L 680 810" class="flow-line-purple" />
+            <rect x="690" y="720" width="175" height="18" class="lbl-bg-purple" />
+            <text x="777" y="729" class="flow-label-purple">ID Face Descriptor &amp; OCR Payload</text>
+
+            <!-- 3.4 -> 3.5 (Flagged Path) -->
+            <path d="M 680 886 L 680 1070" class="flow-line-purple" />
+            <rect x="690" y="970" width="165" height="18" class="lbl-bg-purple" />
+            <text x="772" y="979" class="flow-label-purple">Flagged Match (Yellow/Red Zone)</text>
+
+            <!-- 3.4 -> 3.6 (Bypass Green Zone: Direct Auto Pass) -->
+            <path d="M 560 850 L 490 850 L 490 1350 L 560 1350" class="flow-line-purple" />
+            <rect x="355" y="1100" width="130" height="18" class="lbl-bg-purple" />
+            <text x="420" y="1109" class="flow-label-purple">Auto-Pass (Green Zone)</text>
+
+            <!-- 3.5 -> 3.6 (Staff Approval Path) -->
+            <path d="M 680 1146 L 680 1330" class="flow-line-purple" />
+            <rect x="690" y="1230" width="155" height="18" class="lbl-bg-purple" />
+            <text x="767" y="1239" class="flow-label-purple">Staff Biometric Approval</text>
+
+
+            <!-- ==================== FLOWS: GRANTEE & 2.0 TO SUBPROCESSES (LEFT SIDE) ==================== -->
+            <!-- 2.0 -> 3.1 -->
+            <path d="M 220 75 L 560 95" class="flow-line" />
+            <rect x="270" y="70" width="185" height="18" class="lbl-bg" />
+            <text x="362" y="79" class="flow-label">Grantee Account Activation Info (from 2.0)</text>
+
+            <!-- Grantee -> 3.1 -->
+            <path d="M 190 490 L 250 490 L 250 125 L 560 125" class="flow-line" />
+            <rect x="270" y="116" width="180" height="18" class="lbl-bg" />
+            <text x="360" y="125" class="flow-label">Activation Token &amp; Set Password</text>
+
+            <!-- Grantee -> 3.2 -->
+            <path d="M 190 560 L 280 560 L 280 360 L 560 360" class="flow-line" />
+            <rect x="300" y="351" width="145" height="18" class="lbl-bg" />
+            <text x="372" y="360" class="flow-label">KYC Profile Information</text>
+
+            <!-- Grantee -> 3.3 -->
+            <path d="M 190 640 L 560 610" class="flow-line" />
+            <rect x="300" y="615" width="150" height="18" class="lbl-bg" />
+            <text x="375" y="624" class="flow-label">School ID Scans (Front &amp; Back)</text>
+
+            <!-- Grantee -> 3.4 -->
+            <path d="M 190 730 L 280 730 L 280 840 L 560 840" class="flow-line" />
+            <rect x="300" y="831" width="155" height="18" class="lbl-bg" />
+            <text x="377" y="840" class="flow-label">Live Challenge Stills &amp; Selfie</text>
+
+            <!-- Grantee -> 3.6 -->
+            <path d="M 190 810 L 250 810 L 250 1370 L 560 1370" class="flow-line" />
+            <rect x="300" y="1361" width="140" height="18" class="lbl-bg" />
+            <text x="370" y="1370" class="flow-label">Vault Security PIN (6 Digits)</text>
+
+            <!-- 3.6 -> 4.0 -->
+            <path d="M 560 1390 L 220 1445" class="flow-line" />
+            <rect x="270" y="1420" width="180" height="18" class="lbl-bg" />
+            <text x="360" y="1429" class="flow-label">Verified Grantee Profile Info (to 4.0)</text>
+
+
+            <!-- ==================== FLOWS: SUBPROCESSES TO DATA STORES (RIGHT SIDE) ==================== -->
+            <!-- 3.1 Data Store Flows -->
+            <path d="M 980 610 L 940 610 L 940 100 L 800 100" class="flow-line" />
+            <rect x="830" y="80" width="115" height="18" class="lbl-bg" />
+            <text x="887" y="89" class="flow-label">Hashed Token (from D4)</text>
+
+            <path d="M 800 135 L 980 145" class="flow-line" />
+            <rect x="830" y="132" width="130" height="18" class="lbl-bg" />
+            <text x="895" y="141" class="flow-label">Updated User Credentials (D1)</text>
+
+            <!-- 3.2 Data Store Flows -->
+            <path d="M 980 325 L 800 340" class="flow-line" />
+            <rect x="830" y="320" width="145" height="18" class="lbl-bg" />
+            <text x="902" y="329" class="flow-label">Verified Masterlist Data (from D2)</text>
+
+            <path d="M 980 380 L 800 370" class="flow-line" />
+            <rect x="840" y="372" width="115" height="18" class="lbl-bg" />
+            <text x="897" y="381" class="flow-label">Academic Programs (D3)</text>
+
+            <path d="M 800 355 L 980 340" class="flow-line" />
+            <rect x="835" y="345" width="125" height="18" class="lbl-bg" />
+            <text x="897" y="354" class="flow-label">Submitted KYC Data (to D2)</text>
+
+            <path d="M 800 330 L 920 330 L 920 160 L 980 160" class="flow-line" />
+            <rect x="830" y="210" width="135" height="18" class="lbl-bg" />
+            <text x="897" y="219" class="flow-label">Status: pending_identity (D1)</text>
+
+            <!-- 3.3 -> D4 (Clean Direct Horizontal Flow) -->
+            <path d="M 800 595 L 980 610" class="flow-line" />
+            <rect x="825" y="585" width="135" height="18" class="lbl-bg" />
+            <text x="892" y="594" class="flow-label">ID Reference Face &amp; OCR (D4)</text>
+
+            <!-- 3.4 -> D4 (Dedicated Track x=900) -->
+            <path d="M 800 825 L 900 825 L 900 625 L 980 625" class="flow-line" />
+            <rect x="825" y="816" width="130" height="18" class="lbl-bg" />
+            <text x="890" y="825" class="flow-label">Liveness Face Descriptors (D4)</text>
+
+            <!-- Notification Flows to Process 7.0 -->
+            <path d="M 800 855 L 1440 855" class="flow-line" />
+            <rect x="1060" y="846" width="205" height="18" class="lbl-bg" />
+            <text x="1162" y="855" class="flow-label">Auto-Pass Verification Status (to 7.0)</text>
+
+            <path d="M 800 1060 L 1360 1060 L 1360 855" class="flow-line" />
+            <rect x="1050" y="1051" width="210" height="18" class="lbl-bg" />
+            <text x="1155" y="1060" class="flow-label">Staff Review Decision Status (to 7.0)</text>
+
+            <!-- D4 -> 3.5 (Dedicated Track x=960) -->
+            <path d="M 980 635 L 960 635 L 960 1075 L 800 1075" class="flow-line" />
+            <rect x="830" y="1066" width="130" height="18" class="lbl-bg" />
+            <text x="895" y="1075" class="flow-label">Pending Review Records (D4)</text>
+
+            <!-- 3.5 <-> Staff -->
+            <path d="M 800 1090 L 1440 1080" class="flow-line" />
+            <rect x="1110" y="1065" width="165" height="18" class="lbl-bg" />
+            <text x="1192" y="1074" class="flow-label">Grantee Identity Photos for Review</text>
+
+            <path d="M 1440 1110 L 800 1115" class="flow-line" />
+            <rect x="1110" y="1115" width="160" height="18" class="lbl-bg" />
+            <text x="1190" y="1124" class="flow-label">Biometric Verification Decision</text>
+
+            <!-- 3.5 -> D5 -->
+            <path d="M 800 1105 L 980 1105" class="flow-line" />
+            <rect x="840" y="1098" width="130" height="18" class="lbl-bg" />
+            <text x="905" y="1107" class="flow-label">Biometric Review Audit (D5)</text>
+
+            <!-- 3.6 -> D6 (Direct) -->
+            <path d="M 800 1368 L 980 1368" class="flow-line" />
+            <rect x="830" y="1358" width="135" height="18" class="lbl-bg" />
+            <text x="897" y="1367" class="flow-label">Encrypted Vault PIN &amp; Init (D6)</text>
+
+            <!-- 3.6 -> D1 (Clean Outer Perimeter Track at x=1240 so it never cuts across the diagram) -->
+            <path d="M 800 1345 L 1240 1345 L 1240 150 L 1215 150" class="flow-line" />
+            <rect x="1120" y="270" width="130" height="18" class="lbl-bg" />
+            <text x="1185" y="279" class="flow-label">Account Status: Active (D1)</text>
+
+        </svg>
+    </div>
+
+</body>
+</html>

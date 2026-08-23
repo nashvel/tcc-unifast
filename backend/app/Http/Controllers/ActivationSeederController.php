@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\ActivationToken;
 use App\Models\Batch;
 use App\Models\Grantee;
+use App\Models\GranteeIdentityProfile;
+use App\Models\KycProfile;
 use App\Models\MasterlistImport;
 use App\Models\MasterlistRow;
 use App\Models\User;
@@ -13,7 +15,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
 
 /**
  * ActivationSeederController
@@ -38,12 +39,12 @@ class ActivationSeederController extends Controller
             ->orderByDesc('id')
             ->get(['id', 'name', 'academic_year', 'semester', 'status', 'is_active'])
             ->map(fn ($b) => [
-                'id'            => $b->id,
-                'name'          => $b->name,
+                'id' => $b->id,
+                'name' => $b->name,
                 'academic_year' => $b->academic_year,
-                'semester'      => $b->semester,
-                'status'        => $b->status,
-                'is_active'     => $b->is_active,
+                'semester' => $b->semester,
+                'status' => $b->status,
+                'is_active' => $b->is_active,
             ]);
 
         return response()->json(['data' => $batches]);
@@ -81,14 +82,14 @@ class ActivationSeederController extends Controller
                 }
 
                 return [
-                    'id'               => $grantee->id,
-                    'student_id'       => $grantee->student_id,
-                    'full_name'        => $grantee->full_name,
-                    'email'            => $grantee->email,
-                    'program'          => $grantee->program,
-                    'year_level'       => $grantee->year_level,
-                    'created_at'       => $grantee->created_at,
-                    'token_status'     => $tokenStatus,
+                    'id' => $grantee->id,
+                    'student_id' => $grantee->student_id,
+                    'full_name' => $grantee->full_name,
+                    'email' => $grantee->email,
+                    'program' => $grantee->program,
+                    'year_level' => $grantee->year_level,
+                    'created_at' => $grantee->created_at,
+                    'token_status' => $tokenStatus,
                     'token_expires_at' => $token?->expires_at,
                 ];
             });
@@ -103,7 +104,7 @@ class ActivationSeederController extends Controller
     public function regenerate(Grantee $grantee): JsonResponse
     {
         $user = $grantee->user;
-        if (!$user) {
+        if (! $user) {
             return response()->json(['message' => 'Grantee has no associated user account.'], 400);
         }
 
@@ -115,7 +116,7 @@ class ActivationSeederController extends Controller
 
         $plainToken = Str::random(48);
         ActivationToken::create([
-            'user_id'    => $user->id,
+            'user_id' => $user->id,
             'token_hash' => hash('sha256', $plainToken),
             'expires_at' => now()->addDays(14),
         ]);
@@ -126,11 +127,11 @@ class ActivationSeederController extends Controller
 
         return response()->json([
             'data' => [
-                'grantee_id'     => $grantee->id,
-                'full_name'      => $grantee->full_name,
-                'plain_token'    => $plainToken,
+                'grantee_id' => $grantee->id,
+                'full_name' => $grantee->full_name,
+                'plain_token' => $plainToken,
                 'activation_url' => $activationUrl,
-                'expires_at'     => now()->addDays(14)->toIso8601String(),
+                'expires_at' => now()->addDays(14)->toIso8601String(),
             ],
         ]);
     }
@@ -155,28 +156,28 @@ class ActivationSeederController extends Controller
     public function seed(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'batch_id'       => ['nullable', 'integer', 'exists:batches,id'],
-            'batch_name'     => ['required_without:batch_id', 'nullable', 'string', 'max:191'],
-            'academic_year'  => ['required_without:batch_id', 'nullable', 'string', 'max:20'],
-            'semester'       => ['required_without:batch_id', 'nullable', 'string', 'max:50'],
-            'student_id'     => ['required', 'string', 'max:50'],
-            'first_name'     => ['required', 'string', 'max:100'],
-            'last_name'      => ['required', 'string', 'max:100'],
-            'middle_name'    => ['nullable', 'string', 'max:100'],
-            'email'          => ['required', 'email', 'max:191'],
-            'program'        => ['required', 'string', 'max:100'],
-            'year_level'     => ['nullable', 'string', 'max:10'],
-            'reset_kyc'      => ['boolean'],
+            'batch_id' => ['nullable', 'integer', 'exists:batches,id'],
+            'batch_name' => ['required_without:batch_id', 'nullable', 'string', 'max:191'],
+            'academic_year' => ['required_without:batch_id', 'nullable', 'string', 'max:20'],
+            'semester' => ['required_without:batch_id', 'nullable', 'string', 'max:50'],
+            'student_id' => ['required', 'string', 'max:50'],
+            'first_name' => ['required', 'string', 'max:100'],
+            'last_name' => ['required', 'string', 'max:100'],
+            'middle_name' => ['nullable', 'string', 'max:100'],
+            'email' => ['required', 'email', 'max:191'],
+            'program' => ['required', 'string', 'max:100'],
+            'year_level' => ['nullable', 'string', 'max:10'],
+            'reset_kyc' => ['boolean'],
         ]);
 
-        $yearLevel  = $data['year_level']  ?? '1';
-        $resetKyc   = (bool) ($data['reset_kyc'] ?? false);
+        $yearLevel = $data['year_level'] ?? '1';
+        $resetKyc = (bool) ($data['reset_kyc'] ?? false);
         preg_match('/^ACTIVATION_FRONTEND_URL=(.*)/m', file_get_contents(base_path('.env')), $matches);
         $frontendUrl = rtrim((string) ($matches[1] ?? 'http://localhost:5173'), '/');
 
         $fullName = trim(
-            $data['first_name'] . ' ' .
-            (!empty($data['middle_name']) ? $data['middle_name'] . ' ' : '') .
+            $data['first_name'].' '.
+            (! empty($data['middle_name']) ? $data['middle_name'].' ' : '').
             $data['last_name']
         );
 
@@ -189,11 +190,11 @@ class ActivationSeederController extends Controller
                 $batch = Batch::query()->updateOrCreate(
                     ['name' => $data['batch_name']],
                     [
-                        'academic_year'       => $data['academic_year'],
-                        'semester'            => $data['semester'],
-                        'status'              => 'active',
-                        'window_status'       => 'active',
-                        'is_active'           => true,
+                        'academic_year' => $data['academic_year'],
+                        'semester' => $data['semester'],
+                        'status' => 'active',
+                        'window_status' => 'active',
+                        'is_active' => true,
                         'submission_deadline' => now()->addDays(45),
                     ]
                 );
@@ -207,15 +208,15 @@ class ActivationSeederController extends Controller
             $importSlug = 'activation-seeder-ui-'.$batch->id.'.csv';
             $import = MasterlistImport::query()->firstOrCreate(
                 [
-                    'batch_id'      => $batch->id,
+                    'batch_id' => $batch->id,
                     'original_name' => $importSlug,
                 ],
                 [
-                    'uploaded_by'   => $adminId,
-                    'stored_path'   => 'masterlist-imports/'.$importSlug,
-                    'status'        => 'imported',
-                    'total_rows'    => 0,
-                    'valid_rows'    => 0,
+                    'uploaded_by' => $adminId,
+                    'stored_path' => 'masterlist-imports/'.$importSlug,
+                    'status' => 'imported',
+                    'total_rows' => 0,
+                    'valid_rows' => 0,
                     'imported_rows' => 0,
                 ]
             );
@@ -230,19 +231,19 @@ class ActivationSeederController extends Controller
             $user = User::query()->updateOrCreate(
                 ['email' => $data['email']],
                 [
-                    'name'               => $fullName,
-                    'role'               => 'student',
-                    'student_id'         => $data['student_id'],
-                    'account_status'     => 'unverified',
-                    'password'           => Hash::make(Str::random(48)),
-                    'email_verified_at'  => null,
-                    'activated_at'       => null,
+                    'name' => $fullName,
+                    'role' => 'student',
+                    'student_id' => $data['student_id'],
+                    'account_status' => 'unverified',
+                    'password' => Hash::make(Str::random(48)),
+                    'email_verified_at' => null,
+                    'activated_at' => null,
                 ]
             );
 
             // ── 5. Optional KYC reset ──────────────────────────────────────────
             if ($resetKyc) {
-                \App\Models\KycProfile::query()->where('user_id', $user->id)->delete();
+                KycProfile::query()->where('user_id', $user->id)->delete();
                 // Identity profile is linked via grantee — handled after grantee upsert.
             }
 
@@ -250,20 +251,20 @@ class ActivationSeederController extends Controller
             $grantee = Grantee::query()->updateOrCreate(
                 ['student_id' => $data['student_id'], 'batch_id' => $batch->id],
                 [
-                    'user_id'           => $user->id,
-                    'student_id'        => $data['student_id'],
-                    'student_number'    => null,
-                    'full_name'         => $fullName,
-                    'email'             => $data['email'],
-                    'program'           => $data['program'],
-                    'year_level'        => $yearLevel,
-                    'status'            => 'unverified',
+                    'user_id' => $user->id,
+                    'student_id' => $data['student_id'],
+                    'student_number' => null,
+                    'full_name' => $fullName,
+                    'email' => $data['email'],
+                    'program' => $data['program'],
+                    'year_level' => $yearLevel,
+                    'status' => 'unverified',
                     'submission_status' => 'not_submitted',
                 ]
             );
 
             if ($resetKyc) {
-                \App\Models\GranteeIdentityProfile::query()->where('grantee_id', $grantee->id)->delete();
+                GranteeIdentityProfile::query()->where('grantee_id', $grantee->id)->delete();
             }
 
             // ── 7. Masterlist row ──────────────────────────────────────────────
@@ -274,16 +275,16 @@ class ActivationSeederController extends Controller
             MasterlistRow::query()->updateOrCreate(
                 [
                     'masterlist_import_id' => $import->id,
-                    'student_id'           => $data['student_id'],
+                    'student_id' => $data['student_id'],
                 ],
                 [
-                    'row_number'     => $rowNumber,
+                    'row_number' => $rowNumber,
                     'student_number' => null,
-                    'full_name'      => $fullName,
-                    'email'          => $data['email'],
-                    'program'        => $data['program'],
-                    'year_level'     => $yearLevel,
-                    'status'         => 'valid',
+                    'full_name' => $fullName,
+                    'email' => $data['email'],
+                    'program' => $data['program'],
+                    'year_level' => $yearLevel,
+                    'status' => 'valid',
                 ]
             );
 
@@ -301,7 +302,7 @@ class ActivationSeederController extends Controller
 
             $plainToken = Str::random(48);
             ActivationToken::create([
-                'user_id'    => $user->id,
+                'user_id' => $user->id,
                 'token_hash' => hash('sha256', $plainToken),
                 'expires_at' => now()->addDays(14),
             ]);
@@ -310,18 +311,18 @@ class ActivationSeederController extends Controller
 
             return response()->json([
                 'data' => [
-                    'user_id'        => $user->id,
-                    'grantee_id'     => $grantee->id,
-                    'batch_id'       => $batch->id,
-                    'batch_name'     => $batch->name,
-                    'student_id'     => $data['student_id'],
-                    'full_name'      => $fullName,
-                    'email'          => $data['email'],
-                    'program'        => $data['program'],
-                    'plain_token'    => $plainToken,
+                    'user_id' => $user->id,
+                    'grantee_id' => $grantee->id,
+                    'batch_id' => $batch->id,
+                    'batch_name' => $batch->name,
+                    'student_id' => $data['student_id'],
+                    'full_name' => $fullName,
+                    'email' => $data['email'],
+                    'program' => $data['program'],
+                    'plain_token' => $plainToken,
                     'activation_url' => $activationUrl,
-                    'expires_at'     => now()->addDays(14)->toIso8601String(),
-                    'reset_kyc'      => $resetKyc,
+                    'expires_at' => now()->addDays(14)->toIso8601String(),
+                    'reset_kyc' => $resetKyc,
                 ],
             ], 201);
         });

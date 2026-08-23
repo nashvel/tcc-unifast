@@ -10,8 +10,8 @@ return new class extends Migration
     {
         Schema::table('forms', function (Blueprint $table): void {
             $table->enum('status', ['draft', 'published', 'closed', 'archived'])
-                  ->default('draft')
-                  ->after('id');
+                ->default('draft')
+                ->after('id');
         });
     }
 

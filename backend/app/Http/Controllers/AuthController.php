@@ -27,15 +27,15 @@ class AuthController extends Controller
         $bypassCaptcha = (bool) config('services.auth.dev_bypass_captcha', false);
 
         $credentials = $request->validate([
-            'email'    => ['required', 'email'],
+            'email' => ['required', 'email'],
             'password' => ['required', 'string'],
-            'captcha'  => $bypassCaptcha ? ['nullable', 'string'] : ['required', 'string'],
+            'captcha' => $bypassCaptcha ? ['nullable', 'string'] : ['required', 'string'],
         ]);
 
         if (! $this->captchaIsValid((string) ($credentials['captcha'] ?? ''))) {
             return response()->json([
                 'message' => 'The security verification code is incorrect.',
-                'errors'  => ['captcha' => ['Failed to verify reCAPTCHA. Please try again.']],
+                'errors' => ['captcha' => ['Failed to verify reCAPTCHA. Please try again.']],
             ], 422);
         }
 
@@ -319,12 +319,12 @@ class AuthController extends Controller
     {
         if ($request->user()) {
             AuditLog::create([
-                'actor'      => $request->user()->name,
-                'role'       => ucfirst($request->user()->role),
-                'action'     => 'auth_logout',
-                'module'     => 'Authentication',
-                'target'     => $request->user()->email,
-                'context'    => ['method' => 'cookie_access_refresh'],
+                'actor' => $request->user()->name,
+                'role' => ucfirst($request->user()->role),
+                'action' => 'auth_logout',
+                'module' => 'Authentication',
+                'target' => $request->user()->email,
+                'context' => ['method' => 'cookie_access_refresh'],
                 'ip_address' => $request->ip(),
             ]);
         }
@@ -334,13 +334,14 @@ class AuthController extends Controller
         return response()->json(['message' => 'Signed out.']);
     }
 
-    private function presentUser(\App\Models\User $user, StudentOnboardingNavigator $navigator): array
+    private function presentUser(User $user, StudentOnboardingNavigator $navigator): array
     {
         $user->loadMissing(['kycProfile', 'grantee.identityProfile']);
 
         $payload = [
             ...$user->only('id', 'name', 'email', 'role', 'student_id', 'account_status'),
             'kyc_status' => $user->kycProfile?->status,
+            'has_security_pin' => ! empty($user->security_pin),
         ];
 
         if ($user->role === 'student') {
@@ -409,7 +410,7 @@ class AuthController extends Controller
         }
 
         $response = Http::asForm()->post('https://www.google.com/recaptcha/api/siteverify', [
-            'secret'   => $secret,
+            'secret' => $secret,
             'response' => $input,
         ]);
 

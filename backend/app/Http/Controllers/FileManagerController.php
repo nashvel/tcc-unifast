@@ -7,6 +7,7 @@ use App\Models\DocumentSubmission;
 use App\Models\MasterlistImport;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -32,7 +33,7 @@ class FileManagerController extends Controller
         return $this->requirementsIndex($search, $batchId, $perPage, $page);
     }
 
-    public function downloadImport(Request $request, MasterlistImport $import): StreamedResponse|\Illuminate\Http\Response
+    public function downloadImport(Request $request, MasterlistImport $import): StreamedResponse|Response
     {
         abort_unless(in_array($request->user()->role, ['developer', 'admin', 'head', 'staff'], true), 403);
 

@@ -33,6 +33,7 @@ class FormAnswer extends Model
             return null;
         }
         $decoded = json_decode($this->answer_value, true);
+
         return json_last_error() === JSON_ERROR_NONE ? $decoded : $this->answer_value;
     }
 }

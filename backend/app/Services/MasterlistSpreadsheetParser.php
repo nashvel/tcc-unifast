@@ -24,11 +24,11 @@ class MasterlistSpreadsheetParser
         $extension = strtolower($file->getClientOriginalExtension());
 
         return match ($extension) {
-            'csv'        => $this->parseCsv($file->getRealPath()),
+            'csv' => $this->parseCsv($file->getRealPath()),
             'xlsx', 'xls' => $this->parseWithLaravelExcel($file),
-            'docx'       => $this->parseBridge($file->getRealPath(), 'docx')['rows'],
-            'pdf'        => $this->parseBridge($file->getRealPath(), 'pdf')['rows'],
-            default      => throw new RuntimeException(
+            'docx' => $this->parseBridge($file->getRealPath(), 'docx')['rows'],
+            'pdf' => $this->parseBridge($file->getRealPath(), 'pdf')['rows'],
+            default => throw new RuntimeException(
                 'Upload a CSV, XLSX, PDF, or DOCX masterlist file.'
             ),
         };
@@ -51,22 +51,22 @@ class MasterlistSpreadsheetParser
             $result = $this->parseBridge($file->getRealPath(), $extension);
 
             return [
-                'rows'           => $result['rows'],
+                'rows' => $result['rows'],
                 'detection_info' => [
-                    'table_index'      => $result['table_index'] ?? null,
-                    'raw_headers'      => $result['raw_headers'] ?? [],
-                    'matched_columns'  => $result['matched_columns'] ?? [],
+                    'table_index' => $result['table_index'] ?? null,
+                    'raw_headers' => $result['raw_headers'] ?? [],
+                    'matched_columns' => $result['matched_columns'] ?? [],
                     'unmatched_headers' => $result['unmatched_headers'] ?? [],
-                    'row_count'        => $result['row_count'] ?? 0,
+                    'row_count' => $result['row_count'] ?? 0,
                 ],
             ];
         }
 
         // CSV / XLSX: no detection metadata
         $rows = match ($extension) {
-            'csv'         => $this->parseCsv($file->getRealPath()),
+            'csv' => $this->parseCsv($file->getRealPath()),
             'xlsx', 'xls' => $this->parseWithLaravelExcel($file),
-            default       => throw new RuntimeException(
+            default => throw new RuntimeException(
                 'Upload a CSV, XLSX, PDF, or DOCX masterlist file.'
             ),
         };
@@ -98,17 +98,18 @@ class MasterlistSpreadsheetParser
         $headers = null;
         $rows = [];
         $importer = new MasterlistRowsImport;
-        
+
         while (($line = fgetcsv($handle)) !== false) {
             if ($headers === null) {
                 $possibleHeaders = $this->normalizeHeaders($line);
                 if (in_array('award_number', $possibleHeaders) || in_array('student_id', $possibleHeaders) || in_array('last_name', $possibleHeaders) || in_array('full_name', $possibleHeaders)) {
                     $headers = $possibleHeaders;
                 }
+
                 continue;
             }
             $row = $importer->mapRow($headers, $line);
-            if (!empty(array_filter($row))) {
+            if (! empty(array_filter($row))) {
                 $rows[] = $row;
             }
         }
@@ -167,18 +168,19 @@ class MasterlistSpreadsheetParser
         $headers = null;
         $dataRows = [];
         $importer = new MasterlistRowsImport;
-        
+
         foreach ($lines as $line) {
             if ($headers === null) {
                 $possibleHeaders = $this->normalizeHeaders($line);
                 if (in_array('award_number', $possibleHeaders) || in_array('student_id', $possibleHeaders) || in_array('last_name', $possibleHeaders) || in_array('full_name', $possibleHeaders)) {
                     $headers = $possibleHeaders;
                 }
+
                 continue;
             }
-            
+
             $row = $importer->mapRow($headers, $line);
-            if (!empty(array_filter($row))) {
+            if (! empty(array_filter($row))) {
                 $dataRows[] = $row;
             }
         }
@@ -298,7 +300,7 @@ class MasterlistSpreadsheetParser
             $result = Process::timeout(60)->run([$python, $script, $path]);
         } catch (\Throwable $exc) {
             Log::warning('masterlist_extract.process_failed', [
-                'type'  => $type,
+                'type' => $type,
                 'error' => $exc->getMessage(),
             ]);
             throw new RuntimeException(
@@ -310,7 +312,7 @@ class MasterlistSpreadsheetParser
 
         // Isolate outermost JSON object (script may emit warnings to stdout before JSON)
         $start = strpos($raw, '{');
-        $end   = strrpos($raw, '}');
+        $end = strrpos($raw, '}');
         if ($start !== false && $end !== false && $end >= $start) {
             $raw = substr($raw, $start, $end - $start + 1);
         }
@@ -319,9 +321,9 @@ class MasterlistSpreadsheetParser
 
         if (! is_array($payload)) {
             Log::warning('masterlist_extract.bad_json', [
-                'type'        => $type,
-                'exit'        => $result->exitCode(),
-                'stderr'      => Str::limit(trim($result->errorOutput()), 300),
+                'type' => $type,
+                'exit' => $result->exitCode(),
+                'stderr' => Str::limit(trim($result->errorOutput()), 300),
                 'stdout_head' => Str::limit($raw, 200),
             ]);
             throw new RuntimeException(

@@ -12,15 +12,49 @@ import {
 import PageHeader from "@/components/ui/PageHeader.vue";
 import DiceBearAvatar from "@/components/ui/DiceBearAvatar.vue";
 
+import { authSession, loadAuthUser } from "@/auth/session";
+import { computed } from "vue";
+import { apiFetch } from "@/api/client";
+import { toast } from "@/composables/useToast";
+
 type Section = "profile" | "security" | "sessions";
 const section = ref<Section>("profile");
 const saved = ref(false);
 const passwordUpdated = ref(false);
 const nav = [
   ["profile", "Profile", "Personal information", IconUser],
-  ["security", "Security", "Change password", IconKey],
+  ["security", "Security", "Change password & PIN", IconKey],
   ["sessions", "Sessions", "Sign-in activity", IconHistory],
 ];
+
+const user = computed(() => authSession.user);
+async function refreshUser() {
+  await loadAuthUser();
+}
+
+const pinForm = ref({
+  current_password: "",
+  pin: "",
+});
+const pinBusy = ref(false);
+
+async function savePin() {
+  pinBusy.value = true;
+  try {
+    await apiFetch("/api/student/settings/pin", {
+      method: "POST",
+      body: JSON.stringify(pinForm.value),
+    });
+    toast.success(pinForm.value.pin ? "Security PIN set successfully." : "Security PIN removed.");
+    pinForm.value.current_password = "";
+    pinForm.value.pin = "";
+    await refreshUser();
+  } catch (err: unknown) {
+    toast.error(err instanceof Error ? err.message : "Failed to update PIN");
+  } finally {
+    pinBusy.value = false;
+  }
+}
 </script>
 
 <template>
@@ -136,6 +170,50 @@ const nav = [
               Update password
             </button>
           </form>
+
+          <h2 class="border-t px-4 py-3 text-sm font-semibold mt-4">Submission Security PIN</h2>
+          <div class="px-4 pb-4">
+            <p class="text-xs text-text-muted mb-4 max-w-xl">
+              Set an optional 4-6 digit PIN as an extra layer of security when submitting requirements. 
+              Leave the PIN field blank to remove your existing PIN.
+            </p>
+            <form class="max-w-xl space-y-4" @submit.prevent="savePin">
+              <label class="block">
+                <span class="mb-1.5 block text-xs font-medium">Current Password *</span>
+                <input
+                  v-model="pinForm.current_password"
+                  type="password"
+                  placeholder="Enter your password to confirm changes"
+                  required
+                  class="h-9 w-full rounded-md border px-3 text-sm"
+                />
+              </label>
+              <label class="block">
+                <span class="mb-1.5 block text-xs font-medium">New Security PIN (Optional)</span>
+                <input
+                  v-model="pinForm.pin"
+                  type="password"
+                  maxlength="6"
+                  pattern="[0-9]*"
+                  inputmode="numeric"
+                  placeholder="4-6 digits"
+                  class="h-9 w-full rounded-md border px-3 text-sm"
+                />
+              </label>
+              <div class="flex items-center gap-3">
+                <button 
+                  type="submit" 
+                  :disabled="pinBusy"
+                  class="block h-9 rounded-md bg-primary px-3 text-xs text-white hover:bg-primary-hover disabled:opacity-50"
+                >
+                  {{ pinBusy ? "Saving..." : (pinForm.pin ? "Set PIN" : "Remove PIN") }}
+                </button>
+                <p v-if="user?.has_security_pin" class="inline-flex items-center gap-1 text-xs text-success">
+                  <IconCheck :size="12" /> You have a PIN configured.
+                </p>
+              </div>
+            </form>
+          </div>
         </section>
         <template v-else
           ><section class="mb-3 rounded-lg border bg-surface p-4">

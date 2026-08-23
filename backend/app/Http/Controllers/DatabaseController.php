@@ -75,7 +75,6 @@ class DatabaseController extends Controller
     {
         $this->policy->assertEnabled();
         $this->policy->assertAllowedTable($table);
-
         if (! Schema::hasTable($table)) {
             return response()->json(['message' => "Table '{$table}' not found."], 404);
         }
@@ -115,7 +114,6 @@ class DatabaseController extends Controller
     {
         $this->policy->assertEnabled();
         $this->policy->assertAllowedTable($table);
-
         if (! Schema::hasTable($table)) {
             return response()->json(['message' => "Table '{$table}' not found."], 404);
         }

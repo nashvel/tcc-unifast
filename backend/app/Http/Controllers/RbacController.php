@@ -29,18 +29,19 @@ class RbacController extends Controller
                 if ($perm) {
                     $resolvedIds[] = $perm->id;
                 }
-            } else if (is_string($item) && trim($item) !== '') {
+            } elseif (is_string($item) && trim($item) !== '') {
                 $category = 'System';
                 if (str_contains($item, '.')) {
                     $category = ucfirst(explode('.', $item)[0]);
                 }
                 $perm = Permission::firstOrCreate(
                     ['name' => trim($item)],
-                    ['category' => $category, 'description' => 'System permission ' . $item]
+                    ['category' => $category, 'description' => 'System permission '.$item]
                 );
                 $resolvedIds[] = $perm->id;
             }
         }
+
         return array_values(array_unique($resolvedIds));
     }
 
@@ -53,7 +54,7 @@ class RbacController extends Controller
             'permission_ids' => 'nullable|array',
         ]);
 
-        if (!empty($validated['permission_ids'])) {
+        if (! empty($validated['permission_ids'])) {
             $validated['permission_ids'] = $this->resolvePermissionIds($validated['permission_ids']);
         }
 
@@ -65,13 +66,14 @@ class RbacController extends Controller
     public function show(Role $role): JsonResponse
     {
         $role->load('permissions');
+
         return response()->json(['data' => $role]);
     }
 
     public function update(Request $request, Role $role): JsonResponse
     {
         $validated = $request->validate([
-            'name' => 'sometimes|required|string|max:50|unique:roles,name,' . $role->id,
+            'name' => 'sometimes|required|string|max:50|unique:roles,name,'.$role->id,
             'description' => 'nullable|string|max:255',
             'color' => 'nullable|string|max:30',
             'permission_ids' => 'nullable|array',

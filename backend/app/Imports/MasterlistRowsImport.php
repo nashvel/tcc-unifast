@@ -14,20 +14,21 @@ class MasterlistRowsImport implements ToCollection
     public function collection(Collection $rows): void
     {
         $headers = [];
-        
+
         foreach ($rows as $row) {
             $rowArray = $row->toArray();
-            
+
             if (empty($headers)) {
                 $possibleHeaders = $this->normalizeHeaders($rowArray);
-                
+
                 // Identify the header row if it contains key columns
                 if (in_array('award_number', $possibleHeaders) || in_array('student_id', $possibleHeaders) || in_array('last_name', $possibleHeaders) || in_array('full_name', $possibleHeaders)) {
                     $headers = $possibleHeaders;
                 }
+
                 continue;
             }
-            
+
             $mapped = $this->mapRow($headers, $rowArray);
             if ($this->rowEmpty($mapped)) {
                 continue;
@@ -37,8 +38,8 @@ class MasterlistRowsImport implements ToCollection
     }
 
     /**
-     * @param list<string> $headers
-     * @param array<int, mixed> $row
+     * @param  list<string>  $headers
+     * @param  array<int, mixed>  $row
      * @return array<string, string>
      */
     public function mapRow(array $headers, array $row): array
@@ -54,22 +55,22 @@ class MasterlistRowsImport implements ToCollection
         $givenName = $normalized['given_name'] ?? '';
         $ext = $normalized['ext'] ?? '';
         $middleName = $normalized['middle_name'] ?? '';
-        
-        $fullName = $normalized['full_name'] 
-            ?? $normalized['fullname'] 
-            ?? $normalized['fullname_name'] 
+
+        $fullName = $normalized['full_name']
+            ?? $normalized['fullname']
+            ?? $normalized['fullname_name']
             ?? '';
 
         if ($fullName === '' && ($lastName !== '' || $givenName !== '')) {
             $parts = [];
             if ($lastName !== '') {
-                $parts[] = $lastName . ',';
+                $parts[] = $lastName.',';
             }
             if ($givenName !== '') {
                 $parts[] = $givenName;
             }
             if ($ext !== '') {
-                $parts[] = $ext . ',';
+                $parts[] = $ext.',';
             }
             if ($middleName !== '') {
                 $parts[] = $middleName;
@@ -105,7 +106,7 @@ class MasterlistRowsImport implements ToCollection
     }
 
     /**
-     * @param array<int, mixed> $row
+     * @param  array<int, mixed>  $row
      * @return list<string>
      */
     private function normalizeHeaders(array $row): array
@@ -113,7 +114,7 @@ class MasterlistRowsImport implements ToCollection
         $headers = [];
         foreach ($row as $header) {
             $key = Str::of((string) $header)->lower()->replaceMatches('/[^a-z0-9]+/', '_')->trim('_')->toString();
-            
+
             $key = match ($key) {
                 'name', 'student_name', 'grantee_name', 'full_name' => 'full_name',
                 'student_no', 'student_number', 'school_id_number' => 'student_number',
@@ -128,9 +129,10 @@ class MasterlistRowsImport implements ToCollection
                 'middle_name' => 'middle_name',
                 default => $key,
             };
-            
+
             $headers[] = $key;
         }
+
         return $headers;
     }
 

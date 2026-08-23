@@ -11,7 +11,7 @@ class SupportTicketController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $query = SupportTicket::query();
+        $query = SupportTicket::with(['reporter', 'assignee', 'replies.user']);
 
         if ($request->filled('status') && $request->status !== 'all') {
             $query->where('status', $request->status);
@@ -21,16 +21,18 @@ class SupportTicketController extends Controller
             $search = strtolower($request->search);
             $query->where(function ($q) use ($search) {
                 $q->whereRaw('LOWER(title) LIKE ?', ["%{$search}%"])
-                  ->orWhereRaw('LOWER(ticket_id) LIKE ?', ["%{$search}%"])
-                  ->orWhereRaw('LOWER(reporter) LIKE ?', ["%{$search}%"]);
+                    ->orWhereRaw('LOWER(ticket_id) LIKE ?', ["%{$search}%"])
+                    ->orWhereHas('reporter', function ($qReporter) use ($search) {
+                        $qReporter->whereRaw('LOWER(name) LIKE ?', ["%{$search}%"]);
+                    });
             });
         }
 
         $tickets = $query->latest()->get();
 
-        if ($tickets->isEmpty() && !SupportTicket::exists()) {
+        if ($tickets->isEmpty() && ! SupportTicket::exists()) {
             $this->seedInitialTickets();
-            $tickets = SupportTicket::query()->latest()->get();
+            $tickets = SupportTicket::with(['reporter', 'assignee', 'replies.user'])->latest()->get();
         }
 
         return response()->json(['data' => $tickets]);
@@ -47,7 +49,7 @@ class SupportTicketController extends Controller
 
         $user = $request->user();
         $count = SupportTicket::count() + 1;
-        $ticketId = 'TK-' . str_pad((string)$count, 3, '0', STR_PAD_LEFT);
+        $ticketId = 'TK-'.str_pad((string) $count, 3, '0', STR_PAD_LEFT);
 
         $ticket = SupportTicket::create([
             'ticket_id' => $ticketId,
@@ -55,10 +57,9 @@ class SupportTicketController extends Controller
             'category' => $validated['category'],
             'priority' => $validated['priority'],
             'status' => 'Open',
-            'reporter' => $user ? $user->name : 'System Developer',
-            'assignee' => 'System Developer',
+            'reporter_id' => $user ? $user->id : null,
+            'assignee_id' => null,
             'description' => $validated['description'] ?? null,
-            'replies' => [],
         ]);
 
         if ($user) {
@@ -80,7 +81,7 @@ class SupportTicketController extends Controller
         $validated = $request->validate([
             'status' => 'sometimes|required|string|in:Open,In Progress,Waiting,Resolved',
             'priority' => 'sometimes|required|string|in:Low,Normal,High,Critical',
-            'assignee' => 'nullable|string|max:100',
+            'assignee_id' => 'nullable|exists:users,id',
             'reply' => 'nullable|string',
         ]);
 
@@ -90,22 +91,20 @@ class SupportTicketController extends Controller
         if (isset($validated['priority'])) {
             $supportTicket->priority = $validated['priority'];
         }
-        if (array_key_exists('assignee', $validated)) {
-            $supportTicket->assignee = $validated['assignee'];
+        if (array_key_exists('assignee_id', $validated)) {
+            $supportTicket->assignee_id = $validated['assignee_id'];
         }
 
-        if (!empty($validated['reply'])) {
-            $replies = $supportTicket->replies ?? [];
+        if (! empty($validated['reply'])) {
             $user = $request->user();
-            $replies[] = [
-                'author' => $user ? $user->name : 'System Developer',
+            $supportTicket->replies()->create([
+                'user_id' => $user ? $user->id : null, // Assuming user_id can be null if not logged in? No, it's constrained.
                 'message' => $validated['reply'],
-                'created_at' => now()->toDateTimeString(),
-            ];
-            $supportTicket->replies = $replies;
+            ]);
         }
 
         $supportTicket->save();
+        $supportTicket->load(['reporter', 'assignee', 'replies.user']);
 
         return response()->json(['data' => $supportTicket]);
     }
@@ -119,10 +118,9 @@ class SupportTicketController extends Controller
                 'category' => 'bug',
                 'priority' => 'High',
                 'status' => 'Open',
-                'reporter' => 'Maria Santos',
-                'assignee' => 'System Developer',
+                'reporter_id' => null,
+                'assignee_id' => null,
                 'description' => 'Face verification API times out on weak mobile connections.',
-                'replies' => [],
             ],
             [
                 'ticket_id' => 'TK-002',
@@ -130,10 +128,9 @@ class SupportTicketController extends Controller
                 'category' => 'feature',
                 'priority' => 'Normal',
                 'status' => 'In Progress',
-                'reporter' => 'Office Administrator',
-                'assignee' => 'System Developer',
+                'reporter_id' => null,
+                'assignee_id' => null,
                 'description' => 'Admin requested CSV export capability for developer audit logs.',
-                'replies' => [],
             ],
             [
                 'ticket_id' => 'TK-003',
@@ -141,10 +138,9 @@ class SupportTicketController extends Controller
                 'category' => 'bug',
                 'priority' => 'Normal',
                 'status' => 'Waiting',
-                'reporter' => 'UniFAST Staff',
-                'assignee' => 'System Developer',
+                'reporter_id' => null,
+                'assignee_id' => null,
                 'description' => 'Special characters on course names cause low confidence score.',
-                'replies' => [],
             ],
         ];
 

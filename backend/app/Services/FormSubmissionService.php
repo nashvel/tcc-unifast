@@ -6,8 +6,9 @@ use App\Models\Form;
 use App\Models\FormField;
 use App\Support\SecureUpload;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Str;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class FormSubmissionService
@@ -36,7 +37,7 @@ class FormSubmissionService
      */
     public function validateSchema(Form $form, array $submitted): void
     {
-        /** @var \Illuminate\Support\Collection<int, FormField> $fields */
+        /** @var Collection<int, FormField> $fields */
         $fields = $form->fields()->get();
 
         $schemaNames = $fields->pluck('field_name')->all();
@@ -53,13 +54,14 @@ class FormSubmissionService
         $errors = [];
 
         foreach ($fields as $field) {
-            $name  = $field->field_name;
+            $name = $field->field_name;
             $value = $submitted[$name] ?? null;
             $blank = $value === null || $value === '' || $value === [];
 
             // Required check
             if ($field->is_required && $blank) {
                 $errors[$name][] = "{$field->label} is required.";
+
                 continue;
             }
 
@@ -80,22 +82,21 @@ class FormSubmissionService
     }
 
     /**
-     * @param  mixed  $value
      * @return list<string>
      */
     private function validateFieldValue(FormField $field, mixed $value): array
     {
         $errors = [];
-        $type   = $field->field_type;
+        $type = $field->field_type;
 
         match ($type) {
             'number' => $this->validateNumber($field, $value, $errors),
-            'email'  => $this->validateEmail($field, $value, $errors),
+            'email' => $this->validateEmail($field, $value, $errors),
             'select', 'radio' => $this->validateSingleChoice($field, $value, $errors),
             'checkbox' => $this->validateMultiChoice($field, $value, $errors),
-            'date'   => $this->validateDate($field, $value, $errors),
+            'date' => $this->validateDate($field, $value, $errors),
             'text', 'textarea' => $this->validateText($field, $value, $errors),
-            default  => null,
+            default => null,
         };
 
         return $errors;
@@ -106,6 +107,7 @@ class FormSubmissionService
     {
         if (! is_numeric($value)) {
             $errors[] = "{$field->label} must be a number.";
+
             return;
         }
 
@@ -147,11 +149,13 @@ class FormSubmissionService
     {
         if (! is_array($value)) {
             $errors[] = "{$field->label} must be an array of selected options.";
+
             return;
         }
 
         if ($field->is_required && empty($value)) {
             $errors[] = "At least one option must be selected for {$field->label}.";
+
             return;
         }
 
@@ -170,6 +174,7 @@ class FormSubmissionService
     {
         if (! preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) $value)) {
             $errors[] = "{$field->label} must be a valid date (YYYY-MM-DD).";
+
             return;
         }
 
@@ -243,12 +248,12 @@ class FormSubmissionService
         }
 
         // Store with UUID filename in private disk (outside public)
-        $uuid      = (string) Str::uuid();
+        $uuid = (string) Str::uuid();
         $extension = match ($file->getMimeType()) {
             'application/pdf' => 'pdf',
-            'image/jpeg'      => 'jpg',
-            'image/png'       => 'png',
-            default           => 'bin',
+            'image/jpeg' => 'jpg',
+            'image/png' => 'png',
+            default => 'bin',
         };
 
         $path = "form-uploads/{$uuid}.{$extension}";
@@ -263,9 +268,9 @@ class FormSubmissionService
     public function buildResponseHash(Form $form, ?int $granteeId, array $responses): string
     {
         $payload = json_encode([
-            'form_id'    => $form->id,
+            'form_id' => $form->id,
             'grantee_id' => $granteeId,
-            'responses'  => $responses,
+            'responses' => $responses,
         ], JSON_UNESCAPED_UNICODE | JSON_SORT_KEYS);
 
         return hash('sha256', (string) $payload);

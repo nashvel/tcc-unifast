@@ -11,7 +11,7 @@ class TermController extends Controller
     private function getOrCreateDefaultTerm(): Term
     {
         $term = Term::query()->orderByDesc('is_active')->orderByDesc('updated_at')->first();
-        if (!$term) {
+        if (! $term) {
             $term = Term::create([
                 'title' => 'TERMS AND CONDITIONS FOR TCC-UNIFAST TES PORTAL',
                 'version' => 'v2.1.0',
@@ -19,18 +19,21 @@ class TermController extends Controller
                 'is_active' => true,
             ]);
         }
+
         return $term;
     }
 
     public function index(): JsonResponse
     {
         $term = $this->getOrCreateDefaultTerm();
+
         return response()->json(['data' => [$term]]);
     }
 
     public function active(): JsonResponse
     {
         $term = $this->getOrCreateDefaultTerm();
+
         return response()->json(['data' => $term]);
     }
 
@@ -48,6 +51,7 @@ class TermController extends Controller
         }
 
         $term = Term::create($validated);
+
         return response()->json(['data' => $term], 201);
     }
 
@@ -59,7 +63,7 @@ class TermController extends Controller
     public function update(Request $request, $id): JsonResponse
     {
         $term = Term::find($id);
-        if (!$term) {
+        if (! $term) {
             $term = $this->getOrCreateDefaultTerm();
         }
 
@@ -70,17 +74,19 @@ class TermController extends Controller
             'is_active' => 'nullable|boolean',
         ]);
 
-        if (!empty($validated['is_active']) && $validated['is_active']) {
+        if (! empty($validated['is_active']) && $validated['is_active']) {
             Term::where('is_active', true)->where('id', '!=', $term->id)->update(['is_active' => false]);
         }
 
         $term->update($validated);
+
         return response()->json(['data' => $term]);
     }
 
     public function destroy(Term $term): JsonResponse
     {
         $term->delete();
+
         return response()->json(['message' => 'Term deleted.']);
     }
 }

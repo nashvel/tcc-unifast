@@ -16,10 +16,10 @@ class FormSecurityLogController extends Controller
 
         Form::findOrFail($formId);
 
-        $perPage   = min(max((int) $request->integer('per_page', 20), 1), 100);
+        $perPage = min(max((int) $request->integer('per_page', 20), 1), 100);
         $eventType = $request->query('event_type');
-        $dateFrom  = $request->query('date_from');
-        $dateTo    = $request->query('date_to');
+        $dateFrom = $request->query('date_from');
+        $dateTo = $request->query('date_to');
 
         $query = FormSecurityLog::where('form_id', $formId)
             ->orderByDesc('created_at');
@@ -33,17 +33,17 @@ class FormSecurityLogController extends Controller
         }
 
         if ($dateTo) {
-            $query->where('created_at', '<=', $dateTo . ' 23:59:59');
+            $query->where('created_at', '<=', $dateTo.' 23:59:59');
         }
 
         $paginator = $query->paginate($perPage);
-        $rows      = collect($paginator->items())->map(fn (FormSecurityLog $log) => [
-            'id'         => $log->id,
+        $rows = collect($paginator->items())->map(fn (FormSecurityLog $log) => [
+            'id' => $log->id,
             'event_type' => $log->event_type,
             'ip_address' => $log->ip_address,
-            'user_id'    => $log->user_id,
+            'user_id' => $log->user_id,
             'created_at' => $log->created_at?->toISOString(),
-            'payload'    => $log->payload,
+            'payload' => $log->payload,
         ]);
 
         return PaginatedJson::from($paginator, $rows->values());

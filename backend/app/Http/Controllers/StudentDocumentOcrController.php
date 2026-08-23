@@ -4,12 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\AuditLog;
 use App\Models\DocumentSubmission;
+use App\Services\BatchWindowService;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\ValidationException;
-use App\Services\BatchWindowService;
 
 class StudentDocumentOcrController extends Controller
 {
@@ -51,11 +51,13 @@ class StudentDocumentOcrController extends Controller
                 ->post($baseUrl.($isPdf ? '/ocr/pdf' : '/ocr/image'));
         } catch (ConnectionException) {
             $submission->update(['status' => 'ocr_failed']);
+
             return response()->json(['message' => 'OCR service is unavailable. Start the Python OCR server and try again.'], 503);
         }
 
         if ($response->failed()) {
             $submission->update(['status' => 'ocr_failed']);
+
             return response()->json([
                 'message' => $response->json('error.message', 'The document could not be processed.'),
                 'error' => $response->json('error'),

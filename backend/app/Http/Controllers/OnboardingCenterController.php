@@ -7,11 +7,12 @@ use App\Models\ActivationToken;
 use App\Models\Batch;
 use App\Models\Grantee;
 use App\Models\User;
+use App\Support\PaginatedJson;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Throwable;
 
@@ -24,14 +25,16 @@ class OnboardingCenterController extends Controller
         $invited = 0;
         $active = 0;
         $pendingFaceReview = 0;
-        
+
         $userIds = $grantees->pluck('user_id')->filter()->toArray();
         $usersWithTokens = ActivationToken::query()->whereIn('user_id', $userIds)->pluck('user_id')->toArray();
-        
+
         foreach ($grantees as $grantee) {
             $user = $grantee->user;
-            if (!$user) continue;
-            
+            if (! $user) {
+                continue;
+            }
+
             if ($user->account_status === 'active') {
                 $active++;
                 $invited++;
@@ -42,7 +45,7 @@ class OnboardingCenterController extends Controller
                 $invited++;
             }
         }
-        
+
         return response()->json([
             'data' => [
                 'total' => $total,
@@ -50,7 +53,7 @@ class OnboardingCenterController extends Controller
                 'uninvited' => $total - $invited,
                 'active' => $active,
                 'pending_face_review' => $pendingFaceReview,
-            ]
+            ],
         ]);
     }
 
@@ -64,8 +67,8 @@ class OnboardingCenterController extends Controller
         if ($search) {
             $query->where(function ($q) use ($search) {
                 $q->where('full_name', 'like', "%{$search}%")
-                  ->orWhere('student_id', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%");
+                    ->orWhere('student_id', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%");
             });
         }
 
@@ -79,7 +82,7 @@ class OnboardingCenterController extends Controller
         }
 
         $grantees = $query->paginate(20);
-        
+
         // Find which users have an activation token
         $userIds = collect($grantees->items())->pluck('user_id')->filter()->toArray();
         $usersWithTokens = ActivationToken::query()->whereIn('user_id', $userIds)->pluck('user_id')->toArray();
@@ -100,13 +103,13 @@ class OnboardingCenterController extends Controller
             ];
         });
 
-        return \App\Support\PaginatedJson::from($grantees, $rows->values());
+        return PaginatedJson::from($grantees, $rows->values());
     }
 
     public function blastInvites(Batch $batch): JsonResponse
     {
         $grantees = $batch->grantees()->with('user')->get();
-        
+
         $userIds = $grantees->pluck('user_id')->filter()->toArray();
         $usersWithTokens = ActivationToken::query()->whereIn('user_id', $userIds)->pluck('user_id')->toArray();
 
@@ -115,7 +118,9 @@ class OnboardingCenterController extends Controller
 
         foreach ($grantees as $grantee) {
             $user = $grantee->user;
-            if (!$user) continue;
+            if (! $user) {
+                continue;
+            }
 
             // Skip if they are already active/pending, or if they already have a token
             if ($user->account_status !== 'unverified' || in_array($user->id, $usersWithTokens)) {
@@ -140,7 +145,7 @@ class OnboardingCenterController extends Controller
     public function resendInvite(Grantee $grantee): JsonResponse
     {
         $user = $grantee->user;
-        if (!$user) {
+        if (! $user) {
             return response()->json(['message' => 'No user account found for this grantee.'], 404);
         }
 
@@ -149,21 +154,24 @@ class OnboardingCenterController extends Controller
         }
 
         $key = 'resend-invite-'.$grantee->id;
-        if (\Illuminate\Support\Facades\RateLimiter::tooManyAttempts($key, 1)) {
-            $seconds = \Illuminate\Support\Facades\RateLimiter::availableIn($key);
+        if (RateLimiter::tooManyAttempts($key, 1)) {
+            $seconds = RateLimiter::availableIn($key);
+
             return response()->json(['message' => "Please wait {$seconds} seconds before resending this invite."], 429);
         }
-        \Illuminate\Support\Facades\RateLimiter::hit($key, 60);
+        RateLimiter::hit($key, 60);
 
         // Delete old tokens
         ActivationToken::where('user_id', $user->id)->delete();
 
         try {
             $this->inviteUser($user);
+
             return response()->json(['message' => 'Invite resent successfully.']);
         } catch (Throwable $exception) {
-            \Illuminate\Support\Facades\RateLimiter::clear($key); // allow retry if failed
+            RateLimiter::clear($key); // allow retry if failed
             report($exception);
+
             return response()->json(['message' => 'Failed to send invite: '.$exception->getMessage()], 500);
         }
     }
@@ -171,7 +179,7 @@ class OnboardingCenterController extends Controller
     private function inviteUser(User $user): void
     {
         $temporaryPassword = $this->temporaryPassword();
-        
+
         $user->update([
             'password' => Hash::make($temporaryPassword),
         ]);
@@ -198,6 +206,7 @@ class OnboardingCenterController extends Controller
     private function activationUrl(string $plainToken): string
     {
         $frontend = rtrim((string) (env('ACTIVATION_FRONTEND_URL') ?: config('app.frontend_url') ?: env('FRONTEND_URL', 'http://localhost:5173')), '/');
+
         return $frontend.'/activate/'.$plainToken.'?lang=en';
     }
 }

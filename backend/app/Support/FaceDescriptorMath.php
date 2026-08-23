@@ -16,7 +16,6 @@ class FaceDescriptorMath
     public const ZONE_MISMATCH = 'mismatch';
 
     /**
-     * @param  mixed  $raw
      * @return list<float>
      */
     public static function normalize(mixed $raw, string $field = 'face_descriptor'): array

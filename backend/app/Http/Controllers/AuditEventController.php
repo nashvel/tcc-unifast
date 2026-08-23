@@ -19,11 +19,11 @@ class AuditEventController extends Controller
         if ($search !== '') {
             $query->where(function ($q) use ($search) {
                 $q->where('actor', 'like', "%{$search}%")
-                  ->orWhere('role', 'like', "%{$search}%")
-                  ->orWhere('action', 'like', "%{$search}%")
-                  ->orWhere('module', 'like', "%{$search}%")
-                  ->orWhere('target', 'like', "%{$search}%")
-                  ->orWhere('ip_address', 'like', "%{$search}%");
+                    ->orWhere('role', 'like', "%{$search}%")
+                    ->orWhere('action', 'like', "%{$search}%")
+                    ->orWhere('module', 'like', "%{$search}%")
+                    ->orWhere('target', 'like', "%{$search}%")
+                    ->orWhere('ip_address', 'like', "%{$search}%");
             });
         }
 

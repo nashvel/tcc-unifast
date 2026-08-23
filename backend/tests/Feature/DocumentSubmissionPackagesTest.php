@@ -16,7 +16,7 @@ class DocumentSubmissionPackagesTest extends TestCase
     public function test_staff_packages_list_groups_by_grantee_and_batch(): void
     {
         $staff = User::factory()->create(['role' => 'staff', 'account_status' => 'active']);
-        [$granteeA, $batch] = $this->seedPackage('STU-A', 4);
+        [$granteeA, $batch] = $this->seedPackage('STU-A', 3);
         [$granteeB] = $this->seedPackage('STU-B', 2, $batch);
 
         // Drafts must stay out of the staff package queue.
@@ -45,10 +45,10 @@ class DocumentSubmissionPackagesTest extends TestCase
         $packageA = $rows->firstWhere('grantee_id', $granteeA->id);
         $this->assertNotNull($packageA);
         $this->assertSame($batch->id, $packageA['batch_id']);
-        $this->assertSame('4/4', $packageA['progress']);
-        $this->assertSame(4, $packageA['slots_submitted']);
+        $this->assertSame('3/3', $packageA['progress']);
+        $this->assertSame(3, $packageA['slots_submitted']);
         $this->assertSame(
-            ['School ID', 'Course History', 'Grade Slip', 'Specimen'],
+            ['Course History', 'Grade Slip', 'ID (Back-to-Back) & Specimen'],
             collect($packageA['documents'])->pluck('tab_label')->all()
         );
 
@@ -76,12 +76,12 @@ class DocumentSubmissionPackagesTest extends TestCase
             ->getJson("/api/document-submission-packages/{$granteeIncomplete->id}/{$batch->id}")
             ->assertOk()
             ->assertJsonPath('data.student_id', 'STU-INC-SHOW')
-            ->assertJsonPath('data.progress', '2/4')
+            ->assertJsonPath('data.progress', '2/3')
             ->assertJsonPath('data.slots_submitted', 2)
             ->assertJsonPath('data.slots_expected', 4)
             ->assertJsonCount(2, 'data.documents')
-            ->assertJsonPath('data.documents.0.tab_label', 'School ID')
-            ->assertJsonPath('data.documents.1.tab_label', 'Course History');
+            ->assertJsonPath('data.documents.0.tab_label', 'Course History')
+            ->assertJsonPath('data.documents.1.tab_label', 'Grade Slip');
     }
 
     public function test_staff_package_show_404_when_no_staff_visible_docs(): void
@@ -97,17 +97,16 @@ class DocumentSubmissionPackagesTest extends TestCase
     public function test_staff_package_show_returns_ordered_tabs(): void
     {
         $staff = User::factory()->create(['role' => 'staff', 'account_status' => 'active']);
-        [$grantee, $batch] = $this->seedPackage('STU-SHOW', 4);
+        [$grantee, $batch] = $this->seedPackage('STU-SHOW', 3);
 
         $this->actingAs($staff)
             ->getJson("/api/document-submission-packages/{$grantee->id}/{$batch->id}")
             ->assertOk()
             ->assertJsonPath('data.student_id', 'STU-SHOW')
-            ->assertJsonPath('data.progress', '4/4')
-            ->assertJsonPath('data.documents.0.tab_label', 'School ID')
-            ->assertJsonPath('data.documents.1.tab_label', 'Course History')
-            ->assertJsonPath('data.documents.2.tab_label', 'Grade Slip')
-            ->assertJsonPath('data.documents.3.tab_label', 'Specimen');
+            ->assertJsonPath('data.progress', '3/3')
+            ->assertJsonPath('data.documents.0.tab_label', 'Course History')
+            ->assertJsonPath('data.documents.1.tab_label', 'Grade Slip')
+            ->assertJsonPath('data.documents.2.tab_label', 'ID (Back-to-Back) & Specimen');
     }
 
     public function test_students_cannot_list_packages(): void
@@ -159,10 +158,9 @@ class DocumentSubmissionPackagesTest extends TestCase
         ]);
 
         $slots = [
-            'school_id' => 'School ID',
             'course_history' => 'Course History',
             'grade_slip' => 'Grade Slip',
-            'specimen_signatures' => '3 Specimen Signatures',
+            'specimen_signatures' => 'ID (Back-to-Back) & Specimen',
         ];
 
         foreach (array_slice($slots, 0, $slotCount, true) as $slotKey => $label) {

@@ -12,12 +12,13 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
+use Tests\Support\FaceDescriptorFixtures;
 use Tests\TestCase;
 
 class IdentityOnboardingFlowTest extends TestCase
 {
+    use FaceDescriptorFixtures;
     use RefreshDatabase;
-    use \Tests\Support\FaceDescriptorFixtures;
 
     public function test_kyc_match_moves_to_pending_identity_not_active(): void
     {

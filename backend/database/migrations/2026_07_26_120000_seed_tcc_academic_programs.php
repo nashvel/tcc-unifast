@@ -3,7 +3,8 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 
-return new class extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         $now = now();
@@ -25,6 +26,7 @@ return new class extends Migration {
                     'is_active' => true,
                     'updated_at' => $now,
                 ]);
+
                 continue;
             }
 

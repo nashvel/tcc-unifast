@@ -4,13 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Models\AuditLog;
 use App\Models\Form;
-use App\Models\FormField;
 use App\Models\FormResponse;
 use App\Services\FormSecurityService;
 use App\Services\FormSubmissionService;
 use App\Support\PaginatedJson;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class FormResponseController extends Controller
 {
@@ -24,7 +24,7 @@ class FormResponseController extends Controller
     {
         abort_if($formId < 1, 400, 'Invalid form ID.');
 
-        $form    = Form::findOrFail($formId);
+        $form = Form::findOrFail($formId);
         $perPage = min(max((int) $request->integer('per_page', 20), 1), 100);
 
         $query = FormResponse::with(['grantee:id,full_name,student_id', 'batch:id,name'])
@@ -40,7 +40,7 @@ class FormResponseController extends Controller
         }
 
         if ($to = $request->query('date_to')) {
-            $query->where('submitted_at', '<=', $to . ' 23:59:59');
+            $query->where('submitted_at', '<=', $to.' 23:59:59');
         }
 
         if ($batchId = $request->query('batch_id')) {
@@ -50,7 +50,7 @@ class FormResponseController extends Controller
         }
 
         $paginator = $query->paginate($perPage);
-        $rows      = collect($paginator->items())
+        $rows = collect($paginator->items())
             ->map(fn (FormResponse $r) => $this->presentRow($r));
 
         return PaginatedJson::from($paginator, $rows->values());
@@ -86,7 +86,7 @@ class FormResponseController extends Controller
             return response()->json(['success' => false, 'code' => 410, 'message' => 'This form is no longer accepting responses.'], 410);
         }
 
-        $grantee   = $request->user()->grantee;
+        $grantee = $request->user()->grantee;
         $granteeId = $grantee?->id;
 
         // Check batch assignment for private grantee forms
@@ -107,32 +107,34 @@ class FormResponseController extends Controller
     /**
      * Admin only: export all responses as CSV.
      */
-    public function export(Request $request, int $formId): \Symfony\Component\HttpFoundation\StreamedResponse
+    public function export(Request $request, int $formId): StreamedResponse
     {
         abort_if($formId < 1, 400, 'Invalid form ID.');
 
-        $form      = Form::with('fields')->findOrFail($formId);
+        $form = Form::with('fields')->findOrFail($formId);
         $responses = FormResponse::with(['grantee:id,full_name,student_id'])
             ->where('form_id', $formId)
             ->orderBy('submitted_at')
             ->get();
 
-        $fields    = $form->fields->pluck('label', 'field_name')->all();
+        $fields = $form->fields->pluck('label', 'field_name')->all();
         $fieldNames = array_keys($fields);
 
         AuditLog::create([
-            'actor'      => $request->user()->name,
-            'role'       => ucfirst($request->user()->role),
-            'action'     => 'form_responses_exported',
-            'module'     => 'Forms',
-            'target'     => $form->title,
-            'context'    => ['exported_by' => $request->user()->name, 'response_count' => $responses->count()],
+            'actor' => $request->user()->name,
+            'role' => ucfirst($request->user()->role),
+            'action' => 'form_responses_exported',
+            'module' => 'Forms',
+            'target' => $form->title,
+            'context' => ['exported_by' => $request->user()->name, 'response_count' => $responses->count()],
             'ip_address' => $request->ip(),
         ]);
 
         return response()->streamDownload(function () use ($responses, $fieldNames, $fields): void {
             $out = fopen('php://output', 'w');
-            if ($out === false) return;
+            if ($out === false) {
+                return;
+            }
 
             // Header row
             fputcsv($out, array_merge(
@@ -183,6 +185,7 @@ class FormResponseController extends Controller
 
         if ($honeypot !== '' && $honeypot !== null) {
             $this->security->log('honeypot_triggered', $request, $form->id, ['honeypot_value' => '(redacted)']);
+
             // Silent 200 to fool bots — do not store response
             return response()->json(['success' => true, 'message' => 'Response submitted.']);
         }
@@ -194,9 +197,9 @@ class FormResponseController extends Controller
 
             return response()->json([
                 'success' => false,
-                'code'    => 422,
+                'code' => 422,
                 'message' => 'Validation failed',
-                'errors'  => ['submission' => ['Submission contains invalid content.']],
+                'errors' => ['submission' => ['Submission contains invalid content.']],
             ], 422);
         }
 
@@ -213,7 +216,7 @@ class FormResponseController extends Controller
             if ($request->hasFile($name)) {
                 $file = $request->file($name);
                 if ($file && $file->isValid()) {
-                    $path           = $this->submission->storeFileField($file, $field, $name);
+                    $path = $this->submission->storeFileField($file, $field, $name);
                     $cleanData[$name] = $path;
                 }
             }
@@ -225,17 +228,17 @@ class FormResponseController extends Controller
         $hash = $this->submission->buildResponseHash($form, $granteeId, $cleanData);
 
         FormResponse::create([
-            'form_id'            => $form->id,
-            'grantee_id'         => $granteeId,
-            'batch_id'           => $batchId,
-            'responses'          => $cleanData,
-            'response_hash'      => $hash,
-            'is_authenticated'   => $isAuthenticated,
-            'submitter_ip'       => mb_substr((string) $request->ip(), 0, 45),
-            'submitter_agent'    => mb_substr((string) $request->userAgent(), 0, 500),
+            'form_id' => $form->id,
+            'grantee_id' => $granteeId,
+            'batch_id' => $batchId,
+            'responses' => $cleanData,
+            'response_hash' => $hash,
+            'is_authenticated' => $isAuthenticated,
+            'submitter_ip' => mb_substr((string) $request->ip(), 0, 45),
+            'submitter_agent' => mb_substr((string) $request->userAgent(), 0, 500),
             'honeypot_triggered' => false,
-            'submitted_at'       => now(),
-            'created_at'         => now(),
+            'submitted_at' => now(),
+            'created_at' => now(),
         ]);
 
         if ($isFirstResponse) {
@@ -243,12 +246,12 @@ class FormResponseController extends Controller
         }
 
         AuditLog::create([
-            'actor'      => $request->user()?->name ?? 'Anonymous',
-            'role'       => ucfirst($request->user()?->role ?? 'guest'),
-            'action'     => 'form_response_submitted',
-            'module'     => 'Forms',
-            'target'     => $form->title,
-            'context'    => ['form_id' => $form->id, 'grantee_id' => $granteeId, 'is_authenticated' => $isAuthenticated],
+            'actor' => $request->user()?->name ?? 'Anonymous',
+            'role' => ucfirst($request->user()?->role ?? 'guest'),
+            'action' => 'form_response_submitted',
+            'module' => 'Forms',
+            'target' => $form->title,
+            'context' => ['form_id' => $form->id, 'grantee_id' => $granteeId, 'is_authenticated' => $isAuthenticated],
             'ip_address' => $request->ip(),
         ]);
 
@@ -260,22 +263,22 @@ class FormResponseController extends Controller
     private function presentRow(FormResponse $r): array
     {
         return [
-            'id'               => $r->id,
-            'grantee_name'     => $r->grantee?->full_name ?? 'Anonymous',
-            'student_id'       => $r->grantee?->student_id,
-            'batch_name'       => $r->batch?->name,
-            'submitted_at'     => $r->submitted_at?->toISOString(),
+            'id' => $r->id,
+            'grantee_name' => $r->grantee?->full_name ?? 'Anonymous',
+            'student_id' => $r->grantee?->student_id,
+            'batch_name' => $r->batch?->name,
+            'submitted_at' => $r->submitted_at?->toISOString(),
             'is_authenticated' => $r->is_authenticated,
-            'submitter_ip'     => $r->submitter_ip,
+            'submitter_ip' => $r->submitter_ip,
         ];
     }
 
     private function presentDetail(FormResponse $r): array
     {
         return array_merge($this->presentRow($r), [
-            'responses'          => $r->responses,
+            'responses' => $r->responses,
             'honeypot_triggered' => $r->honeypot_triggered,
-            'submitter_agent'    => $r->submitter_agent,
+            'submitter_agent' => $r->submitter_agent,
         ]);
     }
 }

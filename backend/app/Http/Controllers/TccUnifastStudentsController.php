@@ -22,7 +22,7 @@ class TccUnifastStudentsController extends Controller
         $table = (string) config('services.tcc_unifast_n8n.student_table', 'students');
         abort_unless(preg_match('/^[A-Za-z0-9_]+$/', $table) === 1, 500, 'Invalid student table configuration.');
         abort_unless(Schema::hasTable($table), 503, "The configured student table [{$table}] does not exist.");
-        abort_unless(Schema::hasColumn($table, 'student_id'), 503, "The configured student table requires a student_id column.");
+        abort_unless(Schema::hasColumn($table, 'student_id'), 503, 'The configured student table requires a student_id column.');
 
         $limit = (int) ($validated['limit'] ?? 500);
         $query = DB::table($table)->orderBy('student_id');

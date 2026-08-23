@@ -6,6 +6,7 @@ use App\Mail\GranteeActivationInviteMail;
 use App\Models\ActivationToken;
 use App\Models\Batch;
 use App\Models\Grantee;
+use App\Models\GranteeIdentityProfile;
 use App\Models\MasterlistImport;
 use App\Models\MasterlistRow;
 use App\Models\User;
@@ -35,7 +36,7 @@ class OnboardingFlowTest extends TestCase
 
     public function test_masterlist_preview_flags_invalid_and_duplicate_rows(): void
     {
-$admin = User::factory()->create(['role' => 'admin', 'account_status' => 'active']);
+        $admin = User::factory()->create(['role' => 'admin', 'account_status' => 'active']);
         $batch = $this->batchWithDeadline();
         $file = UploadedFile::fake()->createWithContent('ched.csv', implode("\n", [
             'student_id,full_name,email,program,year_level,student_number',
@@ -79,7 +80,7 @@ $admin = User::factory()->create(['role' => 'admin', 'account_status' => 'active
     public function test_confirm_import_creates_unverified_accounts_and_activation_tokens(): void
     {
         Mail::fake();
-$admin = User::factory()->create(['role' => 'admin', 'account_status' => 'active']);
+        $admin = User::factory()->create(['role' => 'admin', 'account_status' => 'active']);
         $batch = $this->batchWithDeadline();
         $file = UploadedFile::fake()->createWithContent('ched.csv', implode("\n", [
             'student_id,full_name,email,program,year_level,student_number',
@@ -438,7 +439,7 @@ $admin = User::factory()->create(['role' => 'admin', 'account_status' => 'active
             'year_level' => '2',
             'status' => 'kyc_verified',
         ]);
-        \App\Models\GranteeIdentityProfile::create([
+        GranteeIdentityProfile::create([
             'user_id' => $student->id,
             'grantee_id' => $grantee->id,
             'status' => 'pending_liveness',

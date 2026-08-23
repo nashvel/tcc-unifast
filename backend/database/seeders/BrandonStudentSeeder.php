@@ -106,9 +106,6 @@ class BrandonStudentSeeder extends Seeder
             ['grantee_id' => $grantee->id],
             [
                 'user_id' => $user->id,
-                'full_name' => self::FULL_NAME,
-                'student_id' => self::STUDENT_ID,
-                'program' => self::PROGRAM,
                 'year_level' => '3',
                 'status' => 'verified',
             ],

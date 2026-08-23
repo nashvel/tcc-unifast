@@ -7,6 +7,7 @@ use App\Models\GranteeIdentityProfile;
 use App\Models\RequirementIdentityCheck;
 use App\Support\VaultFileStorage;
 use Illuminate\Console\Command;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 
 class MigrateVaultPrivateStorageCommand extends Command
@@ -36,6 +37,7 @@ class MigrateVaultPrivateStorageCommand extends Command
             if ($normalized === null) {
                 $this->warn("Skipping unsafe path: {$relative}");
                 $skipped++;
+
                 continue;
             }
 
@@ -44,18 +46,21 @@ class MigrateVaultPrivateStorageCommand extends Command
 
             if ($onPrivate && ! $onPublic) {
                 $skipped++;
+
                 continue;
             }
 
             if (! $onPublic) {
                 $this->line("Missing on public disk: {$normalized}");
                 $missing++;
+
                 continue;
             }
 
             if ($dryRun) {
                 $this->info("[dry-run] Would move {$normalized}");
                 $moved++;
+
                 continue;
             }
 
@@ -108,7 +113,7 @@ class MigrateVaultPrivateStorageCommand extends Command
     }
 
     /**
-     * @return \Illuminate\Support\Collection<int, string>
+     * @return Collection<int, string>
      */
     private function collectReferencedPaths()
     {

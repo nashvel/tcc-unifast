@@ -18,7 +18,6 @@ class DocumentSubmissionController extends Controller
 {
     /** @var list<string> */
     private const EXPECTED_SLOTS = [
-        'school_id',
         'course_history',
         'grade_slip',
         'specimen_signatures',
@@ -26,7 +25,6 @@ class DocumentSubmissionController extends Controller
 
     /** @var array<string, string> */
     private const SLOT_TAB_LABELS = [
-        'school_id' => 'School ID',
         'course_history' => 'Course History',
         'grade_slip' => 'Grade Slip',
         'specimen_signatures' => 'ID (Back-to-Back) & Specimen',
@@ -240,6 +238,10 @@ class DocumentSubmissionController extends Controller
         ]);
         event(new NotificationCreated($notification));
     }
+
+    public function __construct(
+        private readonly DocumentSubmissionPresenter $presenter,
+    ) {}
 
     public function audit(): JsonResponse
     {

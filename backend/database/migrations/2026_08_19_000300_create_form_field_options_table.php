@@ -13,8 +13,8 @@ return new class extends Migration
         Schema::create('form_field_options', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('form_field_id')
-                  ->constrained('form_fields')
-                  ->cascadeOnDelete();
+                ->constrained('form_fields')
+                ->cascadeOnDelete();
             $table->string('option_value', 500);
             $table->integer('sort_order')->default(0);
             $table->timestamps();
@@ -32,10 +32,10 @@ return new class extends Migration
                 foreach ($options as $index => $value) {
                     DB::table('form_field_options')->insert([
                         'form_field_id' => $field->id,
-                        'option_value'  => (string) $value,
-                        'sort_order'    => $index,
-                        'created_at'    => now(),
-                        'updated_at'    => now(),
+                        'option_value' => (string) $value,
+                        'sort_order' => $index,
+                        'created_at' => now(),
+                        'updated_at' => now(),
                     ]);
                 }
             });

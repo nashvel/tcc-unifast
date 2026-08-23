@@ -14,11 +14,11 @@ return new class extends Migration
         Schema::create('form_answers', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('form_response_id')
-                  ->constrained('form_responses')
-                  ->cascadeOnDelete();
+                ->constrained('form_responses')
+                ->cascadeOnDelete();
             $table->foreignId('form_field_id')
-                  ->constrained('form_fields')
-                  ->cascadeOnDelete();
+                ->constrained('form_fields')
+                ->cascadeOnDelete();
             $table->longText('answer_value')->nullable();
             $table->timestamps();
 
@@ -55,10 +55,10 @@ return new class extends Migration
 
                     DB::table('form_answers')->insertOrIgnore([
                         'form_response_id' => $response->id,
-                        'form_field_id'    => $fieldId,
-                        'answer_value'     => $serialized !== '' ? Crypt::encryptString($serialized) : $serialized,
-                        'created_at'       => now(),
-                        'updated_at'       => now(),
+                        'form_field_id' => $fieldId,
+                        'answer_value' => $serialized !== '' ? Crypt::encryptString($serialized) : $serialized,
+                        'created_at' => now(),
+                        'updated_at' => now(),
                     ]);
                 }
             });

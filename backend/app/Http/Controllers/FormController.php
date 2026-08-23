@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\AuditLog;
 use App\Models\Form;
 use App\Models\FormField;
-use App\Models\FormFieldOption;
 use App\Models\FormSection;
 use App\Support\PaginatedJson;
 use Illuminate\Http\JsonResponse;
@@ -21,11 +20,11 @@ class FormController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $perPage    = min(max((int) $request->integer('per_page', 20), 1), 100);
-        $search     = trim((string) $request->query('search', ''));
+        $perPage = min(max((int) $request->integer('per_page', 20), 1), 100);
+        $search = trim((string) $request->query('search', ''));
         $visibility = $request->query('visibility');
-        $status     = $request->query('status');
-        $batchId    = $request->query('batch_id');
+        $status = $request->query('status');
+        $batchId = $request->query('batch_id');
 
         $query = Form::withTrashed(false)
             ->withCount('responses')
@@ -44,7 +43,7 @@ class FormController extends Controller
         if ($archived) {
             $query->where('status', 'archived');
         } else {
-            $query->where(function($q) {
+            $query->where(function ($q) {
                 $q->whereNull('status')->orWhere('status', '!=', 'archived');
             });
         }
@@ -62,7 +61,7 @@ class FormController extends Controller
         }
 
         $paginator = $query->paginate($perPage);
-        $rows      = collect($paginator->items())->map(fn (Form $f) => $this->present($f));
+        $rows = collect($paginator->items())->map(fn (Form $f) => $this->present($f));
 
         return PaginatedJson::from($paginator, $rows->values());
     }
@@ -70,19 +69,19 @@ class FormController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'title'           => ['required', 'string', 'max:191'],
-            'description'     => ['nullable', 'string', 'max:5000'],
-            'target_role'     => ['required', 'in:grantee,staff,all'],
-            'visibility'      => ['required', 'in:public,private'],
-            'batch_id'        => ['nullable', 'integer', 'exists:batches,id'],
-            'is_active'       => ['boolean'],
+            'title' => ['required', 'string', 'max:191'],
+            'description' => ['nullable', 'string', 'max:5000'],
+            'target_role' => ['required', 'in:grantee,staff,all'],
+            'visibility' => ['required', 'in:public,private'],
+            'batch_id' => ['nullable', 'integer', 'exists:batches,id'],
+            'is_active' => ['boolean'],
             'max_submissions' => ['nullable', 'integer', 'min:1'],
-            'closes_at'       => ['nullable', 'date', 'after:now'],
+            'closes_at' => ['nullable', 'date', 'after:now'],
         ]);
 
         $validated['created_by'] = $request->user()->id;
-        $validated['status']     = 'draft';
-        $validated['is_active']  = false; // always start as draft
+        $validated['status'] = 'draft';
+        $validated['is_active'] = false; // always start as draft
 
         if (($validated['visibility'] ?? 'private') === 'public') {
             $validated['public_token'] = (string) Str::uuid();
@@ -94,12 +93,12 @@ class FormController extends Controller
         $form->sections()->create(['title' => 'Section 1', 'sort_order' => 0]);
 
         AuditLog::create([
-            'actor'      => $request->user()->name,
-            'role'       => ucfirst($request->user()->role),
-            'action'     => 'form_created',
-            'module'     => 'Forms',
-            'target'     => $form->title,
-            'context'    => ['title' => $form->title, 'visibility' => $form->visibility],
+            'actor' => $request->user()->name,
+            'role' => ucfirst($request->user()->role),
+            'action' => 'form_created',
+            'module' => 'Forms',
+            'target' => $form->title,
+            'context' => ['title' => $form->title, 'visibility' => $form->visibility],
             'ip_address' => $request->ip(),
         ]);
 
@@ -124,18 +123,18 @@ class FormController extends Controller
     {
         abort_if($id < 1, 400, 'Invalid form ID.');
 
-        $form          = Form::findOrFail($id);
+        $form = Form::findOrFail($id);
         $oldVisibility = $form->visibility;
 
         $validated = $request->validate([
-            'title'           => ['sometimes', 'required', 'string', 'max:191'],
-            'description'     => ['nullable', 'string', 'max:5000'],
-            'target_role'     => ['sometimes', 'required', 'in:grantee,staff,all'],
-            'visibility'      => ['sometimes', 'required', 'in:public,private'],
-            'batch_id'        => ['nullable', 'integer', 'exists:batches,id'],
-            'is_active'       => ['sometimes', 'boolean'],
+            'title' => ['sometimes', 'required', 'string', 'max:191'],
+            'description' => ['nullable', 'string', 'max:5000'],
+            'target_role' => ['sometimes', 'required', 'in:grantee,staff,all'],
+            'visibility' => ['sometimes', 'required', 'in:public,private'],
+            'batch_id' => ['nullable', 'integer', 'exists:batches,id'],
+            'is_active' => ['sometimes', 'boolean'],
             'max_submissions' => ['nullable', 'integer', 'min:1'],
-            'closes_at'       => ['nullable', 'date'],
+            'closes_at' => ['nullable', 'date'],
         ]);
 
         $before = $form->only(array_keys($validated));
@@ -151,12 +150,12 @@ class FormController extends Controller
         $form->update($validated);
 
         AuditLog::create([
-            'actor'      => $request->user()->name,
-            'role'       => ucfirst($request->user()->role),
-            'action'     => 'form_updated',
-            'module'     => 'Forms',
-            'target'     => $form->title,
-            'context'    => ['before' => $before, 'after' => $form->fresh()->only(array_keys($validated))],
+            'actor' => $request->user()->name,
+            'role' => ucfirst($request->user()->role),
+            'action' => 'form_updated',
+            'module' => 'Forms',
+            'target' => $form->title,
+            'context' => ['before' => $before, 'after' => $form->fresh()->only(array_keys($validated))],
             'ip_address' => $request->ip(),
         ]);
 
@@ -177,12 +176,12 @@ class FormController extends Controller
         $form->archive();
 
         AuditLog::create([
-            'actor'      => $request->user()->name,
-            'role'       => ucfirst($request->user()->role),
-            'action'     => 'form_archived',
-            'module'     => 'Forms',
-            'target'     => $form->title,
-            'context'    => ['archived_by' => $request->user()->name],
+            'actor' => $request->user()->name,
+            'role' => ucfirst($request->user()->role),
+            'action' => 'form_archived',
+            'module' => 'Forms',
+            'target' => $form->title,
+            'context' => ['archived_by' => $request->user()->name],
             'ip_address' => $request->ip(),
         ]);
 
@@ -203,7 +202,7 @@ class FormController extends Controller
         if ($allFields->isEmpty()) {
             return response()->json([
                 'success' => false,
-                'code'    => 422,
+                'code' => 422,
                 'message' => 'A form must have at least one field before it can be published.',
             ], 422);
         }
@@ -217,21 +216,21 @@ class FormController extends Controller
         if ($choiceErrors->isNotEmpty()) {
             return response()->json([
                 'success' => false,
-                'code'    => 422,
+                'code' => 422,
                 'message' => 'Cannot publish: some fields have issues.',
-                'errors'  => $choiceErrors->values(),
+                'errors' => $choiceErrors->values(),
             ], 422);
         }
 
         $form->publish();
 
         AuditLog::create([
-            'actor'      => $request->user()->name,
-            'role'       => ucfirst($request->user()->role),
-            'action'     => 'form_published',
-            'module'     => 'Forms',
-            'target'     => $form->title,
-            'context'    => ['published_by' => $request->user()->name],
+            'actor' => $request->user()->name,
+            'role' => ucfirst($request->user()->role),
+            'action' => 'form_published',
+            'module' => 'Forms',
+            'target' => $form->title,
+            'context' => ['published_by' => $request->user()->name],
             'ip_address' => $request->ip(),
         ]);
 
@@ -245,12 +244,12 @@ class FormController extends Controller
         $form->close();
 
         AuditLog::create([
-            'actor'      => $request->user()->name,
-            'role'       => ucfirst($request->user()->role),
-            'action'     => 'form_closed',
-            'module'     => 'Forms',
-            'target'     => $form->title,
-            'context'    => [],
+            'actor' => $request->user()->name,
+            'role' => ucfirst($request->user()->role),
+            'action' => 'form_closed',
+            'module' => 'Forms',
+            'target' => $form->title,
+            'context' => [],
             'ip_address' => $request->ip(),
         ]);
 
@@ -262,30 +261,30 @@ class FormController extends Controller
         abort_if($id < 1, 400, 'Invalid form ID.');
         $form = Form::findOrFail($id);
 
-        if (!$form->is_active && $form->fields()->count() === 0) {
+        if (! $form->is_active && $form->fields()->count() === 0) {
             return response()->json([
                 'success' => false, 'code' => 422,
                 'message' => 'A form must have at least one field before it can be activated.',
             ], 422);
         }
 
-        if (!$form->is_active && !$form->allChoiceFieldsHaveOptions()) {
+        if (! $form->is_active && ! $form->allChoiceFieldsHaveOptions()) {
             return response()->json([
                 'success' => false, 'code' => 422,
                 'message' => 'All select, radio, and checkbox fields must have at least two options.',
             ], 422);
         }
 
-        $form->update(['is_active' => !$form->is_active]);
+        $form->update(['is_active' => ! $form->is_active]);
         $action = $form->fresh()->is_active ? 'form_activated' : 'form_deactivated';
 
         AuditLog::create([
-            'actor'      => $request->user()->name,
-            'role'       => ucfirst($request->user()->role),
-            'action'     => $action,
-            'module'     => 'Forms',
-            'target'     => $form->title,
-            'context'    => ['is_active' => $form->fresh()->is_active],
+            'actor' => $request->user()->name,
+            'role' => ucfirst($request->user()->role),
+            'action' => $action,
+            'module' => 'Forms',
+            'target' => $form->title,
+            'context' => ['is_active' => $form->fresh()->is_active],
             'ip_address' => $request->ip(),
         ]);
 
@@ -308,12 +307,12 @@ class FormController extends Controller
         $form->update(['public_token' => $newToken]);
 
         AuditLog::create([
-            'actor'      => $request->user()->name,
-            'role'       => ucfirst($request->user()->role),
-            'action'     => 'form_token_regenerated',
-            'module'     => 'Forms',
-            'target'     => $form->title,
-            'context'    => ['new_token' => $newToken],
+            'actor' => $request->user()->name,
+            'role' => ucfirst($request->user()->role),
+            'action' => 'form_token_regenerated',
+            'module' => 'Forms',
+            'target' => $form->title,
+            'context' => ['new_token' => $newToken],
             'ip_address' => $request->ip(),
         ]);
 
@@ -326,23 +325,23 @@ class FormController extends Controller
 
     public function storeSections(Request $request, int $formId): JsonResponse
     {
-        $form      = Form::findOrFail($formId);
+        $form = Form::findOrFail($formId);
         $validated = $request->validate([
-            'title'       => ['required', 'string', 'max:191'],
+            'title' => ['required', 'string', 'max:191'],
             'description' => ['nullable', 'string', 'max:1000'],
         ]);
 
-        $maxOrder  = $form->sections()->max('sort_order') ?? -1;
-        $section   = $form->sections()->create(array_merge($validated, ['sort_order' => $maxOrder + 1]));
+        $maxOrder = $form->sections()->max('sort_order') ?? -1;
+        $section = $form->sections()->create(array_merge($validated, ['sort_order' => $maxOrder + 1]));
 
         return response()->json(['data' => $this->presentSection($section)], 201);
     }
 
     public function updateSection(Request $request, int $formId, int $sectionId): JsonResponse
     {
-        $section   = FormSection::where('form_id', $formId)->findOrFail($sectionId);
+        $section = FormSection::where('form_id', $formId)->findOrFail($sectionId);
         $validated = $request->validate([
-            'title'       => ['sometimes', 'required', 'string', 'max:191'],
+            'title' => ['sometimes', 'required', 'string', 'max:191'],
             'description' => ['nullable', 'string', 'max:1000'],
         ]);
 
@@ -362,7 +361,7 @@ class FormController extends Controller
     public function reorderSections(Request $request, int $formId): JsonResponse
     {
         $validated = $request->validate([
-            'order'   => ['required', 'array'],
+            'order' => ['required', 'array'],
             'order.*' => ['integer'],
         ]);
 
@@ -380,22 +379,22 @@ class FormController extends Controller
 
     public function storeField(Request $request, int $formId): JsonResponse
     {
-        $form      = Form::findOrFail($formId);
+        $form = Form::findOrFail($formId);
         $validated = $request->validate([
-            'section_id'     => ['nullable', 'integer', 'exists:form_sections,id'],
-            'label'          => ['required', 'string', 'max:191'],
-            'field_name'     => ['required', 'string', 'max:100', 'regex:/^[a-z][a-z0-9_]*$/'],
-            'field_type'     => ['required', 'in:text,number,email,select,radio,checkbox,textarea,date,file'],
-            'placeholder'    => ['nullable', 'string', 'max:191'],
-            'options'        => ['nullable', 'array'],
-            'options.*'      => ['string', 'max:500'],
-            'is_required'    => ['boolean'],
-            'min_value'      => ['nullable', 'string', 'max:50'],
-            'max_value'      => ['nullable', 'string', 'max:50'],
-            'min_length'     => ['nullable', 'integer', 'min:0'],
-            'max_length'     => ['nullable', 'integer', 'min:1'],
+            'section_id' => ['nullable', 'integer', 'exists:form_sections,id'],
+            'label' => ['required', 'string', 'max:191'],
+            'field_name' => ['required', 'string', 'max:100', 'regex:/^[a-z][a-z0-9_]*$/'],
+            'field_type' => ['required', 'in:text,number,email,select,radio,checkbox,textarea,date,file'],
+            'placeholder' => ['nullable', 'string', 'max:191'],
+            'options' => ['nullable', 'array'],
+            'options.*' => ['string', 'max:500'],
+            'is_required' => ['boolean'],
+            'min_value' => ['nullable', 'string', 'max:50'],
+            'max_value' => ['nullable', 'string', 'max:50'],
+            'min_length' => ['nullable', 'integer', 'min:0'],
+            'max_length' => ['nullable', 'integer', 'min:1'],
             'accepted_types' => ['nullable', 'string', 'max:191'],
-            'max_file_size'  => ['nullable', 'integer', 'min:1'],
+            'max_file_size' => ['nullable', 'integer', 'min:1'],
         ]);
 
         $validated['form_id'] = $formId;
@@ -415,7 +414,7 @@ class FormController extends Controller
             $validated['section_id'] = $section->id;
         }
 
-        $maxOrder            = $form->fields()->max('sort_order') ?? -1;
+        $maxOrder = $form->fields()->max('sort_order') ?? -1;
         $validated['sort_order'] = $maxOrder + 1;
 
         $options = $validated['options'] ?? null;
@@ -437,22 +436,22 @@ class FormController extends Controller
 
     public function updateField(Request $request, int $formId, int $fieldId): JsonResponse
     {
-        $field     = FormField::where('form_id', $formId)->findOrFail($fieldId);
+        $field = FormField::where('form_id', $formId)->findOrFail($fieldId);
         $validated = $request->validate([
-            'section_id'     => ['nullable', 'integer', 'exists:form_sections,id'],
-            'label'          => ['sometimes', 'required', 'string', 'max:191'],
-            'field_name'     => ['sometimes', 'required', 'string', 'max:100', 'regex:/^[a-z][a-z0-9_]*$/'],
-            'field_type'     => ['sometimes', 'required', 'in:text,number,email,select,radio,checkbox,textarea,date,file'],
-            'placeholder'    => ['nullable', 'string', 'max:191'],
-            'options'        => ['nullable', 'array'],
-            'options.*'      => ['string', 'max:500'],
-            'is_required'    => ['sometimes', 'boolean'],
-            'min_value'      => ['nullable', 'string', 'max:50'],
-            'max_value'      => ['nullable', 'string', 'max:50'],
-            'min_length'     => ['nullable', 'integer', 'min:0'],
-            'max_length'     => ['nullable', 'integer', 'min:1'],
+            'section_id' => ['nullable', 'integer', 'exists:form_sections,id'],
+            'label' => ['sometimes', 'required', 'string', 'max:191'],
+            'field_name' => ['sometimes', 'required', 'string', 'max:100', 'regex:/^[a-z][a-z0-9_]*$/'],
+            'field_type' => ['sometimes', 'required', 'in:text,number,email,select,radio,checkbox,textarea,date,file'],
+            'placeholder' => ['nullable', 'string', 'max:191'],
+            'options' => ['nullable', 'array'],
+            'options.*' => ['string', 'max:500'],
+            'is_required' => ['sometimes', 'boolean'],
+            'min_value' => ['nullable', 'string', 'max:50'],
+            'max_value' => ['nullable', 'string', 'max:50'],
+            'min_length' => ['nullable', 'integer', 'min:0'],
+            'max_length' => ['nullable', 'integer', 'min:1'],
             'accepted_types' => ['nullable', 'string', 'max:191'],
-            'max_file_size'  => ['nullable', 'integer', 'min:1'],
+            'max_file_size' => ['nullable', 'integer', 'min:1'],
         ]);
 
         if (isset($validated['options'])) {
@@ -483,7 +482,7 @@ class FormController extends Controller
     public function reorderFields(Request $request, int $formId): JsonResponse
     {
         $validated = $request->validate([
-            'order'   => ['required', 'array'],
+            'order' => ['required', 'array'],
             'order.*' => ['integer'],
         ]);
 
@@ -504,9 +503,9 @@ class FormController extends Controller
         abort_if($id < 1, 400, 'Invalid form ID.');
         $form = Form::findOrFail($id);
 
-        $total         = $form->responses()->count();
+        $total = $form->responses()->count();
         $authenticated = $form->responses()->where('is_authenticated', true)->count();
-        $anonymous     = $total - $authenticated;
+        $anonymous = $total - $authenticated;
 
         // Submissions per day — last 30 days
         $byDay = $form->responses()
@@ -520,21 +519,21 @@ class FormController extends Controller
         // Fill zeros for days with no submissions
         $days = [];
         for ($i = 29; $i >= 0; $i--) {
-            $date    = now()->subDays($i)->toDateString();
-            $found   = $byDay->firstWhere('date', $date);
-            $days[]  = ['date' => $date, 'count' => $found ? $found['count'] : 0];
+            $date = now()->subDays($i)->toDateString();
+            $found = $byDay->firstWhere('date', $date);
+            $days[] = ['date' => $date, 'count' => $found ? $found['count'] : 0];
         }
 
-        $totalFields    = $form->fields()->count();
+        $totalFields = $form->fields()->count();
         $requiredFields = $form->fields()->where('is_required', true)->count();
 
         return response()->json([
             'data' => [
-                'total'          => $total,
-                'authenticated'  => $authenticated,
-                'anonymous'      => $anonymous,
-                'by_day'         => $days,
-                'total_fields'   => $totalFields,
+                'total' => $total,
+                'authenticated' => $authenticated,
+                'anonymous' => $anonymous,
+                'by_day' => $days,
+                'total_fields' => $totalFields,
                 'required_fields' => $requiredFields,
             ],
         ]);
@@ -547,22 +546,22 @@ class FormController extends Controller
     private function present(Form $form): array
     {
         return [
-            'id'              => $form->id,
-            'title'           => $form->title,
-            'description'     => $form->description,
-            'status'          => $form->status ?? 'draft',
-            'visibility'      => $form->visibility,
-            'target_role'     => $form->target_role,
-            'is_active'       => $form->is_active,
+            'id' => $form->id,
+            'title' => $form->title,
+            'description' => $form->description,
+            'status' => $form->status ?? 'draft',
+            'visibility' => $form->visibility,
+            'target_role' => $form->target_role,
+            'is_active' => $form->is_active,
             'max_submissions' => $form->max_submissions,
-            'closes_at'       => $form->closes_at?->toISOString(),
-            'batch_id'        => $form->batch_id,
-            'batch_name'      => $form->batch?->name,
-            'public_token'    => $form->public_token,
+            'closes_at' => $form->closes_at?->toISOString(),
+            'batch_id' => $form->batch_id,
+            'batch_name' => $form->batch?->name,
+            'public_token' => $form->public_token,
             'responses_count' => $form->responses_count ?? 0,
-            'created_by'      => $form->creator?->name,
-            'created_at'      => $form->created_at?->toISOString(),
-            'updated_at'      => $form->updated_at?->toISOString(),
+            'created_by' => $form->creator?->name,
+            'created_at' => $form->created_at?->toISOString(),
+            'updated_at' => $form->updated_at?->toISOString(),
         ];
     }
 
@@ -576,12 +575,12 @@ class FormController extends Controller
     private function presentSection(FormSection $section): array
     {
         return [
-            'id'          => $section->id,
-            'form_id'     => $section->form_id,
-            'title'       => $section->title,
+            'id' => $section->id,
+            'form_id' => $section->form_id,
+            'title' => $section->title,
             'description' => $section->description,
-            'sort_order'  => $section->sort_order,
-            'fields'      => ($section->relationLoaded('fields')
+            'sort_order' => $section->sort_order,
+            'fields' => ($section->relationLoaded('fields')
                 ? $section->fields->map(fn (FormField $f) => $this->presentField($f))->values()
                 : []),
         ];
@@ -590,30 +589,30 @@ class FormController extends Controller
     private function presentField(FormField $field): array
     {
         return [
-            'id'             => $field->id,
-            'form_id'        => $field->form_id,
-            'section_id'     => $field->section_id,
-            'label'          => $field->label,
-            'field_name'     => $field->field_name,
-            'field_type'     => $field->field_type,
-            'placeholder'    => $field->placeholder,
-            'options'        => $field->relationLoaded('fieldOptions')
+            'id' => $field->id,
+            'form_id' => $field->form_id,
+            'section_id' => $field->section_id,
+            'label' => $field->label,
+            'field_name' => $field->field_name,
+            'field_type' => $field->field_type,
+            'placeholder' => $field->placeholder,
+            'options' => $field->relationLoaded('fieldOptions')
                                  ? $field->fieldOptions->pluck('option_value')->toArray()
                                  : ($field->options ?? []),
-            'is_required'    => $field->is_required,
-            'min_value'      => $field->min_value,
-            'max_value'      => $field->max_value,
-            'min_length'     => $field->min_length,
-            'max_length'     => $field->max_length,
+            'is_required' => $field->is_required,
+            'min_value' => $field->min_value,
+            'max_value' => $field->max_value,
+            'min_length' => $field->min_length,
+            'max_length' => $field->max_length,
             'accepted_types' => $field->accepted_types,
-            'max_file_size'  => $field->max_file_size,
-            'sort_order'     => $field->sort_order,
-            'is_locked'      => $field->is_locked,
-            'conditions'     => $field->relationLoaded('conditions')
+            'max_file_size' => $field->max_file_size,
+            'sort_order' => $field->sort_order,
+            'is_locked' => $field->is_locked,
+            'conditions' => $field->relationLoaded('conditions')
                                  ? $field->conditions->map(fn ($c) => [
-                                     'id'              => $c->id,
+                                     'id' => $c->id,
                                      'source_field_id' => $c->source_field_id,
-                                     'operator'        => $c->operator,
+                                     'operator' => $c->operator,
                                      'condition_value' => $c->condition_value,
                                  ])->values()
                                  : [],
