@@ -55,7 +55,7 @@ function deadline(f: AssignedForm) {
           class="flex min-h-[260px] flex-col items-center justify-center px-6 py-8 text-center md:col-span-2 xl:col-span-3"
         >
           <video
-            class="h-32 w-32 object-contain"
+            class="h-80 w-80 max-w-full object-contain"
             :src="emptyFormsVideo"
             autoplay
             loop
