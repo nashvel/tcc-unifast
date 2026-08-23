@@ -728,7 +728,7 @@ class SocialMediaPostController extends Controller
 
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:160'],
-            'message' => ['required', 'string', 'min:20', 'max:5000'],
+            'message' => ['required', 'string', 'min:1', 'max:5000'],
             'channel' => ['required', 'string', Rule::in(['facebook'])],
             'campaign' => ['nullable', 'string', 'max:120'],
             'batch_id' => ['nullable', 'integer', 'exists:batches,id'],
@@ -854,15 +854,18 @@ class SocialMediaPostController extends Controller
         }
 
         if ($response->failed()) {
+            $responseBody = $response->json() ?: ['body' => $response->body()];
+            $errorMessage = (string) data_get($responseBody, 'error', 'n8n rejected the publish request.');
+
             $socialMediaPost->update([
                 'status' => 'failed',
                 'n8n_status' => 'http_'.$response->status(),
-                'n8n_response' => $response->json() ?: ['body' => $response->body()],
-                'error_message' => 'n8n rejected the publish request.',
+                'n8n_response' => $responseBody,
+                'error_message' => $errorMessage,
             ]);
 
             return response()->json([
-                'message' => 'n8n rejected the publish request.',
+                'message' => $errorMessage,
                 'request_id' => $requestId,
                 'data' => $this->present($socialMediaPost->fresh(['batch', 'creator'])),
             ], 502);

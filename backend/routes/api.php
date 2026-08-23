@@ -192,7 +192,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
             ->whereNumber('socialMediaPost');
         Route::post('/social-media-posts/{socialMediaPost}/dispatch', [SocialMediaPostController::class, 'dispatch'])
             ->whereNumber('socialMediaPost')
-            ->middleware('throttle:10,1');
+            ->middleware('throttle:60,1');
         Route::post('/social-media-posts/{socialMediaPost}/react', [SocialMediaPostController::class, 'reactAsPage'])
             ->whereNumber('socialMediaPost')
             ->middleware('throttle:30,1');

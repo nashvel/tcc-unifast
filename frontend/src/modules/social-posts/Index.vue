@@ -146,7 +146,16 @@ const engagementNotifications = computed(() =>
 const batches = computed(() => batchesQuery.data.value?.data ?? []);
 const selectedBatch = computed(() => batches.value.find((batch) => batch.id === form.batch_id) ?? null);
 const characterCount = computed(() => form.message.length);
-const hasContent = computed(() => form.title.trim().length > 0 && form.message.trim().length >= 20);
+const hasContent = computed(() => form.message.trim().length > 0);
+const draftTitle = computed(() => {
+  const explicitTitle = form.title.trim();
+  if (explicitTitle.length > 0) return explicitTitle;
+
+  const firstLine = form.message.trim().split(/\n+/)[0]?.trim() ?? "";
+  if (firstLine.length > 0) return firstLine.slice(0, 80);
+
+  return "Facebook Page post";
+});
 const integration = computed(() => integrationQuery.data.value?.data ?? null);
 const facebookPage = computed(() => integration.value?.page ?? null);
 const hasVerifiedFacebookPage = computed(() => Boolean(facebookPage.value?.name?.trim() && facebookPage.value?.id?.trim()));
@@ -323,7 +332,7 @@ const templateMutation = useMutation({
 const createMutation = useMutation({
   mutationFn: () =>
     createSocialMediaPost({
-      title: form.title.trim(),
+      title: draftTitle.value,
       message: form.message.trim(),
       channel: "facebook",
       campaign: form.campaign.trim() || null,
