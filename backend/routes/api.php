@@ -131,7 +131,8 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
         Route::get('/eligibility', [EligibilityController::class, 'index']);
         Route::get('/eligibility/{grantee}', [EligibilityController::class, 'show']);
-        Route::post('/eligibility/{grantee}/notify', [EligibilityController::class, 'notify'])->middleware('throttle:20,1');
+        Route::post('/eligibility/{grantee}/notify', [EligibilityController::class, 'notify'])
+            ->middleware(['permission:run_eligibility', 'throttle:20,1']);
 
         Route::get('/academic-programs', [AcademicProgramController::class, 'index']);
         Route::post('/academic-programs', [AcademicProgramController::class, 'store'])->middleware('throttle:20,1');
@@ -148,9 +149,11 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('/batches', [BatchController::class, 'index']);
         Route::get('/batches/{batch}', [BatchController::class, 'show']);
         Route::get('/masterlist/imports', [MasterlistImportController::class, 'index']);
-        Route::post('/masterlist/imports/preview', [MasterlistImportController::class, 'preview'])->middleware('throttle:10,1');
+        Route::post('/masterlist/imports/preview', [MasterlistImportController::class, 'preview'])
+            ->middleware(['permission:view_masterlist', 'throttle:10,1']);
         Route::get('/masterlist/imports/{import}', [MasterlistImportController::class, 'show']);
-        Route::delete('/masterlist/imports/{import}', [MasterlistImportController::class, 'destroy']);
+        Route::delete('/masterlist/imports/{import}', [MasterlistImportController::class, 'destroy'])
+            ->middleware('permission:view_masterlist');
         Route::get('/academic-records', [AcademicRecordController::class, 'index']);
         Route::get('/academic-records/{record}', [AcademicRecordController::class, 'show']);
         Route::get('/document-submissions', [DocumentSubmissionController::class, 'index']);
@@ -176,9 +179,10 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
         Route::get('/billing-reports', [BillingReportController::class, 'index']);
         Route::post('/billing-reports', [BillingReportController::class, 'store'])
-            ->middleware(['role:developer,admin,head', 'throttle:10,1']);
+            ->middleware(['role:developer,admin,head', 'permission:generate_reports', 'throttle:10,1']);
         Route::get('/billing-reports/{report}', [BillingReportController::class, 'show']);
-        Route::get('/billing-reports/{report}/download', [BillingReportController::class, 'download']);
+        Route::get('/billing-reports/{report}/download', [BillingReportController::class, 'download'])
+            ->middleware('permission:generate_reports');
 
         Route::get('/social-media-posts', [SocialMediaPostController::class, 'index']);
         Route::get('/social-media-posts/integration-status', [SocialMediaPostController::class, 'integrationStatus']);
@@ -205,19 +209,26 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
         Route::get('/distribution-reports', [DistributionReportController::class, 'index']);
         Route::post('/distribution-reports', [DistributionReportController::class, 'store'])
-            ->middleware(['role:developer,admin,head', 'throttle:10,1']);
+            ->middleware(['role:developer,admin,head', 'permission:generate_reports', 'throttle:10,1']);
         Route::get('/distribution-reports/{report}', [DistributionReportController::class, 'show']);
-        Route::get('/distribution-reports/{report}/download', [DistributionReportController::class, 'download']);
+        Route::get('/distribution-reports/{report}/download', [DistributionReportController::class, 'download'])
+            ->middleware('permission:generate_reports');
     });
 
     // Developer/Admin/Head/Staff routes (for batch ops and masterlists)
     Route::middleware('role:developer,admin,head,staff')->group(function (): void {
-        Route::post('/batches', [BatchController::class, 'store'])->middleware('throttle:20,1');
-        Route::patch('/batches/{batch}', [BatchController::class, 'update'])->middleware('throttle:20,1');
-        Route::post('/batches/{batch}/activate', [BatchController::class, 'activate'])->middleware('throttle:10,1');
-        Route::post('/batches/{batch}/deactivate', [BatchController::class, 'deactivate'])->middleware('throttle:10,1');
-        Route::post('/batches/{batch}/extend-deadline', [BatchController::class, 'extendDeadline'])->middleware('throttle:10,1');
-        Route::post('/masterlist/imports/{import}/confirm', [MasterlistImportController::class, 'confirm'])->middleware('throttle:10,1');
+        Route::post('/batches', [BatchController::class, 'store'])
+            ->middleware(['permission:manage_batches', 'throttle:20,1']);
+        Route::patch('/batches/{batch}', [BatchController::class, 'update'])
+            ->middleware(['permission:manage_batches', 'throttle:20,1']);
+        Route::post('/batches/{batch}/activate', [BatchController::class, 'activate'])
+            ->middleware(['permission:manage_batches', 'throttle:10,1']);
+        Route::post('/batches/{batch}/deactivate', [BatchController::class, 'deactivate'])
+            ->middleware(['permission:manage_batches', 'throttle:10,1']);
+        Route::post('/batches/{batch}/extend-deadline', [BatchController::class, 'extendDeadline'])
+            ->middleware(['permission:manage_batches', 'throttle:10,1']);
+        Route::post('/masterlist/imports/{import}/confirm', [MasterlistImportController::class, 'confirm'])
+            ->middleware(['permission:view_masterlist', 'throttle:10,1']);
 
         Route::get('/onboarding-center/batches/{batch}/stats', [OnboardingCenterController::class, 'stats']);
         Route::get('/onboarding-center/batches/{batch}/grantees', [OnboardingCenterController::class, 'grantees']);
@@ -288,9 +299,9 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('/database/tables/{table}/rows', [DatabaseController::class, 'rows']);
     });
 
-    // Document submission review (developer/admin/staff)
+        // Document submission review — requires validate_documents permission on top of role check.
     Route::post('/document-submissions/{submission}/review', [DocumentSubmissionController::class, 'review'])
-        ->middleware(['role:developer,admin,head,staff', 'throttle:60,1']);
+        ->middleware(['role:developer,admin,head,staff', 'permission:validate_documents', 'throttle:60,1']);
 
     // Audit events (any authenticated user)
     Route::post('/audit-events', [AuditEventController::class, 'store'])->middleware('throttle:240,1');

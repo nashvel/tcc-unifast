@@ -120,7 +120,8 @@ class DatabaseController extends Controller
 
         $page = max(1, $request->integer('page', 1));
         $perPage = min(100, max(1, $request->integer('per_page', 25)));
-        $search = $request->input('search', '');
+        // Limit search length to prevent wide LIKE scans across all columns (authenticated DoS).
+        $search = mb_substr((string) $request->input('search', ''), 0, 100);
         $sort = $request->input('sort', 'id');
         $direction = $request->input('direction', 'asc');
 

@@ -600,8 +600,10 @@ class SocialMediaPostController extends Controller
         ]);
 
         $expectedRequestId = Cache::get('social_media.facebook_page_refresh_request_id');
-        abort_if(
-            $expectedRequestId !== null && ! hash_equals((string) $expectedRequestId, $validated['request_id']),
+        // Require a stored request_id AND verify it matches — if the cache key has expired,
+        // the callback is stale/unexpected and must be rejected to prevent data injection.
+        abort_unless(
+            $expectedRequestId !== null && hash_equals((string) $expectedRequestId, $validated['request_id']),
             409,
             'The callback request ID does not match the latest Facebook Page profile request.'
         );

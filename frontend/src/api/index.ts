@@ -9,3 +9,4 @@ export * from "./documents";
 export * from "./masterlist";
 export * from "./socialMediaPosts";
 export * from "./audit";
+export * from "./rbac";

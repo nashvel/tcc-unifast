@@ -15,7 +15,24 @@ class RequirePermission
     {
         $user = $request->user();
 
-        abort_unless($user && $user->hasAnyPermission($permissions), 403);
+        abort_unless($user, 403);
+
+        // The developer role is a superuser — grant all permissions unconditionally.
+        if ($user->role === 'developer') {
+            return $next($request);
+        }
+
+        // Also skip the check if the user holds a RBAC role whose permissions include
+        // the wildcard '*' (i.e. another superuser-class role).
+        $user->loadMissing('roles.permissions');
+        $hasSuperRole = $user->roles->contains(
+            fn ($role) => in_array('*', (array) ($role->permissions->pluck('name')->all()), true)
+        );
+        if ($hasSuperRole) {
+            return $next($request);
+        }
+
+        abort_unless($user->hasAnyPermission($permissions), 403);
 
         return $next($request);
     }

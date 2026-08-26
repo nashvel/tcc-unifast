@@ -5,6 +5,47 @@ namespace App\Http\Controllers;
 use App\Models\AuditLog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+
+class AuditEventController extends Controller
+{
+    /**
+     * Client-side actions that are permitted to write to the audit log.
+     * This allowlist prevents log poisoning — authenticated users cannot
+     * fabricate security-sensitive event names (auth_login, etc.).
+     *
+     * @var list<string>
+     */
+    private const ALLOWED_ACTIONS = [
+        'page_view',
+        'document_preview_opened',
+        'document_download_clicked',
+        'form_opened',
+        'form_abandoned',
+        'session_idle_warning_shown',
+        'ui_error_encountered',
+        'tour_started',
+        'tour_completed',
+        'tour_dismissed',
+    ];
+
+    /**
+     * Client-side modules permitted in frontend audit events.
+     *
+     * @var list<string>
+     */
+    private const ALLOWED_MODULES = [
+        'Navigation',
+        'Documents',
+        'Forms',
+        'Session',
+        'UI',
+        'Tour',
+        'Dashboard',
+        'Profile',
+        'Announcements',
+        'Notifications',
+    ];
 
 class AuditEventController extends Controller
 {
@@ -44,8 +85,8 @@ class AuditEventController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'action' => ['required', 'string', 'max:100'],
-            'module' => ['required', 'string', 'max:100'],
+            'action' => ['required', 'string', 'max:100', Rule::in(self::ALLOWED_ACTIONS)],
+            'module' => ['required', 'string', 'max:100', Rule::in(self::ALLOWED_MODULES)],
             'target' => ['nullable', 'string', 'max:255'],
             'context' => ['nullable', 'array'],
         ]);

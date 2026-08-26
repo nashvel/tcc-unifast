@@ -28,6 +28,19 @@ class RolePermissionSeeder extends Seeder
             ['name' => 'kyc.submit', 'description' => 'Submit KYC verification', 'category' => 'KYC'],
             ['name' => 'rbac.manage', 'description' => 'Manage roles and permissions', 'category' => 'RBAC'],
             ['name' => 'view_database', 'description' => 'View allowlisted database tables', 'category' => 'Developer Tools'],
+            // ── Route-level permission slugs (used by permission: middleware) ──
+            ['name' => 'view_masterlist', 'description' => 'View and import the grantee masterlist', 'category' => 'Operations'],
+            ['name' => 'manage_batches', 'description' => 'Create, activate, deactivate, and extend submission batches', 'category' => 'Operations'],
+            ['name' => 'manage_grantees', 'description' => 'Edit grantee records and update statuses', 'category' => 'Operations'],
+            ['name' => 'validate_documents', 'description' => 'Approve, reject, or request resubmission of documents', 'category' => 'Validation'],
+            ['name' => 'review_academics', 'description' => 'Access academic records and grade breakdowns', 'category' => 'Validation'],
+            ['name' => 'run_eligibility', 'description' => 'Run eligibility checks and send eligibility notices', 'category' => 'Validation'],
+            ['name' => 'publish_announcements', 'description' => 'Create and publish announcements to students', 'category' => 'Communication'],
+            ['name' => 'generate_reports', 'description' => 'Generate and download billing and distribution reports', 'category' => 'Communication'],
+            ['name' => 'manage_support', 'description' => 'View and respond to support tickets', 'category' => 'Communication'],
+            ['name' => 'view_audit_trail', 'description' => 'Access the full system audit log', 'category' => 'Administration'],
+            ['name' => 'manage_users', 'description' => 'Invite, deactivate, and manage staff accounts', 'category' => 'Administration'],
+            ['name' => 'change_settings', 'description' => 'Modify policy and system settings', 'category' => 'Administration'],
         ];
 
         $permissionModels = [];
@@ -44,21 +57,34 @@ class RolePermissionSeeder extends Seeder
                 'description' => 'Full system access including API management and configuration',
                 'color' => 'bg-purple-100 text-purple-700',
                 'is_system' => true,
-                'permissions' => array_keys($permissionModels),
+                'permissions' => array_keys($permissionModels), // all permissions
             ],
             [
                 'name' => 'admin',
                 'description' => 'Manages users, batches, and system settings',
                 'color' => 'bg-blue-100 text-blue-700',
                 'is_system' => true,
-                'permissions' => ['users.read', 'users.write', 'batches.read', 'batches.write', 'settings.read', 'settings.write', 'audit.read', 'rbac.manage'],
+                'permissions' => [
+                    'users.read', 'users.write', 'batches.read', 'batches.write',
+                    'settings.read', 'settings.write', 'audit.read', 'rbac.manage',
+                    // Route-level slugs
+                    'view_masterlist', 'manage_batches', 'manage_grantees',
+                    'validate_documents', 'review_academics', 'run_eligibility',
+                    'publish_announcements', 'generate_reports', 'manage_support',
+                    'view_audit_trail', 'manage_users', 'change_settings',
+                ],
             ],
             [
                 'name' => 'staff',
                 'description' => 'Handles document validation and grantee management',
                 'color' => 'bg-green-100 text-green-700',
                 'is_system' => true,
-                'permissions' => ['grantees.read', 'documents.read', 'documents.write', 'academic.read', 'batches.read'],
+                'permissions' => [
+                    'grantees.read', 'documents.read', 'documents.write', 'academic.read', 'batches.read',
+                    // Route-level slugs — staff gets validation and operations, not admin tasks
+                    'view_masterlist', 'manage_batches', 'manage_grantees',
+                    'validate_documents', 'review_academics', 'run_eligibility',
+                ],
             ],
             [
                 'name' => 'student',

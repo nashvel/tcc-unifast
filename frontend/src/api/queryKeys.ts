@@ -24,6 +24,11 @@ export const queryKeys = {
   formSecurityLogs: (id: string | number, params?: unknown) => ["forms", String(id), "security-logs", params] as const,
   assignedForms: ["forms", "assigned"] as const,
   publicForm: (token: string) => ["forms", "public", token] as const,
+  rbac: ["rbac"] as const,
+  rbacRoles: ["rbac", "roles"] as const,
+  rbacRole: (id: number) => ["rbac", "roles", id] as const,
+  rbacPermissions: ["rbac", "permissions"] as const,
+  rbacUserRoles: (userId: number) => ["rbac", "users", userId, "roles"] as const,
   studentAnnouncements: ["student-announcements"] as const,
   studentAnnouncement: (id: string | number) => ["student-announcements", String(id)] as const,
 };
