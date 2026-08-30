@@ -202,13 +202,19 @@
     <div class="header">
         <h1>UniFAST TES Grantee Management System</h1>
         <p><strong>Figure 4.3: Data Flow Diagram (DFD) Level 2</strong> — Decomposition of Process 3.0 (Grantee Onboarding &amp; Identity Verification)</p>
+        <p style="font-size:12px; color:#555; margin-top:4px;">
+            Identity-first ordering: <strong>3.1</strong> issues a scoped onboarding session with
+            <em>no credential</em>; the account password is created only at <strong>3.6</strong>,
+            after the biometric match at 3.4 (or staff approval at 3.5). The vault PIN
+            (<strong>3.7</strong>) is an opt-in setting, not a step in the funnel.
+        </p>
         <div class="btn-container">
             <button class="btn" onclick="window.print()">🖨️ Print / Save as PDF</button>
         </div>
     </div>
 
     <div class="diagram-wrapper">
-        <svg viewBox="0 0 1700 1520" xmlns="http://www.w3.org/2000/svg">
+        <svg viewBox="0 0 1700 1600" xmlns="http://www.w3.org/2000/svg">
             <defs>
                 <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
                     <path d="M 0 1.5 L 10 5 L 0 8.5 z" fill="#000" />
@@ -236,14 +242,14 @@
             <text x="130" y="1467" class="adjacent-title">&amp; Review</text>
 
 
-            <!-- ==================== COLUMN 2: SUBPROCESSES 3.1 TO 3.6 (CENTRAL SPINE) ==================== -->
+            <!-- ==================== COLUMN 2: SUBPROCESSES 3.1 TO 3.7 (CENTRAL SPINE) ==================== -->
             <!-- 3.1 -->
             <g transform="translate(560, 80)">
                 <rect x="0" y="0" width="240" height="26" rx="6" class="process-head" />
                 <rect x="0" y="26" width="240" height="50" rx="6" class="process-body" />
                 <text x="120" y="13" class="process-num">3.1</text>
-                <text x="120" y="44" class="process-title">Validate Token &amp;</text>
-                <text x="120" y="60" class="process-title">Initialize Account</text>
+                <text x="120" y="44" class="process-title">Validate Token &amp; Issue</text>
+                <text x="120" y="60" class="process-title">Scoped Onboarding Session</text>
             </g>
 
             <!-- 3.2 -->
@@ -287,8 +293,8 @@
                 <rect x="0" y="0" width="240" height="26" rx="6" class="process-head" />
                 <rect x="0" y="26" width="240" height="50" rx="6" class="process-body" />
                 <text x="120" y="13" class="process-num">3.6</text>
-                <text x="120" y="44" class="process-title">Configure Document Vault</text>
-                <text x="120" y="60" class="process-title">Security PIN</text>
+                <text x="120" y="44" class="process-title">Create Account</text>
+                <text x="120" y="60" class="process-title">Credentials</text>
             </g>
 
 
@@ -358,7 +364,7 @@
             <!-- 3.1 -> 3.2 -->
             <path d="M 680 156 L 680 320" class="flow-line-purple" />
             <rect x="690" y="225" width="145" height="18" class="lbl-bg-purple" />
-            <text x="762" y="234" class="flow-label-purple">Activated Account Context</text>
+            <text x="762" y="234" class="flow-label-purple">Onboarding Session Context</text>
 
             <!-- 3.2 -> 3.3 -->
             <path d="M 680 396 L 680 570" class="flow-line-purple" />
@@ -395,7 +401,7 @@
             <!-- Grantee -> 3.1 -->
             <path d="M 190 490 L 250 490 L 250 125 L 560 125" class="flow-line" />
             <rect x="270" y="116" width="180" height="18" class="lbl-bg" />
-            <text x="360" y="125" class="flow-label">Activation Token &amp; Set Password</text>
+            <text x="360" y="125" class="flow-label">Activation Token (no password)</text>
 
             <!-- Grantee -> 3.2 -->
             <path d="M 190 560 L 280 560 L 280 360 L 560 360" class="flow-line" />
@@ -415,7 +421,7 @@
             <!-- Grantee -> 3.6 -->
             <path d="M 190 810 L 250 810 L 250 1370 L 560 1370" class="flow-line" />
             <rect x="300" y="1361" width="140" height="18" class="lbl-bg" />
-            <text x="370" y="1370" class="flow-label">Vault Security PIN (6 Digits)</text>
+            <text x="370" y="1370" class="flow-label">Chosen Account Password</text>
 
             <!-- 3.6 -> 4.0 -->
             <path d="M 560 1390 L 220 1445" class="flow-line" />
@@ -431,7 +437,7 @@
 
             <path d="M 800 135 L 980 145" class="flow-line" />
             <rect x="830" y="132" width="130" height="18" class="lbl-bg" />
-            <text x="895" y="141" class="flow-label">Updated User Credentials (D1)</text>
+            <text x="895" y="141" class="flow-label">Scoped Onboarding Session (D1)</text>
 
             <!-- 3.2 Data Store Flows -->
             <path d="M 980 325 L 800 340" class="flow-line" />
@@ -488,15 +494,39 @@
             <rect x="840" y="1098" width="130" height="18" class="lbl-bg" />
             <text x="905" y="1107" class="flow-label">Biometric Review Audit (D5)</text>
 
-            <!-- 3.6 -> D6 (Direct) -->
-            <path d="M 800 1368 L 980 1368" class="flow-line" />
-            <rect x="830" y="1358" width="135" height="18" class="lbl-bg" />
-            <text x="897" y="1367" class="flow-label">Encrypted Vault PIN &amp; Init (D6)</text>
+            <!-- 3.6 -> D4 (activation token spent only now, not at link click) -->
+            <path d="M 800 1368 L 900 1368 L 900 660 L 980 660" class="flow-line" />
+            <rect x="828" y="1358" width="140" height="18" class="lbl-bg" />
+            <text x="898" y="1367" class="flow-label">Activation Token Spent (D4)</text>
 
             <!-- 3.6 -> D1 (Clean Outer Perimeter Track at x=1240 so it never cuts across the diagram) -->
             <path d="M 800 1345 L 1240 1345 L 1240 150 L 1215 150" class="flow-line" />
-            <rect x="1120" y="270" width="130" height="18" class="lbl-bg" />
-            <text x="1185" y="279" class="flow-label">Account Status: Active (D1)</text>
+            <rect x="1104" y="270" width="162" height="18" class="lbl-bg" />
+            <text x="1185" y="279" class="flow-label">Password Hash + Status: Active (D1)</text>
+
+            <!-- ==================== 3.7: OPT-IN VAULT PIN (SETTINGS, NOT A FUNNEL STEP) ==================== -->
+            <g transform="translate(560, 1490)">
+                <rect x="0" y="0" width="240" height="26" rx="6" class="process-head" />
+                <rect x="0" y="26" width="240" height="50" rx="6" class="process-body" />
+                <text x="120" y="13" class="process-num">3.7</text>
+                <text x="120" y="44" class="process-title">Configure Vault Security</text>
+                <text x="120" y="60" class="process-title">PIN (opt-in)</text>
+            </g>
+
+            <!-- Grantee -> 3.7 -->
+            <path d="M 190 860 L 230 860 L 230 1528 L 560 1528" class="flow-line" />
+            <rect x="300" y="1519" width="150" height="18" class="lbl-bg" />
+            <text x="375" y="1528" class="flow-label">Vault Security PIN (6 Digits)</text>
+
+            <!-- 3.7 -> D1 -->
+            <path d="M 800 1528 L 1240 1528 L 1240 170 L 1215 170" class="flow-line" />
+            <rect x="1112" y="300" width="146" height="18" class="lbl-bg" />
+            <text x="1185" y="309" class="flow-label">Hashed Vault PIN (D1)</text>
+
+            <!-- Verified by Process 4.0 on package confirmation -->
+            <path d="M 800 1505 L 1000 1505" class="flow-line" />
+            <rect x="820" y="1496" width="185" height="18" class="lbl-bg" />
+            <text x="912" y="1505" class="flow-label">Verified by 4.0 on confirm (Hash::check)</text>
 
         </svg>
     </div>
