@@ -7,19 +7,17 @@ use App\Models\MasterlistRow;
 
 class MasterlistImportPresenter
 {
+    public function __construct(
+        private readonly MasterlistDetectionPresenter $detectionPresenter,
+    ) {}
+
     /**
      * @return array<string, mixed>
      */
     public function listRow(MasterlistImport $import): array
     {
         return [
-            'id' => $import->id,
-            'status' => $import->status,
-            'original_name' => $import->original_name,
-            'total_rows' => $import->total_rows,
-            'valid_rows' => $import->valid_rows,
-            'invalid_rows' => $import->invalid_rows,
-            'imported_rows' => $import->imported_rows,
+            ...$this->counts($import),
             'created_at' => $import->created_at,
             'batch' => $this->batch($import),
         ];
@@ -31,14 +29,9 @@ class MasterlistImportPresenter
     public function import(MasterlistImport $import): array
     {
         return [
-            'id' => $import->id,
-            'status' => $import->status,
-            'original_name' => $import->original_name,
-            'total_rows' => $import->total_rows,
-            'valid_rows' => $import->valid_rows,
-            'invalid_rows' => $import->invalid_rows,
-            'imported_rows' => $import->imported_rows,
+            ...$this->counts($import),
             'batch' => $this->batch($import, includeDeadline: true),
+            'detection_info' => $this->detectionPresenter->present($import),
             'rows' => $import->rows->map(fn (MasterlistRow $row) => [
                 'id' => $row->id,
                 'row_number' => $row->row_number,
@@ -51,6 +44,24 @@ class MasterlistImportPresenter
                 'status' => $row->status,
                 'errors' => $row->errors ?? [],
             ])->values(),
+        ];
+    }
+
+    /**
+     * Identity and row tallies shared by both shapes.
+     *
+     * @return array<string, mixed>
+     */
+    private function counts(MasterlistImport $import): array
+    {
+        return [
+            'id' => $import->id,
+            'status' => $import->status,
+            'original_name' => $import->original_name,
+            'total_rows' => $import->total_rows,
+            'valid_rows' => $import->valid_rows,
+            'invalid_rows' => $import->invalid_rows,
+            'imported_rows' => $import->imported_rows,
         ];
     }
 

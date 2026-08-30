@@ -10,6 +10,7 @@ class SubmissionRiskScoringService
 {
     public function __construct(
         private readonly AcademicGradeParser $gradeParser,
+        private readonly SubmissionEligibilityEvaluator $eligibilityEvaluator,
     ) {}
 
     /**
@@ -125,59 +126,10 @@ class SubmissionRiskScoringService
      */
     public function evaluateEligibility(Grantee $grantee, array $ocrSummary = []): array
     {
-        $text = collect($ocrSummary)
-            ->pluck('text')
-            ->filter()
-            ->implode("\n");
-
-        if (trim($text) === '') {
-            return [
-                'status' => 'pending',
-                'gwa' => 'pending',
-                'failed_subjects' => 'pending',
-                'failed_count' => null,
-                'max_failed' => PolicySetting::maxFailedSubjects(),
-                'pass_grade' => PolicySetting::defaultPassGrade(),
-                'program_code' => $grantee->program,
-                'dropped_subjects' => 'skipped',
-                'note' => 'No OCR text available yet — eligibility pending staff review.',
-                'grantee_id' => $grantee->id,
-            ];
-        }
-
-        $parsed = $this->gradeParser->parse($text, $grantee->program);
-        $maxFailed = PolicySetting::maxFailedSubjects();
-        $failedCount = (int) $parsed['failed_count'];
-        $status = $failedCount > $maxFailed ? 'fail' : 'pass';
-
-        if ($parsed['grades'] === []) {
-            $status = 'pending';
-        }
-
-        return [
-            'status' => $status,
-            'gwa' => $parsed['semester_gpa'] !== null ? (string) $parsed['semester_gpa'] : 'pending',
-            'failed_subjects' => (string) $failedCount,
-            'failed_count' => $failedCount,
-            'max_failed' => $maxFailed,
-            'pass_grade' => $parsed['pass_grade'],
-            'program_code' => $parsed['program_code'],
-            'program_matched' => $parsed['program_matched'],
-            'academic_year' => $parsed['academic_year'],
-            'semester_label' => $parsed['semester_label'],
-            'year_level' => $parsed['year_level'],
-            'grades' => $parsed['grades'],
-            'dropped_subjects' => 'skipped',
-            'note' => $status === 'pending'
-                ? 'OCR text found but no numeric grades parsed — staff review required.'
-                : sprintf(
-                    'Pass if grade ≤ %.1f; fail if grade > %.1f. Failed %d / max %d.',
-                    $parsed['pass_grade'],
-                    $parsed['pass_grade'],
-                    $failedCount,
-                    $maxFailed,
-                ),
-            'grantee_id' => $grantee->id,
-        ];
+        // Delegated: SubmissionEligibilityEvaluator owns the retention rules
+        // (Course-History preference, pending-vs-dropped blanks, Grade Slip
+        // supplement). Kept as a thin pass-through so existing call sites and the
+        // risk-scoring API stay stable.
+        return $this->eligibilityEvaluator->evaluate($grantee, $ocrSummary);
     }
 }

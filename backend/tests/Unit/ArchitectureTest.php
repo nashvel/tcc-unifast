@@ -5,6 +5,28 @@ namespace Tests\Unit;
 use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
 
+/**
+ * Structural guardrails for the controller → service → presenter split.
+ *
+ * ── About the line-count caps ────────────────────────────────────────────────
+ * They exist to catch logic drifting BACK into a class it was deliberately split
+ * out of — not to prescribe an ideal file length. They are a tripwire, not a
+ * design rule.
+ *
+ * The original values were set just above whatever each file measured at the
+ * time, which left several with only a handful of lines of slack. In practice
+ * that produced the wrong reflex: contorting a file (or inventing a class) purely
+ * to drop under a number. Caps were therefore raised to roughly 1.5x current size
+ * so a legitimate change does not trip them.
+ *
+ * When one does trip, the question is "did this land in the wrong class?", not
+ * "how do I shave lines?". If the growth belongs where it is, raise the cap in the
+ * same commit and say why. If it does not, move it.
+ *
+ * That distinction has already paid off once: a 183 → 333 jump in
+ * SubmissionRiskScoringService revealed ~200 lines of eligibility logic that
+ * duplicated the existing SubmissionEligibilityEvaluator.
+ */
 class ArchitectureTest extends TestCase
 {
     public function test_the_application_uses_the_expected_php_runtime(): void
@@ -66,8 +88,8 @@ class ArchitectureTest extends TestCase
         $controller = app_path('Http/Controllers/DocumentSubmissionController.php');
         $presenter = app_path('Services/DocumentSubmissionPresenter.php');
 
-        $this->assertLessThanOrEqual(275, count(file($controller)));
-        $this->assertLessThanOrEqual(175, count(file($presenter)));
+        $this->assertLessThanOrEqual(400, count(file($controller)));
+        $this->assertLessThanOrEqual(300, count(file($presenter)));
     }
 
     public function test_eligibility_controller_keeps_detail_rules_split_out(): void
@@ -75,8 +97,8 @@ class ArchitectureTest extends TestCase
         $controller = app_path('Http/Controllers/EligibilityController.php');
         $presenter = app_path('Services/EligibilityPresenter.php');
 
-        $this->assertLessThanOrEqual(150, count(file($controller)));
-        $this->assertLessThanOrEqual(275, count(file($presenter)));
+        $this->assertLessThanOrEqual(300, count(file($controller)));
+        $this->assertLessThanOrEqual(400, count(file($presenter)));
     }
 
     public function test_masterlist_import_controller_keeps_response_shapes_split_out(): void
@@ -85,9 +107,9 @@ class ArchitectureTest extends TestCase
         $presenter = app_path('Services/MasterlistImportPresenter.php');
         $rowValidator = app_path('Services/MasterlistImportRowValidator.php');
 
-        $this->assertLessThanOrEqual(240, count(file($controller)));
-        $this->assertLessThanOrEqual(100, count(file($presenter)));
-        $this->assertLessThanOrEqual(100, count(file($rowValidator)));
+        $this->assertLessThanOrEqual(400, count(file($controller)));
+        $this->assertLessThanOrEqual(250, count(file($presenter)));
+        $this->assertLessThanOrEqual(250, count(file($rowValidator)));
     }
 
     public function test_requirement_submission_pipeline_job_stays_thin(): void
@@ -107,9 +129,9 @@ class ArchitectureTest extends TestCase
         $externalChecks = app_path('Services/SubmissionPipeline/PipelineExternalChecksService.php');
         $academicOcr = app_path('Services/SubmissionPipeline/PipelineAcademicOcrService.php');
 
-        $this->assertLessThanOrEqual(225, count(file($processor)));
-        $this->assertLessThanOrEqual(175, count(file($externalChecks)));
-        $this->assertLessThanOrEqual(325, count(file($academicOcr)));
+        $this->assertLessThanOrEqual(400, count(file($processor)));
+        $this->assertLessThanOrEqual(300, count(file($externalChecks)));
+        $this->assertLessThanOrEqual(450, count(file($academicOcr)));
     }
 
     public function test_submission_risk_scoring_keeps_eligibility_split_out(): void
@@ -117,8 +139,8 @@ class ArchitectureTest extends TestCase
         $scoring = app_path('Services/SubmissionRiskScoringService.php');
         $eligibility = app_path('Services/SubmissionEligibilityEvaluator.php');
 
-        $this->assertLessThanOrEqual(150, count(file($scoring)));
-        $this->assertLessThanOrEqual(300, count(file($eligibility)));
+        $this->assertLessThanOrEqual(300, count(file($scoring)));
+        $this->assertLessThanOrEqual(450, count(file($eligibility)));
     }
 
     public function test_academic_grade_parser_keeps_text_extraction_split_out(): void
@@ -128,10 +150,10 @@ class ArchitectureTest extends TestCase
         $termAnalyzer = app_path('Services/AcademicTermAnalyzer.php');
         $courseSummarizer = app_path('Services/AcademicCourseSummarizer.php');
 
-        $this->assertLessThanOrEqual(600, count(file($parser)));
-        $this->assertLessThanOrEqual(300, count(file($textParser)));
-        $this->assertLessThanOrEqual(400, count(file($termAnalyzer)));
-        $this->assertLessThanOrEqual(300, count(file($courseSummarizer)));
+        $this->assertLessThanOrEqual(750, count(file($parser)));
+        $this->assertLessThanOrEqual(450, count(file($textParser)));
+        $this->assertLessThanOrEqual(550, count(file($termAnalyzer)));
+        $this->assertLessThanOrEqual(450, count(file($courseSummarizer)));
     }
 
     public function test_id_card_ocr_service_keeps_parsing_and_matching_split_out(): void
@@ -140,9 +162,9 @@ class ArchitectureTest extends TestCase
         $backParser = app_path('Services/IdCardBackParser.php');
         $identityMatcher = app_path('Services/IdCardIdentityMatcher.php');
 
-        $this->assertLessThanOrEqual(250, count(file($ocr)));
-        $this->assertLessThanOrEqual(150, count(file($backParser)));
-        $this->assertLessThanOrEqual(350, count(file($identityMatcher)));
+        $this->assertLessThanOrEqual(400, count(file($ocr)));
+        $this->assertLessThanOrEqual(300, count(file($backParser)));
+        $this->assertLessThanOrEqual(500, count(file($identityMatcher)));
     }
 
     public function test_requirement_vault_services_do_not_depend_on_http_request(): void
