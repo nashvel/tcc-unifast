@@ -506,14 +506,18 @@ async function finishLiveness() {
     authSession.user = authSession.user
       ? {
           ...authSession.user,
-          account_status: payload.data.account_status || "active",
+          // Auto-pass now yields 'identity_verified' — the password is still unset,
+          // so the account is not yet 'active'.
+          account_status: payload.data.account_status || "identity_verified",
           onboarding_next_step: payload.data.next_step,
           onboarding_path:
             payload.data.next_step === "face_review"
               ? "/student/onboarding/pending-review"
-              : payload.data.next_step === "done"
-                ? "/student"
-                : authSession.user.onboarding_path,
+              : payload.data.next_step === "credentials"
+                ? "/student/onboarding/set-password"
+                : payload.data.next_step === "done"
+                  ? "/student"
+                  : authSession.user.onboarding_path,
         }
       : null;
     stopCamera();
@@ -524,8 +528,8 @@ async function finishLiveness() {
       return;
     }
 
-    await successOverlay.show("Identity verified — account activated");
-    await router.push("/student");
+    await successOverlay.show("Identity verified — set your password");
+    await router.push("/student/onboarding/set-password");
   } catch (exception) {
     finishing.value = false;
     busy.value = "";

@@ -274,29 +274,6 @@ const handlers: Record<string, MockHandler> = {
     body: { data: mockSubmissionWindow },
   }),
   "GET /api/student/requirement-vault": () => ({ status: 200, body: mockVault }),
-  "POST /api/student/requirement-vault/id/ocr-front": () => ({
-    status: 200,
-    body: { data: { ok: true, extracted_name: "Demo Student", extracted_student_id: "STU-1" } },
-  }),
-  "POST /api/student/requirement-vault/id": () => ({
-    status: 200,
-    body: {
-      data: {
-        id: 101,
-        slot_key: "school_id",
-        document_type: "School ID",
-        original_name: "id_scan_submission.jpg",
-        secondary_original_name: "id_back.jpg",
-        status: "draft",
-        risk_level: "low",
-        face_quality_score: 0.92,
-        identity_review_required: false,
-        identity_review_reason: null,
-        review_notes: null,
-        face_descriptor: null,
-      },
-    },
-  }),
   "GET /api/student/notifications": () => ({
     status: 200,
     body: { data: mockNotifications, meta: { current_page: 1, last_page: 1, per_page: 50, total: mockNotifications.length, from: 1, to: mockNotifications.length } },

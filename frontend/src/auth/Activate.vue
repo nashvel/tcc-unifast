@@ -1,24 +1,27 @@
 <script setup lang="ts">
+/**
+ * Identity-first activation entry point.
+ *
+ * The link no longer sets a password — it opens a scoped onboarding session and
+ * drops the student into the identity funnel. The password is chosen at the end,
+ * in OnboardingSetPassword.vue, once identity has been verified.
+ *
+ * The API deliberately returns no identifying details here (this route is public),
+ * so only a masked email is shown.
+ */
 import { apiUrl, ensureCsrfCookie } from "@/api/client";
 import { onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
-import {
-  IconAlertTriangle,
-  IconEye,
-  IconEyeOff,
-  IconMail,
-  IconShieldCheck,
-} from "@tabler/icons-vue";
+import { IconAlertTriangle, IconMail, IconShieldCheck } from "@tabler/icons-vue";
 import AuthLayout from "./AuthLayout.vue";
 import { authSession } from "@/auth/session";
+import { studentHomePath } from "@/auth/onboardingResume";
 import { withLang } from "@/i18n/routeLang";
 
 type ActivationPreview = {
-  email: string;
-  name: string;
-  student_id: string;
-  program: string;
+  valid: boolean;
+  masked_email: string;
   expires_at: string;
 };
 
@@ -27,13 +30,11 @@ const router = useRouter();
 const { t } = useI18n();
 const token = String(route.params.token ?? "");
 const preview = ref<ActivationPreview | null>(null);
-const password = ref("");
-const passwordConfirmation = ref("");
-const showPassword = ref(false);
-const showPasswordConfirmation = ref(false);
 const loading = ref(Boolean(token));
 const busy = ref(false);
 const error = ref("");
+/** Token is dead rather than merely invalid — offer the resend path. */
+const expired = ref(false);
 
 onMounted(async () => {
   if (!token) {
@@ -49,7 +50,10 @@ onMounted(async () => {
     });
     const payload = await response.json();
     if (!response.ok) {
-      throw new Error(payload.message || payload.errors?.token?.[0] || t("auth.invalidActivationLink"));
+      expired.value = true;
+      throw new Error(
+        payload.message || payload.errors?.token?.[0] || t("auth.invalidActivationLink"),
+      );
     }
     preview.value = payload.data;
   } catch (exception) {
@@ -59,38 +63,35 @@ onMounted(async () => {
   }
 });
 
-async function activate() {
+async function begin() {
   busy.value = true;
   error.value = "";
 
   try {
     await ensureCsrfCookie();
-    const response = await fetch(apiUrl(`/api/activation/${token}`), {
+    const response = await fetch(apiUrl(`/api/activation/${token}/begin`), {
       method: "POST",
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
       },
-      body: JSON.stringify({
-        password: password.value,
-        password_confirmation: passwordConfirmation.value,
-      }),
     });
     const payload = await response.json();
     if (!response.ok) {
       const fieldError = payload.errors
         ? Object.values(payload.errors).flat().join(" ")
         : payload.message;
+      if (response.status === 422) expired.value = true;
       throw new Error(String(fieldError || t("auth.activationFailed")));
     }
     if (!payload.user) {
       throw new Error(t("auth.activationFailed"));
     }
-    // HttpOnly access/refresh cookies set by the API — no token in JS storage.
+    // Scoped onboarding session lives in an HttpOnly cookie — nothing in JS storage.
     authSession.user = payload.user;
     authSession.loaded = true;
-    await router.push(withLang("/student/kyc", route.query.lang));
+    await router.push(withLang(studentHomePath(payload.user), route.query.lang));
   } catch (exception) {
     error.value = exception instanceof Error ? exception.message : t("auth.activationFailed");
   } finally {
@@ -111,83 +112,53 @@ async function activate() {
     </div>
     <h1 class="text-xl font-semibold tracking-tight">{{ t("auth.activateGranteeTitle") }}</h1>
     <p class="mt-1 text-sm text-text-muted">
-      {{ t("auth.activateGranteeDescription") }}
+      {{ t("auth.activateVerifyFirstDescription") }}
     </p>
 
     <div v-if="loading" class="mt-5 rounded-md border bg-surface-muted p-3 text-sm text-text-muted">
       {{ t("auth.checkingActivation") }}
     </div>
 
-    <form v-else-if="preview" class="mt-5 space-y-4" @submit.prevent="activate">
+    <form v-else-if="preview" class="mt-5 space-y-4" @submit.prevent="begin">
       <article class="rounded-lg border bg-surface-muted p-3">
-        <p class="text-sm font-semibold">{{ preview.name }}</p>
-        <p class="mt-1 text-xs text-text-muted">{{ preview.student_id }} - {{ preview.program }}</p>
-        <p class="mt-1 flex items-center gap-1 text-xs text-text-muted">
-          <IconMail :size="13" />{{ preview.email }}
+        <p class="flex items-center gap-1 text-xs text-text-muted">
+          <IconMail :size="13" />{{ preview.masked_email }}
         </p>
       </article>
 
-      <label class="block">
-        <span class="mb-1.5 block text-xs font-medium">{{ t("auth.newPassword") }} *</span>
-        <span class="relative block">
-          <input
-            v-model="password"
-            :type="showPassword ? 'text' : 'password'"
-            autocomplete="new-password"
-            class="h-10 w-full rounded-md border px-3 pr-10"
-          />
-          <button
-            type="button"
-            class="absolute right-2 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded text-text-soft hover:text-text"
-            :aria-label="showPassword ? t('common.hidePassword') : t('common.showPassword')"
-            :aria-pressed="showPassword"
-            @click="showPassword = !showPassword"
-          >
-            <IconEyeOff v-if="showPassword" :size="16" />
-            <IconEye v-else :size="16" />
-          </button>
-        </span>
-      </label>
-      <label class="block">
-        <span class="mb-1.5 block text-xs font-medium">{{ t("auth.confirmPassword") }} *</span>
-        <span class="relative block">
-          <input
-            v-model="passwordConfirmation"
-            :type="showPasswordConfirmation ? 'text' : 'password'"
-            autocomplete="new-password"
-            class="h-10 w-full rounded-md border px-3 pr-10"
-          />
-          <button
-            type="button"
-            class="absolute right-2 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded text-text-soft hover:text-text"
-            :aria-label="
-              showPasswordConfirmation ? t('common.hidePassword') : t('common.showPassword')
-            "
-            :aria-pressed="showPasswordConfirmation"
-            @click="showPasswordConfirmation = !showPasswordConfirmation"
-          >
-            <IconEyeOff v-if="showPasswordConfirmation" :size="16" />
-            <IconEye v-else :size="16" />
-          </button>
-        </span>
-      </label>
-      <p class="rounded-md border bg-surface-muted p-2.5 text-xs text-text-muted">
-        {{ t("auth.activationKycNotice") }}
+      <ol class="space-y-2 rounded-md border bg-surface-muted p-3 text-xs text-text-muted">
+        <li>1. {{ t("auth.activationStepKyc") }}</li>
+        <li>2. {{ t("auth.activationStepIdScan") }}</li>
+        <li>3. {{ t("auth.activationStepLiveness") }}</li>
+        <li class="font-medium text-text">4. {{ t("auth.activationStepPassword") }}</li>
+      </ol>
+
+      <p class="rounded-md border border-warning/30 bg-warning-soft p-2.5 text-xs text-warning">
+        {{ t("auth.activationHaveIdReady") }}
       </p>
+
       <p v-if="error" class="text-xs text-danger">{{ error }}</p>
       <button
         :disabled="busy"
         class="h-10 w-full rounded-md bg-primary text-sm font-medium text-white disabled:opacity-60"
       >
-        {{ busy ? t("auth.activating") : t("auth.activateAndContinue") }}
+        {{ busy ? t("auth.activating") : t("auth.startVerification") }}
       </button>
     </form>
 
-    <div
-      v-else
-      class="mt-5 flex gap-2 rounded-md border border-danger/30 bg-danger-soft p-3 text-xs text-danger"
-    >
-      <IconAlertTriangle :size="14" />{{ error }}
+    <div v-else class="mt-5 space-y-3">
+      <div
+        class="flex gap-2 rounded-md border border-danger/30 bg-danger-soft p-3 text-xs text-danger"
+      >
+        <IconAlertTriangle :size="14" />{{ error }}
+      </div>
+      <RouterLink
+        v-if="expired"
+        :to="withLang('/activation/resend', route.query.lang)"
+        class="inline-block text-sm text-primary hover:underline"
+      >
+        {{ t("auth.requestNewLink") }}
+      </RouterLink>
     </div>
 
     <RouterLink

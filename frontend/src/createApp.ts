@@ -94,6 +94,12 @@ const studentChildren: RouteRecordRaw[] = [
     component: () => import("@/modules/identity/OnboardingPendingReview.vue"),
   },
   {
+    // Terminal onboarding step: password is chosen only after identity is verified.
+    path: "onboarding/set-password",
+    component: () => import("@/modules/identity/OnboardingSetPassword.vue"),
+    meta: { breadcrumbLabel: "Set password" },
+  },
+  {
     path: "verify",
     redirect: (to) => {
       // Legacy deep link: real identity is onboarding; vault liveness lives on documents.
@@ -106,12 +112,6 @@ const studentChildren: RouteRecordRaw[] = [
   { path: "submissions", redirect: (to) => withLang("/student/documents", to.query.lang) },
   { path: "profile", component: () => import("@/modules/profile/Index.vue") },
   { path: "documents", component: () => import("@/modules/documents/StudentDocuments.vue") },
-  {
-    path: "documents/school-id-scan",
-    name: "student-documents-school-id-scan",
-    component: () => import("@/modules/documents/SchoolIdScan.vue"),
-    meta: { breadcrumbLabel: "School ID scan" },
-  },
   { path: "upload", redirect: (to) => withLang("/student/documents", to.query.lang) },
   { path: "announcements", component: () => import("@/modules/announcements/StudentIndex.vue") },
   { path: "announcements/:id", component: () => import("@/modules/announcements/StudentDetail.vue") },
@@ -148,6 +148,11 @@ function createAppRouter(): Router {
       { path: "/forgot-password", component: () => import("@/auth/ForgotPassword.vue") },
       { path: "/activate", component: () => import("@/auth/Activate.vue") },
       { path: "/activate/:token", component: () => import("@/auth/Activate.vue") },
+      {
+        // Self-service recovery for an expired activation link.
+        path: "/activation/resend",
+        component: () => import("@/auth/ActivationResend.vue"),
+      },
       { path: "/activate-success", component: () => import("@/auth/ActivateSuccess.vue") },
       { path: "/locked", component: () => import("@/auth/Locked.vue") },
       { path: "/help/support", component: () => import("@/public/HelpSupport.vue") },
@@ -180,7 +185,16 @@ function createAppRouter(): Router {
     if (user.role === "student" && to.path.startsWith("/app")) return withLang("/student", to.query.lang);
     if (user.role !== "student" && to.path.startsWith("/student")) return withLang("/app", to.query.lang);
 
-    const incompleteStatuses = ["unverified", "pending_kyc", "pending_identity", "pending_face_review"];
+    // identity_verified and identity_rejected are pre-credential states: the
+    // student has no password yet, so the app proper stays out of reach.
+    const incompleteStatuses = [
+      "unverified",
+      "pending_kyc",
+      "pending_identity",
+      "pending_face_review",
+      "identity_verified",
+      "identity_rejected",
+    ];
     if (
       user.role === "student" &&
       to.path.startsWith("/student") &&
@@ -238,6 +252,23 @@ function createAppRouter(): Router {
       user.onboarding_next_step !== "kyc"
     ) {
       return withLang(studentHomePath(user), to.query.lang);
+    }
+
+    // Set-password is reachable only once identity is verified…
+    if (
+      user.role === "student" &&
+      to.path === "/student/onboarding/set-password" &&
+      user.onboarding_next_step !== "credentials"
+    ) {
+      return withLang(studentHomePath(user), to.query.lang);
+    }
+    // …and a verified-but-uncredentialed student must not slip past it.
+    if (
+      user.role === "student" &&
+      user.onboarding_next_step === "credentials" &&
+      to.path !== "/student/onboarding/set-password"
+    ) {
+      return withLang("/student/onboarding/set-password", to.query.lang);
     }
 
     return true;

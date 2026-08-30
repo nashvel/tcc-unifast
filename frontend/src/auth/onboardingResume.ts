@@ -4,6 +4,7 @@ export function isStudentOnboardingRoute(path: string): boolean {
 
   if (path === "/student/kyc") return true;
 
+  // Covers /student/onboarding/set-password, the terminal credential step.
   if (path === "/student/onboarding" || path.startsWith("/student/onboarding/")) return true;
 
   return false;
@@ -14,7 +15,12 @@ export function isStudentOnboardingRoute(path: string): boolean {
 
 function needsKyc(accountStatus: string | null | undefined): boolean {
 
-  return accountStatus === "unverified" || accountStatus === "pending_kyc";
+  return (
+    accountStatus === "unverified" ||
+    accountStatus === "pending_kyc" ||
+    // A rejected face match restarts the funnel — recoverable, not locked out.
+    accountStatus === "identity_rejected"
+  );
 
 }
 
@@ -65,6 +71,14 @@ export function studentHomePath(user: {
     case "pending_face_review":
 
       return "/student/onboarding/pending-review";
+
+    // Identity proven, password not yet chosen (identity-first activation).
+
+    case "credentials":
+
+    case "identity_verified":
+
+      return "/student/onboarding/set-password";
 
     case "pending_identity":
 

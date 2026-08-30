@@ -70,13 +70,14 @@ onBeforeUnmount(() => {
           <p class="text-sm font-semibold">Uncertain ≠ blocked</p>
           <p class="text-sm text-text-muted">
             The automatic face comparison was inconclusive (uncertain zone). UniFAST staff will
-            compare your School ID reference photo with your onboarding selfie at
-            <span class="font-medium text-text">/app/face-reviews</span>. Approve activates your
-            account; reject blocks it.
+            compare your School ID reference photo with your onboarding selfie. If they approve,
+            you will be asked to choose your password; if not, you can retry verification.
           </p>
           <p class="text-xs text-text-muted">
-            You can sign out and return later. You do not need to re-scan while review is pending.
-            This page refreshes automatically when staff decide.
+            <span class="font-medium text-text">You will receive an email either way</span>, with a
+            fresh link — so you can safely close this page. Review can take a little while, and you
+            do not need to re-scan while it is pending. This page also refreshes automatically if
+            you leave it open.
           </p>
           <button
             class="mt-2 inline-flex h-9 items-center rounded-md border px-3 text-xs font-medium"

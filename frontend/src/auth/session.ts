@@ -13,10 +13,21 @@ export type AuthUser = {
     | "pending_kyc"
     | "pending_identity"
     | "pending_face_review"
+    /** Identity proven, password not yet chosen. */
+    | "identity_verified"
+    /** Face match rejected — recoverable, restarts the funnel. */
+    | "identity_rejected"
     | "blocked";
   kyc_status?: string | null;
   has_security_pin?: boolean;
-  onboarding_next_step?: "blocked" | "kyc" | "id_scan" | "liveness" | "face_review" | "done";
+  onboarding_next_step?:
+    | "blocked"
+    | "kyc"
+    | "id_scan"
+    | "liveness"
+    | "face_review"
+    | "credentials"
+    | "done";
   onboarding_path?: string;
 };
 

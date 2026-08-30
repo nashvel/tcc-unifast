@@ -121,11 +121,29 @@ async function tryRefreshSession(): Promise<boolean> {
   return refreshInFlight;
 }
 
+/**
+ * Onboarding sessions are short-lived and intentionally not refreshable, so a 401
+ * mid-funnel is expected rather than exceptional. Sending the student to /login is
+ * wrong: they have no password yet. Point them back at their activation link and
+ * reassure them that progress is saved — it is, server-side.
+ */
+function isOnboardingFunnelPath(pathname: string): boolean {
+  return pathname.startsWith("/student/onboarding") || pathname === "/student/kyc";
+}
+
 function redirectToLogin() {
   clearAuthSession();
   if (typeof window === "undefined") return;
   const lang = new URLSearchParams(window.location.search).get("lang");
-  const target = lang ? `/login?lang=${encodeURIComponent(lang)}` : "/login";
+  const suffix = lang ? `?lang=${encodeURIComponent(lang)}` : "";
+
+  if (isOnboardingFunnelPath(window.location.pathname)) {
+    const target = `/activation/resend${suffix}${suffix ? "&" : "?"}reason=session_expired`;
+    window.location.assign(target);
+    return;
+  }
+
+  const target = `/login${suffix}`;
   if (!window.location.pathname.startsWith("/login")) {
     window.location.assign(target);
   }

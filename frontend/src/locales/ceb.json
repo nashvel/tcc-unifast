@@ -156,7 +156,33 @@
     "activateAndContinue": "I-activate ug padayon sa KYC",
     "openActivationLink": "Ablihi ang one-time activation link gikan sa imong email.",
     "invalidActivationLink": "Invalid ang activation link.",
-    "activationFailed": "Napakyas ang activation."
+    "activationFailed": "Napakyas ang activation.",
+    "activateVerifyFirstDescription": "Beripikahon una namo ang imong identidad. Ikaw ang mopili sa password sa katapusan.",
+    "activationStepKyc": "Kumpirmaha ang detalye sa imong profile",
+    "activationStepIdScan": "I-scan ang school ID (atubangan ug luyo)",
+    "activationStepLiveness": "Humana ang mubo nga face check",
+    "activationStepPassword": "Pilia ang imong password",
+    "activationHaveIdReady": "Andama ang pisikal nga school ID sa dili pa magsugod.",
+    "startVerification": "Sugdi ang beripikasyon",
+    "passwordsDoNotMatch": "Wala magtakdo ang mga password.",
+    "requestNewLink": "Pangayo og bag-ong link",
+    "requestNewLinkTitle": "Pangayo og bag-ong activation link",
+    "requestNewLinkDescription": "Isulod ang email nga naa sa imong scholarship record ug magpadala mi og bag-ong link.",
+    "resendGenericConfirmation": "Kung naa sa talaan ang email, padalhan ka og bag-ong activation link. Susiha ang inbox.",
+    "resendTooMany": "Sobra na ka daghan nga request. Paghulat usa sa dili pa mosulay pag-usab.",
+    "resendFailed": "Wala mapadala ang bag-ong link. Palihug sulayi pag-usab.",
+    "sendNewLink": "Ipadala ang bag-ong link",
+    "sending": "Gipadala...",
+    "sessionTimedOutReopenLink": "Nag-expire ang session. Naluwas ang imong progreso — ablihi pag-usab ang activation link."
+  },
+  "onboarding": {
+    "identityVerifiedTitle": "Beripikado na ang identidad",
+    "setPasswordSubtitle": "Usa na lang ka lakang: pilia ang imong password.",
+    "passwordUnlocksVault": "Ang imong password ang gamiton sa pag-sign in ug moabli sa Requirement Vault.",
+    "setPasswordAndFinish": "Itakda ang password ug humana",
+    "settingPassword": "Gitakda ang password...",
+    "passwordSetSuccess": "Natakda ang password. Aktibo na ang imong account.",
+    "passwordSetFailed": "Wala matakda ang imong password. Sulayi pag-usab."
   },
   "pages": {
     "academicRecords": {

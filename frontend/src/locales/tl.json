@@ -156,7 +156,33 @@
     "activateAndContinue": "I-activate at magpatuloy sa KYC",
     "openActivationLink": "Buksan ang one-time activation link mula sa iyong email.",
     "invalidActivationLink": "Invalid ang activation link.",
-    "activationFailed": "Nabigo ang activation."
+    "activationFailed": "Nabigo ang activation.",
+    "activateVerifyFirstDescription": "Beripikahin muna namin ang iyong pagkakakilanlan. Pipiliin mo ang password sa huli.",
+    "activationStepKyc": "Kumpirmahin ang detalye ng iyong profile",
+    "activationStepIdScan": "I-scan ang school ID (harap at likod)",
+    "activationStepLiveness": "Kumpletuhin ang maikling face check",
+    "activationStepPassword": "Piliin ang iyong password",
+    "activationHaveIdReady": "Ihanda ang pisikal na school ID bago magsimula.",
+    "startVerification": "Simulan ang beripikasyon",
+    "passwordsDoNotMatch": "Hindi tugma ang mga password.",
+    "requestNewLink": "Humiling ng bagong link",
+    "requestNewLinkTitle": "Humiling ng bagong activation link",
+    "requestNewLinkDescription": "Ilagay ang email na nasa iyong scholarship record at magpapadala kami ng bagong link.",
+    "resendGenericConfirmation": "Kung nasa talaan ang email na iyon, papadalhan ka ng bagong activation link. Tingnan ang inbox.",
+    "resendTooMany": "Masyadong maraming request. Maghintay muna bago subukan ulit.",
+    "resendFailed": "Hindi naipadala ang bagong link. Subukan ulit.",
+    "sendNewLink": "Ipadala ang bagong link",
+    "sending": "Ipinapadala...",
+    "sessionTimedOutReopenLink": "Nag-expire ang session. Nakasave ang progreso — buksan ulit ang activation link para magpatuloy."
+  },
+  "onboarding": {
+    "identityVerifiedTitle": "Beripikado ang pagkakakilanlan",
+    "setPasswordSubtitle": "Isang hakbang na lang: piliin ang iyong password.",
+    "passwordUnlocksVault": "Ang password mo ang gagamitin sa pag-sign in at magbubukas ng Requirement Vault.",
+    "setPasswordAndFinish": "Itakda ang password at tapusin",
+    "settingPassword": "Itinatakda ang password...",
+    "passwordSetSuccess": "Naitakda ang password. Aktibo na ang iyong account.",
+    "passwordSetFailed": "Hindi naitakda ang password. Subukan ulit."
   },
   "pages": {
     "academicRecords": {

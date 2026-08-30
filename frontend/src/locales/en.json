@@ -166,7 +166,33 @@
     "activateAndContinue": "Activate and continue to KYC",
     "openActivationLink": "Open the one-time activation link from your email.",
     "invalidActivationLink": "Invalid activation link.",
-    "activationFailed": "Activation failed."
+    "activationFailed": "Activation failed.",
+    "activateVerifyFirstDescription": "We will verify your identity first. You choose your password at the end.",
+    "activationStepKyc": "Confirm your profile details",
+    "activationStepIdScan": "Scan your school ID (front and back)",
+    "activationStepLiveness": "Complete a short face check",
+    "activationStepPassword": "Choose your password",
+    "activationHaveIdReady": "Have your physical school ID ready before you start.",
+    "startVerification": "Start verification",
+    "passwordsDoNotMatch": "Passwords do not match.",
+    "requestNewLink": "Request a new link",
+    "requestNewLinkTitle": "Request a new activation link",
+    "requestNewLinkDescription": "Enter the email address on your scholarship record and we will send a new link.",
+    "resendGenericConfirmation": "If that email is on file, a new activation link is on its way. Check your inbox.",
+    "resendTooMany": "Too many requests. Please wait a while before trying again.",
+    "resendFailed": "Could not send a new link. Please try again.",
+    "sendNewLink": "Send new link",
+    "sending": "Sending...",
+    "sessionTimedOutReopenLink": "Your session timed out. Your progress is saved — open your activation link again to continue."
+  },
+  "onboarding": {
+    "identityVerifiedTitle": "Identity verified",
+    "setPasswordSubtitle": "One step left: choose your password.",
+    "passwordUnlocksVault": "Your password signs you in from now on and unlocks the Requirement Vault.",
+    "setPasswordAndFinish": "Set password and finish",
+    "settingPassword": "Setting password...",
+    "passwordSetSuccess": "Password set. Your account is now active.",
+    "passwordSetFailed": "Could not set your password. Please try again."
   },
   "pages": {
     "academicRecords": {
