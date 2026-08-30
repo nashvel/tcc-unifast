@@ -18,6 +18,11 @@ n8n/.env
 n8n/local-files/*
 !n8n/local-files/.gitkeep
 
+# Secrets — filled-in copies of the committed placeholder templates.
+# Note: *.local above does NOT cover *.local.yaml, hence the explicit rules.
+k8s/**/secret.*.generated.yaml
+k8s/**/*.secret.yaml
+
 # Laravel
 backend/database/*.sqlite
 backend/database/*.sqlite-journal

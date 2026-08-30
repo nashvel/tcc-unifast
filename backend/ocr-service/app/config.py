@@ -18,6 +18,10 @@ class Settings(BaseSettings):
     max_pdf_size_bytes: int = 20 * 1024 * 1024
     max_pdf_pages: int = 20
 
+    # Shared secret required on OCR endpoints. Empty means unauthenticated, which
+    # is only acceptable on a developer machine — see require_api_key in main.py.
+    api_key: str = ""
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

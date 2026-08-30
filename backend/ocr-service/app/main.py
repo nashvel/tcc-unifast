@@ -1,9 +1,10 @@
 """FastAPI application for the standalone OCR prototype."""
 
+import hmac
 import logging
 import time
 
-from fastapi import Depends, FastAPI, File, Request, UploadFile
+from fastapi import Depends, FastAPI, File, Header, HTTPException, Request, UploadFile
 from fastapi.responses import JSONResponse
 
 from app.config import Settings, get_settings
@@ -16,6 +17,48 @@ logger = logging.getLogger("ocr_service")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
 app = FastAPI(title="TCC UniFAST OCR Prototype", version="0.1.0")
+
+MAX_UPLOAD_BYTES = 20 * 1024 * 1024
+
+
+def require_api_key(
+    x_ocr_key: str | None = Header(default=None),
+    settings: Settings = Depends(get_settings),
+) -> None:
+    """Reject OCR requests without the shared secret.
+
+    OCR is CPU-heavy and the service binds 0.0.0.0, so leaving it open lets anyone
+    with network reach burn the box. When OCR_API_KEY is unset the service stays
+    open and logs a warning — convenient locally, and loud enough to notice.
+    """
+    expected = settings.api_key
+    if not expected:
+        logger.warning("OCR_API_KEY is not set — OCR endpoints are unauthenticated.")
+        return
+
+    if not x_ocr_key or not hmac.compare_digest(x_ocr_key, expected):
+        raise HTTPException(status_code=401, detail="Invalid or missing OCR API key.")
+
+
+async def read_bounded_upload(file: UploadFile) -> bytes:
+    """Read an upload, refusing anything past the hard cap.
+
+    Reading in chunks means an oversized body is rejected before it is fully
+    buffered in memory; per-type limits are still enforced downstream in service.py.
+    """
+    chunks: list[bytes] = []
+    total = 0
+
+    while True:
+        chunk = await file.read(1024 * 1024)
+        if not chunk:
+            break
+        total += len(chunk)
+        if total > MAX_UPLOAD_BYTES:
+            raise HTTPException(status_code=413, detail="Upload exceeds the maximum allowed size.")
+        chunks.append(chunk)
+
+    return b"".join(chunks)
 
 
 @app.exception_handler(OcrServiceError)
@@ -54,11 +97,11 @@ def health(settings: Settings = Depends(get_settings)) -> HealthResponse:
     )
 
 
-@app.post("/ocr/image", response_model=ImageOcrResponse)
+@app.post("/ocr/image", response_model=ImageOcrResponse, dependencies=[Depends(require_api_key)])
 async def ocr_image(file: UploadFile = File(...), settings: Settings = Depends(get_settings)) -> ImageOcrResponse:
     """Run OCR on an uploaded image."""
     start = time.perf_counter()
-    content = await file.read()
+    content = await read_bounded_upload(file)
     try:
         response = process_image_upload(content, file.content_type or "", settings)
         logger.info(
@@ -77,11 +120,11 @@ async def ocr_image(file: UploadFile = File(...), settings: Settings = Depends(g
         raise
 
 
-@app.post("/ocr/pdf", response_model=PdfOcrResponse)
+@app.post("/ocr/pdf", response_model=PdfOcrResponse, dependencies=[Depends(require_api_key)])
 async def ocr_pdf(file: UploadFile = File(...), settings: Settings = Depends(get_settings)) -> PdfOcrResponse:
     """Extract text from an uploaded PDF with OCR fallback."""
     start = time.perf_counter()
-    content = await file.read()
+    content = await read_bounded_upload(file)
     try:
         response = process_pdf_upload(content, file.content_type or "", settings)
         logger.info(

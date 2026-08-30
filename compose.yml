@@ -3,7 +3,10 @@ name: tcc-unifast
 x-backend-env: &backend-env
   APP_NAME: "TCC UniFAST"
   APP_ENV: local
-  APP_KEY: ${APP_KEY:-base64:HvR4MQk6lANp2cDRv97fIUx2uI3lN0h8YpXOY4uTnWE=}
+  # No default: a hardcoded fallback here would be shared by every checkout, and
+  # APP_KEY also signs the public /api/signed/* file URLs. `?err` makes compose
+  # fail with this message rather than silently booting on a known key.
+  APP_KEY: "${APP_KEY:?set APP_KEY in .env - generate with php artisan key:generate --show}"
   APP_DEBUG: ${APP_DEBUG:-true}
   APP_URL: ${APP_URL:-http://localhost:8000}
   FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
@@ -30,6 +33,7 @@ x-backend-env: &backend-env
   VAULT_CONFIRM_THROTTLE_PER_MINUTE: ${VAULT_CONFIRM_THROTTLE_PER_MINUTE:-60}
   OCR_SERVICE_URL: http://ocr-service:8001
   OCR_SERVICE_TIMEOUT: 120
+  OCR_API_KEY: ${OCR_API_KEY:-}
   OCR_SPACE_API_KEY: ""
   OCR_SPACE_TIMEOUT: 60
   GRADESLIP_QR_TIMEOUT: 60
@@ -174,8 +178,13 @@ services:
       TESSERACT_CMD: /usr/bin/tesseract
       TESSERACT_PSM: ${TESSERACT_PSM:-6}
       SAVE_DEBUG_IMAGES: ${SAVE_DEBUG_IMAGES:-false}
-    ports:
-      - "${OCR_SERVICE_PORT:-8001}:8001"
+      # Must match OCR_API_KEY on the backend. Blank leaves OCR unauthenticated.
+      OCR_API_KEY: ${OCR_API_KEY:-}
+    # Reachable only on the compose network. OCR is CPU-heavy and unauthenticated
+    # when OCR_API_KEY is blank, so it is not published to the host by default —
+    # set OCR_SERVICE_PORT to expose it deliberately for local debugging.
+    expose:
+      - "8001"
     volumes:
       - ocr_outputs:/app/outputs
     restart: unless-stopped

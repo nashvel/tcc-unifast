@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Support\OcrServiceRequest;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -202,6 +203,7 @@ class PdfDocumentService
 
         try {
             $response = Http::acceptJson()
+                ->withHeaders(OcrServiceRequest::headers())
                 ->timeout((int) config('services.ocr.timeout', 120))
                 ->attach('file', fopen($absolutePath, 'r'), $originalName)
                 ->post($baseUrl.'/ocr/pdf');

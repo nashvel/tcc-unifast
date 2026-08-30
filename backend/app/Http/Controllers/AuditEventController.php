@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\AuditLog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class AuditEventController extends Controller
 {
@@ -41,11 +42,43 @@ class AuditEventController extends Controller
         ]);
     }
 
+    /**
+     * Client-reported UI events.
+     *
+     * The audit trail is evidence, so a client must not be able to write arbitrary
+     * actions into it: `action` and `module` are restricted to a known vocabulary,
+     * and every row is marked `source: client` so operator-recorded and
+     * client-reported entries stay distinguishable.
+     *
+     * @var list<string>
+     */
+    private const ALLOWED_ACTIONS = [
+        'page_viewed',
+        'export_downloaded',
+        'report_generated',
+        'filter_applied',
+        'session_timeout',
+        'permission_denied_view',
+    ];
+
+    /** @var list<string> */
+    private const ALLOWED_MODULES = [
+        'Dashboard',
+        'Grantees',
+        'Documents',
+        'Requirements Submission',
+        'Billing',
+        'Reports',
+        'Forms',
+        'Settings',
+        'Audit',
+    ];
+
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'action' => ['required', 'string', 'max:100'],
-            'module' => ['required', 'string', 'max:100'],
+            'action' => ['required', 'string', Rule::in(self::ALLOWED_ACTIONS)],
+            'module' => ['required', 'string', Rule::in(self::ALLOWED_MODULES)],
             'target' => ['nullable', 'string', 'max:255'],
             'context' => ['nullable', 'array'],
         ]);
@@ -58,7 +91,9 @@ class AuditEventController extends Controller
             'action' => $validated['action'],
             'module' => $validated['module'],
             'target' => $validated['target'] ?? null,
-            'context' => $validated['context'] ?? null,
+            // Tag provenance so a client-reported event is never mistaken for one
+            // written by a server-side action.
+            'context' => array_merge($validated['context'] ?? [], ['source' => 'client']),
             'ip_address' => $request->ip(),
         ]);
 

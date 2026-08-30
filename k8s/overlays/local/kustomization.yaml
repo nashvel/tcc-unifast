@@ -3,4 +3,8 @@ kind: Kustomization
 namespace: tcc-unifast
 resources:
   - ../../base
+  # secret.local.yaml holds REPLACE_ME placeholders on purpose. Copy it to
+  # secret.local.generated.yaml (gitignored), fill in real values, and swap the
+  # reference below before applying:
+  #   - secret.local.generated.yaml
   - secret.local.yaml

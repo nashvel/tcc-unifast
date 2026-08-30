@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\AuditLog;
 use App\Models\DocumentSubmission;
 use App\Services\BatchWindowService;
+use App\Support\OcrServiceRequest;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -46,6 +47,7 @@ class StudentDocumentOcrController extends Controller
 
         try {
             $response = Http::acceptJson()->timeout((int) config('services.ocr.timeout', 120))
+                ->withHeaders(OcrServiceRequest::headers())
                 ->retry(2, 500, throw: false)
                 ->attach('file', fopen($file->getRealPath(), 'r'), $file->getClientOriginalName())
                 ->post($baseUrl.($isPdf ? '/ocr/pdf' : '/ocr/image'));

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Support\OcrServiceRequest;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
@@ -162,6 +163,7 @@ class IdCardOcrService
 
         try {
             $response = Http::acceptJson()
+                ->withHeaders(OcrServiceRequest::headers())
                 ->timeout((int) config('services.ocr.timeout', 120))
                 ->attach('file', fopen($file->getRealPath(), 'r'), $file->getClientOriginalName())
                 ->post($baseUrl.'/ocr/image');

@@ -2,16 +2,36 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\ActivationLink;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Http;
 
+/**
+ * Local developer tooling: spawns/kills OS processes, reads and rewrites .env,
+ * and opens a public Cloudflare tunnel to the app.
+ *
+ * These capabilities must never be reachable off a developer workstation, so
+ * every action asserts the local environment first. The `role:developer,admin`
+ * route guard is not sufficient on its own — an admin account on a deployed
+ * instance would otherwise be able to expose the app publicly and read secrets.
+ */
 class DeveloperServicesController extends Controller
 {
+    /**
+     * Abort unless running on a local developer machine.
+     */
+    private function assertLocalEnvironment(): void
+    {
+        abort_unless(app()->environment('local'), 404);
+    }
+
     /**
      * Check the status of Cloudflare and OCR services.
      */
     public function status(): JsonResponse
     {
+        $this->assertLocalEnvironment();
+
         // Check Cloudflare by looking for cloudflared.exe in tasklist
         $cfRunning = false;
         exec('tasklist /FI "IMAGENAME eq cloudflared.exe" 2>NUL', $output);
@@ -33,9 +53,9 @@ class DeveloperServicesController extends Controller
             // Not running
         }
 
-        // Also return the currently configured activation URL so the frontend can display it
-        preg_match('/^ACTIVATION_FRONTEND_URL=(.*)/m', file_get_contents(base_path('.env')), $matches);
-        $activationUrl = rtrim((string) ($matches[1] ?? 'http://localhost:5173'), '/');
+        // Also return the currently configured activation URL so the frontend can display it.
+        // Resolved through config rather than parsing .env off disk.
+        $activationUrl = ActivationLink::base();
 
         return response()->json([
             'data' => [
@@ -54,6 +74,8 @@ class DeveloperServicesController extends Controller
      */
     public function startCloudflare(): JsonResponse
     {
+        $this->assertLocalEnvironment();
+
         $executable = realpath(base_path('../tools/cloudflared.exe'));
 
         if (! $executable || ! file_exists($executable)) {
@@ -71,7 +93,10 @@ class DeveloperServicesController extends Controller
 
         // Tunnel the Vue frontend (port 5173) and redirect output to log file
         // start /B detaches the process completely so PHP artisan serve won't deadlock
-        $cmd = 'cmd /c "start /B "" "'.escapeshellcmd($executable).'" tunnel --url http://localhost:5173 > "'.escapeshellcmd($logFile).'" 2>&1"';
+        // Values are server-derived (realpath/storage_path), never request input.
+        // escapeshellarg is still the correct primitive for embedding a path as an
+        // argument; escapeshellcmd does not neutralise quote characters.
+        $cmd = 'cmd /c "start /B "" '.escapeshellarg($executable).' tunnel --url http://localhost:5173 > '.escapeshellarg($logFile).' 2>&1"';
         pclose(popen($cmd, 'r'));
 
         $tunnelUrl = null;
@@ -114,6 +139,8 @@ class DeveloperServicesController extends Controller
      */
     public function startOcr(): JsonResponse
     {
+        $this->assertLocalEnvironment();
+
         $ocrDir = realpath(base_path('ocr-service'));
         $uvicorn = $ocrDir.DIRECTORY_SEPARATOR.'.venv'.DIRECTORY_SEPARATOR.'Scripts'.DIRECTORY_SEPARATOR.'uvicorn.exe';
 
@@ -155,7 +182,13 @@ class DeveloperServicesController extends Controller
 
         file_put_contents($envPath, $content);
 
-        // Also update the running config cache so artisan picks up the change
+        // Also update the running process so the change applies without a restart.
+        // config() must be set explicitly: activation links now resolve through
+        // config('app.activation_frontend_url'), which was bound at boot and does
+        // not observe putenv().
         putenv("{$key}={$value}");
+        if ($key === 'ACTIVATION_FRONTEND_URL') {
+            config(['app.activation_frontend_url' => $value]);
+        }
     }
 }

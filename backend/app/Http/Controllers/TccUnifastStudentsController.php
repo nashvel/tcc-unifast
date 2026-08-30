@@ -9,6 +9,31 @@ use Illuminate\Support\Facades\Schema;
 
 class TccUnifastStudentsController extends Controller
 {
+    /**
+     * Columns this integration is allowed to export.
+     *
+     * The endpoint is unauthenticated apart from a static shared secret, so it must
+     * never `SELECT *`: that would hand the whole grantee table — contact details,
+     * birthdate, GWA, vault paths — to anyone holding the key. Only columns n8n
+     * actually needs for social posts and sync are listed, and any not present on
+     * the configured table are simply skipped.
+     *
+     * @var list<string>
+     */
+    private const ALLOWED_COLUMNS = [
+        'id',
+        'student_id',
+        'student_number',
+        'full_name',
+        'program',
+        'year_level',
+        'status',
+        'submission_status',
+        'batch_id',
+        'created_at',
+        'updated_at',
+    ];
+
     public function __invoke(Request $request): JsonResponse
     {
         $this->authorizeRequest($request);
@@ -24,8 +49,16 @@ class TccUnifastStudentsController extends Controller
         abort_unless(Schema::hasTable($table), 503, "The configured student table [{$table}] does not exist.");
         abort_unless(Schema::hasColumn($table, 'student_id'), 503, 'The configured student table requires a student_id column.');
 
+        // Intersect the allowlist with what the table actually has, so a schema
+        // change can only ever narrow the export — never widen it.
+        $columns = array_values(array_filter(
+            self::ALLOWED_COLUMNS,
+            fn (string $column): bool => Schema::hasColumn($table, $column),
+        ));
+        abort_unless($columns !== [], 503, 'The configured student table exposes no exportable columns.');
+
         $limit = (int) ($validated['limit'] ?? 500);
-        $query = DB::table($table)->orderBy('student_id');
+        $query = DB::table($table)->select($columns)->orderBy('student_id');
 
         if (! empty($validated['after_student_id'])) {
             $query->where('student_id', '>', $validated['after_student_id']);
