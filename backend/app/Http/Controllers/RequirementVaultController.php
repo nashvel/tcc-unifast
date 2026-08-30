@@ -127,15 +127,14 @@ class RequirementVaultController extends Controller
         $this->assertCanMutateVault($grantee);
         $batchId = (int) $context['window']['batch']['id'];
 
-        // NOTE: confirm() takes ($user, $grantee, $batchId, $ipAddress). Previously
-        // $request->input('pin') was passed in the $ipAddress position, so the
-        // plaintext PIN was written to audit_logs.ip_address and the real IP was
-        // dropped. The vault PIN is not verified here at all — see storeDocument.
+        // Named order matters: an earlier revision passed the PIN in the $ipAddress
+        // position, which wrote the plaintext PIN into audit_logs.ip_address.
         $result = $confirmPackage->confirm(
             $request->user(),
             $grantee,
             $batchId,
             $request->ip(),
+            $request->input('pin'),
         );
 
         return response()->json([

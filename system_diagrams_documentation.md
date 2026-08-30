@@ -90,7 +90,7 @@ The **DFD Level 1** decomposes `Process 0.0` into the **eight (8) core functiona
 * **Data Stores:** `D1 User Accounts`, `D2 Grantee Records`, `D4 Identity and Biometric Records`.
 
 #### Process 4.0: Document Submission and Review
-* **Responsibility:** Receives 3 mandatory document slots (Course History, Grade Slip, and ID Back-to-Back & 3 Specimen Signatures), runs OCR for unit/grade extraction, and provides staff validation queues for approval/rejection. Access requires `account_status = active`, i.e. identity verified **and** credentialed.
+* **Responsibility:** Receives 3 mandatory document slots (Course History, Grade Slip, and ID Back-to-Back & 3 Specimen Signatures), runs OCR for unit/grade extraction, verifies the Document Vault PIN on confirmation when one is configured, and provides staff validation queues for approval/rejection. Access requires `account_status = active`, i.e. identity verified **and** credentialed.
 * **Inputs:** Document uploads (`Grantee` $\rightarrow$ `4.0`); Validation decisions & return notes (`Staff` $\rightarrow$ `4.0`).
 * **Outputs:** Package inspection views (`4.0` $\rightarrow$ `Staff`); Resubmission alerts (`4.0` $\rightarrow$ `7.0`).
 * **Internal Trigger:** Emits `Reviewed Document Records` to `Process 5.0`.
@@ -211,7 +211,16 @@ Grantee ──(Chosen Password)───► | 3.6 Create Account| ───(Pass
 | **3.4** | **Evaluate Biometric Liveness & Face Match** | • Liveness Stills & Selfie (`Grantee`)<br>• ID Reference Descriptor (`3.3`) | • Face Distance Metrics (`D4`)<br>• Auto-Pass Status (`Process 7.0`)<br>• Flagged Match Profile (`3.5`)<br>• Direct Bypass Context (`3.6`) | `IdentityOnboardingController.php` (`storeLiveness`), `FaceDescriptorMath.php` |
 | **3.5** | **Conduct Staff Biometric Review** | • Pending Review Records (`D4`)<br>• Biometric Decision (`Staff`) | • Inspection Photos (`Staff`)<br>• Review Audit Log (`D5`)<br>• Decision Alert (`Process 7.0`)<br>• Staff Approval Context (`3.6`) | `FaceReviewController.php` (`approve`, `reject`), `AuditLog.php` |
 | **3.6** | **Create Account Credentials** | • Chosen Password (`Grantee`)<br>• Biometric Confirmation (`3.4`/`3.5`) — status must be `identity_verified` | • Password Hash + `email_verified_at` (`D1`)<br>• Status: `active` / `verified` (`D1`/`D2`)<br>• Activation Token spent (`D4`)<br>• Full session replaces scoped session<br>• Verified Context (`Process 4.0`) | `OnboardingCredentialController.php` (`store`), `AuthTokenService.php` (`upgradeToFullSession`) |
-| **3.7** | **Configure Document Vault Security PIN** *(optional)* | • 6-Digit PIN (`Grantee`) | • Hashed PIN (`D1.security_pin`) | `StudentSettingsController.php` (`updateSecurityPin`) |
+| **3.7** | **Configure Document Vault Security PIN** *(opt-in)* | • 6-Digit PIN (`Grantee`) | • Bcrypt-hashed PIN (`D1.security_pin`) | `StudentSettingsController.php` (`updateSecurityPin`) |
+
+> **PIN enforcement.** When a grantee has configured a PIN, `Process 4.0` will not
+> accept a package confirmation without it: `ConfirmRequirementPackageService`
+> verifies the submitted PIN with `Hash::check` before promoting any draft. Wrong
+> attempts are rate-limited (5 per 15 minutes, per user) and written to `D8` as
+> `vault_pin_rejected`, because a 6-digit PIN is only 10⁶ combinations and would
+> otherwise be brute-forceable over the API. Grantees who never set a PIN are
+> unaffected — the control is opt-in, layered on top of the mandatory
+> `account_status = active` gate.
 
 ---
 

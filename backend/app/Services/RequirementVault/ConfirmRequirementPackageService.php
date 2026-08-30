@@ -10,6 +10,8 @@ use App\Models\GranteeIdentityProfile;
 use App\Models\RequirementIdentityCheck;
 use App\Models\User;
 use App\Support\FaceDescriptorMath;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -35,8 +37,17 @@ class ConfirmRequirementPackageService
     /**
      * @return array{grantee: Grantee, identity_check: ?RequirementIdentityCheck, name_consistency: array<string, mixed>}
      */
-    public function confirm(User $user, Grantee $grantee, int $batchId, ?string $ipAddress): array
-    {
+    public function confirm(
+        User $user,
+        Grantee $grantee,
+        int $batchId,
+        ?string $ipAddress,
+        ?string $pin = null,
+    ): array {
+        // The vault PIN was previously prompted for by the UI but never checked
+        // server-side, so a direct API call could confirm without it.
+        $this->assertSecurityPin($user, $pin, $ipAddress);
+
         $status = $grantee->submission_status ?? 'not_submitted';
         if (in_array($status, ['docs_submitted', 'under_review', 'verified'], true)) {
             throw ValidationException::withMessages([
@@ -79,6 +90,58 @@ class ConfirmRequirementPackageService
             'identity_check' => $check,
             'name_consistency' => $nameFlags,
         ];
+    }
+
+    /**
+     * Verify the 6-digit Document Vault PIN when the student has configured one.
+     *
+     * Opt-in by design: students without a PIN are unaffected. Throttled per user
+     * because a 6-digit PIN is only 10^6 combinations — without a limiter it would
+     * be trivially brute-forceable over the API.
+     */
+    private function assertSecurityPin(User $user, ?string $pin, ?string $ipAddress): void
+    {
+        $hash = (string) ($user->security_pin ?? '');
+        if ($hash === '') {
+            return;
+        }
+
+        $pin = trim((string) $pin);
+        if ($pin === '') {
+            throw ValidationException::withMessages([
+                'pin' => 'Enter your 6-digit Document Vault PIN to submit.',
+            ]);
+        }
+
+        $key = 'vault-pin:'.$user->id;
+        $maxAttempts = max(1, (int) config('services.requirement_vault.pin_max_attempts', 5));
+
+        if (RateLimiter::tooManyAttempts($key, $maxAttempts)) {
+            throw ValidationException::withMessages([
+                'pin' => 'Too many incorrect PIN attempts. Try again in '
+                    .RateLimiter::availableIn($key).' seconds.',
+            ]);
+        }
+
+        if (! Hash::check($pin, $hash)) {
+            RateLimiter::hit($key, 900);
+
+            AuditLog::create([
+                'actor' => $user->name,
+                'role' => 'Student',
+                'action' => 'vault_pin_rejected',
+                'module' => 'Requirements Submission',
+                'target' => "User #{$user->id}",
+                'context' => ['attempts_remaining' => RateLimiter::remaining($key, $maxAttempts)],
+                'ip_address' => $ipAddress,
+            ]);
+
+            throw ValidationException::withMessages([
+                'pin' => 'That PIN is incorrect.',
+            ]);
+        }
+
+        RateLimiter::clear($key);
     }
 
     /**

@@ -141,6 +141,9 @@ return [
             'VAULT_CONFIRM_THROTTLE_PER_MINUTE',
             env('APP_ENV') === 'local' ? 60 : 20
         )),
+        // Wrong-PIN attempts before a 15-minute lockout. A 6-digit PIN is only
+        // 10^6 combinations, so this limiter is what makes it meaningful.
+        'pin_max_attempts' => max(1, (int) env('VAULT_PIN_MAX_ATTEMPTS', 5)),
     ],
 
     'database_viewer' => [

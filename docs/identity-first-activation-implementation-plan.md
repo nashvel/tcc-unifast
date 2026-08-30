@@ -767,7 +767,30 @@ Add a shared-secret header dependency, check `Content-Length` before reading, st
 
 ---
 
-### Phase 9 — Tests
+### Phase 9 — Tests — ✅ DONE
+
+**Backend suite: 209 passed / 1176 assertions** (baseline was 154 passed with 13 failures — all 13 fixed, see §4.6). OCR service: 19 passed. Frontend builds clean.
+
+New suites:
+
+| File | Covers |
+|---|---|
+| `OnboardingSessionScopeTest` (11) | I2/I3/I6, fail-closed behaviour, alias registration, null-scope-means-full |
+| `IdentityFirstActivationTest` (19) | I1/I2/I4/I7, token reuse-and-resume, PII non-disclosure, enumeration resistance |
+| `IdentityFirstJourneyTest` (3) | End-to-end link → vault, asserting the password hash is unchanged at every prior step |
+| `CollaboratorInviteTest` (4) | No usable password for staff/developer invites; student token rejected by the staff endpoint |
+| `VaultPinEnforcementTest` (5) | Vault PIN verified server-side, wrong-PIN lockout, audit trail, opt-in behaviour |
+| `ocr-service/tests/test_api_key.py` (4) | Missing/wrong key → 401, correct key passes, `/health` open |
+
+The journey test exists because every phase passed in isolation while the *seams*
+between them were unverified — and the seams are where the real defects were
+(`EnsureFullSession` failing closed on session auth, a non-existent
+`resumePathForUser` export, missing `studentHomePath` cases).
+
+**Not covered:** no manual browser walkthrough. Camera/liveness is mocked in tests,
+so a real pass is still worth doing before the demo.
+
+### Phase 9 — original plan
 
 **Goal:** Lock in every invariant from §2.1.
 
@@ -805,7 +828,19 @@ Add a shared-secret header dependency, check `Content-Length` before reading, st
 
 ---
 
-### Phase 10 — Documentation and diagram updates
+### Phase 10 — Documentation and diagram updates — ✅ DONE
+
+`system_diagrams_documentation.md` updated to match the shipped code:
+
+- **Flowchart §4.2** — `S2` is now "Issues Scoped Onboarding Session, NO password set yet"; new Phase 3B for credential creation, after the green-zone and staff-approval paths converge.
+- **DFD §3.2** — `3.1` re-scoped to "Issue Scoped Onboarding Session"; `3.6` is "Create Account Credentials"; vault PIN moved to `3.7` with the correct `StudentSettingsController::updateSecurityPin` reference (the old citation pointed at a `storePin()` method that does not exist).
+- **3-vs-4 slot drift** corrected in five places; store `D6` now names the three slot keys; `vault_pin_hash` removed from `D2` (that column does not exist — the PIN lives on `users.security_pin`).
+- **New §3.4 "Security Design Rationale: Identity Before Credential"** — states the conventional pattern, why it was rejected, a property→mechanism table, the accepted trade-off, and the staff exception. Written for the defense question "what does the face match actually protect?", which the diagrams previously answered as "document uploads".
+- **PIN enforcement note** added under `3.7` once the control became real (§4.7).
+
+Developer-facing `ApiDocs.vue` and `FlowChart.vue` also updated — both still listed the removed vault school-ID endpoints.
+
+### Phase 10 — original plan
 
 **Goal:** Keep the thesis artifacts truthful — they are currently accurate about the *old* code.
 
@@ -893,6 +928,39 @@ Ship as an idempotent artisan command with `--dry-run` (prints per-bucket counts
 - Adding a masterlist knowledge factor at `/begin` (birthdate / full student ID). Option A makes it unnecessary for ownership, but it is cheap defence in depth — track separately.
 - Migrating inline `abort_unless` authorization to Laravel Policies. The codebase currently uses zero Policies or Gates; consistent, but worth a future pass.
 - Replacing the fake telemetry in `SystemHealthController` with real metrics (8f flags it; the wiring is its own project).
+
+---
+
+## 4.7 Vault PIN made a real control — ✅ DONE
+
+**Found while fixing an argument-order bug.** `confirm()` takes four parameters but
+was called with five, so `$request->input('pin')` landed in the `$ipAddress`
+position — writing the **plaintext PIN into `audit_logs.ip_address`** and dropping
+the real IP. Fixing that exposed the larger issue: the PIN was never verified at all.
+
+The UI prompted for it and disabled the submit button, so it looked enforced. But a
+direct `POST /api/student/requirement-vault/confirm` with no PIN succeeded. DFD
+subprocess 3.7 presented it as a security control; in practice it was UI-only.
+
+Three options were weighed — enforce it, remove it, or relabel it as a
+deliberate-action speed bump. Removal was defensible on its merits (the vault
+already requires an authenticated session on an `active` account that cleared
+biometric verification, so a 6-digit PIN adds little), but it would have traded a
+code gap for a documentation gap. **Enforcement was chosen** so the diagram's claim
+is true.
+
+`ConfirmRequirementPackageService::assertSecurityPin()`:
+- No-ops when the student has no PIN — the control stays opt-in.
+- `Hash::check` against `users.security_pin`.
+- Rate-limited (`VAULT_PIN_MAX_ATTEMPTS`, default 5, 15-minute lockout, keyed per
+  user). Essential rather than defensive: 10⁶ combinations is trivially
+  brute-forceable over an unthrottled API.
+- Failures written to `audit_logs` as `vault_pin_rejected` with remaining attempts,
+  so repeated guessing is visible.
+
+Verified by `VaultPinEnforcementTest` (5 tests): missing PIN → 422, wrong PIN → 422
+plus audit row, correct PIN → 200, no-PIN students unaffected, and lockout refuses
+even the correct PIN once tripped.
 
 ---
 
