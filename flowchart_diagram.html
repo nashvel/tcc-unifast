@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Operational Flowchart - UniFAST TES Grantee Management System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body {
+            background-color: #f0f3f8;
+            color: #222;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            background: white;
+            padding: 16px 32px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            max-width: 1200px;
+            width: 100%;
+        }
+        .header h1 {
+            font-size: 24px;
+            color: #1a365d;
+            margin-bottom: 4px;
+        }
+        .header p {
+            color: #4a5568;
+            font-size: 13px;
+        }
+        .btn-container {
+            margin-top: 10px;
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+        .btn {
+            background: #2b6cb0;
+            color: white;
+            padding: 8px 18px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+        }
+        .diagram-wrapper {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+            max-width: 1200px;
+            width: 100%;
+            overflow-x: auto;
+        }
+        .mermaid {
+            display: flex;
+            justify-content: center;
+        }
+        .mermaid svg {
+            height: auto;
+            max-width: 100%;
+        }
+        .legend {
+            max-width: 1200px;
+            width: 100%;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            padding: 16px 24px;
+            margin-top: 20px;
+            font-size: 12px;
+            color: #334155;
+        }
+        .legend h2 {
+            font-size: 14px;
+            color: #1a365d;
+            margin-bottom: 8px;
+        }
+        .legend ul {
+            list-style: none;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 6px 20px;
+        }
+        .legend li::before {
+            content: '\25A0';
+            margin-right: 6px;
+        }
+        .legend li.admin::before { color: #1e40af; }
+        .legend li.student::before { color: #b45309; }
+        .legend li.staff::before { color: #4338ca; }
+        .legend li.system::before { color: #475569; }
+        .legend li.decision::before { color: #854d0e; }
+        .legend li.store::before { color: #047857; }
+        .fallback {
+            display: none;
+            font-size: 12px;
+            color: #9b2c2c;
+            background: #fff5f5;
+            border: 1px solid #feb2b2;
+            border-radius: 6px;
+            padding: 12px 16px;
+        }
+        @media print {
+            body { background: white; padding: 0; }
+            .btn-container { display: none; }
+            .diagram-wrapper, .header, .legend { box-shadow: none; border-radius: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>UniFAST TES Grantee Management System</h1>
+        <p><strong>Figure 3.2: System Operational Flowchart</strong> &mdash; End-to-End Operational Lifecycle</p>
+        <p style="font-size:10.5px; color:#7030a0; margin-top:6px;">
+            <strong>Revised (identity-first activation):</strong>
+            <code>S2</code> read &ldquo;Grantee Sets Password &amp; Activates Account&rdquo;.
+            Password creation moved to <strong>Phase 3B</strong> (<code>S8C</code>), after the biometric
+            paths converge, so the face match gates account ownership rather than document upload.
+            The former <code>S10</code> PIN-unlock step was removed &mdash; the vault PIN is now an
+            opt-in setting verified at confirm. <code>S11</code>/<code>E2</code> corrected from 4 slots to 3.
+        </p>
+        <div class="btn-container">
+            <button class="btn" onclick="window.print()">&#128424; Print / Save as PDF</button>
+        </div>
+    </div>
+
+    <div class="diagram-wrapper">
+        <p class="fallback" id="fallback">
+            The flowchart renders with the Mermaid library loaded from a CDN. It looks like that request
+            failed &mdash; reconnect to the network and reload, or read the same chart in
+            <code>system_diagrams_documentation.md</code> &sect;4.2.
+        </p>
+<pre class="mermaid">
+flowchart TD
+    %% ── STYLES ──
+    classDef startEnd fill:#f8fafc,stroke:#334155,stroke-width:2px,font-weight:bold;
+    classDef adminBlock fill:#dbeafe,stroke:#1e40af,stroke-width:1.5px;
+    classDef studentBlock fill:#fef3c7,stroke:#b45309,stroke-width:1.5px;
+    classDef staffBlock fill:#e0e7ff,stroke:#4338ca,stroke-width:1.5px;
+    classDef sysBlock fill:#f1f5f9,stroke:#475569,stroke-width:1.5px;
+    classDef decisionBlock fill:#fef9c3,stroke:#854d0e,stroke-width:1.5px;
+    classDef dbBlock fill:#ecfdf5,stroke:#047857,stroke-width:1.5px;
+
+    %% ── PHASE 1: ADMIN SETUP &amp; INTAKE ──
+    Start([● START: Academic Period Begins]):::startEnd --> A1[/Admin Creates Batch &amp; Sets Submission Window/]:::adminBlock
+    A1 --> A2[/Admin Uploads CHED Masterlist Excel/CSV/PDF/]:::adminBlock
+    A2 --> A3[System Parses &amp; Validates Student Rows]:::sysBlock
+    A3 --> D1{Are Data Rows Valid?}:::decisionBlock
+    D1 -- No: Errors Detected --> A2
+    D1 -- Yes: Valid --> A4[Admin Commits Import &amp; Triggers Batch Activation]:::adminBlock
+    A4 --> A5[/System Dispatches Activation Email with One-Time Token/]:::sysBlock
+
+    %% ── PHASE 2: GRANTEE ACCOUNT ACTIVATION &amp; KYC ──
+    A5 --> S1[/Grantee Receives Email &amp; Clicks Activation Link/]:::studentBlock
+    S1 --> S2[System Issues Scoped Onboarding Session&lt;br&gt;NO password set yet]:::sysBlock
+    S2 --> S3[/Grantee Completes Personal &amp; Academic KYC Profile/]:::studentBlock
+    S3 --> S4[System Saves KYC Profile -> Status: pending_identity]:::sysBlock
+
+    %% ── PHASE 3: BIOMETRIC IDENTITY &amp; LIVENESS ──
+    S4 --> S5[/Grantee Scans School ID Front &amp; Back/]:::studentBlock
+    S5 --> S6[System Runs OCR: Matches Name &amp; Student ID vs Masterlist]:::sysBlock
+    S6 --> D2{ID OCR &amp; Face Quality >= 0.50?}:::decisionBlock
+    D2 -- No: OCR/Quality Fail --> S5
+    D2 -- Yes: ID Stored --> S7[/Grantee Performs Interactive Liveness Challenge/]:::studentBlock
+    S7 --> S8[System Computes Euclidean Face Descriptor Distance]:::sysBlock
+    S8 --> D3{Face Match Classification}:::decisionBlock
+
+    D3 -- Yellow/Red Zone: Low Score --> ST1[Queue in Staff Biometric Review Queue]:::staffBlock
+    ST1 --> D4{Staff Manual Review Decision}:::decisionBlock
+    D4 -- Rejected: fresh link emailed&lt;br&gt;status identity_rejected --> S5
+    D4 -- Approved: set-password link emailed --> S8B
+
+    D3 -- Green Zone: High Match --> S8B[Status: identity_verified&lt;br&gt;Identity proven, still NO password]:::sysBlock
+
+    %% ── PHASE 3B: CREDENTIAL CREATION (AFTER VERIFICATION) ──
+    S8B --> S8C[/Grantee Chooses Their Password/]:::studentBlock
+    S8C --> S9[System Sets Credential -> Status: active&lt;br&gt;Scoped session upgraded to full session]:::sysBlock
+
+    %% ── PHASE 4: DOCUMENT SUBMISSION VAULT ──
+    S9 --> S11[/Grantee Uploads 3 Required Documents:&lt;br&gt;1. Course History&lt;br&gt;2. Official Grade Slip&lt;br&gt;3. ID Back-to-Back &amp;amp; 3 Specimen Signatures/]:::studentBlock
+    S11 --> S12[System Runs Document OCR &amp; Previews Extracted Data]:::sysBlock
+    S12 --> S13[/Grantee Confirms Submission Package -> Status: docs_submitted/]:::studentBlock
+
+    %% ── PHASE 5: STAFF DOCUMENT VALIDATION ──
+    S13 --> ST2[Staff Inspects Document Package in Validation Queue]:::staffBlock
+    ST2 --> D5{Staff Document Review Decision}:::decisionBlock
+
+    D5 -- Resubmission Requested --> N1[/System Sends Return Notification with Staff Notes/]:::sysBlock
+    N1 --> S14[/Grantee Re-uploads Rejected Document Slot Only/]:::studentBlock
+    S14 --> ST2
+
+    D5 -- Approved --> E1[System Pipeline Triggers Automated Eligibility Assessment]:::sysBlock
+
+    %% ── PHASE 6: ELIGIBILITY ASSESSMENT &amp; RISK SCORING ──
+    E1 --> E2[System Evaluates Retention Rules:&lt;br&gt;1. Active Batch Enrollment&lt;br&gt;2. Complete 3-slot Document Vault&lt;br&gt;3. Failed Subjects &lt;= Threshold]:::sysBlock
+    E2 --> E3[System Computes Risk Score &amp; Compliance Badge]:::sysBlock
+    E3 --> D6{Eligibility Outcome}:::decisionBlock
+
+    D6 -- Needs Update / Deficient --> N2[/System Sends Eligibility Deficiency Notice/]:::sysBlock
+    N2 --> S14
+
+    D6 -- Eligible --> E4[Grantee Status Set to: ELIGIBLE]:::sysBlock
+
+    %% ── PHASE 7: SEQUENTIAL BILLING &amp; AUDIT (CLEAN LINEAR FLOW) ──
+    E4 --> N3[/System Sends Formal Grantee Eligibility Notice/]:::sysBlock
+    N3 --> A6[/Admin Generates CHED TES Billing Masterlist/]:::adminBlock
+    A6 --> A7[/Admin Generates Grantee Fund Distribution &amp; Payroll Report/]:::adminBlock
+    A7 --> A8[(System Writes All Actions to Immutable Audit Logs)]:::dbBlock
+    A8 --> EndNode([● END: TES Grant Disbursed &amp; Audited]):::startEnd
+</pre>
+    </div>
+
+    <div class="legend">
+        <h2>Legend</h2>
+        <ul>
+            <li class="admin">Admin action</li>
+            <li class="student">Grantee action</li>
+            <li class="staff">Staff action</li>
+            <li class="system">Automated system process</li>
+            <li class="decision">Decision point</li>
+            <li class="store">Data store write</li>
+        </ul>
+        <p style="margin-top:8px;">
+            Parallelogram nodes denote manual input/output; rectangles denote processing;
+            diamonds denote decisions; the cylinder denotes a persistent data store.
+        </p>
+    </div>
+
+    <script type="module">
+        try {
+            const { default: mermaid } = await import('https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs');
+            mermaid.initialize({
+                startOnLoad: false,
+                theme: 'base',
+                flowchart: { htmlLabels: true, curve: 'basis', useMaxWidth: true },
+                themeVariables: { fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif", fontSize: '13px' }
+            });
+            await mermaid.run({ querySelector: '.mermaid' });
+        } catch (error) {
+            document.getElementById('fallback').style.display = 'block';
+            console.error('Mermaid failed to load or render.', error);
+        }
+    </script>
+
+</body>
+</html>
