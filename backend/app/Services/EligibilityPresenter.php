@@ -10,7 +10,8 @@ use App\Models\SubmissionPipelineResult;
 
 class EligibilityPresenter
 {
-    private const REQUIRED_SLOTS = ['school_id', 'course_history', 'grade_slip', 'specimen_signatures'];
+    /** Identity is verified once during onboarding; the vault has no school_id slot. */
+    private const REQUIRED_SLOTS = ['course_history', 'grade_slip', 'specimen_signatures'];
 
     /**
      * @return array<string, mixed>
@@ -71,7 +72,7 @@ class EligibilityPresenter
                 'label' => 'Required documents submitted for current batch',
                 'passed' => $docsOk,
                 'note' => $docsOk
-                    ? 'School ID, Course History, Grade Slip, and specimen signatures are on file for this batch.'
+                    ? 'Course History, Grade Slip, and ID (Back-to-Back) & Specimen are on file for this batch.'
                     : 'One or more required vault slots are missing for this batch.',
             ],
             [

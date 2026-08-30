@@ -14,34 +14,40 @@ use Illuminate\Validation\ValidationException;
 
 class StoreVaultDocumentSlotService
 {
-    private const SCHOOL_ID_SLOT = 'school_id';
-
     private const COURSE_HISTORY_SLOT = 'course_history';
 
     private const GRADE_SLIP_SLOT = 'grade_slip';
 
     private const SPECIMEN_SIGNATURES_SLOT = 'specimen_signatures';
 
-    /** @var list<string> */
+    /**
+     * Identity is verified once during onboarding; the vault has no school_id slot.
+     *
+     * @var list<string>
+     */
     private const REQUIRED_SLOTS = [
-        self::SCHOOL_ID_SLOT,
         self::COURSE_HISTORY_SLOT,
         self::GRADE_SLIP_SLOT,
         self::SPECIMEN_SIGNATURES_SLOT,
     ];
 
-    /** @var list<string> */
-    private const IMAGE_MIMES = ['image/jpeg', 'image/png', 'image/webp'];
+    /**
+     * The specimen slot holds the ID (front & back) plus 3 signatures, which
+     * students normally combine into a single PDF — so PDF is allowed alongside
+     * images. Magic bytes are still verified by SecureUpload::assertAllowedMime.
+     *
+     * @var list<string>
+     */
+    private const SPECIMEN_MIMES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
 
     /** @var list<string> */
     private const PDF_MIMES = ['application/pdf'];
 
     public function store(User $user, Grantee $grantee, int $batchId, string $slotKey, UploadedFile $file, ?string $ipAddress): DocumentSubmission
     {
-        $this->requireSlot((string) $user->student_id, $batchId, self::SCHOOL_ID_SLOT);
         $this->assertCanMutateVault($grantee, $slotKey);
 
-        $allowed = $slotKey === self::SPECIMEN_SIGNATURES_SLOT ? self::IMAGE_MIMES : self::PDF_MIMES;
+        $allowed = $slotKey === self::SPECIMEN_SIGNATURES_SLOT ? self::SPECIMEN_MIMES : self::PDF_MIMES;
         $detectedMime = SecureUpload::assertAllowedMime($file, $allowed, 'file');
 
         $existing = DocumentSubmission::query()
@@ -155,29 +161,12 @@ class StoreVaultDocumentSlotService
         return $count >= count(self::REQUIRED_SLOTS);
     }
 
-    private function requireSlot(string $studentId, int $batchId, string $slotKey): DocumentSubmission
-    {
-        $submission = DocumentSubmission::query()
-            ->where('student_id', $studentId)
-            ->where('batch_id', $batchId)
-            ->where('slot_key', $slotKey)
-            ->first();
-
-        if (! $submission) {
-            throw ValidationException::withMessages([
-                'slot_key' => 'Complete the School ID slot before continuing.',
-            ]);
-        }
-
-        return $submission;
-    }
-
     private function slotLabel(string $slotKey): string
     {
         return match ($slotKey) {
             self::COURSE_HISTORY_SLOT => 'Course History',
             self::GRADE_SLIP_SLOT => 'Grade Slip',
-            self::SPECIMEN_SIGNATURES_SLOT => '3 Specimen Signatures',
+            self::SPECIMEN_SIGNATURES_SLOT => 'ID (Back-to-Back) & Specimen',
             default => 'Requirement',
         };
     }

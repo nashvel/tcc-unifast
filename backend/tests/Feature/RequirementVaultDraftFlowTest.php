@@ -193,6 +193,20 @@ class RequirementVaultDraftFlowTest extends TestCase
 
     private function seedAllDraftSlots(User $student, Grantee $grantee, ?array $descriptor = null): void
     {
+        // Confirm requires identity onboarding (ID scan + liveness) to be complete;
+        // the vault itself no longer re-verifies identity.
+        GranteeIdentityProfile::query()->firstOrCreate(
+            ['grantee_id' => $grantee->id],
+            [
+                'user_id' => $student->id,
+                'status' => 'completed',
+                'id_reference_face_path' => 'identity/'.$grantee->id.'/id_reference_face.jpg',
+                'onboarding_selfie_path' => 'identity/'.$grantee->id.'/onboarding_selfie.jpg',
+                'id_reference_face_descriptor' => $descriptor,
+                'onboarding_selfie_descriptor' => $descriptor,
+                'onboarding_completed_at' => now(),
+            ],
+        );
 
         foreach (['course_history' => 'course.pdf', 'grade_slip' => 'grades.pdf'] as $slot => $name) {
             $this->actingAs($student)

@@ -78,7 +78,7 @@ class DocumentSubmissionPackagesTest extends TestCase
             ->assertJsonPath('data.student_id', 'STU-INC-SHOW')
             ->assertJsonPath('data.progress', '2/3')
             ->assertJsonPath('data.slots_submitted', 2)
-            ->assertJsonPath('data.slots_expected', 4)
+            ->assertJsonPath('data.slots_expected', 3)
             ->assertJsonCount(2, 'data.documents')
             ->assertJsonPath('data.documents.0.tab_label', 'Course History')
             ->assertJsonPath('data.documents.1.tab_label', 'Grade Slip');

@@ -15,17 +15,18 @@ use Illuminate\Validation\ValidationException;
 
 class ConfirmRequirementPackageService
 {
-    private const SCHOOL_ID_SLOT = 'school_id';
-
     private const COURSE_HISTORY_SLOT = 'course_history';
 
     private const GRADE_SLIP_SLOT = 'grade_slip';
 
     private const SPECIMEN_SIGNATURES_SLOT = 'specimen_signatures';
 
-    /** @var list<string> */
+    /**
+     * Identity is verified once during onboarding; the vault has no school_id slot.
+     *
+     * @var list<string>
+     */
     private const REQUIRED_SLOTS = [
-        self::SCHOOL_ID_SLOT,
         self::COURSE_HISTORY_SLOT,
         self::GRADE_SLIP_SLOT,
         self::SPECIMEN_SIGNATURES_SLOT,
@@ -51,14 +52,15 @@ class ConfirmRequirementPackageService
         $missing = $this->missingRequiredSlotLabels((string) $user->student_id, $batchId);
         if ($missing !== []) {
             throw ValidationException::withMessages([
-                'submission' => 'Submit all four documents to staff before confirming. Missing: '
+                'submission' => 'Submit all three documents to staff before confirming. Missing: '
                     .implode(', ', $missing).'.',
             ]);
         }
 
-        $schoolId = $this->requireSlot((string) $user->student_id, $batchId, self::SCHOOL_ID_SLOT);
-        $this->assertSchoolIdFaceBound($grantee, $schoolId);
-        $nameFlags = $this->assertNameConsistency($user, $grantee, $batchId, $schoolId);
+        // Identity was already proven during onboarding (ID scan + liveness); the
+        // vault only re-checks that submitted names stay consistent.
+        $this->assertIdentityOnboardingComplete($grantee);
+        $nameFlags = $this->assertNameConsistency($user, $grantee, $batchId);
 
         $check = RequirementIdentityCheck::query()
             ->where('grantee_id', $grantee->id)
@@ -68,7 +70,6 @@ class ConfirmRequirementPackageService
             ->first();
 
         $identityFailed = (bool) ($check?->manual_review_required)
-            || (bool) $schoolId->identity_review_required
             || ($nameFlags['gradeslip_mismatch'] ?? false);
 
         $grantee = $this->promoteDraftsAndQueuePipeline($user, $grantee, $batchId, $check, $identityFailed, $ipAddress);
@@ -80,40 +81,23 @@ class ConfirmRequirementPackageService
         ];
     }
 
-    public function assertSchoolIdFaceBound(Grantee $grantee, DocumentSubmission $schoolId): void
+    /**
+     * The vault is gated on onboarding identity verification, not on a re-scan.
+     */
+    private function assertIdentityOnboardingComplete(Grantee $grantee): void
     {
         $identity = GranteeIdentityProfile::query()->where('grantee_id', $grantee->id)->first();
-        if (! $identity?->isComplete()
-            || ! is_array($schoolId->face_descriptor_payload)
-            || ! is_array($identity->id_reference_face_descriptor)
-            || ! is_array($identity->onboarding_selfie_descriptor)) {
-            throw ValidationException::withMessages([
-                'face_match' => 'School ID face bind is incomplete. Re-scan Slot 1 after finishing identity onboarding.',
-            ]);
-        }
 
-        $probe = FaceDescriptorMath::normalize($schoolId->face_descriptor_payload, 'submission_face_descriptor');
-        $reference = FaceDescriptorMath::normalize(
-            $identity->id_reference_face_descriptor,
-            'id_reference_face_descriptor',
-        );
-        $selfie = FaceDescriptorMath::normalize(
-            $identity->onboarding_selfie_descriptor,
-            'onboarding_selfie_descriptor',
-        );
-        $threshold = FaceDescriptorMath::threshold();
-        $vsReference = FaceDescriptorMath::euclidean($probe, $reference);
-        $vsSelfie = FaceDescriptorMath::euclidean($probe, $selfie);
-
-        if ($vsReference >= $threshold || $vsSelfie >= $threshold) {
+        if (! $identity?->isComplete()) {
             throw ValidationException::withMessages([
-                'face_match' => 'School ID face does not match onboarding reference photos. Re-scan Slot 1 before submitting.',
+                'identity' => 'Complete identity onboarding (ID scan + liveness) before submitting requirements.',
             ]);
         }
     }
 
     /**
-     * Require profile ~= masterlist/grantee ~= school ID OCR name.
+     * Require profile ~= masterlist/grantee name, cross-checked against the ID OCR
+     * captured during onboarding.
      * Grade slip name is best-effort: soft-flag when OCR text already exists; never block if missing.
      *
      * @return array{profile: string, grantee: string, school_id: ?string, grade_slip: ?string, gradeslip_mismatch: bool}
@@ -122,7 +106,6 @@ class ConfirmRequirementPackageService
         User $user,
         Grantee $grantee,
         int $batchId,
-        DocumentSubmission $schoolId,
     ): array {
         $profileName = trim((string) $user->name);
         $granteeName = trim((string) $grantee->full_name);
@@ -139,9 +122,9 @@ class ConfirmRequirementPackageService
             ]);
         }
 
+        // Name captured by OCR from the school ID during identity onboarding.
         $identity = GranteeIdentityProfile::query()->where('grantee_id', $grantee->id)->first();
-        $schoolIdName = data_get($schoolId->metadata_payload, 'ocr.extracted_name')
-            ?: data_get($identity?->id_ocr_payload, 'extracted_name');
+        $schoolIdName = data_get($identity?->id_ocr_payload, 'extracted_name');
         $schoolIdName = is_string($schoolIdName) ? trim($schoolIdName) : null;
         if ($schoolIdName === '') {
             $schoolIdName = null;
@@ -149,7 +132,7 @@ class ConfirmRequirementPackageService
 
         if ($schoolIdName !== null && ! $this->namesLooselyMatch($profileName, $schoolIdName)) {
             throw ValidationException::withMessages([
-                'name_match' => 'School ID OCR name does not match your profile / masterlist name. Re-scan Slot 1.',
+                'name_match' => 'The name on your scanned school ID does not match your profile / masterlist name. Contact the scholarship office.',
             ]);
         }
 
@@ -281,41 +264,15 @@ class ConfirmRequirementPackageService
         foreach (self::REQUIRED_SLOTS as $slotKey) {
             if (! in_array($slotKey, $present, true)) {
                 $missing[] = match ($slotKey) {
-                    self::SCHOOL_ID_SLOT => 'School ID',
                     self::COURSE_HISTORY_SLOT => 'Course History',
                     self::GRADE_SLIP_SLOT => 'Grade Slip',
-                    self::SPECIMEN_SIGNATURES_SLOT => '3 Specimen Signatures',
+                    self::SPECIMEN_SIGNATURES_SLOT => 'ID (Back-to-Back) & Specimen',
                     default => $slotKey,
                 };
             }
         }
 
         return $missing;
-    }
-
-    private function requireSlot(string $studentId, int $batchId, string $slotKey): DocumentSubmission
-    {
-        $submission = DocumentSubmission::query()
-            ->where('student_id', $studentId)
-            ->where('batch_id', $batchId)
-            ->where('slot_key', $slotKey)
-            ->first();
-
-        if (! $submission) {
-            $label = match ($slotKey) {
-                self::SCHOOL_ID_SLOT => 'School ID',
-                self::COURSE_HISTORY_SLOT => 'Course History',
-                self::GRADE_SLIP_SLOT => 'Grade Slip',
-                self::SPECIMEN_SIGNATURES_SLOT => '3 Specimen Signatures',
-                default => 'required',
-            };
-
-            throw ValidationException::withMessages([
-                'slot_key' => "Complete the {$label} slot before continuing.",
-            ]);
-        }
-
-        return $submission;
     }
 
     private function namesLooselyMatch(string $left, string $right): bool

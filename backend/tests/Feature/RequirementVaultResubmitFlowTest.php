@@ -242,10 +242,9 @@ class RequirementVaultResubmitFlowTest extends TestCase
         ]);
 
         foreach ([
-            'school_id' => ['School ID', 'id.jpg', 'image/jpeg'],
             'course_history' => ['Course History', 'course.pdf', 'application/pdf'],
             'grade_slip' => ['Grade Slip', 'grades.pdf', 'application/pdf'],
-            'specimen_signatures' => ['3 Specimen Signatures', 'specimens.jpg', 'image/jpeg'],
+            'specimen_signatures' => ['ID (Back-to-Back) & Specimen', 'specimens.jpg', 'image/jpeg'],
         ] as $slot => [$label, $name, $mime]) {
             DocumentSubmission::create([
                 'student_id' => $student->student_id,
@@ -260,10 +259,6 @@ class RequirementVaultResubmitFlowTest extends TestCase
                 'file_size' => 10,
                 'status' => 'pending_review',
                 'risk_level' => 'low',
-                'face_descriptor_payload' => $slot === 'school_id' ? $face : null,
-                'metadata_payload' => $slot === 'school_id'
-                    ? ['ocr' => ['extracted_name' => $student->name]]
-                    : null,
             ]);
             Storage::disk('local')->put('vault/'.$grantee->id.'/'.$name, $mime === 'application/pdf'
                 ? "%PDF-1.4\n%%EOF\n"

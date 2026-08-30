@@ -9,9 +9,12 @@ use Illuminate\Support\Collection;
 
 class DocumentSubmissionPresenter
 {
-    /** @var list<string> */
+    /**
+     * Identity is verified once during onboarding; the vault has no school_id slot.
+     *
+     * @var list<string>
+     */
     public const EXPECTED_SLOTS = [
-        'school_id',
         'course_history',
         'grade_slip',
         'specimen_signatures',
@@ -19,10 +22,9 @@ class DocumentSubmissionPresenter
 
     /** @var array<string, string> */
     private const SLOT_TAB_LABELS = [
-        'school_id' => 'School ID',
         'course_history' => 'Course History',
         'grade_slip' => 'Grade Slip',
-        'specimen_signatures' => 'Specimen',
+        'specimen_signatures' => 'ID (Back-to-Back) & Specimen',
     ];
 
     public function submission(DocumentSubmission $item, ?int $viewerId = null): array

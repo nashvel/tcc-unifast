@@ -20,7 +20,6 @@ import PageHeader from "@/components/ui/PageHeader.vue";
 import CardSkeleton from "@/components/ui/CardSkeleton.vue";
 import { toast } from "@/composables/useToast";
 import { withLang } from "@/i18n/routeLang";
-import { markVaultSchoolIdScanReady } from "@/modules/documents/vaultSchoolIdScanGate";
 import { authSession } from "@/auth/session";
 
 const router = useRouter();
@@ -142,7 +141,7 @@ const openResubmissionSlots = computed(() =>
     return slot.status === "draft" && granteeStatus.value === "resubmission_requested";
   }),
 );
-/** Vault progress is 4 document slots only (submit is a separate action, not a 5th step). */
+/** Vault progress is the 3 document slots only (submit is a separate action, not a 4th step). */
 const progress = computed(() => {
   if (inResubmissionMode.value) {
     const open = openResubmissionSlots.value;

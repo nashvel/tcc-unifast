@@ -4,19 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\DocumentSubmission;
 use App\Models\Grantee;
-use App\Models\GranteeIdentityProfile;
 use App\Models\User;
 use App\Services\BatchWindowService;
-use App\Services\IdCardOcrService;
-use App\Services\MasterlistTruthService;
 use App\Services\RequirementVault\ConfirmRequirementPackageService;
 use App\Services\RequirementVault\RequirementVaultPresenter;
 use App\Services\RequirementVault\ResubmitRequirementSlotService;
 use App\Services\RequirementVault\StoreVaultDocumentSlotService;
-use App\Services\RequirementVault\StoreVaultIdentityCheckService;
-use App\Services\RequirementVault\StoreVaultSchoolIdService;
-use App\Services\RequirementVault\ValidateVaultFrontIdOcrService;
-use App\Services\TccRegistrarQrService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -24,27 +17,23 @@ use Illuminate\Validation\ValidationException;
 
 class RequirementVaultController extends Controller
 {
-    private const SCHOOL_ID_SLOT = 'school_id';
-
     private const COURSE_HISTORY_SLOT = 'course_history';
 
     private const GRADE_SLIP_SLOT = 'grade_slip';
 
     private const SPECIMEN_SIGNATURES_SLOT = 'specimen_signatures';
 
-    /** @var list<string> */
+    /**
+     * Identity is verified exactly once, during onboarding (ID scan + liveness).
+     * The vault holds document slots only — there is no school_id slot here.
+     *
+     * @var list<string>
+     */
     private const REQUIRED_SLOTS = [
-        self::SCHOOL_ID_SLOT,
         self::COURSE_HISTORY_SLOT,
         self::GRADE_SLIP_SLOT,
         self::SPECIMEN_SIGNATURES_SLOT,
     ];
-
-    /** @var list<string> */
-    private const IMAGE_OR_PDF_MIMES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
-
-    /** @var list<string> */
-    private const PDF_MIMES = ['application/pdf'];
 
     public function __construct(
         private readonly RequirementVaultPresenter $presenter,
@@ -55,74 +44,6 @@ class RequirementVaultController extends Controller
         $context = $this->studentContext($request, $windows, false);
 
         return response()->json($this->presenter->show($context['window'], $context['grantee']));
-    }
-
-    public function validateFrontIdOcr(
-        Request $request,
-        BatchWindowService $windows,
-        ValidateVaultFrontIdOcrService $validateFrontIdOcr,
-    ): JsonResponse {
-        $context = $this->studentContext($request, $windows);
-        $grantee = $context['grantee'];
-        $this->assertCanMutateVault($grantee, self::SCHOOL_ID_SLOT);
-        $validateFrontIdOcr->assertIdentityComplete($grantee);
-
-        $validated = $request->validate([
-            'id_frame' => ['required', 'file', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
-        ]);
-
-        return response()->json([
-            'data' => $validateFrontIdOcr->validate($request->user(), $grantee, $validated['id_frame']),
-        ]);
-    }
-
-    public function storeId(
-        Request $request,
-        BatchWindowService $windows,
-        IdCardOcrService $ocr,
-        TccRegistrarQrService $qr,
-        MasterlistTruthService $truth,
-        StoreVaultSchoolIdService $storeSchoolId,
-    ): JsonResponse {
-        $context = $this->studentContext($request, $windows);
-        $grantee = $context['grantee'];
-        $this->assertCanMutateVault($grantee, self::SCHOOL_ID_SLOT);
-        $batchId = (int) $context['window']['batch']['id'];
-        $identity = GranteeIdentityProfile::query()->where('grantee_id', $grantee->id)->first();
-
-        if (! $identity?->isComplete()) {
-            throw ValidationException::withMessages([
-                'onboarding' => 'Complete identity onboarding (ID scan + liveness) before submitting requirements.',
-            ]);
-        }
-
-        $validated = $request->validate([
-            'id_frame' => ['required', 'file', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
-            'id_face_crop' => ['required', 'file', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
-            'id_back' => ['required', 'file', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
-            'qr_payload' => ['nullable', 'string', 'max:2000'],
-            'face_descriptor' => ['required', 'array', 'size:128'],
-            'face_descriptor.*' => ['required', 'numeric'],
-            'face_quality_score' => ['required', 'numeric', 'min:0', 'max:1'],
-            'distance_vs_reference' => ['nullable', 'numeric', 'min:0'],
-            'distance_vs_onboarding_selfie' => ['nullable', 'numeric', 'min:0'],
-            'consent_accepted' => ['accepted'],
-            'precheck_accepted' => ['accepted'],
-        ]);
-
-        $result = $storeSchoolId->store(
-            $request->user(),
-            $grantee,
-            $batchId,
-            $identity,
-            $validated,
-            $ocr,
-            $qr,
-            $truth,
-            $request->ip(),
-        );
-
-        return response()->json(['data' => $this->presenter->document($result['submission'])]);
     }
 
     public function storeDocument(
@@ -139,10 +60,7 @@ class RequirementVaultController extends Controller
         $isSpecimen = $slotKey === self::SPECIMEN_SIGNATURES_SLOT;
 
         $validated = $request->validate([
-            'slot_key' => [
-                'required',
-                Rule::in([self::COURSE_HISTORY_SLOT, self::GRADE_SLIP_SLOT, self::SPECIMEN_SIGNATURES_SLOT]),
-            ],
+            'slot_key' => ['required', Rule::in(self::REQUIRED_SLOTS)],
             'file' => [
                 'required',
                 'file',
@@ -151,7 +69,8 @@ class RequirementVaultController extends Controller
             ],
         ]);
 
-        $result = $storeVaultDocumentSlot->store(
+        // store() returns the DocumentSubmission model directly.
+        $submission = $storeVaultDocumentSlot->store(
             $request->user(),
             $grantee,
             $batchId,
@@ -160,7 +79,7 @@ class RequirementVaultController extends Controller
             $request->ip(),
         );
 
-        return response()->json(['data' => $this->presenter->document($result['submission'])]);
+        return response()->json(['data' => $this->presenter->document($submission)]);
     }
 
     public function resubmitSlot(
@@ -198,38 +117,6 @@ class RequirementVaultController extends Controller
         ]);
     }
 
-    public function storeIdentityCheck(
-        Request $request,
-        BatchWindowService $windows,
-        StoreVaultIdentityCheckService $storeIdentityCheck,
-    ): JsonResponse {
-        $context = $this->studentContext($request, $windows);
-        $grantee = $context['grantee'];
-        $this->assertCanMutateVault($grantee);
-        $batchId = (int) $context['window']['batch']['id'];
-
-        $validated = $request->validate([
-            'challenge_sequence' => ['required', 'array', 'size:3'],
-            'challenge_sequence.*' => ['required', 'string'],
-            'liveness_verified' => ['required', 'boolean'],
-            'frames' => ['nullable', 'array'],
-            'face_descriptors' => ['nullable', 'array'],
-            'summary' => ['nullable', 'array'],
-            'device_metadata' => ['nullable', 'array'],
-            'attempt_number' => ['nullable', 'integer', 'min:1'],
-        ]);
-
-        $result = $storeIdentityCheck->store(
-            $request->user(),
-            $grantee,
-            $batchId,
-            $validated,
-            $request->ip(),
-        );
-
-        return response()->json(['data' => $result]);
-    }
-
     public function confirm(
         Request $request,
         BatchWindowService $windows,
@@ -240,16 +127,22 @@ class RequirementVaultController extends Controller
         $this->assertCanMutateVault($grantee);
         $batchId = (int) $context['window']['batch']['id'];
 
+        // NOTE: confirm() takes ($user, $grantee, $batchId, $ipAddress). Previously
+        // $request->input('pin') was passed in the $ipAddress position, so the
+        // plaintext PIN was written to audit_logs.ip_address and the real IP was
+        // dropped. The vault PIN is not verified here at all — see storeDocument.
         $result = $confirmPackage->confirm(
             $request->user(),
             $grantee,
             $batchId,
-            $request->input('pin'),
             $request->ip(),
         );
 
         return response()->json([
             'data' => $this->presenter->show($context['window'], $result['grantee']),
+            'grantee' => $this->presenter->grantee($result['grantee']),
+            'identity_check' => $result['identity_check'],
+            'submitted' => true,
             'message' => 'Requirements confirmed and submitted.',
         ]);
     }

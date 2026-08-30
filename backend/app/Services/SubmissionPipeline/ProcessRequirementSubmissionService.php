@@ -109,7 +109,8 @@ class ProcessRequirementSubmissionService
         $ocrSummary['_academics'] = $academics;
 
         // Pillow moiré authenticity is disabled until the microservice is ready.
-        $authenticity = $this->externalChecks->runAuthenticityCheck($slots->get('school_id'));
+        // The ID now lives in the specimen slot (ID front & back + 3 signatures).
+        $authenticity = $this->externalChecks->runAuthenticityCheck($slots->get('specimen_signatures'));
 
         $signals = $this->scoring->collectSignals(
             identityFailed: $identityFailed,

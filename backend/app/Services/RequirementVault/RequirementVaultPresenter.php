@@ -10,8 +10,6 @@ use App\Support\VaultFileStorage;
 
 class RequirementVaultPresenter
 {
-    private const SCHOOL_ID_SLOT = 'school_id';
-
     /**
      * @param  array<string, mixed>  $window
      * @return array<string, mixed>
@@ -84,15 +82,9 @@ class RequirementVaultPresenter
      */
     public function document(DocumentSubmission $item, bool $includeFaceDescriptor = true): array
     {
+        // No vault slot carries a face descriptor now that identity lives in
+        // onboarding; the parameter is retained for call-site compatibility.
         $faceDescriptor = null;
-        if ($includeFaceDescriptor && $item->slot_key === self::SCHOOL_ID_SLOT) {
-            try {
-                $faceDescriptor = $item->face_descriptor_payload;
-            } catch (\Throwable $exception) {
-                report($exception);
-                $faceDescriptor = null;
-            }
-        }
 
         return [
             'id' => $item->id,

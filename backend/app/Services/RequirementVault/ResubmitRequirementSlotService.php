@@ -11,12 +11,6 @@ use Illuminate\Validation\ValidationException;
 
 class ResubmitRequirementSlotService
 {
-    private const SCHOOL_ID_SLOT = 'school_id';
-
-    public function __construct(
-        private readonly ConfirmRequirementPackageService $confirmPackage,
-    ) {}
-
     /**
      * @return array{submission: DocumentSubmission, grantee: Grantee}
      */
@@ -35,10 +29,6 @@ class ResubmitRequirementSlotService
             throw ValidationException::withMessages([
                 'submission' => 'Single-slot resubmit is only available after staff requests a resubmission.',
             ]);
-        }
-
-        if ($slotKey === self::SCHOOL_ID_SLOT) {
-            $this->confirmPackage->assertSchoolIdFaceBound($grantee, $submission);
         }
 
         $submission->update(['status' => 'pending_review']);
@@ -128,8 +118,7 @@ class ResubmitRequirementSlotService
         return match ($slotKey) {
             'course_history' => 'Course History',
             'grade_slip' => 'Grade Slip',
-            'specimen_signatures' => '3 Specimen Signatures',
-            self::SCHOOL_ID_SLOT => 'School ID',
+            'specimen_signatures' => 'ID (Back-to-Back) & Specimen',
             default => 'required',
         };
     }
