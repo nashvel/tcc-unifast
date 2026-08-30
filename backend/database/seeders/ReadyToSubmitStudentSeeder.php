@@ -13,6 +13,7 @@ use App\Models\MasterlistRow;
 use App\Models\PolicySetting;
 use App\Models\User;
 use App\Services\AcademicGradeParser;
+use Database\Seeders\Concerns\RestrictedToLocalEnvironment;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
@@ -35,6 +36,8 @@ use Illuminate\Support\Facades\Storage;
  */
 class ReadyToSubmitStudentSeeder extends Seeder
 {
+    use RestrictedToLocalEnvironment;
+
     public const EMAIL = 'ready@tcc.edu.ph';
 
     public const PASSWORD = 'password';
@@ -43,16 +46,21 @@ class ReadyToSubmitStudentSeeder extends Seeder
 
     public const GRADE_SLIP_TERM = '2025-2026 Summer';
 
-    /** @var array<string, string> */
+    /**
+     * Identity is verified once during onboarding, so the vault has 3 slots.
+     *
+     * @var array<string, string>
+     */
     private const PACKAGE_SLOTS = [
-        'school_id' => 'School ID',
         'course_history' => 'Course History',
         'grade_slip' => 'Grade Slip',
-        'specimen_signatures' => '3 Specimen Signatures',
+        'specimen_signatures' => 'ID (Back-to-Back) & Specimen',
     ];
 
     public function run(): void
     {
+        $this->assertLocalEnvironment();
+
         AcademicProgram::query()->updateOrCreate(
             ['code' => 'BSIT'],
             [
@@ -256,10 +264,6 @@ class ReadyToSubmitStudentSeeder extends Seeder
                 'metadata_payload' => null,
                 'face_descriptor_payload' => null,
             ];
-
-            if ($slotKey === 'school_id') {
-                $attrs['face_descriptor_payload'] = $faceDescriptor;
-            }
 
             if ($slotKey === 'course_history') {
                 $attrs['extracted_text'] = $this->formatTermsTable($chParsed['terms'] ?? $chTerms);

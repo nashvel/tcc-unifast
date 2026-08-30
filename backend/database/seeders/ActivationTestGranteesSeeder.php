@@ -8,6 +8,7 @@ use App\Models\Grantee;
 use App\Models\MasterlistImport;
 use App\Models\MasterlistRow;
 use App\Models\User;
+use Database\Seeders\Concerns\RestrictedToLocalEnvironment;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -21,6 +22,8 @@ use Illuminate\Support\Str;
  */
 class ActivationTestGranteesSeeder extends Seeder
 {
+    use RestrictedToLocalEnvironment;
+
     public const TEMP_PASSWORD = 'TCC-TEST-ACT1';
 
     /**
@@ -59,6 +62,8 @@ class ActivationTestGranteesSeeder extends Seeder
 
     public function run(): void
     {
+        $this->assertLocalEnvironment();
+
         $batch = Batch::query()->updateOrCreate(
             ['name' => 'TES AY 2026-2027 1st (Activation E2E)'],
             [

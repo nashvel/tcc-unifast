@@ -12,6 +12,7 @@ use App\Models\MasterlistImport;
 use App\Models\MasterlistRow;
 use App\Models\PolicySetting;
 use App\Models\User;
+use Database\Seeders\Concerns\RestrictedToLocalEnvironment;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
@@ -19,7 +20,8 @@ use Illuminate\Support\Facades\Storage;
 /**
  * Seeds Brandon Reyes — identity onboarding already complete, vault unlocked.
  *
- * Pre-fills Slot 1 (School ID) as approved with face bind so Brandon only uploads:
+ * Identity is verified once during onboarding, so the vault holds only the three
+ * document slots. Brandon uploads:
  *   - Course History (PDF)
  *   - Grade Slip (PDF)
  *   - 3 Specimen Signatures (image)
@@ -32,6 +34,8 @@ use Illuminate\Support\Facades\Storage;
  */
 class BrandonStudentSeeder extends Seeder
 {
+    use RestrictedToLocalEnvironment;
+
     public const EMAIL = 'brandon@tcc.edu.ph';
 
     public const PASSWORD = 'password';
@@ -51,6 +55,8 @@ class BrandonStudentSeeder extends Seeder
 
     public function run(): void
     {
+        $this->assertLocalEnvironment();
+
         AcademicProgram::query()->updateOrCreate(
             ['code' => self::PROGRAM],
             [
@@ -147,7 +153,8 @@ class BrandonStudentSeeder extends Seeder
         $selfiePath = "identity/{$grantee->id}/{$selfieHash}_onboarding_selfie.jpg";
         $this->ensureIdentityPhotos($idRefPath, $selfiePath);
 
-        // Same unit vector on identity + Slot 1 so confirm() face-bind passes.
+        // Unit vector shared by the ID reference and onboarding selfie so the
+        // identity profile reads as a clean auto-pass.
         $faceDescriptor = $this->seedFaceDescriptor(0);
 
         GranteeIdentityProfile::query()->updateOrCreate(
@@ -174,7 +181,6 @@ class BrandonStudentSeeder extends Seeder
         );
 
         $this->clearUploadSlots($grantee, $batch);
-        $this->seedApprovedSchoolId($grantee, $batch, $faceDescriptor);
 
         $this->command?->info('');
         $this->command?->info('=== Brandon Reyes — ready to upload requirements ===');
@@ -182,11 +188,10 @@ class BrandonStudentSeeder extends Seeder
         $this->command?->info('Password: '.self::PASSWORD);
         $this->command?->info('Student ID: '.self::STUDENT_ID);
         $this->command?->info('Name: '.self::FULL_NAME);
-        $this->command?->info('account_status: active (ID scan + liveness skipped)');
+        $this->command?->info('account_status: active (identity onboarding pre-completed)');
         $this->command?->info('Batch: '.$batch->name.' (window open)');
         $this->command?->info('');
-        $this->command?->info('Pre-seeded: Slot 1 School ID (approved, face-bound)');
-        $this->command?->info('Empty for upload: Course History (PDF), Grade Slip (PDF), Specimen (3 signatures image)');
+        $this->command?->info('Vault slots (3): Course History (PDF), Grade Slip (PDF), ID Back-to-Back & Specimen (PDF or image)');
         $this->command?->info('Login → /login then upload at /student/documents');
         $this->command?->info('');
     }
@@ -208,64 +213,6 @@ class BrandonStudentSeeder extends Seeder
             }
             $doc->delete();
         }
-    }
-
-    /**
-     * Slot 1 already on file so vault only needs CH + GS + specimen.
-     *
-     * @param  list<float>  $faceDescriptor
-     */
-    private function seedApprovedSchoolId(Grantee $grantee, Batch $batch, array $faceDescriptor): void
-    {
-        $existing = DocumentSubmission::query()
-            ->where('grantee_id', $grantee->id)
-            ->where('batch_id', $batch->id)
-            ->where('slot_key', 'school_id')
-            ->first();
-
-        if ($existing && is_string($existing->stored_path) && $existing->stored_path !== '') {
-            Storage::disk('local')->delete($existing->stored_path);
-        }
-
-        $hash = bin2hex(random_bytes(16));
-        $storedPath = "documents/{$grantee->id}/{$batch->id}/{$hash}_school_id.jpg";
-        $bytes = $this->tinyJpeg();
-        Storage::disk('local')->put($storedPath, $bytes);
-
-        DocumentSubmission::query()->updateOrCreate(
-            [
-                'grantee_id' => $grantee->id,
-                'batch_id' => $batch->id,
-                'slot_key' => 'school_id',
-            ],
-            [
-                'student_id' => self::STUDENT_ID,
-                'student_name' => self::FULL_NAME,
-                'document_type' => 'School ID',
-                'original_name' => 'school_id.jpg',
-                'stored_path' => $storedPath,
-                'mime_type' => 'image/jpeg',
-                'file_size' => strlen($bytes),
-                'status' => 'approved',
-                'risk_level' => 'low',
-                'extracted_text' => self::FULL_NAME.' '.self::STUDENT_ID,
-                'ocr_payload' => [
-                    'engine' => 'seed',
-                    'method' => 'brandon_school_id_fixture',
-                    'result' => [
-                        'extracted_name' => self::FULL_NAME,
-                        'student_id' => self::STUDENT_ID,
-                    ],
-                ],
-                'metadata_payload' => [
-                    'ocr' => [
-                        'extracted_name' => self::FULL_NAME,
-                    ],
-                    'seed_fixture' => 'brandon_school_id_approved',
-                ],
-                'face_descriptor_payload' => $faceDescriptor,
-            ],
-        );
     }
 
     private function ensureIdentityPhotos(string $idRefPath, string $selfiePath): void

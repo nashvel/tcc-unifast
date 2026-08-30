@@ -7,6 +7,7 @@ use App\Models\ActivationToken;
 use App\Models\Batch;
 use App\Models\Grantee;
 use App\Models\User;
+use App\Services\ActivationTokenIssuer;
 use App\Support\PaginatedJson;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -161,8 +162,7 @@ class OnboardingCenterController extends Controller
         }
         RateLimiter::hit($key, 60);
 
-        // Delete old tokens
-        ActivationToken::where('user_id', $user->id)->delete();
+        // Prior unused tokens are invalidated by ActivationTokenIssuer::issueFor().
 
         try {
             $this->inviteUser($user);
@@ -178,35 +178,18 @@ class OnboardingCenterController extends Controller
 
     private function inviteUser(User $user): void
     {
-        $temporaryPassword = $this->temporaryPassword();
-
+        // No temporary password: the token is the sole proof of invitation, and the
+        // student chooses their password only after identity verification. An
+        // unusable hash keeps users.password NOT NULL without granting a credential.
         $user->update([
-            'password' => Hash::make($temporaryPassword),
+            'password' => Hash::make(Str::random(64)),
         ]);
 
-        $plainToken = Str::random(48);
-        ActivationToken::create([
-            'user_id' => $user->id,
-            'token_hash' => hash('sha256', $plainToken),
-            'expires_at' => now()->addDays(7),
-        ]);
+        $link = app(ActivationTokenIssuer::class)->issueLinkFor($user);
 
         Mail::to($user->email, $user->name)->send(new GranteeActivationInviteMail(
             $user,
-            $temporaryPassword,
-            $this->activationUrl($plainToken),
+            $link['url'],
         ));
-    }
-
-    private function temporaryPassword(): string
-    {
-        return 'TCC-'.Str::upper(Str::random(4)).'-'.Str::upper(Str::random(4));
-    }
-
-    private function activationUrl(string $plainToken): string
-    {
-        $frontend = rtrim((string) (env('ACTIVATION_FRONTEND_URL') ?: config('app.frontend_url') ?: env('FRONTEND_URL', 'http://localhost:5173')), '/');
-
-        return $frontend.'/activate/'.$plainToken.'?lang=en';
     }
 }

@@ -2,10 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\StaffInviteMail;
 use App\Models\AuditLog;
 use App\Models\User;
+use App\Services\ActivationTokenIssuer;
+use App\Support\ActivationLink;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 
 class CollaboratorController extends Controller
 {
@@ -43,7 +49,7 @@ class CollaboratorController extends Controller
         ]);
     }
 
-    public function invite(Request $request): JsonResponse
+    public function invite(Request $request, ActivationTokenIssuer $issuer): JsonResponse
     {
         $validated = $request->validate([
             'email' => 'required|email|unique:users,email',
@@ -52,15 +58,33 @@ class CollaboratorController extends Controller
         ]);
 
         $name = explode('@', $validated['email'])[0];
+
+        // Unusable random hash — never a shared literal. Previously this was
+        // bcrypt('password'), which meant anyone able to invite could mint a
+        // developer account whose credential was publicly guessable.
         $user = User::create([
             'name' => ucwords(str_replace('.', ' ', $name)),
             'email' => $validated['email'],
-            'password' => bcrypt('password'),
+            'password' => Hash::make(Str::random(64)),
             'role' => $validated['role'],
             'account_status' => 'pending',
         ]);
 
+        // The invite link is the sole proof of invitation; the collaborator sets
+        // their own password via StaffActivationController.
+        $link = $issuer->issueLinkFor($user);
         $actor = $request->user();
+        $mailed = true;
+
+        try {
+            Mail::to($user->email, $user->name)->send(
+                new StaffInviteMail($user, $this->staffActivationUrl($link['token']), $actor?->name),
+            );
+        } catch (\Throwable $exception) {
+            report($exception);
+            $mailed = false;
+        }
+
         if ($actor) {
             AuditLog::create([
                 'actor' => $actor->name,
@@ -68,6 +92,7 @@ class CollaboratorController extends Controller
                 'action' => 'collaborator_invite',
                 'module' => 'Collaborators',
                 'target' => "Invited {$user->email} as {$user->role}",
+                'context' => ['invite_link_sent' => $mailed],
                 'ip_address' => $request->ip(),
             ]);
         }
@@ -81,8 +106,14 @@ class CollaboratorController extends Controller
                 'access' => $validated['role'] === 'developer' ? ['*'] : ($validated['access'] ?? []),
                 'status' => 'pending',
                 'invitedAt' => now()->format('M j, Y'),
+                'invite_link_sent' => $mailed,
             ],
         ], 201);
+    }
+
+    private function staffActivationUrl(string $plainToken): string
+    {
+        return ActivationLink::base().'/staff-activate/'.$plainToken.'?lang=en';
     }
 
     public function destroy(Request $request, User $user): JsonResponse

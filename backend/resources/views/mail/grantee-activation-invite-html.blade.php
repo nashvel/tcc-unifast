@@ -153,17 +153,17 @@
             </div>
             
             <div class="btn-container">
-                <a href="{{ $activationUrl }}" class="btn">Activate Account</a>
+                <a href="{{ $activationUrl }}" class="btn">Start verification</a>
             </div>
-            
-            <div class="credentials">
-                <p>Your temporary password is:</p>
-                <div class="password-box">{{ $temporaryPassword }}</div>
-            </div>
-            
+
             <div class="message" style="margin-bottom: 0; font-size: 14px;">
-                Please use the link above to log in, replace your temporary password with a secure one, and then complete your KYC profile.<br><br>
-                <strong>Security Notice:</strong> Do not share this temporary password with anyone.
+                You will complete your KYC profile, scan your school ID, and finish a short
+                face check. <strong>You choose your password at the end</strong>, once your
+                identity has been verified.<br><br>
+                Have your physical school ID ready before you begin. If the link expires,
+                you can request a new one from the sign-in page.<br><br>
+                <strong>Security notice:</strong> do not share this link. It is the only
+                proof of your invitation.
             </div>
         </div>
         

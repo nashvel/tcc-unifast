@@ -77,7 +77,12 @@ class OnboardingFlowTest extends TestCase
         ])->assertUnprocessable();
     }
 
-    public function test_confirm_import_creates_unverified_accounts_and_activation_tokens(): void
+    /**
+     * Import stages accounts only. Invites and activation tokens are issued later
+     * from the Onboarding Center (see MasterlistImportController::confirm), so no
+     * mail is sent here and no token exists yet.
+     */
+    public function test_confirm_import_stages_unverified_accounts_without_credentials(): void
     {
         Mail::fake();
         $admin = User::factory()->create(['role' => 'admin', 'account_status' => 'active']);
@@ -95,10 +100,9 @@ class OnboardingFlowTest extends TestCase
         $this->actingAs($admin)
             ->postJson("/api/masterlist/imports/{$preview['id']}/confirm")
             ->assertOk()
-            ->assertJsonPath('data.imported_rows', 1)
-            ->assertJsonPath('mail.sent', 1);
+            ->assertJsonPath('data.imported_rows', 1);
 
-        Mail::assertSent(GranteeActivationInviteMail::class);
+        Mail::assertNothingSent();
 
         $this->assertDatabaseHas('users', [
             'email' => 'maria@example.test',
@@ -113,44 +117,50 @@ class OnboardingFlowTest extends TestCase
             'batch_id' => $batch->id,
             'status' => 'unverified',
         ]);
-        $this->assertDatabaseCount('activation_tokens', 1);
+
+        // No credential and no activation token until the Onboarding Center invites.
+        $this->assertDatabaseCount('activation_tokens', 0);
+        $this->assertFalse(Hash::check('password', User::query()->where('email', 'maria@example.test')->value('password')));
     }
 
-    public function test_activation_with_token_only_moves_student_to_kyc(): void
+    /**
+     * The legacy password-at-link-click flow is gone (Phase 3). The old route no
+     * longer exists, and the replacement behaviour is covered in depth by
+     * tests/Feature/IdentityFirstActivationTest.php.
+     */
+    public function test_legacy_activation_route_no_longer_accepts_a_password(): void
     {
         $student = User::factory()->create([
             'role' => 'student',
             'student_id' => 'STU-1',
             'account_status' => 'unverified',
             'password' => Hash::make(Str::random(32)),
+            // The factory verifies emails by default; an invited account has not.
+            'email_verified_at' => null,
         ]);
         $plainToken = 'activation-token';
         ActivationToken::create([
             'user_id' => $student->id,
             'token_hash' => hash('sha256', $plainToken),
-            'expires_at' => now()->addDays(7),
+            'expires_at' => now()->addHours(24),
         ]);
 
-        $this->postJson("/api/activation/{$plainToken}", [
-            'password' => 'new-password',
-            'password_confirmation' => 'mismatch',
-        ])->assertUnprocessable();
-
+        // POST /api/activation/{token} was replaced by .../begin.
         $this->postJson("/api/activation/{$plainToken}", [
             'password' => 'new-password',
             'password_confirmation' => 'new-password',
-        ])->assertOk()
-            ->assertJsonPath('user.account_status', 'pending_kyc')
-            ->assertJsonStructure(['user' => ['id', 'email', 'account_status']])
-            ->assertJsonMissingPath('token')
-            ->assertPlainCookie(config('services.auth.access_cookie'))
-            ->assertPlainCookie(config('services.auth.refresh_cookie'));
+        ])->assertStatus(405);
 
-        $this->assertDatabaseHas('personal_access_tokens', [
-            'tokenable_id' => $student->id,
-            'tokenable_type' => User::class,
-        ]);
-        $this->assertDatabaseCount('refresh_tokens', 1);
+        // /begin opens a scoped session and leaves the credential untouched.
+        $before = $student->password;
+        $this->postJson("/api/activation/{$plainToken}/begin")
+            ->assertOk()
+            ->assertJsonPath('user.account_status', 'pending_kyc');
+
+        $student = $student->fresh();
+        $this->assertSame($before, $student->password);
+        $this->assertNull($student->email_verified_at);
+        $this->assertDatabaseCount('refresh_tokens', 0);
     }
 
     public function test_kyc_cross_checks_typed_identity_against_masterlist(): void
@@ -223,13 +233,18 @@ class OnboardingFlowTest extends TestCase
             ->assertJsonPath('data.account_status', 'pending_identity')
             ->assertJsonPath('data.next_step', 'id_scan');
         $this->assertDatabaseHas('users', ['id' => $student->id, 'account_status' => 'pending_identity']);
+        // full_name / student_id / program were dropped from kyc_profiles by the 3NF
+        // normalization (2026_08_23_000400) — grantees is the single source of truth.
         $this->assertDatabaseHas('kyc_profiles', [
+            'user_id' => $student->id,
+            'year_level' => '1',
+            'status' => 'verified',
+        ]);
+        $this->assertDatabaseHas('grantees', [
             'user_id' => $student->id,
             'full_name' => 'Maria Santos',
             'student_id' => 'STU-1',
             'program' => 'BSIT',
-            'year_level' => '1',
-            'status' => 'verified',
         ]);
 
         $this->actingAs($student->fresh())
@@ -311,11 +326,15 @@ class OnboardingFlowTest extends TestCase
 
         $this->assertDatabaseHas('kyc_profiles', [
             'user_id' => $student->id,
+            'year_level' => '4',
+            'status' => 'verified',
+        ]);
+        // Identity fields live on grantees since the 3NF normalization.
+        $this->assertDatabaseHas('grantees', [
+            'user_id' => $student->id,
             'full_name' => 'Ana Reyes',
             'student_id' => 'STU-77',
             'program' => 'BSIT',
-            'year_level' => '4',
-            'status' => 'verified',
         ]);
 
         $other = User::factory()->create([
@@ -356,9 +375,12 @@ class OnboardingFlowTest extends TestCase
 
         $this->assertDatabaseHas('kyc_profiles', [
             'user_id' => $other->id,
-            'student_id' => 'STU-78',
             'year_level' => null,
             'status' => 'verified',
+        ]);
+        $this->assertDatabaseHas('grantees', [
+            'user_id' => $other->id,
+            'student_id' => 'STU-78',
         ]);
     }
 
@@ -413,19 +435,33 @@ class OnboardingFlowTest extends TestCase
 
         $this->assertDatabaseHas('kyc_profiles', [
             'user_id' => $student->id,
+            'status' => 'verified',
+        ]);
+        $this->assertDatabaseHas('grantees', [
+            'user_id' => $student->id,
             'full_name' => 'BRANDON NAGANGGA',
             'student_id' => 'STU-88',
-            'status' => 'verified',
         ]);
     }
 
-    public function test_login_resumes_mid_onboarding_without_reactivation(): void
+    /**
+     * Behaviour change (identity-first activation).
+     *
+     * Previously a mid-onboarding student could sign in with a password and resume.
+     * That path is gone: under Option A no password exists until identity is
+     * verified, so resuming happens by re-opening the activation link
+     * (ActivationController::begin), which restores the funnel from persisted state.
+     *
+     * Login must therefore refuse mid-funnel accounts and point the student at
+     * their link instead of leaking that the account is partially set up.
+     */
+    public function test_login_is_refused_mid_onboarding_and_resume_happens_via_the_link(): void
     {
         $student = User::factory()->create([
             'role' => 'student',
             'student_id' => 'STU-9',
             'email' => 'resume@example.test',
-            'password' => Hash::make('password-after-activate'),
+            'password' => Hash::make('leftover-password'),
             'account_status' => 'pending_identity',
         ]);
         $batch = $this->batchWithDeadline();
@@ -445,15 +481,24 @@ class OnboardingFlowTest extends TestCase
             'status' => 'pending_liveness',
         ]);
 
-        $this->getJson('/api/auth/captcha'); // warm session for captcha bypass in tests if configured
-
         config(['services.auth.dev_bypass_captcha' => true]);
 
         $this->postJson('/api/auth/login', [
             'email' => 'resume@example.test',
-            'password' => 'password-after-activate',
+            'password' => 'leftover-password',
             'captcha' => 'BYPASS',
-        ])->assertOk()
+        ])->assertForbidden();
+
+        // The activation link resumes exactly where the student left off.
+        $plainToken = 'resume-token';
+        ActivationToken::create([
+            'user_id' => $student->id,
+            'token_hash' => hash('sha256', $plainToken),
+            'expires_at' => now()->addHours(24),
+        ]);
+
+        $this->postJson("/api/activation/{$plainToken}/begin")
+            ->assertOk()
             ->assertJsonPath('user.account_status', 'pending_identity')
             ->assertJsonPath('user.onboarding_next_step', 'liveness')
             ->assertJsonPath('user.onboarding_path', '/student/onboarding/liveness');

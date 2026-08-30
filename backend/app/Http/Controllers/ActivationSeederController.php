@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ActivationToken;
 use App\Models\Batch;
 use App\Models\Grantee;
+use App\Support\ActivationLink;
 use App\Models\GranteeIdentityProfile;
 use App\Models\KycProfile;
 use App\Models\MasterlistImport;
@@ -121,9 +122,7 @@ class ActivationSeederController extends Controller
             'expires_at' => now()->addDays(14),
         ]);
 
-        preg_match('/^ACTIVATION_FRONTEND_URL=(.*)/m', file_get_contents(base_path('.env')), $matches);
-        $frontendUrl = rtrim((string) ($matches[1] ?? 'http://localhost:5173'), '/');
-        $activationUrl = $frontendUrl.'/activate/'.$plainToken.'?lang=en';
+        $activationUrl = ActivationLink::for($plainToken);
 
         return response()->json([
             'data' => [
@@ -172,8 +171,6 @@ class ActivationSeederController extends Controller
 
         $yearLevel = $data['year_level'] ?? '1';
         $resetKyc = (bool) ($data['reset_kyc'] ?? false);
-        preg_match('/^ACTIVATION_FRONTEND_URL=(.*)/m', file_get_contents(base_path('.env')), $matches);
-        $frontendUrl = rtrim((string) ($matches[1] ?? 'http://localhost:5173'), '/');
 
         $fullName = trim(
             $data['first_name'].' '.
@@ -307,7 +304,7 @@ class ActivationSeederController extends Controller
                 'expires_at' => now()->addDays(14),
             ]);
 
-            $activationUrl = $frontendUrl.'/activate/'.$plainToken.'?lang=en';
+            $activationUrl = ActivationLink::for($plainToken);
 
             return response()->json([
                 'data' => [

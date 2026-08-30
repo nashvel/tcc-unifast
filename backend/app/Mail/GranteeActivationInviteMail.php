@@ -13,9 +13,12 @@ class GranteeActivationInviteMail extends Mailable
 {
     use Queueable, SerializesModels;
 
+    /**
+     * No temporary password: the activation link is the sole proof of invitation,
+     * and the password is only created after identity verification.
+     */
     public function __construct(
         public User $user,
-        public string $temporaryPassword,
         public string $activationUrl,
         public ?string $intro = null,
         public ?string $customSubject = null,
