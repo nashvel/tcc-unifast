@@ -47,15 +47,18 @@ class AuthController extends Controller
 
         $user = $request->user();
 
-        // Allow the post-activation funnel (KYC → identity onboarding) to sign in.
-        // Only block unverified / blocked accounts from the normal login form.
-        if (in_array($user->account_status, ['unverified', 'blocked'], true)) {
+        // Pre-credential statuses cannot reach this point in practice (no usable
+        // password exists), but fail closed and point the student at their link
+        // rather than leaking that the account is mid-funnel.
+        if (in_array($user->account_status, ['unverified', 'blocked', 'pending_kyc', 'pending_identity', 'pending_face_review', 'identity_verified', 'identity_rejected'], true)) {
             $statusMessages = [
                 'unverified' => 'Your account has not been verified yet. Please check your email for the activation link.',
                 'blocked' => 'Your account has been blocked. Please contact the administrator.',
+                'identity_verified' => 'Finish setting your password using the link we emailed you.',
+                'pending_face_review' => 'Your identity is under review. We will email you once a decision is made.',
             ];
             $message = $statusMessages[$user->account_status]
-                ?? 'Your account is not active. Please contact the administrator.';
+                ?? 'Finish activating your account using the link we emailed you.';
 
             Auth::logout();
 
@@ -402,9 +405,9 @@ class AuthController extends Controller
             return true;
         }
 
-        $secret = env('RECAPTCHA_SECRET_KEY');
+        $secret = (string) config('services.recaptcha.secret');
 
-        if (empty($secret)) {
+        if ($secret === '') {
             // Failsafe in case the key isn't configured in production
             return false;
         }

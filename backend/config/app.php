@@ -59,6 +59,13 @@ return [
     'frontend_url' => env('FRONTEND_URL', 'http://localhost:5173'),
 
     /*
+    | Overrides frontend_url when building activation links only (LAN IP or a
+    | live tunnel hostname for device testing). Read via config() so the value
+    | survives `artisan config:cache`.
+    */
+    'activation_frontend_url' => env('ACTIVATION_FRONTEND_URL'),
+
+    /*
     |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------

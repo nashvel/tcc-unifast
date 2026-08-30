@@ -18,6 +18,13 @@ return [
         'key' => env('POSTMARK_API_KEY'),
     ],
 
+    'recaptcha' => [
+        // Must be read via config(), never env() directly: `artisan config:cache`
+        // makes env() return null at runtime, which would fail every captcha
+        // check closed and reject all logins.
+        'secret' => env('RECAPTCHA_SECRET_KEY'),
+    ],
+
     'resend' => [
         'key' => env('RESEND_API_KEY'),
     ],
@@ -55,6 +62,9 @@ return [
     'ocr' => [
         'url' => env('OCR_SERVICE_URL', 'http://127.0.0.1:8001'),
         'timeout' => (int) env('OCR_SERVICE_TIMEOUT', 120),
+        // Shared secret sent as X-OCR-Key. Must match OCR_API_KEY in the
+        // ocr-service environment; blank leaves the service open (local only).
+        'api_key' => env('OCR_API_KEY', ''),
     ],
 
     'face_api' => [
@@ -99,6 +109,13 @@ return [
         'refresh_cookie' => env('AUTH_REFRESH_COOKIE', 'unifast_refresh'),
         'access_token_ttl_minutes' => max(1, (int) env('AUTH_ACCESS_TTL_MINUTES', 20)),
         'refresh_token_ttl_days' => max(1, (int) env('AUTH_REFRESH_TTL_DAYS', 7)),
+        // Pre-credential identity-funnel session. Short by design and not
+        // refreshable — resuming means re-opening the activation link.
+        'onboarding_session_ttl_minutes' => max(1, (int) env('AUTH_ONBOARDING_SESSION_TTL_MINUTES', 30)),
+        // Activation links stay usable for the whole funnel, so the window is kept
+        // short and backed by self-service resend (see /activation/resend).
+        'activation_token_ttl_hours' => max(1, (int) env('AUTH_ACTIVATION_TTL_HOURS', 24)),
+        'activation_resend_throttle_per_hour' => max(1, (int) env('AUTH_ACTIVATION_RESEND_PER_HOUR', 3)),
         // lax for same-origin (Vite proxy); none + Secure for cross-origin SPA.
         'cookie_same_site' => env('AUTH_COOKIE_SAMESITE', 'lax'),
         'cookie_secure' => filter_var(
