@@ -38,7 +38,7 @@ The **Context Diagram (Level 0 DFD)** represents the entire UniFAST TES Grantee 
                   +────────────────────────────────────────────────────+
                         ▲ │                                ▲ │
   (KYC Profile, ID Scan,│ │(Account Invites, Notices,      │ │(Biometric Review
- Vault PIN, Requirement │ │ In-App Alerts, Compliance Form)│ │ Decisions, Doc Approvals)
+ Password, Requirement │ │ In-App Alerts, Compliance Form)│ │ Decisions, Doc Approvals)
       Submissions)      │ ▼                                ▼ │
                   +-----------------------+      +-----------------------+
                   |    External Entity:   |      |    External Entity:   |
@@ -53,7 +53,7 @@ The **Context Diagram (Level 0 DFD)** represents the entire UniFAST TES Grantee 
 | External Entity | Operational Role | Key Inbound Data (Inputs to System) | Key Outbound Data (Outputs from System) |
 |---|---|---|---|
 | **Admin** | System Head / Scholarship Administrator | • Admin Credentials & Session<br>• CHED Masterlist Spreadsheets (XLSX/CSV/PDF)<br>• Academic Batch & Program Parameters<br>• System Policies & Retention Rules<br>• Custom Survey/Form Definitions<br>• Mass Notifications & Announcements | • System Audit Trail Logs<br>• Official CHED Billing Masterlists<br>• Fund Distribution & Payroll Summaries<br>• Analytics Dashboard & KPI Metrics<br>• Import Validation & Error Reports |
-| **Grantee** | TES Beneficiary / College Student | • Account Activation Tokens<br>• Baseline KYC & Demographic Information<br>• School ID Scans (Front & Back)<br>• Live Liveness Recording & Selfie Stills<br>• 6-Digit Document Vault Security PIN<br>• Academic Requirements (CoR, Grades, Specimen)<br>• Periodic Survey Responses | • Account Activation Email Links<br>• Real-Time Verification Status Alerts<br>• Document Resubmission / Return Notes<br>• Formal Eligibility Outcome Notices<br>• Assigned Evaluation Forms |
+| **Grantee** | TES Beneficiary / College Student | • Account Activation Tokens<br>• Baseline KYC & Demographic Information<br>• School ID Scans (Front & Back)<br>• Live Liveness Recording & Selfie Stills<br>• Chosen Account Password *(only after identity verification)*<br>• Academic Requirements (Course History, Grade Slip, ID Back-to-Back & Specimen)<br>• Periodic Survey Responses | • Account Activation Email Links<br>• Real-Time Verification Status Alerts<br>• Document Resubmission / Return Notes<br>• Formal Eligibility Outcome Notices<br>• Assigned Evaluation Forms |
 | **Staff** | Scholarship Office Validator / Reviewer | • Staff Credentials & RBAC Session<br>• Manual Biometric Verification Decisions<br>• Document Review Outcomes (Approve/Return)<br>• Specific Document Rejection Remarks | • Grantee Master Directory & Profiles<br>• Flagged Biometric Inspection Photos<br>• Pending Document Submission Packages<br>• Automated Risk Score Breakdowns |
 
 ---
@@ -84,20 +84,20 @@ The **DFD Level 1** decomposes `Process 0.0` into the **eight (8) core functiona
 * **Data Stores:** `D2 Grantee Records`, `D3 Batch and Program Records`.
 
 #### Process 3.0: Grantee Onboarding and Identity Verification
-* **Responsibility:** Validates one-time activation tokens, cross-matches student KYC data against masterlist truth, performs dual-side School ID OCR, executes interactive liveness challenges (128-D Euclidean face matching), routes exceptions to staff review, and provisions encrypted vault PINs.
-* **Inputs:** Activation tokens, KYC forms, ID scans, liveness gestures, 6-digit PIN (`Grantee` $\rightarrow$ `3.0`); Biometric decisions (`Staff` $\rightarrow$ `3.0`).
+* **Responsibility:** Validates one-time activation tokens and issues scoped onboarding sessions, cross-matches student KYC data against masterlist truth, performs dual-side School ID OCR, executes interactive liveness challenges (128-D Euclidean face matching), routes exceptions to staff review, and — **only after identity is verified** — creates the account credential.
+* **Inputs:** Activation tokens, KYC forms, ID scans, liveness gestures, chosen password (`Grantee` $\rightarrow$ `3.0`); Biometric decisions (`Staff` $\rightarrow$ `3.0`).
 * **Outputs:** Flagged identity review photos (`3.0` $\rightarrow$ `Staff`); Verification status (`3.0` $\rightarrow$ `7.0`); Verified grantee context (`3.0` $\rightarrow$ `4.0`).
 * **Data Stores:** `D1 User Accounts`, `D2 Grantee Records`, `D4 Identity and Biometric Records`.
 
 #### Process 4.0: Document Submission and Review
-* **Responsibility:** Authenticates 6-digit PIN to unlock the Document Vault, receives 3 mandatory academic documents (Course History, Grade Slip, Specimen Signatures), runs OCR for unit/grade extraction, and provides staff validation queues for approval/rejection.
-* **Inputs:** Vault PIN, document uploads (`Grantee` $\rightarrow$ `4.0`); Validation decisions & return notes (`Staff` $\rightarrow$ `4.0`).
+* **Responsibility:** Receives 3 mandatory document slots (Course History, Grade Slip, and ID Back-to-Back & 3 Specimen Signatures), runs OCR for unit/grade extraction, and provides staff validation queues for approval/rejection. Access requires `account_status = active`, i.e. identity verified **and** credentialed.
+* **Inputs:** Document uploads (`Grantee` $\rightarrow$ `4.0`); Validation decisions & return notes (`Staff` $\rightarrow$ `4.0`).
 * **Outputs:** Package inspection views (`4.0` $\rightarrow$ `Staff`); Resubmission alerts (`4.0` $\rightarrow$ `7.0`).
 * **Internal Trigger:** Emits `Reviewed Document Records` to `Process 5.0`.
 * **Data Stores:** `D2 Grantee Records`, `D4 Identity Records`, `D6 Document Submission Records`.
 
 #### Process 5.0: Eligibility Assessment
-* **Responsibility:** Automated rules engine evaluating 3 compliance criteria: (1) Active Batch Enrollment, (2) Complete 4-slot Document Vault, and (3) Academic Retention (failed subjects $\le$ policy threshold). Calculates multi-factor risk scores and compliance badges.
+* **Responsibility:** Automated rules engine evaluating 3 compliance criteria: (1) Active Batch Enrollment, (2) Complete 3-slot Document Vault, and (3) Academic Retention (failed subjects $\le$ policy threshold). Calculates multi-factor risk scores and compliance badges.
 * **Inputs:** Reviewed document package from `Process 4.0`, academic retention thresholds from `D3`.
 * **Outputs:** Eligibility outcome views (`5.0` $\rightarrow$ `Staff`); Deficiency notices (`5.0` $\rightarrow$ `7.0`).
 * **Internal Trigger:** Emits `Eligibility Assessment Results` to `Process 8.0`.
@@ -128,11 +128,11 @@ The **DFD Level 1** decomposes `Process 0.0` into the **eight (8) core functiona
 | Store ID | Data Store Name | Primary Entities / Tables | Key Attributes Stored |
 |---|---|---|---|
 | **D1** | **User Account Records** | `users`, `personal_access_tokens` | `id`, `name`, `email`, `password_hash`, `role`, `account_status`, `activated_at` |
-| **D2** | **Grantee Records** | `grantees`, `kyc_profiles` | `student_id`, `full_name`, `program`, `year_level`, `vault_pin_hash`, `status`, `kyc_data` |
+| **D2** | **Grantee Records** | `grantees`, `kyc_profiles` | `student_id`, `full_name`, `program`, `year_level`, `status`, `kyc_data` |
 | **D3** | **Batch and Program Records** | `batches`, `academic_programs`, `policy_settings` | `academic_year`, `semester`, `submission_deadline`, `program_code`, `max_failed_subjects` |
 | **D4** | **Identity and Biometric Records** | `grantee_identity_profiles`, `activation_tokens` | `id_reference_face_descriptor`, `ocr_payload`, `distance_score`, `liveness_status` |
 | **D5** | **Eligibility and Retention Records** | `submission_pipeline_results` | `risk_score`, `risk_badge`, `passed_criteria_count`, `retention_status`, `evaluated_at` |
-| **D6** | **Document Submission Records** | `document_submissions`, `file_manager` | `slot_key`, `stored_path`, `ocr_extracted_units`, `ocr_gwa`, `status`, `review_notes` |
+| **D6** | **Document Submission Records** | `document_submissions`, `file_manager` | `slot_key` (3 slots: `course_history`, `grade_slip`, `specimen_signatures`), `stored_path`, `ocr_extracted_units`, `ocr_gwa`, `status`, `review_notes` |
 | **D7** | **Form and Survey Records** | `forms`, `form_fields`, `form_responses` | `form_title`, `schema_json`, `response_payload`, `submitted_at`, `status` |
 | **D8** | **Audit and Report Records** | `audit_logs`, `batch_notifications` | `actor`, `role`, `action`, `module`, `target`, `context_json`, `ip_address`, `timestamp` |
 
@@ -152,10 +152,11 @@ The **DFD Level 1** decomposes `Process 0.0` into the **eight (8) core functiona
                         (Grantee Account Activation Info)
                                           ▼
                                 +───────────────────+
-Grantee ──(Token & Password)──► | 3.1 Validate Token| ◄───(Hashed Token)─── D4 Identity Records
-                                |  & Init Account   | ────(Credentials)────► D1 User Accounts
+Grantee ──(Token only,────────► | 3.1 Validate Token| ◄───(Hashed Token)─── D4 Identity Records
+          no password)          |  & Issue Scoped   | ────(Scoped Session)─► D1 User Accounts
+                                |  Onboarding Sess. |
                                 +───────────────────+
-                                          │ (Activated Context)
+                                          │ (Onboarding Context)
                                           ▼
                                 +───────────────────+
 Grantee ──(KYC Information)───► | 3.2 Process &     | ◄───(Masterlist Truth)─ D2 Grantee Records
@@ -183,8 +184,10 @@ Staff ───(Review Decision)────► |  Face Review |  │
                                    │ (Approved)   │
                                    ▼              ▼
                                 +───────────────────+
-Grantee ──(6-Digit Vault PIN)─► | 3.6 Configure     | ────(Encrypted PIN)──► D6 Vault Records
-                                |  Vault Sec PIN    | ────(Active Status)──► D1 User Accounts
+Grantee ──(Chosen Password)───► | 3.6 Create Account| ───(Password Hash)───► D1 User Accounts
+                                |  Credentials      | ───(Token spent)─────► D4 Identity Records
+                                |  (status must be  | ───(Status: active)──► D1 / D2
+                                |  identity_verified)|
                                 +───────────────────+
                                           │
                          (Verified Grantee Profile Info)
@@ -192,27 +195,78 @@ Grantee ──(6-Digit Vault PIN)─► | 3.6 Configure     | ────(Encry
                                 [Adjacent Process 4.0]
 ```
 
+> **Ordering note.** `3.6` deliberately follows `3.4`/`3.5`. Until it runs the account
+> holds **no usable password**, so the biometric match in `3.4` is what establishes
+> account ownership. See §3.4 for the rationale.
+
 ---
 
 ### 3.2 Level 2 Subprocesses (3.1 to 3.6)
 
 | Subprocess # | Subprocess Name | Inbound Data (Inputs) | Outbound Data (Outputs) | Code Implementation |
 |---|---|---|---|---|
-| **3.1** | **Validate Token & Initialize Account** | • Activation Token & Password (`Grantee`)<br>• Activation Info (`Process 2.0`)<br>• Hashed Token (`D4`) | • Updated Credentials (`D1`)<br>• Activated Account Context (`3.2`) | `ActivationController.php` (`activate`), `ActivationToken.php` |
+| **3.1** | **Validate Token & Issue Scoped Onboarding Session** | • Activation Token (`Grantee`) — **no password**<br>• Activation Info (`Process 2.0`)<br>• Hashed Token (`D4`) | • Scoped session, abilities `onboarding:identity` (`D1`)<br>• Status `pending_kyc` (`D1`)<br>• Onboarding Context (`3.2`) | `ActivationController.php` (`begin`), `AuthTokenService.php` (`issueOnboardingSession`) |
 | **3.2** | **Process & Cross-Match KYC Profile** | • KYC Details (`Grantee`)<br>• Masterlist Truth Data (`D2`)<br>• Academic Programs (`D3`) | • Stored KYC Data (`D2`)<br>• Status: `pending_identity` (`D1`)<br>• Validated Profile Context (`3.3`) | `StudentKycController.php` (`store`), `MasterlistTruthService.php` |
 | **3.3** | **Extract & Verify School ID Data** | • ID Front & Back Scans (`Grantee`) | • Reference Face Crop & OCR Payload (`D4`)<br>• Face Descriptors Payload (`3.4`) | `IdentityOnboardingController.php` (`validateFrontIdOcr`, `storeIdScan`) |
 | **3.4** | **Evaluate Biometric Liveness & Face Match** | • Liveness Stills & Selfie (`Grantee`)<br>• ID Reference Descriptor (`3.3`) | • Face Distance Metrics (`D4`)<br>• Auto-Pass Status (`Process 7.0`)<br>• Flagged Match Profile (`3.5`)<br>• Direct Bypass Context (`3.6`) | `IdentityOnboardingController.php` (`storeLiveness`), `FaceDescriptorMath.php` |
 | **3.5** | **Conduct Staff Biometric Review** | • Pending Review Records (`D4`)<br>• Biometric Decision (`Staff`) | • Inspection Photos (`Staff`)<br>• Review Audit Log (`D5`)<br>• Decision Alert (`Process 7.0`)<br>• Staff Approval Context (`3.6`) | `FaceReviewController.php` (`approve`, `reject`), `AuditLog.php` |
-| **3.6** | **Configure Document Vault Security PIN** | • 6-Digit PIN (`Grantee`)<br>• Biometric Confirmation (`3.4`/`3.5`) | • Encrypted PIN (`D6`)<br>• Status: `active` / `verified` (`D1`/`D2`)<br>• Verified Context (`Process 4.0`) | `IdentityOnboardingController.php` (`storePin`) |
+| **3.6** | **Create Account Credentials** | • Chosen Password (`Grantee`)<br>• Biometric Confirmation (`3.4`/`3.5`) — status must be `identity_verified` | • Password Hash + `email_verified_at` (`D1`)<br>• Status: `active` / `verified` (`D1`/`D2`)<br>• Activation Token spent (`D4`)<br>• Full session replaces scoped session<br>• Verified Context (`Process 4.0`) | `OnboardingCredentialController.php` (`store`), `AuthTokenService.php` (`upgradeToFullSession`) |
+| **3.7** | **Configure Document Vault Security PIN** *(optional)* | • 6-Digit PIN (`Grantee`) | • Hashed PIN (`D1.security_pin`) | `StudentSettingsController.php` (`updateSecurityPin`) |
 
 ---
 
-### 3.3 Dual Biometric Resolution Paths
+### 3.3 Dual Biometric Resolution Paths (revised)
 1. **Automated Auto-Pass (Green Zone — Distance $< 0.45$):**
    * Instant cryptographic match. Bypasses staff intervention entirely (`3.4` $\rightarrow$ `3.6`), dispatches an automated pass alert to `7.0`, and immediately unlocks PIN setup.
 2. **Staff Manual Review (Yellow/Red Zone — Distance $\ge 0.45$):**
    * Borderline or failed automated matches are placed in `pending_face_review` (`3.4` $\rightarrow$ `3.5`).
-   * Staff validator inspects side-by-side photos and issues an official decision. Approval forwards the profile to `3.6`; Rejection requires the grantee to retake the ID scan.
+   * Staff validator inspects side-by-side photos and issues an official decision. Approval forwards the profile to `3.6` and emails a fresh set-password link; Rejection sets `identity_rejected` (recoverable) and emails a fresh link so the grantee can retake the ID scan.
+
+---
+
+### 3.4 Security Design Rationale: Identity Before Credential
+
+The ordering of `3.1` → `3.4` → `3.6` is the central security property of this
+subsystem, and it is a deliberate departure from the conventional pattern.
+
+**Conventional pattern (rejected).** Most invitation flows set the password at link
+click, then verify identity afterwards. Applied here, that would mean **possession of
+a forwarded email is sufficient to permanently own a grantee's account**. The
+128-dimensional face match in `3.4` would then run *after* ownership was already
+settled, reducing it to a gate on document upload rather than on the account itself.
+Two consequences follow: an impostor who reaches `3.5` and is rejected would have the
+**legitimate** student's account marked as failed; and the public token-validation
+endpoint would be disclosing `student_id`, `full_name`, and `program` to any link
+holder before authentication.
+
+**Implemented pattern.** The activation token grants only a short-lived, ability-scoped
+session (`onboarding:identity`, 30 minutes) that can reach the identity funnel and
+nothing else. `users.password` holds an unusable random hash until `3.6`. Therefore:
+
+| Property | Mechanism |
+|---|---|
+| Ownership is bound to biometrics, not to email possession | `3.6` requires `account_status = identity_verified` |
+| A leaked link cannot yield a credential | Scoped session carries no password-setting ability |
+| Scope cannot be escalated by token refresh | Onboarding sessions are issued with **no** refresh token, so there is nothing to rotate |
+| A rejected impostor cannot lock out the real grantee | `3.5` rejection sets `identity_rejected` (recoverable) and re-issues a link to the address of record |
+| The public endpoint discloses no PII | `3.1` returns only a masked email and an expiry |
+
+**Accepted trade-off.** Because the credential is created last, the activation token
+must remain valid across the whole funnel rather than being consumed on first click.
+This is mitigated by a shortened 24-hour TTL, one live session per token,
+rate-limited self-service resend, and event-driven re-issue on every staff decision —
+so link expiry is never a dead end.
+
+**Verification.** `tests/Feature/IdentityFirstJourneyTest.php` walks a single student
+from emailed link to submitted vault package, asserting after each step that the
+password hash is unchanged; `tests/Feature/OnboardingSessionScopeTest.php` and
+`IdentityFirstActivationTest.php` cover scope confinement and non-disclosure.
+
+**Staff exception.** Staff, admin, and developer accounts do not pass through the
+biometric funnel — there is no identity check to wait for — so they set a password
+directly from their invite link (`StaffActivationController`). Ownership there rests
+on an administrator having authorised the invite. The endpoint asserts the account
+role, so a student token cannot be redirected to it to bypass `3.4`.
 
 ---
 
@@ -251,7 +305,7 @@ flowchart TD
 
     %% ── PHASE 2: GRANTEE ACCOUNT ACTIVATION & KYC ──
     A5 --> S1[/Grantee Receives Email & Clicks Activation Link/]:::studentBlock
-    S1 --> S2[/Grantee Sets Password & Activates Account/]:::studentBlock
+    S1 --> S2[System Issues Scoped Onboarding Session<br>NO password set yet]:::sysBlock
     S2 --> S3[/Grantee Completes Personal & Academic KYC Profile/]:::studentBlock
     S3 --> S4[System Saves KYC Profile -> Status: pending_identity]:::sysBlock
 
@@ -266,14 +320,17 @@ flowchart TD
     
     D3 -- Yellow/Red Zone: Low Score --> ST1[Queue in Staff Biometric Review Queue]:::staffBlock
     ST1 --> D4{Staff Manual Review Decision}:::decisionBlock
-    D4 -- Rejected --> S5
-    D4 -- Approved --> S9
-    
-    D3 -- Green Zone: High Match --> S9[/Identity Verified -> Grantee Sets 6-Digit Vault PIN/]:::studentBlock
+    D4 -- Rejected: fresh link emailed<br>status identity_rejected --> S5
+    D4 -- Approved: set-password link emailed --> S8B
+
+    D3 -- Green Zone: High Match --> S8B[Status: identity_verified<br>Identity proven, still NO password]:::sysBlock
+
+    %% ── PHASE 3B: CREDENTIAL CREATION (AFTER VERIFICATION) ──
+    S8B --> S8C[/Grantee Chooses Their Password/]:::studentBlock
+    S8C --> S9[System Sets Credential -> Status: active<br>Scoped session upgraded to full session]:::sysBlock
 
     %% ── PHASE 4: DOCUMENT SUBMISSION VAULT ──
-    S9 --> S10[/Grantee Enters 6-Digit PIN to Unlock Vault/]:::studentBlock
-    S10 --> S11[/Grantee Uploads Required Academic Documents:<br>1. Certificate of Registration<br>2. Official Grade Slip<br>3. Specimen Signatures/]:::studentBlock
+    S9 --> S11[/Grantee Uploads 3 Required Documents:<br>1. Course History<br>2. Official Grade Slip<br>3. ID Back-to-Back &amp; 3 Specimen Signatures/]:::studentBlock
     S11 --> S12[System Runs Document OCR & Previews Extracted Data]:::sysBlock
     S12 --> S13[/Grantee Confirms Submission Package -> Status: docs_submitted/]:::studentBlock
 
@@ -288,7 +345,7 @@ flowchart TD
     D5 -- Approved --> E1[System Pipeline Triggers Automated Eligibility Assessment]:::sysBlock
 
     %% ── PHASE 6: ELIGIBILITY ASSESSMENT & RISK SCORING ──
-    E1 --> E2[System Evaluates Retention Rules:<br>1. Active Batch Enrollment<br>2. Complete 4-slot Documents<br>3. Failed Subjects <= Threshold]:::sysBlock
+    E1 --> E2[System Evaluates Retention Rules:<br>1. Active Batch Enrollment<br>2. Complete 3-slot Document Vault<br>3. Failed Subjects <= Threshold]:::sysBlock
     E2 --> E3[System Computes Risk Score & Compliance Badge]:::sysBlock
     E3 --> D6{Eligibility Outcome}:::decisionBlock
 
@@ -315,4 +372,5 @@ flowchart TD
 | **DFD Level 1** | Figure 4.2 | 8 Major Functional Modules, Data Stores (D1–D8), Inter-process Flows | Chapter 4: Detailed Design | [`dfd_level1_diagram.html`](file:///c:/Users/BRANDON/Downloads/tcc-unifast/dfd_level1_diagram.html) |
 | **DFD Level 2 (Process 3.0)** | Figure 4.3 | Decomposition of Identity & Biometric Verification (`3.1` to `3.6`) | Chapter 4: Security & Verification Engine | [`dfd_level2_diagram.html`](file:///c:/Users/BRANDON/Downloads/tcc-unifast/dfd_level2_diagram.html) |
 | **System Flowchart** | Figure 3.2 | Step-by-step user decision trees and automated background logic | Chapter 3: Research Methodology | [`system_diagrams_documentation.md`](file:///c:/Users/BRANDON/Downloads/tcc-unifast/system_diagrams_documentation.md) |
+| **Security Design Rationale** | §3.4 (narrative) | Why the credential is created after biometric verification | Chapter 4: Security & Verification Engine | This document |
 | **Use Case Diagram** | Figure 3.1 | Functional actors (Admin, Grantee, Staff) and use cases | Chapter 3: Requirements Analysis | Draw.io Diagram |

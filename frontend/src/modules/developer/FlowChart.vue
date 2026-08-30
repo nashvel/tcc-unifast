@@ -76,18 +76,15 @@ const flows: Flow[] = [
   {
     id: "vault",
     name: "Requirement Vault",
-    summary: "The active batch submission path for school ID, academic PDFs, specimen signatures, liveness, and final confirmation.",
+    summary: "The active batch submission path for academic PDFs, the ID back-to-back & specimen document, and final confirmation. Identity is verified once during onboarding.",
     steps: [
       { id: "window", title: "Check submission window", detail: "The student portal asks whether the student's batch is open.", kind: "entry", api: "GET /api/student/submission-window", next: ["open"] },
       { id: "open", title: "Window open?", detail: "Closed, inactive, or expired batches keep the vault locked.", kind: "decision", next: ["locked", "vault"] },
       { id: "locked", title: "Vault locked", detail: "The UI shows deadline or availability messaging and blocks final submission.", kind: "blocked" },
-      { id: "vault", title: "Load vault slots", detail: "The vault returns current files, slot status, and identity-check readiness.", kind: "process", api: "GET /api/student/requirement-vault", next: ["id"] },
-      { id: "id", title: "Upload school ID", detail: "The school ID scan is uploaded first and can unlock the rest of the requirement slots.", kind: "process", api: "POST /api/student/requirement-vault/id", next: ["docs"] },
-      { id: "docs", title: "Upload requirements", detail: "Course history, grade slip, and specimen signature files are uploaded to named slots.", kind: "process", api: "POST /api/student/requirement-vault/document", next: ["ocr"] },
-      { id: "ocr", title: "Extraction checks", detail: "OCR/PDF/QR signals are extracted and attached to submission metadata.", kind: "process", api: "POST /api/student/submissions/ocr", next: ["face"] },
-      { id: "face", title: "Face verification", detail: "Live face signals are compared against stored onboarding references.", kind: "process", api: "POST /api/student/identity/face-verify", next: ["identity"] },
-      { id: "identity", title: "Batch identity check", detail: "The student submits the liveness challenge result for the active batch.", kind: "process", api: "POST /api/student/requirement-vault/identity-check", next: ["confirm"] },
-      { id: "confirm", title: "Confirm vault", detail: "All completed slots and identity checks finalize the grantee submission status.", kind: "success", api: "POST /api/student/requirement-vault/confirm" },
+      { id: "vault", title: "Load vault slots", detail: "The vault returns current files and slot status for the 3 document slots.", kind: "process", api: "GET /api/student/requirement-vault", next: ["docs"] },
+      { id: "docs", title: "Upload requirements", detail: "Course History (PDF), Grade Slip (PDF), and ID back-to-back & specimen (PDF or image) are uploaded to named slots.", kind: "process", api: "POST /api/student/requirement-vault/document", next: ["ocr"] },
+      { id: "ocr", title: "Extraction checks", detail: "OCR/PDF/QR signals are extracted and attached to submission metadata.", kind: "process", api: "POST /api/student/submissions/ocr", next: ["confirm"] },
+      { id: "confirm", title: "Confirm vault", detail: "All 3 completed slots finalize the grantee submission status. Names are cross-checked against the onboarding ID OCR.", kind: "success", api: "POST /api/student/requirement-vault/confirm" },
     ],
   },
   {
