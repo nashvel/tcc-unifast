@@ -102,10 +102,10 @@ class IdentityOnboardingFlowTest extends TestCase
                 'distance' => 0.99, // spoofed client distance must be ignored
             ]),
         ])->assertOk()
-            ->assertJsonPath('data.account_status', 'active')
-            ->assertJsonPath('data.next_step', 'done');
+            ->assertJsonPath('data.account_status', 'identity_verified')
+            ->assertJsonPath('data.next_step', 'credentials');
 
-        $this->assertDatabaseHas('users', ['id' => $student->id, 'account_status' => 'active']);
+        $this->assertDatabaseHas('users', ['id' => $student->id, 'account_status' => 'identity_verified']);
         $this->assertDatabaseHas('grantee_identity_profiles', [
             'grantee_id' => $grantee->id,
             'status' => 'completed',
@@ -151,8 +151,8 @@ class IdentityOnboardingFlowTest extends TestCase
                 'challenge_sequence' => ['blink', 'turn_right', 'turn_left'],
             ]),
         ])->assertOk()
-            ->assertJsonPath('data.account_status', 'active')
-            ->assertJsonPath('data.next_step', 'done');
+            ->assertJsonPath('data.account_status', 'identity_verified')
+            ->assertJsonPath('data.next_step', 'credentials');
     }
 
     public function test_liveness_uncertain_zone_flags_for_staff_review(): void
@@ -251,10 +251,10 @@ class IdentityOnboardingFlowTest extends TestCase
 
         $this->actingAs($staff)->postJson("/api/face-reviews/{$profile->id}/approve")
             ->assertOk()
-            ->assertJsonPath('data.account_status', 'active')
+            ->assertJsonPath('data.account_status', 'identity_verified')
             ->assertJsonPath('data.decision', 'approved');
 
-        $this->assertDatabaseHas('users', ['id' => $student->id, 'account_status' => 'active']);
+        $this->assertDatabaseHas('users', ['id' => $student->id, 'account_status' => 'identity_verified']);
         $this->assertDatabaseHas('grantee_identity_profiles', [
             'id' => $profile->id,
             'status' => 'completed',
@@ -306,26 +306,29 @@ class IdentityOnboardingFlowTest extends TestCase
 
         $staff = User::factory()->create(['role' => 'staff', 'account_status' => 'active']);
 
+        // Rejection is recoverable, not terminal: a failed match may be an impostor
+        // who used a forwarded link, so blocking would punish the real grantee.
         $this->actingAs($staff)->postJson("/api/face-reviews/{$profile->id}/reject", [
             'reason' => 'Selfie does not match ID photo',
         ])->assertOk()
-            ->assertJsonPath('data.account_status', 'blocked')
+            ->assertJsonPath('data.account_status', 'identity_rejected')
             ->assertJsonPath('data.decision', 'rejected');
 
-        $this->assertDatabaseHas('users', ['id' => $student->id, 'account_status' => 'blocked']);
+        $this->assertDatabaseHas('users', ['id' => $student->id, 'account_status' => 'identity_rejected']);
         $this->assertDatabaseHas('grantees', ['id' => $grantee->id, 'status' => 'identity_mismatch']);
 
+        // A fresh activation link is issued so the legitimate student can retry.
+        $this->assertDatabaseHas('activation_tokens', ['user_id' => $student->id, 'used_at' => null]);
+
         $fresh = $profile->fresh();
+        $this->assertSame('pending_id_scan', $fresh->status);
         $this->assertNull($fresh->liveness_challenge_1_path);
         $this->assertNull($fresh->liveness_challenge_2_path);
         $this->assertFalse(Storage::disk('local')->exists($challenge1));
         $this->assertFalse(Storage::disk('local')->exists($challenge2));
         $this->assertSame($idRef, $fresh->id_reference_face_path);
-        $this->assertSame($selfie, $fresh->onboarding_selfie_path);
         $this->assertTrue(Storage::disk('local')->exists($idRef));
-        $this->assertTrue(Storage::disk('local')->exists($selfie));
         $this->assertIsArray($fresh->id_reference_face_descriptor);
-        $this->assertIsArray($fresh->onboarding_selfie_descriptor);
     }
 
     public function test_id_scan_rejects_non_image_payload(): void

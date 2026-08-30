@@ -1,6 +1,8 @@
 <?php
 
+use App\Http\Middleware\AllowOnboardingAbility;
 use App\Http\Middleware\AuthenticateFromAccessCookie;
+use App\Http\Middleware\EnsureFullSession;
 use App\Http\Middleware\RequirePermission;
 use App\Http\Middleware\RequireRole;
 use App\Http\Middleware\SecurityHeaders;
@@ -11,6 +13,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Laravel\Sanctum\Http\Middleware\CheckForAnyAbility;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -31,6 +34,12 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => RequireRole::class,
             'permission' => RequirePermission::class,
+            // Pre-credential onboarding sessions hold only 'onboarding:identity'.
+            // 'full-session' keeps them out of everything else; 'ability' gates the
+            // identity funnel itself. Sanctum does not register 'ability' by default.
+            'full-session' => EnsureFullSession::class,
+            'onboarding-session' => AllowOnboardingAbility::class,
+            'ability' => CheckForAnyAbility::class,
         ]);
         $middleware->web(append: [SetLocaleFromUrl::class]);
         // Decrypt cookies + promote access cookie → Bearer for Sanctum on all API routes.

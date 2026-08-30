@@ -2,12 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\IdentityApprovedSetPasswordMail;
+use App\Mail\IdentityRejectedRetryMail;
 use App\Models\AuditLog;
 use App\Models\GranteeIdentityProfile;
+use App\Services\ActivationTokenIssuer;
+use App\Services\AuthTokenService;
 use App\Support\FaceDescriptorMath;
 use App\Support\VaultFileStorage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 
 class FaceReviewController extends Controller
@@ -78,8 +83,22 @@ class FaceReviewController extends Controller
             'status' => 'completed',
             'onboarding_completed_at' => now(),
         ]);
-        $user->forceFill(['account_status' => 'active'])->save();
+        // Identity proven, but the student still has no password — see
+        // OnboardingCredentialController. 'active' means verified AND credentialed.
+        $user->forceFill(['account_status' => 'identity_verified'])->save();
         $grantee->update(['status' => 'verified']);
+
+        // Staff review can take days, the student holds no password, and their
+        // original link has probably expired. Without a fresh link they would be
+        // permanently locked out, so approval must carry its own way back in.
+        $link = app(ActivationTokenIssuer::class)->issueLinkFor($user);
+        $mailed = true;
+        try {
+            Mail::to($user->email, $user->name)->send(new IdentityApprovedSetPasswordMail($user, $link['url']));
+        } catch (\Throwable $exception) {
+            report($exception);
+            $mailed = false;
+        }
 
         AuditLog::create([
             'actor' => $request->user()->name,
@@ -90,8 +109,9 @@ class FaceReviewController extends Controller
             'context' => [
                 'distance' => $faceReview->onboarding_face_distance,
                 'profile_id' => $faceReview->id,
-                'account_status' => 'active',
+                'account_status' => 'identity_verified',
                 'challenge_stills_purged' => true,
+                'set_password_link_sent' => $mailed,
             ],
             'ip_address' => $request->ip(),
         ]);
@@ -99,8 +119,9 @@ class FaceReviewController extends Controller
         return response()->json([
             'data' => [
                 'identity' => $this->present($faceReview->fresh()->loadMissing(['grantee.batch', 'user'])),
-                'account_status' => 'active',
+                'account_status' => 'identity_verified',
                 'decision' => 'approved',
+                'set_password_link_sent' => $mailed,
             ],
         ]);
     }
@@ -124,11 +145,34 @@ class FaceReviewController extends Controller
 
         $this->purgeChallengeStills($faceReview);
 
+        // Recoverable, not terminal. A rejected face match may well be an impostor
+        // who used a forwarded link — blocking here would punish the real grantee.
+        // Reset the funnel and mail a fresh link to the address of record so the
+        // legitimate student can retry. 'blocked' stays reserved for admin action.
         $faceReview->update([
-            'status' => 'pending_liveness',
+            'status' => 'pending_id_scan',
+            'id_scan_completed_at' => null,
+            'onboarding_face_distance' => null,
+            'onboarding_selfie_descriptor' => null,
         ]);
-        $user->forceFill(['account_status' => 'blocked'])->save();
+        $user->forceFill(['account_status' => 'identity_rejected'])->save();
         $grantee->update(['status' => 'identity_mismatch']);
+
+        // Kill the impostor's session and their activation link.
+        app(AuthTokenService::class)->revokeAll($user);
+
+        $link = app(ActivationTokenIssuer::class)->issueLinkFor($user);
+        $mailed = true;
+        try {
+            Mail::to($user->email, $user->name)->send(new IdentityRejectedRetryMail(
+                $user,
+                $link['url'],
+                $validated['reason'] ?? null,
+            ));
+        } catch (\Throwable $exception) {
+            report($exception);
+            $mailed = false;
+        }
 
         AuditLog::create([
             'actor' => $request->user()->name,
@@ -140,8 +184,11 @@ class FaceReviewController extends Controller
                 'distance' => $faceReview->onboarding_face_distance,
                 'profile_id' => $faceReview->id,
                 'reason' => $validated['reason'] ?? null,
-                'account_status' => 'blocked',
+                'account_status' => 'identity_rejected',
                 'challenge_stills_purged' => true,
+                'retry_link_sent' => $mailed,
+                // Surfaces repeated takeover attempts against one grantee.
+                'rejected_attempt_ip' => $faceReview->last_liveness_ip,
             ],
             'ip_address' => $request->ip(),
         ]);
@@ -149,8 +196,9 @@ class FaceReviewController extends Controller
         return response()->json([
             'data' => [
                 'identity' => $this->present($faceReview->fresh()->loadMissing(['grantee.batch', 'user'])),
-                'account_status' => 'blocked',
+                'account_status' => 'identity_rejected',
                 'decision' => 'rejected',
+                'retry_link_sent' => $mailed,
             ],
         ]);
     }

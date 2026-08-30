@@ -29,9 +29,11 @@ use App\Http\Controllers\GranteeFormController;
 use App\Http\Controllers\IdentityOnboardingController;
 use App\Http\Controllers\MasterlistImportController;
 use App\Http\Controllers\OnboardingCenterController;
+use App\Http\Controllers\OnboardingCredentialController;
 use App\Http\Controllers\PolicySettingsController;
 use App\Http\Controllers\PublicFormController;
 use App\Http\Controllers\RbacController;
+use App\Http\Controllers\StaffActivationController;
 use App\Http\Controllers\RequirementVaultController;
 use App\Http\Controllers\SocialMediaPostController;
 use App\Http\Controllers\StudentDocumentOcrController;
@@ -65,13 +67,22 @@ Route::middleware([
         ->middleware('throttle:20,1');
     Route::get('/auth/google/callback', [AuthController::class, 'googleCallback'])
         ->middleware('throttle:20,1');
-    Route::get('/activation/{token}', [ActivationController::class, 'show'])->middleware('throttle:20,1');
-    Route::post('/activation/{token}', [ActivationController::class, 'activate'])->middleware('throttle:10,1');
+    // Identity-first activation: /begin opens a scoped onboarding session and sets
+    // NO password. The password is created at /onboarding/credentials once identity
+    // is verified. /resend is the self-service recovery path for expired links.
+    Route::get('/activation/{token}', [ActivationController::class, 'show'])->middleware('throttle:30,1');
+    Route::post('/activation/{token}/begin', [ActivationController::class, 'begin'])->middleware('throttle:10,1');
+    Route::post('/activation/resend', [ActivationController::class, 'resend'])->middleware('throttle:3,60');
+
+    // Staff/admin/developer invites: no biometric funnel, so the password IS set
+    // from the link. Ownership rests on an admin having authorised the invite (§2.4).
+    Route::get('/staff-activation/{token}', [StaffActivationController::class, 'show'])->middleware('throttle:30,1');
+    Route::post('/staff-activation/{token}', [StaffActivationController::class, 'activate'])->middleware('throttle:10,1');
 });
 
 // Public content (for login page)
-Route::get('/terms/active', [TermController::class, 'active']);
-Route::get('/faqs', [FaqController::class, 'index']);
+Route::get('/terms/active', [TermController::class, 'active'])->middleware('throttle:60,1');
+Route::get('/faqs', [FaqController::class, 'index'])->middleware('throttle:60,1');
 Route::get('/public/tcc-home', TccPublicHomeController::class)->middleware('throttle:30,1');
 
 // Time-limited signed file access (no bearer token; HMAC signature required)
@@ -86,15 +97,23 @@ Route::get('/signed/identity-photos/{grantee}/{filename}', [DocumentFileControll
 
 // Authenticated routes (Sanctum token required)
 Route::middleware('auth:sanctum')->group(function (): void {
+    // Intentionally reachable by onboarding sessions: the funnel needs to resolve
+    // the current user and to sign out.
     Route::get('/auth/me', [AuthController::class, 'me']);
     Route::post('/auth/logout', [AuthController::class, 'logout']);
-    Route::get('/auth/2fa', [AuthController::class, 'twoFactorStatus']);
-    Route::post('/auth/2fa/setup', [AuthController::class, 'twoFactorSetup'])->middleware('throttle:10,1');
-    Route::post('/auth/2fa/enable', [AuthController::class, 'twoFactorEnable'])->middleware('throttle:10,1');
-    Route::delete('/auth/2fa', [AuthController::class, 'twoFactorDisable'])->middleware('throttle:10,1');
 
-    // Student routes
-    Route::middleware('role:student')->group(function (): void {
+    // 2FA management belongs to credentialed accounts only.
+    Route::middleware('full-session')->group(function (): void {
+        Route::get('/auth/2fa', [AuthController::class, 'twoFactorStatus']);
+        Route::post('/auth/2fa/setup', [AuthController::class, 'twoFactorSetup'])->middleware('throttle:10,1');
+        Route::post('/auth/2fa/enable', [AuthController::class, 'twoFactorEnable'])->middleware('throttle:10,1');
+        Route::delete('/auth/2fa', [AuthController::class, 'twoFactorDisable'])->middleware('throttle:10,1');
+    });
+
+    // ── Identity funnel ────────────────────────────────────────────────────────
+    // Reachable by a pre-credential onboarding session (ability onboarding:identity)
+    // AND by full sessions, since tokenCan('*') satisfies any ability check.
+    Route::middleware(['onboarding-session', 'role:student'])->group(function (): void {
         Route::get('/student/kyc', [StudentKycController::class, 'show'])->middleware('throttle:30,1');
         Route::post('/student/kyc', [StudentKycController::class, 'store'])->middleware('throttle:60,1');
         Route::get('/student/identity-onboarding', [IdentityOnboardingController::class, 'show']);
@@ -106,6 +125,15 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('/student/identity-onboarding/photos/{filename}', [DocumentFileController::class, 'showOwnIdentityPhoto'])
             ->where('filename', VaultFileStorage::identityFilenameRoutePattern())
             ->middleware('throttle:60,1');
+
+        // Terminal step: create the credential. Requires account_status = identity_verified.
+        Route::post('/onboarding/credentials', [OnboardingCredentialController::class, 'store'])
+            ->middleware('throttle:10,1');
+    });
+
+    // ── Student app ────────────────────────────────────────────────────────────
+    // full-session rejects onboarding-scoped tokens (invariant I2).
+    Route::middleware(['full-session', 'role:student'])->group(function (): void {
         Route::get('/student/submission-window', StudentSubmissionWindowController::class);
         Route::get('/student/requirement-vault', [RequirementVaultController::class, 'show']);
         Route::post('/student/requirement-vault/document', [RequirementVaultController::class, 'storeDocument'])->middleware('throttle:20,1');
@@ -124,7 +152,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
     });
 
     // Developer/Admin/Staff routes (includes legacy head role)
-    Route::middleware('role:developer,admin,head,staff')->group(function (): void {
+    Route::middleware(['full-session', 'role:developer,admin,head,staff'])->group(function (): void {
         Route::get('/notifications', [StudentNotificationController::class, 'index']);
         Route::post('/notifications/{notification}/read', [StudentNotificationController::class, 'markRead']);
         Route::post('/notifications/read-all', [StudentNotificationController::class, 'markAllRead']);
@@ -198,7 +226,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
     });
 
     // Developer/Admin/Head/Staff routes (for batch ops and masterlists)
-    Route::middleware('role:developer,admin,head,staff')->group(function (): void {
+    Route::middleware(['full-session', 'role:developer,admin,head,staff'])->group(function (): void {
         Route::post('/batches', [BatchController::class, 'store'])->middleware('throttle:20,1');
         Route::patch('/batches/{batch}', [BatchController::class, 'update'])->middleware('throttle:20,1');
         Route::post('/batches/{batch}/activate', [BatchController::class, 'activate'])->middleware('throttle:10,1');
@@ -213,7 +241,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
     });
 
     // RBAC + database viewer (developer/admin)
-    Route::middleware('role:developer,admin')->group(function (): void {
+    Route::middleware(['full-session', 'role:developer,admin'])->group(function (): void {
         // Activation Seeder — create activation-ready grantees from the browser
         Route::get('/activation-seeder/batches', [ActivationSeederController::class, 'batches']);
         Route::get('/activation-seeder/history', [ActivationSeederController::class, 'history']);
@@ -268,11 +296,14 @@ Route::middleware('auth:sanctum')->group(function (): void {
         // System health telemetry
         Route::get('/system/health', [SystemHealthController::class, 'show']);
 
-        // Database viewer
-        Route::get('/database/stats', [DatabaseController::class, 'stats']);
-        Route::get('/database/tables', [DatabaseController::class, 'tables']);
-        Route::get('/database/tables/{table}', [DatabaseController::class, 'table']);
-        Route::get('/database/tables/{table}/rows', [DatabaseController::class, 'rows']);
+        // Database viewer — exposes raw table data, so the explicit
+        // `view_database` permission is required on top of the role guard.
+        Route::middleware('permission:view_database')->group(function (): void {
+            Route::get('/database/stats', [DatabaseController::class, 'stats']);
+            Route::get('/database/tables', [DatabaseController::class, 'tables']);
+            Route::get('/database/tables/{table}', [DatabaseController::class, 'table']);
+            Route::get('/database/tables/{table}/rows', [DatabaseController::class, 'rows']);
+        });
     });
 
     // Document submission review (developer/admin/staff)
@@ -292,6 +323,14 @@ Route::get('/integrations/n8n/tcc-unifast/students', TccUnifastStudentsControlle
     ->middleware('throttle:120,1')
     ->name('integrations.n8n.tcc-unifast.students');
 
+// Facebook publish result posted back by n8n. The dispatch payload advertises this
+// exact URL (SocialMediaPostController::present → callback.url), so without the
+// route every callback 404s and posts stay stuck at 'sent_to_n8n'. Authenticated by
+// the shared X-TCC-UniFAST-Endpoint-Key inside receiveStatus().
+Route::post('/integrations/n8n/social-media-posts/{socialMediaPost}/status', [SocialMediaPostController::class, 'receiveStatus'])
+    ->middleware('throttle:60,1')
+    ->name('integrations.n8n.social-media-posts.status');
+
 // ══════════════════════════════════════════════════════════════
 // Dynamic Form Creation Module
 // ══════════════════════════════════════════════════════════════
@@ -307,7 +346,7 @@ Route::middleware(['throttle:30,1', FormSecurityHeaders::class])->group(function
 Route::middleware(['auth:sanctum', FormSecurityHeaders::class])->group(function (): void {
 
     // ── Grantee portal ───────────────────────────────────────────────
-    Route::middleware('role:student')->group(function (): void {
+    Route::middleware(['full-session', 'role:student'])->group(function (): void {
         Route::get('/forms/assigned', [GranteeFormController::class, 'assigned']);
         Route::get('/forms/{id}/schema', [GranteeFormController::class, 'schema'])
             ->whereNumber('id');
@@ -317,7 +356,7 @@ Route::middleware(['auth:sanctum', FormSecurityHeaders::class])->group(function 
     });
 
     // ── Staff — response viewing only ────────────────────────────────
-    Route::middleware('role:developer,admin,head,staff')->group(function (): void {
+    Route::middleware(['full-session', 'role:developer,admin,head,staff'])->group(function (): void {
         Route::get('/forms/{id}/responses', [FormResponseController::class, 'index'])
             ->whereNumber('id');
         Route::get('/forms/{id}/responses/{rid}', [FormResponseController::class, 'show'])
@@ -325,7 +364,7 @@ Route::middleware(['auth:sanctum', FormSecurityHeaders::class])->group(function 
     });
 
     // ── Form management (admin / staff) ──────────────────────────────
-    Route::middleware('role:developer,admin,head,staff')->prefix('forms')->group(function (): void {
+    Route::middleware(['full-session', 'role:developer,admin,head,staff'])->prefix('forms')->group(function (): void {
         // Form CRUD
         Route::get('/', [FormController::class, 'index'])->middleware('throttle:60,1');
         Route::post('/', [FormController::class, 'store'])->middleware('throttle:60,1');

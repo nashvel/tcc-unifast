@@ -10,7 +10,7 @@ class StudentOnboardingNavigator
     /**
      * Resume step after login or deep-link for a student mid-onboarding.
      *
-     * @return 'blocked'|'kyc'|'id_scan'|'liveness'|'face_review'|'done'
+     * @return 'blocked'|'kyc'|'id_scan'|'liveness'|'face_review'|'credentials'|'done'
      */
     public function nextStep(User $user, ?Grantee $grantee = null): string
     {
@@ -20,12 +20,18 @@ class StudentOnboardingNavigator
             return 'blocked';
         }
 
-        if (in_array($status, ['unverified', 'pending_kyc'], true)) {
+        // Rejected identity is recoverable: restart the funnel rather than lock out.
+        if (in_array($status, ['unverified', 'pending_kyc', 'identity_rejected'], true)) {
             return 'kyc';
         }
 
         if ($status === 'pending_face_review') {
             return 'face_review';
+        }
+
+        // Identity proven, password not yet chosen.
+        if ($status === 'identity_verified') {
+            return 'credentials';
         }
 
         if ($status === 'pending_identity') {
@@ -60,6 +66,7 @@ class StudentOnboardingNavigator
             'id_scan' => '/student/onboarding/id-scan',
             'liveness' => '/student/onboarding/liveness',
             'face_review' => '/student/onboarding/pending-review',
+            'credentials' => '/student/onboarding/set-password',
             'blocked' => '/locked',
             default => '/student',
         };

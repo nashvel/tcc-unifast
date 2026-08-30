@@ -28,7 +28,7 @@ class StoreIdentityIdScanService
 
     public function assertCanScan(User $user, string $message): void
     {
-        if (! in_array($user->account_status, ['pending_identity', 'active'], true)) {
+        if (! in_array($user->account_status, ['pending_identity', 'identity_verified', 'active'], true)) {
             throw ValidationException::withMessages([
                 'account_status' => $message,
             ]);

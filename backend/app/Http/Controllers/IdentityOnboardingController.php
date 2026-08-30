@@ -31,7 +31,7 @@ class IdentityOnboardingController extends Controller
 
         // Do not create an identity row until KYC has moved the account to pending_identity.
         $profile = null;
-        if (in_array($user->account_status, ['pending_identity', 'active', 'pending_face_review'], true)) {
+        if (in_array($user->account_status, ['pending_identity', 'identity_verified', 'active', 'pending_face_review'], true)) {
             $profile = GranteeIdentityProfile::query()->firstOrCreate(
                 ['grantee_id' => $grantee->id],
                 ['user_id' => $user->id, 'status' => 'pending_id_scan'],
@@ -168,7 +168,7 @@ class IdentityOnboardingController extends Controller
                 'account_status' => 'Under staff review (not blocked) — wait for a face-match decision before retrying liveness.',
             ]);
         }
-        if (! in_array($user->account_status, ['pending_identity', 'active'], true)) {
+        if (! in_array($user->account_status, ['pending_identity', 'identity_verified', 'active'], true)) {
             throw ValidationException::withMessages([
                 'account_status' => 'Complete KYC validation before the liveness challenge.',
             ]);
@@ -329,7 +329,9 @@ class IdentityOnboardingController extends Controller
             'last_liveness_ip' => $request->ip(),
         ]);
 
-        $user->forceFill(['account_status' => 'active'])->save();
+        // Identity proven — but NOT 'active' yet: the student still has no password.
+        // OnboardingCredentialController promotes to 'active' (invariant I1).
+        $user->forceFill(['account_status' => 'identity_verified'])->save();
         $grantee->update(['status' => 'verified']);
 
         AuditLog::create([
@@ -346,7 +348,7 @@ class IdentityOnboardingController extends Controller
                 'review_max' => FaceDescriptorMath::reviewMax(),
                 'liveness_confirmed' => true,
                 'result' => 'match',
-                'account_status' => 'active',
+                'account_status' => 'identity_verified',
             ],
             'ip_address' => $request->ip(),
         ]);
@@ -354,9 +356,9 @@ class IdentityOnboardingController extends Controller
         return response()->json([
             'data' => [
                 'identity' => $this->present($profile->fresh()),
-                'account_status' => $user->account_status,
+                'account_status' => $user->fresh()->account_status,
                 'face_zone' => $zone,
-                'next_step' => 'done',
+                'next_step' => 'credentials',
             ],
         ]);
     }
