@@ -292,6 +292,8 @@ role, so a student token cannot be redirected to it to bypass `3.4`.
 
 ### 4.2 End-to-End Operational Lifecycle
 
+> <sub>**Revised (identity-first activation):** `S2` read "Grantee Sets Password & Activates Account". Password creation moved to **Phase 3B** (`S8C`), after the biometric paths converge, so the face match gates account ownership rather than document upload. The former `S10` PIN-unlock step was removed — the vault PIN is now an opt-in setting verified at confirm. `S11`/`E2` corrected from 4 slots to 3.</sub>
+
 ```mermaid
 flowchart TD
     %% ── STYLES ──
