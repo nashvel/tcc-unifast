@@ -216,6 +216,14 @@
             <em>account ownership</em> rather than document upload.
             3.7 is new. Everything else is unchanged.
         </p>
+        <p style="font-size:10.5px; color:#7030a0; margin-top:4px; text-align:left; max-width:1100px; margin-left:auto; margin-right:auto;">
+            <strong>Routing note (for redrawing):</strong>
+            3.6 and 3.7 write to <strong>D1</strong> on <em>separate</em> tracks &mdash; 3.6 runs up
+            <code>x=1290</code> into D1&rsquo;s right edge, 3.7 up <code>x=1390</code> into D1&rsquo;s
+            top edge. They are two distinct writes (password hash vs. PIN hash) and must never be
+            drawn as one merged line. Likewise 3.4 and 3.6 reach <strong>D4</strong> on
+            <code>x=900</code> and <code>x=870</code> respectively.
+        </p>
         <div class="btn-container">
             <button class="btn" onclick="window.print()">🖨️ Print / Save as PDF</button>
         </div>
@@ -461,8 +469,8 @@
             <text x="897" y="354" class="flow-label">Submitted KYC Data (to D2)</text>
 
             <path d="M 800 330 L 920 330 L 920 160 L 980 160" class="flow-line" />
-            <rect x="830" y="210" width="135" height="18" class="lbl-bg" />
-            <text x="897" y="219" class="flow-label">Status: pending_identity (D1)</text>
+            <rect x="830" y="180" width="135" height="18" class="lbl-bg" />
+            <text x="897" y="189" class="flow-label">Status: pending_identity (D1)</text>
 
             <!-- 3.3 -> D4 (Clean Direct Horizontal Flow) -->
             <path d="M 800 595 L 980 610" class="flow-line" />
@@ -479,38 +487,42 @@
             <rect x="1060" y="846" width="205" height="18" class="lbl-bg" />
             <text x="1162" y="855" class="flow-label">Auto-Pass Verification Status (to 7.0)</text>
 
-            <path d="M 800 1060 L 1360 1060 L 1360 855" class="flow-line" />
+            <path d="M 800 1060 L 1360 1060 L 1360 950 L 1530 950 L 1530 895" class="flow-line" />
             <rect x="1050" y="1051" width="210" height="18" class="lbl-bg" />
             <text x="1155" y="1060" class="flow-label">Staff Review Decision Status (to 7.0)</text>
 
-            <!-- D4 -> 3.5 (Dedicated Track x=960) -->
-            <path d="M 980 635 L 960 635 L 960 1075 L 800 1075" class="flow-line" />
-            <rect x="830" y="1066" width="130" height="18" class="lbl-bg" />
-            <text x="895" y="1075" class="flow-label">Pending Review Records (D4)</text>
+            <!-- D4 -> 3.5 (Dedicated track x=960, entering 3.5 on its TOP edge to free the right
+                 edge for the two Staff flows) -->
+            <path d="M 980 635 L 960 635 L 960 1040 L 740 1040 L 740 1070" class="flow-line" />
+            <rect x="830" y="1031" width="130" height="18" class="lbl-bg" />
+            <text x="895" y="1040" class="flow-label">Pending Review Records (D4)</text>
 
-            <!-- 3.5 <-> Staff -->
-            <path d="M 800 1090 L 1440 1080" class="flow-line" />
-            <rect x="1110" y="1065" width="165" height="18" class="lbl-bg" />
-            <text x="1192" y="1074" class="flow-label">Grantee Identity Photos for Review</text>
+            <!-- 3.5 <-> Staff. Both legs route CLEAR of the D5 box (x 1015-1250, y 1090-1126):
+                 the outbound leg passes above it at y=1078, the inbound leg below it at y=1140. -->
+            <path d="M 800 1078 L 1440 1078" class="flow-line" />
+            <rect x="1255" y="1069" width="165" height="18" class="lbl-bg" />
+            <text x="1337" y="1078" class="flow-label">Grantee Identity Photos for Review</text>
 
-            <path d="M 1440 1110 L 800 1115" class="flow-line" />
-            <rect x="1110" y="1115" width="160" height="18" class="lbl-bg" />
-            <text x="1190" y="1124" class="flow-label">Biometric Verification Decision</text>
+            <path d="M 1510 1130 L 1510 1140 L 800 1140" class="flow-line" />
+            <rect x="1070" y="1131" width="160" height="18" class="lbl-bg" />
+            <text x="1150" y="1140" class="flow-label">Biometric Verification Decision</text>
 
-            <!-- 3.5 -> D5 -->
-            <path d="M 800 1105 L 980 1105" class="flow-line" />
-            <rect x="840" y="1098" width="130" height="18" class="lbl-bg" />
-            <text x="905" y="1107" class="flow-label">Biometric Review Audit (D5)</text>
+            <!-- 3.5 -> D5 (label sits above the line so it does not overprint the D5 box) -->
+            <path d="M 800 1108 L 980 1108" class="flow-line" />
+            <rect x="838" y="1085" width="132" height="18" class="lbl-bg" />
+            <text x="904" y="1094" class="flow-label">Biometric Review Audit (D5)</text>
 
-            <!-- 3.6 -> D4 (activation token spent only now, not at link click) -->
-            <path d="M 800 1368 L 900 1368 L 900 660 L 980 660" class="flow-line" />
-            <rect x="828" y="1358" width="140" height="18" class="lbl-bg" />
-            <text x="898" y="1367" class="flow-label">Activation Token Spent (D4)</text>
+            <!-- 3.6 -> D4 (activation token spent only now, not at link click).
+                 Own track at x=870 (the x=900 track belongs to 3.4 -> D4) and lands on D4's
+                 BOTTOM edge, since D4's left edge is already carrying three flows. -->
+            <path d="M 800 1368 L 870 1368 L 870 700 L 1115 700 L 1115 636" class="flow-line" />
+            <rect x="880" y="691" width="140" height="18" class="lbl-bg" />
+            <text x="950" y="700" class="flow-label">Activation Token Spent (D4)</text>
 
-            <!-- 3.6 -> D1 (Clean Outer Perimeter Track at x=1240 so it never cuts across the diagram) -->
-            <path d="M 800 1345 L 1240 1345 L 1240 150 L 1215 150" class="flow-line" />
-            <rect x="1104" y="270" width="162" height="18" class="lbl-bg" />
-            <text x="1185" y="279" class="flow-label">Password Hash + Status: Active (D1)</text>
+            <!-- 3.6 -> D1 (Perimeter track at x=1290; enters D1 on its RIGHT edge) -->
+            <path d="M 800 1345 L 1290 1345 L 1290 148 L 1250 148" class="flow-line" />
+            <rect x="1209" y="261" width="162" height="18" class="lbl-bg" />
+            <text x="1290" y="270" class="flow-label">Password Hash + Status: Active (D1)</text>
 
             <!-- ==================== 3.7: OPT-IN VAULT PIN (SETTINGS, NOT A FUNNEL STEP) ==================== -->
             <g transform="translate(560, 1490)">
@@ -526,15 +538,18 @@
             <rect x="300" y="1519" width="150" height="18" class="lbl-bg" />
             <text x="375" y="1528" class="flow-label">Vault Security PIN (6 Digits)</text>
 
-            <!-- 3.7 -> D1 -->
-            <path d="M 800 1528 L 1240 1528 L 1240 170 L 1215 170" class="flow-line" />
-            <rect x="1112" y="300" width="146" height="18" class="lbl-bg" />
-            <text x="1185" y="309" class="flow-label">Hashed Vault PIN (D1)</text>
+            <!-- 3.7 -> D1 (SEPARATE outer track at x=1390, 100px clear of the 3.6 track, and it
+                 crosses above y=148 so it never touches the 3.6 credential flow. Enters D1 on the
+                 TOP edge; 3.6 enters on the RIGHT edge, so the two writes stay distinguishable.) -->
+            <path d="M 800 1528 L 1390 1528 L 1390 100 L 1150 100 L 1150 130" class="flow-line" />
+            <rect x="1317" y="391" width="146" height="18" class="lbl-bg" />
+            <text x="1390" y="400" class="flow-label">Hashed Vault PIN (D1)</text>
 
-            <!-- Verified by Process 4.0 on package confirmation -->
-            <path d="M 800 1505 L 1000 1505" class="flow-line" />
-            <rect x="820" y="1496" width="185" height="18" class="lbl-bg" />
-            <text x="912" y="1505" class="flow-label">Verified by 4.0 on confirm (Hash::check)</text>
+            <!-- Annotation, NOT a data flow: 4.0 reads the PIN hash from D1, it is not handed over
+                 by 3.7. Drawn as a dashed leader with no arrowhead so it is not read as a flow. -->
+            <path d="M 800 1505 L 830 1505" stroke="#555" stroke-width="1" stroke-dasharray="3 2" fill="none" />
+            <rect x="838" y="1496" width="190" height="18" rx="3" fill="#f8fafc" stroke="#94a3b8" stroke-width="0.8" />
+            <text x="933" y="1505" class="flow-label" font-style="italic">Note: verified by 4.0 on confirm (Hash::check)</text>
 
         </svg>
     </div>
