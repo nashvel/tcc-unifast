@@ -189,7 +189,7 @@
     </div>
 
     <div class="diagram-wrapper">
-        <svg viewBox="0 0 1660 1620" xmlns="http://www.w3.org/2000/svg">
+        <svg viewBox="0 0 1660 1630" xmlns="http://www.w3.org/2000/svg">
             <defs>
                 <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
                     <path d="M 0 1.5 L 10 5 L 0 8.5 z" fill="#000" />
@@ -556,6 +556,35 @@
             <path d="M 800 785 L 920 755 L 1370 755 L 1430 795" class="flow-line" />
             <rect x="1100" y="746" width="180" height="18" class="lbl-bg" />
             <text x="1190" y="755" class="flow-label">Risk Assessment &amp; Eligibility Status</text>
+
+
+            <!-- ==================== BOTTOM NOTES PANEL: WHAT CHANGED & WHY ==================== -->
+            <g transform="translate(40, 1500)">
+                <rect x="0" y="0" width="1520" height="105" rx="8" fill="#fdfaff" stroke="#7030a0" stroke-width="1.4" />
+                <text x="18" y="24" font-size="14" font-weight="bold" fill="#7030a0" font-family="'Segoe UI', Arial, sans-serif">
+                    WHAT CHANGED (Identity-First Activation Revision) &amp; WHY
+                </text>
+
+                <text x="18" y="46" font-size="12" font-weight="bold" fill="#1a365d" font-family="Arial, sans-serif">1. Grantee input to Process 3.0</text>
+                <text x="18" y="63" font-size="11.5" fill="#333" font-family="Arial, sans-serif">
+                    Was: &ldquo;ID Scan, Liveness &amp; PIN&rdquo;. Now: &ldquo;ID Scan, Liveness &amp; Password&rdquo; &mdash; and the password only reaches 3.0 <tspan font-weight="bold">after</tspan> the face match passes.
+                </text>
+                <text x="18" y="80" font-size="11.5" fill="#333" font-family="Arial, sans-serif">
+                    Why: previously the password was set at link-click, before identity was checked &mdash; anyone forwarded the email could permanently own the account.
+                </text>
+
+                <text x="770" y="46" font-size="12" font-weight="bold" fill="#1a365d" font-family="Arial, sans-serif">2. D2 Grantee Records</text>
+                <text x="770" y="63" font-size="11.5" fill="#333" font-family="Arial, sans-serif">
+                    <tspan fill="#7030a0" text-decoration="line-through">vault_pin_hash</tspan> removed from D2 &mdash; the PIN now lives on D1 (<tspan font-style="italic">users.security_pin</tspan>), since it belongs to the account, not the KYC profile.
+                </text>
+                <text x="770" y="80" font-size="11.5" fill="#333" font-family="Arial, sans-serif">
+                    Why: the PIN is an opt-in account setting checked at Process 4.0 confirm, not a KYC-verification attribute.
+                </text>
+
+                <text x="18" y="97" font-size="10.5" fill="#7030a0" font-family="Arial, sans-serif" font-style="italic">
+                    Everything else in this diagram (processes 1.0&ndash;8.0, D1/D3/D5&ndash;D8, all other flows) is unchanged from the prior revision.
+                </text>
+            </g>
 
         </svg>
     </div>
