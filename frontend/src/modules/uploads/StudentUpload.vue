@@ -5,6 +5,7 @@ import { IconFile, IconLock, IconUpload, IconX } from "@tabler/icons-vue";
 import PageHeader from "@/components/ui/PageHeader.vue";
 import { useSubmissionWindow } from "@/composables/useSubmissionWindow";
 import { submitOcrDocument } from "@/api/student/submissions";
+import vaultClosedVideo from "@/assets/student-vault-closed.webm";
 
 const router = useRouter();
 const route = useRoute();
@@ -70,15 +71,26 @@ async function submit() {
     />
     <section
       v-if="loadingWindow || windowError || !windowState?.open"
-      class="rounded-2xl border bg-surface p-6 shadow-sm"
+      class="rounded-2xl border bg-surface p-6 sm:p-8 shadow-sm text-center"
     >
-      <span class="inline-flex items-center gap-2 rounded-full bg-warning-soft px-3 py-1 text-xs font-semibold text-warning">
-        <IconLock :size="14" /> Locked vault
-      </span>
-      <h2 class="mt-4 text-2xl font-semibold tracking-tight">Submission window is closed</h2>
-      <p class="mt-2 max-w-2xl text-sm text-text-muted">
-        {{ loadingWindow ? "Checking your batch submission window..." : windowError || windowState?.message }}
-      </p>
+      <div class="flex flex-col items-center">
+        <video
+          class="h-44 w-44 object-contain"
+          :src="vaultClosedVideo"
+          autoplay
+          loop
+          muted
+          playsinline
+          aria-hidden="true"
+        />
+        <span class="mt-2 inline-flex items-center gap-2 rounded-full bg-warning-soft px-3.5 py-1 text-xs font-semibold text-warning">
+          <IconLock :size="14" /> Locked vault
+        </span>
+        <h2 class="mt-3 text-2xl font-bold tracking-tight">Submission window is currently closed</h2>
+        <p class="mt-2 max-w-lg text-sm text-text-muted">
+          {{ loadingWindow ? "Checking your batch submission window..." : windowError || windowState?.message || "Submissions are currently closed. You can gather your required documents on your phone or computer so they are ready when your batch window opens!" }}
+        </p>
+      </div>
     </section>
     <div v-else class="grid gap-4 lg:grid-cols-3">
       <section class="space-y-4 rounded-lg border bg-surface p-4 lg:col-span-2">

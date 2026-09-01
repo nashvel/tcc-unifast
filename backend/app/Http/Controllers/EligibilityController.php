@@ -37,17 +37,24 @@ class EligibilityController extends Controller
             ->map(fn (Grantee $grantee) => $this->presenter->listRow($grantee))
             ->values();
 
-        $allForSummary = Grantee::query()
-            ->with(['batch', 'pipelineResults' => fn ($q) => $q->latest('id')])
+        // Summary counts via SQL aggregates — avoids loading all rows into memory.
+        $summaryBase = Grantee::query()
             ->where(function ($builder): void {
                 $builder
                     ->whereHas('pipelineResults')
                     ->orWhereIn('status', ['eligible', 'not_eligible'])
                     ->orWhereIn('submission_status', ['docs_submitted', 'under_review', 'verified']);
             })
-            ->when($batchId, fn ($q) => $q->where('batch_id', $batchId))
-            ->get()
-            ->map(fn (Grantee $grantee) => $this->presenter->listRow($grantee));
+            ->when($batchId, fn ($q) => $q->where('batch_id', $batchId));
+
+        $totalChecked = (clone $summaryBase)->count();
+        $totalEligible = (clone $summaryBase)->where('status', 'eligible')->count();
+        $totalNotEligible = (clone $summaryBase)->where('status', 'not_eligible')->count();
+        $totalNeedsUpdate = $totalChecked - $totalEligible - $totalNotEligible;
+
+        // Distinct batches for the filter dropdown — use a lightweight pluck.
+        $batchIds = (clone $summaryBase)->distinct()->pluck('batch_id')->filter()->values();
+        $batches = \App\Models\Batch::query()->whereIn('id', $batchIds)->get(['id', 'name', 'academic_year', 'semester']);
 
         return response()->json([
             'data' => $rows,
@@ -59,12 +66,12 @@ class EligibilityController extends Controller
                 'from' => $paginator->firstItem(),
                 'to' => $paginator->lastItem(),
                 'summary' => [
-                    'checked' => $allForSummary->count(),
-                    'eligible' => $allForSummary->where('status', 'Eligible')->count(),
-                    'needs_update' => $allForSummary->where('status', 'Needs update')->count(),
-                    'not_eligible' => $allForSummary->where('status', 'Not eligible')->count(),
+                    'checked' => $totalChecked,
+                    'eligible' => $totalEligible,
+                    'needs_update' => max(0, $totalNeedsUpdate),
+                    'not_eligible' => $totalNotEligible,
                 ],
-                'batches' => $allForSummary->pluck('batch')->unique()->filter()->values(),
+                'batches' => $batches->values(),
             ],
         ]);
     }

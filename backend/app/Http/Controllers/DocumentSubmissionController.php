@@ -243,8 +243,4 @@ class DocumentSubmissionController extends Controller
         private readonly DocumentSubmissionPresenter $presenter,
     ) {}
 
-    public function audit(): JsonResponse
-    {
-        return response()->json(['data' => AuditLog::query()->latest()->limit(250)->get()]);
-    }
 }

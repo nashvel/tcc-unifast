@@ -219,13 +219,65 @@ class MasterlistTruthService
         return $left !== '' && $left === $right;
     }
 
+    /**
+     * Compare submitted and masterlist middle names.
+     *
+     * Either side being blank is permissive (middle is optional). Beyond exact
+     * equality, an initial on one side matches a full name on the other:
+     * masterlists routinely store "Brandon P. Nagangga" while the student types
+     * their full middle name "Pagara". Punctuation is already stripped upstream,
+     * so "P." arrives here as "p".
+     */
     private function middleAllows(string $submittedMiddle, string $masterMiddle): bool
     {
         if ($submittedMiddle === '' || $masterMiddle === '') {
             return true;
         }
 
-        return $this->namePartEquals($submittedMiddle, $masterMiddle);
+        if ($this->namePartEquals($submittedMiddle, $masterMiddle)) {
+            return true;
+        }
+
+        return $this->middleInitialsAlign($submittedMiddle, $masterMiddle);
+    }
+
+    /**
+     * True when one middle name is the initial form of the other, comparing
+     * token by token so compound middles ("dela cruz" vs "d c") still align.
+     */
+    private function middleInitialsAlign(string $submittedMiddle, string $masterMiddle): bool
+    {
+        $submitted = $this->tokens($submittedMiddle);
+        $master = $this->tokens($masterMiddle);
+
+        if ($submitted === [] || $master === [] || count($submitted) !== count($master)) {
+            return false;
+        }
+
+        foreach ($submitted as $index => $submittedToken) {
+            $masterToken = $master[$index];
+
+            if ($submittedToken === $masterToken) {
+                continue;
+            }
+
+            $submittedIsInitial = mb_strlen($submittedToken) === 1;
+            $masterIsInitial = mb_strlen($masterToken) === 1;
+
+            // Exactly one side must be an initial, and it must head the other token.
+            if ($submittedIsInitial === $masterIsInitial) {
+                return false;
+            }
+
+            $initial = $submittedIsInitial ? $submittedToken : $masterToken;
+            $full = $submittedIsInitial ? $masterToken : $submittedToken;
+
+            if (! str_starts_with($full, $initial)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

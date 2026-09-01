@@ -82,6 +82,7 @@ export const developerNavigation: NavigationSection[] = [
     labelKey: "nav.administration",
     items: [
       { labelKey: "nav.usersRoles", path: "/app/developer/users", icon: IconUserCog },
+      { labelKey: "nav.activationSeeder", path: "/app/activation-seeder", icon: IconSeedling },
       { labelKey: "common.settings", path: "/app/developer/settings", icon: IconSettings },
     ],
   },
@@ -136,9 +137,8 @@ export const studentNavigation: NavigationSection[] = [
       { labelKey: "common.dashboard", path: "/student", icon: IconDashboard },
       { labelKey: "nav.requiredDocuments", path: "/student/documents", icon: IconFileCheck },
       { labelKey: "nav.studentForms", path: "/student/forms", icon: IconForms },
-      { labelKey: "common.profile", path: "/student/profile", icon: IconUserCircle },
       { labelKey: "nav.announcements", path: "/student/announcements", icon: IconSpeakerphone },
-      { labelKey: "common.settings", path: "/student/settings", icon: IconSettings },
+      { labelKey: "common.profile", path: "/student/profile", icon: IconUserCircle },
     ],
   },
 ];

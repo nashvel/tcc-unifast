@@ -2,6 +2,8 @@
 
 namespace App\Support;
 
+use Illuminate\Support\Facades\Cache;
+
 /**
  * Single source of truth for grantee activation URLs.
  *
@@ -13,6 +15,11 @@ class ActivationLink
 {
     public static function base(): string
     {
+        $cached = Cache::get('runtime_activation_frontend_url');
+        if (! empty($cached)) {
+            return rtrim((string) $cached, '/');
+        }
+
         $base = (string) (
             config('app.activation_frontend_url')
             ?: config('app.frontend_url')

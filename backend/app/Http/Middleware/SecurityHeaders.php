@@ -17,16 +17,25 @@ class SecurityHeaders
      */
     public function handle(Request $request, Closure $next): Response
     {
+        // Generate a per-request nonce for CSP. Stored on the request so Blade/views can emit it.
+        $nonce = base64_encode(random_bytes(16));
+        $request->attributes->set('csp_nonce', $nonce);
+
         $response = $next($request);
 
         $response->headers->set('Content-Security-Policy', $this->contentSecurityPolicy());
         $response->headers->set('X-Content-Type-Options', 'nosniff');
+        $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
+        $response->headers->set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+
         // Allow same-origin iframe/embed for authenticated PDF previews; deny cross-origin framing.
         $frameOption = ($response instanceof BinaryFileResponse || $response instanceof StreamedResponse)
             ? 'SAMEORIGIN'
             : 'DENY';
         $response->headers->set('X-Frame-Options', $frameOption);
-        $response->headers->set('X-XSS-Protection', '1; mode=block');
+
+        // X-XSS-Protection is deprecated and removed — the CSP above replaces it.
+
         $response->headers->set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
 
         return $response;

@@ -56,6 +56,13 @@ onMounted(async () => {
       await router.replace("/student");
       return;
     }
+    // Anything other than id_scan means the server disagrees about where the
+    // student is in the funnel. Surface it instead of rendering an empty page.
+    if (next !== "id_scan") {
+      bootError.value = `Unexpected onboarding step "${next}". Reload the page or contact UniFAST support.`;
+      toast.error(bootError.value);
+      return;
+    }
   } catch (exception) {
     bootError.value = exception instanceof Error ? exception.message : "Unable to start ID scan.";
     toast.error(bootError.value);
@@ -154,4 +161,13 @@ async function onExit() {
     :submit-capture="onComplete"
     :exit-flow="onExit"
   />
+  <!-- The guard above is async and may redirect. Without this branch the page
+       renders nothing at all while it resolves, which reads as a broken app. -->
+  <div v-else class="flex flex-col items-center justify-center gap-3 py-16 text-center">
+    <span
+      class="h-6 w-6 animate-spin rounded-full border-2 border-primary/30 border-t-primary"
+      aria-hidden="true"
+    />
+    <p class="text-sm text-text-muted">Preparing your School ID scan…</p>
+  </div>
 </template>

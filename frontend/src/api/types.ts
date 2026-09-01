@@ -54,10 +54,27 @@ export type SocialMediaPost = {
   error_message: string | null;
   external_post_id: string | null;
   external_permalink: string | null;
+  engagement: {
+    reactions: number;
+    comments: number;
+    shares: number;
+  };
+  page_reacted: boolean;
+  page_reaction_type: "LIKE" | null;
   created_at: string;
   updated_at: string;
   batch: Pick<Batch, "id" | "name" | "academic_year" | "semester" | "submission_deadline"> | null;
   creator: { id: number; name: string | null; email: string } | null;
+};
+
+export type SocialMediaComment = {
+  id: string;
+  message: string;
+  author_name: string;
+  author_id: string | null;
+  created_at: string | null;
+  like_count: number;
+  comment_count: number;
 };
 
 export type SocialMediaIntegrationStatus = {
@@ -98,6 +115,7 @@ export type SocialMediaIntegrationStatus = {
   };
   last_activity_at: string | null;
   last_published_at: string | null;
+  page_refreshed_at: string | null;
 };
 
 export type SocialMediaPostTemplate = {

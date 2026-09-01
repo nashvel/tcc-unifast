@@ -6,6 +6,8 @@ import { IconHelpCircle, IconX } from "@tabler/icons-vue";
 import axlGuide from "@/assets/student/axl-guide.png";
 import { resolveTour } from "./tour-registry";
 
+defineOptions({ inheritAttrs: false });
+
 const props = withDefaults(
   defineProps<{
     class?: string;

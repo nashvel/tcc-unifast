@@ -48,37 +48,89 @@ class AuditEventController extends Controller
      * The audit trail is evidence, so a client must not be able to write arbitrary
      * actions into it: `action` and `module` are restricted to a known vocabulary,
      * and every row is marked `source: client` so operator-recorded and
-     * client-reported entries stay distinguishable.
+     * client-reported entries stay distinguishable. This list covers both the
+     * staff/admin action surface and the student-facing product tour.
      *
      * @var list<string>
      */
     private const ALLOWED_ACTIONS = [
+        // Staff / admin actions
+        'route_view',
+        'ui_click',
         'page_viewed',
         'export_downloaded',
         'report_generated',
         'filter_applied',
         'session_timeout',
         'permission_denied_view',
+        // Student product tour / UI events
+        'page_view',
+        'document_preview_opened',
+        'document_download_clicked',
+        'form_opened',
+        'form_abandoned',
+        'session_idle_warning_shown',
+        'ui_error_encountered',
+        'tour_started',
+        'tour_completed',
+        'tour_dismissed',
     ];
 
-    /** @var list<string> */
+    /**
+     * Every module the frontend's `moduleFromPath()` (services/audit.ts) can derive
+     * from a real `/app/*` or `/student/*` route's second path segment, plus the
+     * fixed set the click/tour instrumentation sends directly.
+     *
+     * @var list<string>
+     */
     private const ALLOWED_MODULES = [
+        // Derived from /app/* second path segment
         'Dashboard',
-        'Grantees',
-        'Documents',
-        'Requirements Submission',
-        'Billing',
+        'Announcements',
+        'Social Posts',
         'Reports',
-        'Forms',
-        'Settings',
+        'Billing',
+        'Distribution',
+        'Support',
         'Audit',
+        'Security',
+        'Users',
+        'Settings',
+        'Activation Seeder',
+        'Appearance',
+        'Style Guide',
+        'Masterlist',
+        'Onboarding',
+        'Developer',
+        'Grantees',
+        'Batches',
+        'Programs',
+        'Academic',
+        'Documents',
+        'Face Reviews',
+        'Eligibility',
+        'Files',
+        'Forms',
+        // Derived from /student/* second path segment
+        'Kyc',
+        'Verify',
+        'Submissions',
+        'Profile',
+        'Upload',
+        'Notifications',
+        // Fixed values sent directly by tour/UI instrumentation
+        'Navigation',
+        'Session',
+        'UI',
+        'Tour',
+        'Requirements Submission',
     ];
 
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'action' => ['required', 'string', Rule::in(self::ALLOWED_ACTIONS)],
-            'module' => ['required', 'string', Rule::in(self::ALLOWED_MODULES)],
+            'action' => ['required', 'string', 'max:100', Rule::in(self::ALLOWED_ACTIONS)],
+            'module' => ['required', 'string', 'max:100', Rule::in(self::ALLOWED_MODULES)],
             'target' => ['nullable', 'string', 'max:255'],
             'context' => ['nullable', 'array'],
         ]);

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Support\ActivationLink;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 
 /**
@@ -42,6 +43,11 @@ class DeveloperServicesController extends Controller
             }
         }
 
+        // If cloudflared is dead, clear the runtime cached tunnel
+        if (! $cfRunning) {
+            Cache::forget('runtime_activation_frontend_url');
+        }
+
         // Check OCR by hitting its health endpoint (port 8001)
         $ocrRunning = false;
         try {
@@ -54,7 +60,6 @@ class DeveloperServicesController extends Controller
         }
 
         // Also return the currently configured activation URL so the frontend can display it.
-        // Resolved through config rather than parsing .env off disk.
         $activationUrl = ActivationLink::base();
 
         return response()->json([
@@ -69,8 +74,13 @@ class DeveloperServicesController extends Controller
     /**
      * Start the Cloudflare Tunnel.
      *
-     * Runs cloudflared, waits up to 10 seconds to capture the assigned trycloudflare.com
-     * URL from its output, then writes it to ACTIVATION_FRONTEND_URL in .env.
+     * Writes a tiny PowerShell wrapper script, then fires it with
+     * `Start-Process powershell -File wrapper.ps1 -WindowStyle Hidden`.
+     * Because Start-Process spawns a brand-new process tree it does NOT inherit
+     * PHP's open TCP sockets, which prevents port-8010 handle-lock on Windows.
+     * Output (stdout+stderr) is captured inside the wrapper, not through
+     * -RedirectStandardOutput/-RedirectStandardError (those flags make
+     * Start-Process synchronous/blocking and cannot share the same file).
      */
     public function startCloudflare(): JsonResponse
     {
@@ -88,48 +98,78 @@ class DeveloperServicesController extends Controller
         exec('taskkill /F /IM cloudflared.exe 2>NUL');
         sleep(1);
 
-        $logFile = storage_path('logs/cloudflared.log');
-        file_put_contents($logFile, ''); // clear old log
+        $logFile   = storage_path('logs/cloudflared.log');
+        $scriptPath = storage_path('logs/start-cloudflared.ps1');
 
-        // Tunnel the Vue frontend (port 5173) and redirect output to log file
-        // start /B detaches the process completely so PHP artisan serve won't deadlock
-        // Values are server-derived (realpath/storage_path), never request input.
-        // escapeshellarg is still the correct primitive for embedding a path as an
-        // argument; escapeshellcmd does not neutralise quote characters.
-        $cmd = 'cmd /c "start /B "" '.escapeshellarg($executable).' tunnel --url http://localhost:5173 > '.escapeshellarg($logFile).' 2>&1"';
-        pclose(popen($cmd, 'r'));
+        // Clear old log
+        file_put_contents($logFile, '');
+
+        // Write a small PS1 script that runs cloudflared and merges stdout+stderr
+        // into the log file via a pipeline — no -Redirect* flags on Start-Process,
+        // so the outer Start-Process call is non-blocking.
+        $exe = str_replace("'", "''", $executable);
+        $log = str_replace("'", "''", $logFile);
+        $psScript = "& '{$exe}' tunnel --url http://localhost:5173 2>&1 | Out-File -FilePath '{$log}' -Encoding utf8 -Append\r\n";
+        file_put_contents($scriptPath, $psScript);
+
+        // Launch the wrapper in a fully detached PowerShell process.
+        // -WindowStyle Hidden + -File wrapper.ps1 runs without a visible window,
+        // and Start-Process creates a new process tree with no inherited handles.
+        $script = str_replace("'", "''", $scriptPath);
+        $launchCmd = "powershell -NoProfile -NonInteractive -Command \"Start-Process powershell -ArgumentList '-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File','{$script}' -WindowStyle Hidden\"";
+        exec($launchCmd);
 
         $tunnelUrl = null;
         $start = time();
 
-        // Wait up to 15 seconds for cloudflared to output the URL to the log
-        while (time() - $start < 15) {
+        // Poll for up to 20 seconds for cloudflared to write the URL to the log
+        while (time() - $start < 20) {
             if (file_exists($logFile)) {
                 $buffer = file_get_contents($logFile);
-                // cloudflared outputs a line like: "https://xyz-abc.trycloudflare.com"
                 if (preg_match('/(https?:\/\/[a-z0-9\-]+\.trycloudflare\.com)/i', $buffer, $m)) {
                     $tunnelUrl = $m[1];
                     break;
                 }
             }
-            usleep(300_000); // poll every 300ms
+            usleep(400_000); // poll every 400ms
         }
 
         if (! $tunnelUrl) {
             return response()->json([
                 'message' => 'Cloudflare tunnel started but could not capture the URL within 15 seconds. Check if it is running.',
-                'data' => ['activation_base' => null],
+                'data' => ['activation_base' => ActivationLink::base()],
             ], 202);
         }
 
-        // Update ACTIVATION_FRONTEND_URL in the .env file
-        $this->updateEnv('ACTIVATION_FRONTEND_URL', $tunnelUrl);
+        // Store runtime tunnel in Cache and active config — NO disk .env modification
+        // to prevent triggering artisan serve reload loops and deadlocks.
+        Cache::forever('runtime_activation_frontend_url', $tunnelUrl);
+        config(['app.activation_frontend_url' => $tunnelUrl]);
 
         return response()->json([
             'message' => 'Cloudflare tunnel started successfully.',
             'data' => [
                 'tunnel_url' => $tunnelUrl,
                 'activation_base' => $tunnelUrl,
+            ],
+        ]);
+    }
+
+    /**
+     * Stop the Cloudflare Tunnel.
+     */
+    public function stopCloudflare(): JsonResponse
+    {
+        $this->assertLocalEnvironment();
+
+        exec('taskkill /F /IM cloudflared.exe 2>NUL');
+        Cache::forget('runtime_activation_frontend_url');
+        config(['app.activation_frontend_url' => null]);
+
+        return response()->json([
+            'message' => 'Cloudflare tunnel stopped.',
+            'data' => [
+                'activation_base' => ActivationLink::base(),
             ],
         ]);
     }
@@ -150,15 +190,35 @@ class DeveloperServicesController extends Controller
             ], 404);
         }
 
-        // Clean restart: kill any running uvicorn on port 8001
+        // Clean restart: kill whatever process is currently on port 8001
+        exec('powershell -NoProfile -Command "(Get-NetTCPConnection -LocalPort 8001 -ErrorAction SilentlyContinue).OwningProcess | ForEach-Object { Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue }" 2>NUL');
         exec('taskkill /F /IM uvicorn.exe 2>NUL');
         sleep(1);
 
-        $cmd = 'cmd /c "cd /d "'.$ocrDir.'" && start /B "" "'.$uvicorn.'" app.main:app --host 127.0.0.1 --port 8001"';
-        pclose(popen($cmd, 'r'));
+        $cmd = sprintf(
+            'powershell -NoProfile -NonInteractive -Command "Start-Process -FilePath \'%s\' -ArgumentList \'app.main:app --host 127.0.0.1 --port 8001\' -WorkingDirectory \'%s\' -WindowStyle Hidden"',
+            addslashes($uvicorn),
+            addslashes($ocrDir)
+        );
+        exec($cmd);
 
         return response()->json([
             'message' => 'OCR service starting in background on port 8001. Refresh status in a few seconds.',
+        ]);
+    }
+
+    /**
+     * Stop the Python OCR Service.
+     */
+    public function stopOcr(): JsonResponse
+    {
+        $this->assertLocalEnvironment();
+
+        exec('powershell -NoProfile -Command "(Get-NetTCPConnection -LocalPort 8001 -ErrorAction SilentlyContinue).OwningProcess | ForEach-Object { Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue }" 2>NUL');
+        exec('taskkill /F /IM uvicorn.exe 2>NUL');
+
+        return response()->json([
+            'message' => 'OCR service stopped.',
         ]);
     }
 

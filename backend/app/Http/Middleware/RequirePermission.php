@@ -17,15 +17,24 @@ class RequirePermission
 
         abort_unless($user, 403);
 
-        // Permissions come from pivot roles. The legacy `users.role` column is
-        // honoured for developers so an account that predates RBAC seeding is not
-        // locked out — this mirrors DatabaseViewerPolicy::currentUserCanViewDatabase().
-        $user->loadMissing('roles.permissions');
+        // The developer role is a superuser — grant all permissions unconditionally.
+        // This mirrors DatabaseViewerPolicy::currentUserCanViewDatabase() and keeps an
+        // account that predates RBAC seeding from being locked out.
+        if ($user->role === 'developer') {
+            return $next($request);
+        }
 
-        abort_unless(
-            $user->role === 'developer' || $user->hasAnyPermission($permissions),
-            403,
+        // Also skip the check if the user holds a RBAC role whose permissions include
+        // the wildcard '*' (i.e. another superuser-class role).
+        $user->loadMissing('roles.permissions');
+        $hasSuperRole = $user->roles->contains(
+            fn ($role) => in_array('*', (array) ($role->permissions->pluck('name')->all()), true)
         );
+        if ($hasSuperRole) {
+            return $next($request);
+        }
+
+        abort_unless($user->hasAnyPermission($permissions), 403);
 
         return $next($request);
     }

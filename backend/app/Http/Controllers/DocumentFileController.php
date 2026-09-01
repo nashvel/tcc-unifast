@@ -13,10 +13,13 @@ class DocumentFileController extends Controller
 {
     public function showSigned(Request $request, DocumentSubmission $submission, string $variant = 'primary'): BinaryFileResponse
     {
-        // Signature validated by `signed` middleware. Optional uid claim narrows leaked links.
+        // Signature validated by `signed` middleware.
+        // If a uid claim is present, it must match the authenticated user to prevent
+        // horizontal privilege escalation via leaked signed URLs.
         if ($request->query->has('uid')) {
             $uid = (int) $request->query('uid');
-            abort_unless($uid > 0, 403);
+            $user = $request->user();
+            abort_unless($user && $uid === (int) $user->id, 403);
         }
 
         return $this->streamSubmission($submission, $variant);

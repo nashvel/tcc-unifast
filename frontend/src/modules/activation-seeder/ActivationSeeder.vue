@@ -170,8 +170,21 @@ const startCloudflareMutation = useMutation({
   }
 });
 
+const stopCloudflareMutation = useMutation({
+  mutationFn: () => apiFetch("/api/services/stop-cloudflare", { method: "POST" }),
+  onSuccess: () => {
+    tunnelUrl.value = null;
+    queryClient.invalidateQueries({ queryKey: ["developer-services-status"] });
+  }
+});
+
 const startOcrMutation = useMutation({
   mutationFn: () => apiFetch("/api/services/start-ocr", { method: "POST" }),
+  onSuccess: () => queryClient.invalidateQueries({ queryKey: ["developer-services-status"] })
+});
+
+const stopOcrMutation = useMutation({
+  mutationFn: () => apiFetch("/api/services/stop-ocr", { method: "POST" }),
   onSuccess: () => queryClient.invalidateQueries({ queryKey: ["developer-services-status"] })
 });
 
@@ -308,12 +321,22 @@ function formatExpiry(iso: string): string {
             <button
               type="button"
               @click="startCloudflareMutation.mutate()"
-              :disabled="startCloudflareMutation.isPending.value"
+              :disabled="startCloudflareMutation.isPending.value || stopCloudflareMutation.isPending.value"
               title="Restart Cloudflare tunnel"
               class="inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-2xs font-medium text-text-muted transition hover:bg-surface-muted hover:text-text disabled:opacity-50"
             >
               <IconRefresh :size="11" :class="{ 'animate-spin': startCloudflareMutation.isPending.value }" />
               {{ startCloudflareMutation.isPending.value ? 'Restarting…' : 'Restart' }}
+            </button>
+            <button
+              type="button"
+              @click="stopCloudflareMutation.mutate()"
+              :disabled="startCloudflareMutation.isPending.value || stopCloudflareMutation.isPending.value"
+              title="Stop Cloudflare tunnel"
+              class="inline-flex items-center gap-1 rounded-md border border-danger/30 text-danger px-2 py-0.5 text-2xs font-medium transition hover:bg-danger/10 disabled:opacity-50"
+            >
+              <IconX :size="11" />
+              {{ stopCloudflareMutation.isPending.value ? 'Stopping…' : 'Stop' }}
             </button>
           </div>
           <button
@@ -351,12 +374,22 @@ function formatExpiry(iso: string): string {
             <button
               type="button"
               @click="startOcrMutation.mutate()"
-              :disabled="startOcrMutation.isPending.value"
+              :disabled="startOcrMutation.isPending.value || stopOcrMutation.isPending.value"
               title="Restart OCR engine"
               class="inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-2xs font-medium text-text-muted transition hover:bg-surface-muted hover:text-text disabled:opacity-50"
             >
               <IconRefresh :size="11" :class="{ 'animate-spin': startOcrMutation.isPending.value }" />
               {{ startOcrMutation.isPending.value ? 'Restarting…' : 'Restart' }}
+            </button>
+            <button
+              type="button"
+              @click="stopOcrMutation.mutate()"
+              :disabled="startOcrMutation.isPending.value || stopOcrMutation.isPending.value"
+              title="Stop OCR engine"
+              class="inline-flex items-center gap-1 rounded-md border border-danger/30 text-danger px-2 py-0.5 text-2xs font-medium transition hover:bg-danger/10 disabled:opacity-50"
+            >
+              <IconX :size="11" />
+              {{ stopOcrMutation.isPending.value ? 'Stopping…' : 'Stop' }}
             </button>
           </div>
           <button

@@ -159,7 +159,8 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
         Route::get('/eligibility', [EligibilityController::class, 'index']);
         Route::get('/eligibility/{grantee}', [EligibilityController::class, 'show']);
-        Route::post('/eligibility/{grantee}/notify', [EligibilityController::class, 'notify'])->middleware('throttle:20,1');
+        Route::post('/eligibility/{grantee}/notify', [EligibilityController::class, 'notify'])
+            ->middleware(['permission:run_eligibility', 'throttle:20,1']);
 
         Route::get('/academic-programs', [AcademicProgramController::class, 'index']);
         Route::post('/academic-programs', [AcademicProgramController::class, 'store'])->middleware('throttle:20,1');
@@ -176,9 +177,11 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('/batches', [BatchController::class, 'index']);
         Route::get('/batches/{batch}', [BatchController::class, 'show']);
         Route::get('/masterlist/imports', [MasterlistImportController::class, 'index']);
-        Route::post('/masterlist/imports/preview', [MasterlistImportController::class, 'preview'])->middleware('throttle:10,1');
+        Route::post('/masterlist/imports/preview', [MasterlistImportController::class, 'preview'])
+            ->middleware(['permission:view_masterlist', 'throttle:10,1']);
         Route::get('/masterlist/imports/{import}', [MasterlistImportController::class, 'show']);
-        Route::delete('/masterlist/imports/{import}', [MasterlistImportController::class, 'destroy']);
+        Route::delete('/masterlist/imports/{import}', [MasterlistImportController::class, 'destroy'])
+            ->middleware('permission:view_masterlist');
         Route::get('/academic-records', [AcademicRecordController::class, 'index']);
         Route::get('/academic-records/{record}', [AcademicRecordController::class, 'show']);
         Route::get('/document-submissions', [DocumentSubmissionController::class, 'index']);
@@ -204,35 +207,56 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
         Route::get('/billing-reports', [BillingReportController::class, 'index']);
         Route::post('/billing-reports', [BillingReportController::class, 'store'])
-            ->middleware(['role:developer,admin,head', 'throttle:10,1']);
+            ->middleware(['role:developer,admin,head', 'permission:generate_reports', 'throttle:10,1']);
         Route::get('/billing-reports/{report}', [BillingReportController::class, 'show']);
-        Route::get('/billing-reports/{report}/download', [BillingReportController::class, 'download']);
+        Route::get('/billing-reports/{report}/download', [BillingReportController::class, 'download'])
+            ->middleware('permission:generate_reports');
 
         Route::get('/social-media-posts', [SocialMediaPostController::class, 'index']);
         Route::get('/social-media-posts/integration-status', [SocialMediaPostController::class, 'integrationStatus']);
+        Route::post('/social-media-posts/integration-status/refresh-page', [SocialMediaPostController::class, 'refreshPageProfile'])
+            ->middleware('throttle:10,1');
+        Route::post('/social-media-posts/sync-facebook', [SocialMediaPostController::class, 'syncFacebookPosts'])
+            ->middleware('throttle:10,1');
         Route::get('/social-media-posts/template', [SocialMediaPostController::class, 'template']);
         Route::post('/social-media-posts', [SocialMediaPostController::class, 'store'])->middleware('throttle:20,1');
         Route::get('/social-media-posts/{socialMediaPost}', [SocialMediaPostController::class, 'show'])
             ->whereNumber('socialMediaPost');
         Route::post('/social-media-posts/{socialMediaPost}/dispatch', [SocialMediaPostController::class, 'dispatch'])
             ->whereNumber('socialMediaPost')
-            ->middleware('throttle:10,1');
+            ->middleware('throttle:60,1');
+        Route::post('/social-media-posts/{socialMediaPost}/react', [SocialMediaPostController::class, 'reactAsPage'])
+            ->whereNumber('socialMediaPost')
+            ->middleware('throttle:30,1');
+        Route::get('/social-media-posts/{socialMediaPost}/comments', [SocialMediaPostController::class, 'comments'])
+            ->whereNumber('socialMediaPost')
+            ->middleware('throttle:30,1');
+        Route::post('/social-media-posts/{socialMediaPost}/comments', [SocialMediaPostController::class, 'commentAsPage'])
+            ->whereNumber('socialMediaPost')
+            ->middleware('throttle:20,1');
 
         Route::get('/distribution-reports', [DistributionReportController::class, 'index']);
         Route::post('/distribution-reports', [DistributionReportController::class, 'store'])
-            ->middleware(['role:developer,admin,head', 'throttle:10,1']);
+            ->middleware(['role:developer,admin,head', 'permission:generate_reports', 'throttle:10,1']);
         Route::get('/distribution-reports/{report}', [DistributionReportController::class, 'show']);
-        Route::get('/distribution-reports/{report}/download', [DistributionReportController::class, 'download']);
+        Route::get('/distribution-reports/{report}/download', [DistributionReportController::class, 'download'])
+            ->middleware('permission:generate_reports');
     });
 
     // Developer/Admin/Head/Staff routes (for batch ops and masterlists)
     Route::middleware(['full-session', 'role:developer,admin,head,staff'])->group(function (): void {
-        Route::post('/batches', [BatchController::class, 'store'])->middleware('throttle:20,1');
-        Route::patch('/batches/{batch}', [BatchController::class, 'update'])->middleware('throttle:20,1');
-        Route::post('/batches/{batch}/activate', [BatchController::class, 'activate'])->middleware('throttle:10,1');
-        Route::post('/batches/{batch}/deactivate', [BatchController::class, 'deactivate'])->middleware('throttle:10,1');
-        Route::post('/batches/{batch}/extend-deadline', [BatchController::class, 'extendDeadline'])->middleware('throttle:10,1');
-        Route::post('/masterlist/imports/{import}/confirm', [MasterlistImportController::class, 'confirm'])->middleware('throttle:10,1');
+        Route::post('/batches', [BatchController::class, 'store'])
+            ->middleware(['permission:manage_batches', 'throttle:20,1']);
+        Route::patch('/batches/{batch}', [BatchController::class, 'update'])
+            ->middleware(['permission:manage_batches', 'throttle:20,1']);
+        Route::post('/batches/{batch}/activate', [BatchController::class, 'activate'])
+            ->middleware(['permission:manage_batches', 'throttle:10,1']);
+        Route::post('/batches/{batch}/deactivate', [BatchController::class, 'deactivate'])
+            ->middleware(['permission:manage_batches', 'throttle:10,1']);
+        Route::post('/batches/{batch}/extend-deadline', [BatchController::class, 'extendDeadline'])
+            ->middleware(['permission:manage_batches', 'throttle:10,1']);
+        Route::post('/masterlist/imports/{import}/confirm', [MasterlistImportController::class, 'confirm'])
+            ->middleware(['permission:view_masterlist', 'throttle:10,1']);
 
         Route::get('/onboarding-center/batches/{batch}/stats', [OnboardingCenterController::class, 'stats']);
         Route::get('/onboarding-center/batches/{batch}/grantees', [OnboardingCenterController::class, 'grantees']);
@@ -251,7 +275,9 @@ Route::middleware('auth:sanctum')->group(function (): void {
         // Service Manager
         Route::get('/services/status', [DeveloperServicesController::class, 'status']);
         Route::post('/services/start-ocr', [DeveloperServicesController::class, 'startOcr'])->middleware('throttle:20,1');
+        Route::post('/services/stop-ocr', [DeveloperServicesController::class, 'stopOcr'])->middleware('throttle:20,1');
         Route::post('/services/start-cloudflare', [DeveloperServicesController::class, 'startCloudflare'])->middleware('throttle:20,1');
+        Route::post('/services/stop-cloudflare', [DeveloperServicesController::class, 'stopCloudflare'])->middleware('throttle:20,1');
 
         Route::get('/changelogs', [ChangelogController::class, 'index']);
         Route::get('/rbac/roles', [RbacController::class, 'index'])->middleware('throttle:60,1');
@@ -306,9 +332,9 @@ Route::middleware('auth:sanctum')->group(function (): void {
         });
     });
 
-    // Document submission review (developer/admin/staff)
+        // Document submission review — requires validate_documents permission on top of role check.
     Route::post('/document-submissions/{submission}/review', [DocumentSubmissionController::class, 'review'])
-        ->middleware(['role:developer,admin,head,staff', 'throttle:60,1']);
+        ->middleware(['role:developer,admin,head,staff', 'permission:validate_documents', 'throttle:60,1']);
 
     // Audit events (any authenticated user)
     Route::post('/audit-events', [AuditEventController::class, 'store'])->middleware('throttle:240,1');
@@ -323,12 +349,17 @@ Route::get('/integrations/n8n/tcc-unifast/students', TccUnifastStudentsControlle
     ->middleware('throttle:120,1')
     ->name('integrations.n8n.tcc-unifast.students');
 
+Route::post('/integrations/n8n/social-media-page/status', [SocialMediaPostController::class, 'receivePageStatus'])
+    ->middleware('throttle:30,1')
+    ->name('integrations.n8n.social-media-page.status');
+
 // Facebook publish result posted back by n8n. The dispatch payload advertises this
 // exact URL (SocialMediaPostController::present → callback.url), so without the
 // route every callback 404s and posts stay stuck at 'sent_to_n8n'. Authenticated by
 // the shared X-TCC-UniFAST-Endpoint-Key inside receiveStatus().
 Route::post('/integrations/n8n/social-media-posts/{socialMediaPost}/status', [SocialMediaPostController::class, 'receiveStatus'])
-    ->middleware('throttle:60,1')
+    ->whereNumber('socialMediaPost')
+    ->middleware('throttle:30,1')
     ->name('integrations.n8n.social-media-posts.status');
 
 // ══════════════════════════════════════════════════════════════

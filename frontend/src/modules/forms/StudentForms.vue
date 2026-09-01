@@ -7,6 +7,7 @@ import CardSkeleton from "@/components/ui/CardSkeleton.vue";
 import EmptyState from "@/components/ui/EmptyState.vue";
 import { useAssignedForms } from "@/composables/useForms";
 import type { AssignedForm } from "@/api/types";
+import emptyFormsVideo from "@/assets/student-forms-empty.webm";
 
 const router = useRouter();
 
@@ -49,7 +50,22 @@ function deadline(f: AssignedForm) {
       />
 
       <template v-else>
-        <EmptyState v-if="!forms.length" title="No forms assigned" hint="No forms have been assigned to you yet." />
+        <div
+          v-if="!forms.length"
+          class="flex min-h-[260px] flex-col items-center justify-center px-6 py-8 text-center md:col-span-2 xl:col-span-3"
+        >
+          <video
+            class="h-80 w-80 max-w-full object-contain"
+            :src="emptyFormsVideo"
+            autoplay
+            loop
+            muted
+            playsinline
+            aria-hidden="true"
+          />
+          <p class="mt-4 text-sm font-medium">No forms assigned</p>
+          <p class="mt-1 max-w-sm text-xs text-text-muted">No forms have been assigned to you yet.</p>
+        </div>
 
         <button
           v-for="form in forms"

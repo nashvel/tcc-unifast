@@ -27,9 +27,13 @@ return Application::configure(basePath: dirname(__DIR__))
         ['middleware' => ['web', AuthenticateFromAccessCookie::class, 'auth:sanctum']],
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // Railway/Vercel terminate TLS at their edge and forward over HTTP.
-        // Without this, generated URLs (activation emails, signed routes) use http://.
-        $middleware->trustProxies(at: '*');
+        // Trust proxy headers for IP/scheme forwarding.
+        // On Railway/Vercel (or any single-layer proxy), '*' is acceptable because
+        // the container only receives traffic from the platform's own edge.
+        // For multi-hop or self-hosted setups, set TRUSTED_PROXIES in .env to a
+        // comma-separated list of proxy CIDRs (e.g. "10.0.0.0/8,172.16.0.0/12").
+        $trustedProxies = (string) env('TRUSTED_PROXIES', '*');
+        $middleware->trustProxies(at: $trustedProxies);
         $middleware->append(SecurityHeaders::class);
         $middleware->alias([
             'role' => RequireRole::class,

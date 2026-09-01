@@ -51,6 +51,13 @@ return [
         'student_table' => env('TCC_UNIFAST_STUDENT_TABLE', 'students'),
     ],
 
+    'facebook_page' => [
+        'page_id' => env('FACEBOOK_PAGE_ID'),
+        'access_token' => env('FACEBOOK_PAGE_ACCESS_TOKEN'),
+        'api_version' => env('FACEBOOK_GRAPH_API_VERSION', 'v26.0'),
+        'timeout' => (int) env('FACEBOOK_GRAPH_TIMEOUT', 15),
+    ],
+
     'tcc_public' => [
         'home_url' => env('TCC_PUBLIC_HOME_URL', 'https://api.tcc.edu.ph/api/v1/home'),
         'site_url' => env('TCC_PUBLIC_SITE_URL', 'https://tcc.edu.ph'),

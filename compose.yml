@@ -65,6 +65,9 @@ services:
       context: ./backend
     image: tcc-unifast/backend:local
     container_name: tcc-unifast-backend
+    env_file:
+      - path: ./n8n/.env
+        required: false
     depends_on:
       mysql:
         condition: service_healthy

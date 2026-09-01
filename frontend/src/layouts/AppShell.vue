@@ -213,6 +213,11 @@ const sections = computed(() => {
   return staffNavigation;
 });
 
+const studentMobileNavItems = computed(() => {
+  if (!isStudent.value) return [];
+  return sections.value.flatMap((section) => section.items);
+});
+
 const jumpItems = computed((): JumpItem[] => {
   const q = jumpQuery.value.trim().toLowerCase().slice(0, SEARCH_MAX_LEN);
   const items: JumpItem[] = [];
@@ -334,7 +339,7 @@ if (dark.value && typeof document !== "undefined") {
       v-else
       :class="[
         'fixed inset-y-0 left-0 z-50 flex w-60 shrink-0 flex-col border-r bg-sidebar-bg transition-transform lg:translate-x-0',
-        mobile ? 'translate-x-0' : '-translate-x-full',
+        !isStudent && mobile ? 'translate-x-0' : '-translate-x-full',
       ]"
     >
       <div class="flex h-14 shrink-0 items-center gap-2 border-b px-4">
@@ -419,6 +424,7 @@ if (dark.value && typeof document !== "undefined") {
         ]"
       >
         <button
+          v-if="!isStudent"
           type="button"
           :class="[
             'rounded-md p-1.5 lg:hidden',
@@ -721,13 +727,35 @@ if (dark.value && typeof document !== "undefined") {
         @click="closeMenus"
       />
 
-      <main class="relative z-0 mx-auto w-full max-w-[1400px] p-4 sm:p-6" data-cloud="page-content">
+      <main :class="['relative z-0 mx-auto w-full max-w-[1400px] p-4 sm:p-6', isStudent ? 'pb-24 lg:pb-6' : '']" data-cloud="page-content">
         <AppBreadcrumbs v-if="!isStudent && !isDeveloper" />
         <RouterView v-slot="{ Component }"
           ><Transition name="page" mode="out-in"
             ><component :is="Component" :key="route.fullPath" class="page-enter" /></Transition
         ></RouterView>
       </main>
+
+      <!-- Student Mobile Bottom Navbar -->
+      <nav
+        v-if="isStudent"
+        class="fixed bottom-0 left-0 right-0 z-40 flex h-16 items-center justify-around border-t bg-surface/95 backdrop-blur-md px-1 shadow-lg lg:hidden"
+      >
+        <button
+          v-for="item in studentMobileNavItems"
+          :key="item.path"
+          type="button"
+          class="flex flex-1 flex-col items-center justify-center py-1 text-2xs transition-colors"
+          :class="isActive(item.path) ? 'font-semibold text-primary' : 'text-text-muted hover:text-text'"
+          @click="go(item.path)"
+        >
+          <component
+            :is="item.icon"
+            :size="20"
+            :class="isActive(item.path) ? 'text-primary' : 'text-text-muted'"
+          />
+          <span class="mt-1 truncate max-w-[68px] text-center leading-tight">{{ t(item.labelKey) }}</span>
+        </button>
+      </nav>
     </div>
 
     <!-- Logout toast overlay -->
