@@ -357,6 +357,9 @@ class VaultFileStorage
             'id_onboarding_frame.jpg' => is_string(data_get($profile?->id_ocr_payload, 'frame_path'))
                 ? (string) data_get($profile->id_ocr_payload, 'frame_path')
                 : null,
+            'id_onboarding_back.jpg' => is_string(data_get($profile?->id_ocr_payload, 'back_path'))
+                ? (string) data_get($profile->id_ocr_payload, 'back_path')
+                : null,
             'id_scan_submission.jpg' => DocumentSubmission::query()
                 ->where('grantee_id', $granteeId)
                 ->where('slot_key', 'school_id')

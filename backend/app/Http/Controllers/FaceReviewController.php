@@ -254,6 +254,12 @@ class FaceReviewController extends Controller
             'id_reference_face_url' => $profile->id_reference_face_path
                 ? VaultFileStorage::authStaffIdentityUrl($granteeId, 'id_reference_face.jpg')
                 : null,
+            'id_front_frame_url' => is_string(data_get($profile->id_ocr_payload, 'frame_path'))
+                ? VaultFileStorage::authStaffIdentityUrl($granteeId, 'id_onboarding_frame.jpg')
+                : null,
+            'id_back_frame_url' => is_string(data_get($profile->id_ocr_payload, 'back_path'))
+                ? VaultFileStorage::authStaffIdentityUrl($granteeId, 'id_onboarding_back.jpg')
+                : null,
             'onboarding_selfie_url' => $profile->onboarding_selfie_path
                 ? VaultFileStorage::authStaffIdentityUrl($granteeId, 'onboarding_selfie.jpg')
                 : null,

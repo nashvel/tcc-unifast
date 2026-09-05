@@ -90,7 +90,7 @@ async function submit() {
 
     <form v-else class="mt-5 space-y-4" @submit.prevent="submit">
       <label class="block">
-        <span class="mb-1.5 block text-xs font-medium">{{ t("auth.email") }} *</span>
+        <span class="mb-1.5 block text-xs font-medium">{{ t("common.email") }} *</span>
         <input
           v-model="email"
           type="email"
