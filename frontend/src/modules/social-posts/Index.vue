@@ -57,12 +57,14 @@ const advancedOpen = ref(false);
 const createPostModalOpen = ref(false);
 const createPostModalView = ref<"composer" | "templates">("composer");
 const facebookPostsAutoSynced = ref(false);
+const pageProfileRefreshSecondsRemaining = ref(0);
 const savedDraft = ref<SocialMediaPost | null>(null);
 const openCommentsPostId = ref<number | null>(null);
 const commentsByPost = reactive<Record<number, SocialMediaComment[]>>({});
 const commentDrafts = reactive<Record<number, string>>({});
 const commentsLoadingPostId = ref<number | null>(null);
 let bodyOverflowBeforeModal: string | null = null;
+let pageProfileRefreshCooldownTimer: number | null = null;
 
 type PostTemplatePresetKey = "general" | "deadline" | "requirements" | "release";
 
@@ -168,6 +170,14 @@ const pageCoverStyle = computed(() => {
     ? { backgroundImage: `linear-gradient(to top, rgba(0,0,0,.35), transparent 55%), url(${pageCover.value})` }
     : {};
 });
+const pageProfileRefreshBlocked = computed(
+  () => refreshPageMutation.isPending.value || pageProfileRefreshSecondsRemaining.value > 0,
+);
+const pageProfileRefreshLabel = computed(() => {
+  if (refreshPageMutation.isPending.value) return "Fetching profile...";
+  if (pageProfileRefreshSecondsRemaining.value > 0) return `Available in ${pageProfileRefreshSecondsRemaining.value}s`;
+  return "Fetch Page profile";
+});
 const pageConnectionLabel = computed(() => {
   if (integrationQuery.isLoading.value) return "Checking Facebook connection...";
   if (integrationQuery.isError.value) return "Unable to read integration status";
@@ -241,7 +251,26 @@ watch(createPostModalOpen, (isOpen) => {
 onBeforeUnmount(() => {
   if (typeof document === "undefined") return;
   if (bodyOverflowBeforeModal !== null) document.body.style.overflow = bodyOverflowBeforeModal;
+  if (pageProfileRefreshCooldownTimer !== null) window.clearInterval(pageProfileRefreshCooldownTimer);
 });
+
+function startPageProfileRefreshCooldown(seconds = 30) {
+  if (pageProfileRefreshCooldownTimer !== null) window.clearInterval(pageProfileRefreshCooldownTimer);
+
+  pageProfileRefreshSecondsRemaining.value = seconds;
+  pageProfileRefreshCooldownTimer = window.setInterval(() => {
+    pageProfileRefreshSecondsRemaining.value = Math.max(0, pageProfileRefreshSecondsRemaining.value - 1);
+    if (pageProfileRefreshSecondsRemaining.value === 0 && pageProfileRefreshCooldownTimer !== null) {
+      window.clearInterval(pageProfileRefreshCooldownTimer);
+      pageProfileRefreshCooldownTimer = null;
+    }
+  }, 1_000);
+}
+
+function refreshPageProfile() {
+  if (pageProfileRefreshBlocked.value) return;
+  refreshPageMutation.mutate();
+}
 
 function applyTemplate(template: SocialMediaPostTemplate) {
   selectedTemplatePreset.value = null;
@@ -376,6 +405,7 @@ const dispatchMutation = useMutation({
 const refreshPageMutation = useMutation({
   mutationFn: refreshSocialMediaPageProfile,
   onSuccess: () => {
+    startPageProfileRefreshCooldown();
     void queryClient.invalidateQueries({ queryKey: ["social-media-integration-status"] });
     toast.success("Fetching Facebook Page profile", {
       description: "n8n is loading the real Page name, profile image, and cover.",
@@ -385,6 +415,13 @@ const refreshPageMutation = useMutation({
     }, 2500);
   },
   onError: (error) => {
+    if (error instanceof Error && error.message.includes("Too Many Attempts")) {
+      startPageProfileRefreshCooldown();
+      toast.warning("Please wait before fetching again", {
+        description: "Facebook profile fetches are limited to protect the connection. Try again when the countdown ends.",
+      });
+      return;
+    }
     toast.error(error instanceof Error ? error.message : "Unable to fetch the Facebook Page profile.");
   },
 });
@@ -678,10 +715,10 @@ function formatDate(value: string | null) {
               <button
                 v-if="!hasVerifiedFacebookPage"
                 class="inline-flex h-9 items-center gap-2 rounded-md bg-[#e7f3ff] px-4 text-sm font-semibold text-[#1877f2] hover:bg-[#dbeeff] disabled:opacity-60"
-                :disabled="refreshPageMutation.isPending.value"
-                @click="refreshPageMutation.mutate()"
+                :disabled="pageProfileRefreshBlocked"
+                @click="refreshPageProfile"
               >
-                <IconRefresh :size="16" />{{ refreshPageMutation.isPending.value ? "Fetching..." : "Fetch Page profile" }}
+                <IconRefresh :size="16" />{{ pageProfileRefreshLabel }}
               </button>
               <button
                 class="grid size-9 place-items-center rounded-md bg-[#e4e6eb] text-[#050505] hover:bg-[#d8dadf]"
@@ -752,10 +789,10 @@ function formatDate(value: string | null) {
               <button
                 v-if="!hasVerifiedFacebookPage && integration?.n8n_configured"
                 class="h-8 rounded-md bg-[#e7f3ff] px-3 text-xs font-semibold text-[#1877f2] disabled:opacity-60"
-                :disabled="refreshPageMutation.isPending.value"
-                @click="refreshPageMutation.mutate()"
+                :disabled="pageProfileRefreshBlocked"
+                @click="refreshPageProfile"
               >
-                {{ refreshPageMutation.isPending.value ? 'Fetching profile...' : 'Fetch real Page profile' }}
+                {{ pageProfileRefreshBlocked ? pageProfileRefreshLabel : 'Fetch real Page profile' }}
               </button>
               <span v-if="integration?.state === 'ready_for_first_post'" class="self-center text-xs text-[#65676b]">This is a setup step, not an error.</span>
             </div>
@@ -1270,10 +1307,10 @@ function formatDate(value: string | null) {
               </div>
               <button
                 class="inline-flex h-9 items-center gap-2 rounded-md bg-[#e7f3ff] px-4 text-sm font-semibold text-[#1877f2] hover:bg-[#dbeeff] disabled:opacity-60"
-                :disabled="refreshPageMutation.isPending.value"
-                @click="refreshPageMutation.mutate()"
+                :disabled="pageProfileRefreshBlocked"
+                @click="refreshPageProfile"
               >
-                <IconRefresh :size="16" />{{ refreshPageMutation.isPending.value ? "Syncing..." : "Sync followers" }}
+                <IconRefresh :size="16" />{{ pageProfileRefreshBlocked ? pageProfileRefreshLabel : "Sync followers" }}
               </button>
             </div>
 
