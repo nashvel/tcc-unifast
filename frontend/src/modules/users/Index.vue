@@ -633,7 +633,7 @@ watch(isMatrix, (v) => {
   </AppDialog>
 
   <!-- Edit role -->
-  <AppDialog v-model="editRoleDialog" title="Edit role" :description="editingRole ? `Editing "${editingRole.name}"` : ''" size="sm">
+  <AppDialog v-model="editRoleDialog" title="Edit role" :description="editingRole ? `Editing '${editingRole.name}'` : ''" size="sm">
     <div class="grid gap-3">
       <label class="text-xs font-medium">
         Name <span class="text-danger">*</span>
