@@ -36,6 +36,7 @@
     "hello": "Hello {name}"
   },
   "nav": {
+    "workspaceContinuity": "Workspace Continuity",
     "academicRecords": "Academic Records",
     "administration": "Administration",
     "activationSeeder": "Activation Seeder",

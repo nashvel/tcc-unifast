@@ -56,6 +56,7 @@ export const adminNavigation: NavigationSection[] = [
       { labelKey: "nav.usersRoles", path: "/app/users", icon: IconUserCog },
       { labelKey: "nav.activationSeeder", path: "/app/activation-seeder", icon: IconSeedling },
       { labelKey: "common.settings", path: "/app/settings", icon: IconSettings },
+      { labelKey: "nav.workspaceContinuity", path: "/app/integrations/workspace", icon: IconFolders },
     ],
   },
 ];
@@ -84,6 +85,7 @@ export const developerNavigation: NavigationSection[] = [
       { labelKey: "nav.usersRoles", path: "/app/developer/users", icon: IconUserCog },
       { labelKey: "nav.activationSeeder", path: "/app/activation-seeder", icon: IconSeedling },
       { labelKey: "common.settings", path: "/app/developer/settings", icon: IconSettings },
+      { labelKey: "nav.workspaceContinuity", path: "/app/integrations/workspace", icon: IconFolders },
     ],
   },
 ];

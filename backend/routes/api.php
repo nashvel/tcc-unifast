@@ -81,6 +81,29 @@ Route::middleware([
 });
 
 // Public content (for login page)
+Route::get('/integrations/google-workspace/callback', [\App\Http\Controllers\GoogleWorkspaceController::class, 'callback'])
+    ->middleware([StartSession::class, 'throttle:10,1']);
+
+Route::post('/internal/n8n/continuity-sync', [\App\Http\Controllers\ContinuitySyncController::class, 'internal'])->middleware('throttle:10,1');
+Route::middleware(['auth:sanctum', 'full-session', 'role:admin,developer', \App\Http\Middleware\EnsureContinuityAccountActive::class, 'throttle:30,1'])->group(function (): void {
+    Route::post('/integrations/google-workspace/sync', [\App\Http\Controllers\ContinuitySyncController::class, 'manual']);
+    Route::get('/continuity/sync-runs', [\App\Http\Controllers\ContinuitySyncController::class, 'runs']);
+    Route::get('/continuity/reviews', [\App\Http\Controllers\ContinuitySyncController::class, 'reviews']);
+    Route::post('/continuity/reviews/{review}/decide', [\App\Http\Controllers\ContinuitySyncController::class, 'decide']);
+    Route::get('/continuity/grants', [\App\Http\Controllers\ContinuityGrantController::class, 'index']);
+    Route::post('/continuity/grants', [\App\Http\Controllers\ContinuityGrantController::class, 'store']);
+    Route::delete('/continuity/grants/{grant}', [\App\Http\Controllers\ContinuityGrantController::class, 'destroy']);
+});
+
+Route::middleware(['auth:sanctum', 'full-session', 'role:admin,developer', \App\Http\Middleware\EnsureContinuityAccountActive::class, 'throttle:30,1'])->prefix('integrations/google-workspace')->group(function (): void {
+    Route::get('/status', [\App\Http\Controllers\GoogleWorkspaceController::class, 'status']);
+    Route::post('/oauth', [\App\Http\Controllers\GoogleWorkspaceController::class, 'oauth'])->middleware(StartSession::class);
+    Route::get('/drives', [\App\Http\Controllers\GoogleWorkspaceController::class, 'drives']);
+    Route::put('/resources', [\App\Http\Controllers\GoogleWorkspaceController::class, 'selectDrive']);
+    Route::post('/provision', [\App\Http\Controllers\GoogleWorkspaceController::class, 'provision'])->middleware('throttle:2,1');
+    Route::delete('/connection', [\App\Http\Controllers\GoogleWorkspaceController::class, 'disconnect']);
+});
+
 Route::get('/terms/active', [TermController::class, 'active'])->middleware('throttle:60,1');
 Route::get('/faqs', [FaqController::class, 'index'])->middleware('throttle:60,1');
 Route::get('/public/tcc-home', TccPublicHomeController::class)->middleware('throttle:30,1');

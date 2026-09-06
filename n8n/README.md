@@ -61,6 +61,14 @@ Then configure the n8n credentials and variables described in:
 docs/n8n-facebook-batch-announcement.md
 ```
 
+## Google Workspace continuity scheduler
+
+Import `docs/n8n-google-workspace-continuity-workflow.json` as an inactive
+workflow. Follow `docs/google-workspace-continuity-setup.md` for environment
+settings, the signing contract and activation prerequisites. The backend sync
+endpoint is still under implementation; importing this file does not enable
+data synchronization.
+
 ## Laravel OCR config
 
 For the Laravel backend running on your host machine, keep:

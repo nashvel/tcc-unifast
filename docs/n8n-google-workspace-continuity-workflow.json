@@ -1,0 +1,181 @@
+{
+  "name": "TCC UniFAST - Google Workspace Continuity Scheduler",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Setup required\nImport inactive. Backend /api/internal/n8n/continuity-sync is not implemented yet.\nDo not publish until signed endpoint, idempotent queue and Google connection are verified.\nGoogle credentials stay in Laravel. Set matching CONTINUITY_SYNC_SECRET and allow crypto in Code nodes.\nDefault: hourly, Asia/Manila. Change Hourly Sync to adjust.\nManual Execute Workflow queues a request only; it does not prove sync completion.",
+        "height": 300,
+        "width": 530
+      },
+      "id": "setup",
+      "name": "Setup",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        0,
+        -370
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 1
+            }
+          ]
+        }
+      },
+      "id": "hourly",
+      "name": "Hourly Sync",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "manual",
+      "name": "Manual Sync",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const crypto = require('crypto');\nconst secret = $env.CONTINUITY_SYNC_SECRET;\nif (!secret || secret.length < 32) throw new Error('Continuity signing secret is not configured.');\nconst base = ($env.LARAVEL_API_URL || '').replace(/\\/$/, '');\nif (!/^https:\\/\\/[^\\s?#]+$/.test(base) && base !== 'http://host.docker.internal:8000') throw new Error('Configure HTTPS Laravel URL or the documented local host URL.');\nconst path = '/api/internal/n8n/continuity-sync';\nconst timestamp = String(Math.floor(Date.now() / 1000));\nconst requestId = crypto.randomUUID();\nconst body = JSON.stringify({request_id: requestId, source: 'n8n'});\nconst signature = crypto.createHmac('sha256', secret).update(timestamp + '\\nPOST\\n' + path + '\\n' + body).digest('hex');\nreturn [{json: {url: base + path, timestamp, request_id: requestId, body, signature}}];"
+      },
+      "id": "sign",
+      "name": "Sign Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        250,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Continuity-Timestamp",
+              "value": "={{ $json.timestamp }}"
+            },
+            {
+              "name": "X-Continuity-Signature",
+              "value": "={{ $json.signature }}"
+            },
+            {
+              "name": "Idempotency-Key",
+              "value": "={{ $json.request_id }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ $json.body }}",
+        "options": {
+          "timeout": 20000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          }
+        }
+      },
+      "id": "request",
+      "name": "Queue Laravel Sync",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        500,
+        80
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json.data;\nif (!data || typeof data.run_id !== 'string' || !['queued', 'running', 'completed'].includes(data.status)) throw new Error('Laravel did not acknowledge a continuity run.');\nreturn [{json: {run_id: data.run_id, status: data.status}}];"
+      },
+      "id": "ack",
+      "name": "Run Acknowledgement",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        750,
+        80
+      ]
+    }
+  ],
+  "connections": {
+    "Hourly Sync": {
+      "main": [
+        [
+          {
+            "node": "Sign Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual Sync": {
+      "main": [
+        [
+          {
+            "node": "Sign Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sign Request": {
+      "main": [
+        [
+          {
+            "node": "Queue Laravel Sync",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Queue Laravel Sync": {
+      "main": [
+        [
+          {
+            "node": "Run Acknowledgement",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Asia/Manila",
+    "saveDataErrorExecution": "none",
+    "saveDataSuccessExecution": "none",
+    "saveManualExecutions": false,
+    "saveExecutionProgress": false,
+    "executionTimeout": 120
+  },
+  "pinData": {},
+  "tags": []
+}

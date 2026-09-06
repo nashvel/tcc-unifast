@@ -6,7 +6,7 @@ Authorized by the user on 2026-09-06 from
 ## Sequence and progress
 
 - [x] Pure three-way merge rules and security-focused tests (8 tests, 15 assertions).
-- [ ] Encrypted singleton Google connection, OAuth, admin status and selection.
+- [x] Encrypted singleton Google connection, OAuth, admin status and selection (mocked provider tests; live validation pending).
 - [ ] Shared Drive storage, verified migration, existing secure retrieval integration.
 - [ ] Module-specific allowlisted schemas, outbox and version ledger.
 - [ ] Private workbook provisioning and permission reconciliation.
@@ -38,7 +38,33 @@ Sources:
 
 ## Verification so far
 
-- `php artisan test --compact --filter=ContinuityMergeTest`: passed.
-- Pint check for the merge service and test: passed.
-- No runtime routes, migrations, external resources, or storage switches have
-  been activated. The merge service is pure; it does not write business data.
+- Prepared local ignored env files and committed-safe examples for Google
+  OAuth configuration and matching generated continuity signing secrets.
+- Added inactive hourly/manual n8n JSON and implemented its HMAC/idempotency
+  endpoint, queued sync service and run history. Dispatch recovery and
+  end-to-end scheduler verification remain outstanding.
+
+- `php artisan test --compact --filter=Continuity`: 31 passed, 134 assertions.
+- Full backend suite: 225 passed, 11 failures, 1 error, 3 skipped. Failures are
+  in batch/billing/onboarding/vault-resubmission, social status and SPA tests;
+  their cause has not been established by this continuity slice.
+- OAuth refresh tests prove temporary failures preserve the connection,
+  revoked grants require reconnection, and rotated tokens persist encrypted.
+- Workbook tests reject unapproved principals and excess roles, including
+  permissions on later pages. Verified read grants and downgrades pass.
+- Inactive administrators are denied the new admin route groups.
+- New routes and migrations exist in source. Live MySQL migrations, Google
+  resources, n8n activation and storage switches have not been performed.
+
+## Remaining implementation gaps (do not enable yet)
+
+- Wire verified Drive storage into existing secure business-file upload/download
+  helpers, validate folder access, migrate existing files without deletion.
+- Complete eligibility/announcements and detailed business schemas; validate
+  inbound fields against existing domain rules, not generic string limits.
+- Add durable intake history, new-student matching, archive requests and Forms
+  ingestion after resolving the My Drive intake exception.
+- Finish grants and review controls in the UI, protection integrity checks,
+  permission crash recovery/revocation and queue dispatch/timeout recovery.
+- Add readiness/activation controls and configurable app-level scheduling.
+- Verify MySQL migrations, browser behavior and credentialed Google/n8n flows.
