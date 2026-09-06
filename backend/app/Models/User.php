@@ -48,6 +48,11 @@ class User extends Authenticatable
         return $this->belongsToMany(Role::class);
     }
 
+    public function permissions(): BelongsToMany
+    {
+        return $this->belongsToMany(Permission::class);
+    }
+
     public function hasRole(string $roleName): bool
     {
         return $this->roles->contains('name', $roleName);
@@ -58,30 +63,37 @@ class User extends Authenticatable
         return $this->roles->whereIn('name', $roleNames)->isNotEmpty();
     }
 
-    public function hasPermission(string $permissionName): bool
+    public function getAllPermissions(): Collection
     {
-        foreach ($this->roles as $role) {
-            if ($role->hasPermission($permissionName)) {
-                return true;
-            }
+        if ($this->role === 'developer') {
+            return Permission::all();
         }
 
-        return false;
+        // If the user has direct module permissions assigned in permission_user, those take precedence
+        $directPerms = $this->relationLoaded('permissions') ? $this->permissions : $this->permissions()->get();
+        if ($directPerms->isNotEmpty()) {
+            return $directPerms;
+        }
+
+        // Fallback to role baseline permissions
+        return $this->roles->flatMap->permissions->unique('id');
+    }
+
+    public function hasPermission(string $permissionName): bool
+    {
+        if ($this->role === 'developer') {
+            return true;
+        }
+
+        return $this->getAllPermissions()->contains('name', $permissionName);
     }
 
     public function hasAnyPermission(array $permissionNames): bool
     {
-        foreach ($this->roles as $role) {
-            if ($role->hasAnyPermission($permissionNames)) {
-                return true;
-            }
+        if ($this->role === 'developer') {
+            return true;
         }
 
-        return false;
-    }
-
-    public function getAllPermissions(): Collection
-    {
-        return $this->roles->flatMap->permissions->unique('id');
+        return $this->getAllPermissions()->whereIn('name', $permissionNames)->isNotEmpty();
     }
 }

@@ -87,10 +87,9 @@ export async function deleteRole(id: number): Promise<void> {
 // ─── Permission endpoints ─────────────────────────────────────────────────────
 
 /** GET /api/rbac/permissions — returns permissions grouped by category. */
-export async function listPermissions(): Promise<Record<string, RbacPermission[]>> {
-  const payload = await apiFetch<{ data: Record<string, RbacPermission[]> }>(
-    "/api/rbac/permissions",
-  );
+export async function listPermissions(scope?: string): Promise<Record<string, RbacPermission[]>> {
+  const url = scope ? `/api/rbac/permissions?scope=${encodeURIComponent(scope)}` : "/api/rbac/permissions";
+  const payload = await apiFetch<{ data: Record<string, RbacPermission[]> }>(url);
   return payload.data;
 }
 
@@ -148,4 +147,78 @@ export async function checkPermission(permission: string): Promise<boolean> {
     body: JSON.stringify({ permission }),
   });
   return payload.has_permission;
+}
+
+// ─── Per-User Operational Module Endpoints ────────────────────────────────────
+
+export type RbacOperationalModule = {
+  key: string;
+  name: string;
+  desk: string;
+  description: string;
+  permissions: string[];
+};
+
+export type RbacUserModuleRow = {
+  id: number;
+  name: string;
+  email: string;
+  role: string;
+  is_developer: boolean;
+  is_assignable: boolean;
+  assigned_modules: string[];
+};
+
+export type NonAssignableModule = {
+  key: string;
+  name: string;
+  description: string;
+  reason: string;
+};
+
+export type UserModulesResponse = {
+  modules: RbacOperationalModule[];
+  users: RbacUserModuleRow[];
+  developers?: RbacUserModuleRow[];
+  non_assignable?: {
+    developer_modules: NonAssignableModule[];
+    grantee_modules: NonAssignableModule[];
+  };
+};
+
+/** GET /api/rbac/user-modules — returns operational modules and staff/admin users. */
+export async function getUserModules(): Promise<UserModulesResponse> {
+  const payload = await apiFetch<{ data: UserModulesResponse }>("/api/rbac/user-modules");
+  return payload.data;
+}
+
+/** PUT /api/rbac/user-modules/:userId — toggles or syncs modules for an individual user. */
+export async function updateUserModule(
+  userId: number,
+  moduleKey: string,
+  enabled: boolean,
+): Promise<RbacUserModuleRow> {
+  const payload = await apiFetch<{ data: RbacUserModuleRow; message: string }>(
+    `/api/rbac/user-modules/${userId}`,
+    {
+      method: "PUT",
+      body: JSON.stringify({ module_key: moduleKey, enabled }),
+    },
+  );
+  return payload.data;
+}
+
+/** PUT /api/rbac/user-modules/:userId — syncs entire module list for a user. */
+export async function syncUserModules(
+  userId: number,
+  modules: string[],
+): Promise<RbacUserModuleRow> {
+  const payload = await apiFetch<{ data: RbacUserModuleRow; message: string }>(
+    `/api/rbac/user-modules/${userId}`,
+    {
+      method: "PUT",
+      body: JSON.stringify({ modules }),
+    },
+  );
+  return payload.data;
 }

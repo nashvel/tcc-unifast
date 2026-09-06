@@ -58,6 +58,20 @@ const batchesQuery = useQuery({
 
 const batches = computed(() => batchesQuery.data.value?.data ?? []);
 
+// Hick's Law: Automatically default to the active enrollment batch
+watch(
+  batches,
+  (list) => {
+    if (selectedBatchId.value === null && list.length > 0) {
+      const activeBatch = list.find((b) => b.window_status === "active") || list[0];
+      if (activeBatch) {
+        selectedBatchId.value = activeBatch.id;
+      }
+    }
+  },
+  { immediate: true },
+);
+
 // Stats Query
 const statsQuery = useQuery({
   queryKey: computed(() => ["onboarding_stats", selectedBatchId.value]),
@@ -127,8 +141,16 @@ const resendInviteMutation = useMutation({
     <div class="rounded-xl border bg-surface p-5 shadow-sm">
       <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h2 class="text-sm font-semibold text-text">Select Target Batch</h2>
-          <p class="text-xs text-text-muted">Choose the batch you want to manage invitations for.</p>
+          <div class="flex items-center gap-2">
+            <h2 class="text-sm font-semibold text-text">Target Enrollment Batch</h2>
+            <span
+              v-if="selectedBatchId && batches.find((b) => b.id === selectedBatchId)?.window_status === 'active'"
+              class="inline-flex items-center gap-1 rounded-full bg-success-soft px-2 py-0.5 text-2xs font-semibold text-success"
+            >
+              <IconCheck :size="11" /> Active Window (Auto-selected)
+            </span>
+          </div>
+          <p class="text-xs text-text-muted mt-0.5">Manage onboarding invitations and account activation for this batch.</p>
         </div>
         <div class="w-full md:w-72">
           <select
@@ -194,22 +216,36 @@ const resendInviteMutation = useMutation({
             </h2>
             <p class="text-xs text-text-muted mt-1">Manage individual invitations for this batch.</p>
           </div>
-          <div class="flex items-center gap-2">
+          <div class="flex flex-wrap items-center gap-2">
+            <!-- 1-Click Smart Filter Pills -->
+            <div class="flex items-center gap-1" role="tablist">
+              <button
+                type="button"
+                v-for="tab in [
+                  ['', 'All'],
+                  ['unverified', 'Unverified'],
+                  ['pending_face_review', 'Face Review'],
+                  ['active', 'Active'],
+                ]"
+                :key="tab[0]"
+                :class="[
+                  'rounded-md px-2.5 py-1.5 text-xs font-medium transition',
+                  statusFilter === tab[0]
+                    ? 'bg-primary text-white shadow-2xs'
+                    : 'border border-border/80 bg-surface text-text-muted hover:bg-surface-muted hover:text-text',
+                ]"
+                @click="statusFilter = tab[0]"
+              >
+                {{ tab[1] }}
+              </button>
+            </div>
+
             <input
               v-model="searchQuery"
               type="search"
               placeholder="Search ID, name, email..."
-              class="h-9 w-64 rounded-md border bg-surface px-3 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              class="h-9 w-52 rounded-md border bg-surface px-3 text-xs focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             />
-            <select
-              v-model="statusFilter"
-              class="h-9 rounded-md border bg-surface px-3 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-            >
-              <option value="">All Statuses</option>
-              <option value="unverified">Unverified</option>
-              <option value="pending_face_review">Pending Face Review</option>
-              <option value="active">Active</option>
-            </select>
           </div>
         </div>
         <DataTable

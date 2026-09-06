@@ -247,6 +247,12 @@ function isActive(path: string) {
     ? route.path === path
     : route.path === path || route.path.startsWith(`${path}/`);
 }
+
+function isSectionOpen(section: NavigationSection): boolean {
+  if (section.items.some((item) => isActive(item.path))) return true;
+  if ((route.path === "/app" || route.path === "/app/") && section.labelKey === "nav.operations") return true;
+  return false;
+}
 function go(path: string) {
   mobile.value = false;
   router.push(withLang(path, route.query.lang));
@@ -362,7 +368,7 @@ if (dark.value && typeof document !== "undefined") {
         <div v-for="(section, sectionIndex) in sections" :key="sectionIndex" class="mb-3 px-2">
           
           <!-- Collapsible Section (if it has a label) -->
-          <details v-if="section.labelKey" class="group" open>
+          <details v-if="section.labelKey" class="group" :open="isSectionOpen(section)">
             <summary class="flex cursor-pointer select-none items-center justify-between px-2 py-1 outline-none list-none [&::-webkit-details-marker]:hidden mb-1 transition-opacity hover:opacity-80">
               <span class="text-2xs font-semibold uppercase tracking-wider text-sidebar-text-muted">{{ t(section.labelKey) }}</span>
               <IconChevronDown :size="14" class="text-sidebar-text-muted opacity-50 transition-transform group-open:rotate-180" />

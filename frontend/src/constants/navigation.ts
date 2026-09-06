@@ -41,9 +41,7 @@ export const adminNavigation: NavigationSection[] = [
     items: [
       { labelKey: "nav.announcements", path: "/app/announcements", icon: IconSpeakerphone },
       { labelKey: "nav.formBuilder", path: "/app/forms", icon: IconForms },
-      { labelKey: "nav.monitoringReports", path: "/app/reports", icon: IconReportAnalytics },
-      { labelKey: "nav.billing", path: "/app/billing", icon: IconFileInvoice },
-      { labelKey: "nav.distributionReport", path: "/app/distribution", icon: IconReportMoney },
+      { labelKey: "nav.reports", path: "/app/reports", icon: IconReportAnalytics },
       { labelKey: "nav.supportTickets", path: "/app/support", icon: IconLifebuoy },
     ],
   },
@@ -51,10 +49,8 @@ export const adminNavigation: NavigationSection[] = [
     labelKey: "nav.administration",
     items: [
       { labelKey: "nav.auditTrail", path: "/app/audit", icon: IconHistory },
-      { labelKey: "nav.securityFindings", path: "/app/security", icon: IconShieldCheck },
-      { labelKey: "nav.securityMemory", path: "/app/security/memory", icon: IconShieldCheck },
+      { labelKey: "nav.security", path: "/app/security", icon: IconShieldCheck },
       { labelKey: "nav.usersRoles", path: "/app/users", icon: IconUserCog },
-      { labelKey: "nav.activationSeeder", path: "/app/activation-seeder", icon: IconSeedling },
       { labelKey: "common.settings", path: "/app/settings", icon: IconSettings },
       { labelKey: "nav.workspaceContinuity", path: "/app/integrations/workspace", icon: IconFolders },
     ],
@@ -100,7 +96,6 @@ export const staffNavigation: NavigationSection[] = [
       { labelKey: "nav.batches", path: "/app/batches", icon: IconFolders },
       { labelKey: "nav.programs", path: "/app/programs", icon: IconSchool },
       { labelKey: "nav.grantees", path: "/app/grantees", icon: IconUsersGroup },
-      { labelKey: "nav.formBuilder", path: "/app/forms", icon: IconForms },
     ],
   },
   {
@@ -117,10 +112,8 @@ export const staffNavigation: NavigationSection[] = [
     labelKey: "nav.communication",
     items: [
       { labelKey: "nav.announcements", path: "/app/announcements", icon: IconSpeakerphone },
-      { labelKey: "nav.socialPosts", path: "/app/social-posts", icon: IconBrandFacebook },
+      { labelKey: "nav.formBuilder", path: "/app/forms", icon: IconForms },
       { labelKey: "nav.reports", path: "/app/reports", icon: IconReportAnalytics },
-      { labelKey: "nav.billing", path: "/app/billing", icon: IconFileInvoice },
-      { labelKey: "nav.distributionReport", path: "/app/distribution", icon: IconReportMoney },
       { labelKey: "nav.supportTickets", path: "/app/support", icon: IconLifebuoy },
     ],
   },
@@ -128,6 +121,7 @@ export const staffNavigation: NavigationSection[] = [
     labelKey: "nav.administration",
     items: [
       { labelKey: "nav.auditTrail", path: "/app/audit", icon: IconHistory },
+      { labelKey: "nav.security", path: "/app/security", icon: IconShieldCheck },
       { labelKey: "common.settings", path: "/app/settings", icon: IconSettings },
     ],
   },

@@ -82,30 +82,14 @@ const gradeSlipInput = ref<HTMLInputElement | null>(null);
 const specimenSignaturesInput = ref<HTMLInputElement | null>(null);
 const specimenBlueInkAck = ref(false);
 
-const precheck = ref<Record<string, boolean>>({
-  lighting: false,
-  steady: false,
-  glare: false,
-  internet: false,
-  permission: false,
-});
-const consent = ref(false);
 const confirmDialog = ref(false);
 const confirmPin = ref("");
 const tutorialDialog = ref(false);
-const precheckDialog = ref(false);
 const activeTutorialTab = ref<"overview" | "slot1" | "slot2" | "slot3">("overview");
 
 function openTutorial(tab: "overview" | "slot1" | "slot2" | "slot3" = "overview") {
   activeTutorialTab.value = tab;
   tutorialDialog.value = true;
-}
-
-function selectAllPrecheck() {
-  for (const key of Object.keys(precheck.value)) {
-    precheck.value[key] = true;
-  }
-  consent.value = true;
 }
 
 const packageLocked = computed(() =>
@@ -174,14 +158,6 @@ const progressStatusLabel = computed(() => {
   if (packageReady.value) return "Ready to submit";
   return granteeStatus.value.replaceAll("_", " ");
 });
-
-const precheckItems = [
-  ["lighting", "Good stable lighting"],
-  ["steady", "Hold ID vertically — steady inside the portrait frame"],
-  ["glare", "Remove glare or obstructions"],
-  ["internet", "Stable internet connection"],
-  ["permission", "Allow camera permission"],
-] as const;
 
 onMounted(loadVault);
 
@@ -602,6 +578,46 @@ async function resubmitSlot(
 
       <p v-if="error" class="rounded-md border border-danger/30 bg-danger-soft p-3 text-xs text-danger">{{ error }}</p>
       <p v-if="success" class="rounded-md border border-success/30 bg-success-soft p-3 text-xs text-success">{{ success }}</p>
+
+      <!-- 3-Step Submission Fast-Track Guide -->
+      <section v-if="!packageLocked" class="rounded-xl border border-primary/20 bg-primary/5 p-4 sm:p-5">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2">
+            <span class="grid size-6 place-items-center rounded-full bg-primary text-white text-xs font-bold">✓</span>
+            <h3 class="text-sm font-semibold text-text">Fast-Track Submission Steps</h3>
+          </div>
+          <button
+            type="button"
+            @click="openTutorial('overview')"
+            class="text-xs font-semibold text-primary hover:underline inline-flex items-center gap-1"
+          >
+            Detailed guide &amp; sample ID &rarr;
+          </button>
+        </div>
+        <div class="mt-3 grid gap-3 sm:grid-cols-3 text-xs">
+          <div class="flex items-start gap-2.5 rounded-lg border bg-surface/90 p-3 shadow-2xs">
+            <span class="grid size-5 shrink-0 place-items-center rounded bg-primary-soft text-primary font-bold text-2xs">1</span>
+            <div>
+              <p class="font-semibold text-text">Course History</p>
+              <p class="text-text-muted mt-0.5">Download official PDF from your TCC SIS student portal.</p>
+            </div>
+          </div>
+          <div class="flex items-start gap-2.5 rounded-lg border bg-surface/90 p-3 shadow-2xs">
+            <span class="grid size-5 shrink-0 place-items-center rounded bg-primary-soft text-primary font-bold text-2xs">2</span>
+            <div>
+              <p class="font-semibold text-text">Grade Slip</p>
+              <p class="text-text-muted mt-0.5">Download current sem Grade Slip from SIS (pending grades accepted).</p>
+            </div>
+          </div>
+          <div class="flex items-start gap-2.5 rounded-lg border bg-surface/90 p-3 shadow-2xs">
+            <span class="grid size-5 shrink-0 place-items-center rounded bg-primary-soft text-primary font-bold text-2xs">3</span>
+            <div>
+              <p class="font-semibold text-text">School ID &amp; Signatures</p>
+              <p class="text-text-muted mt-0.5">ID front &amp; back + 3 blue ballpen signatures in one file.</p>
+            </div>
+          </div>
+        </div>
+      </section>
 
       <section class="grid items-start gap-4 md:grid-cols-2 lg:grid-cols-3">
         <article class="rounded-lg border bg-surface p-4" :class="slotCardClass('course_history')">

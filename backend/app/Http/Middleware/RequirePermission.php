@@ -34,6 +34,24 @@ class RequirePermission
             return $next($request);
         }
 
+        // Fallback for accounts or tests with no RBAC pivot rows yet:
+        if ($user->roles->isEmpty()) {
+            if (in_array($user->role, ['admin', 'head', 'developer'], true)) {
+                return $next($request);
+            }
+            if ($user->role === 'staff') {
+                $staffPerms = [
+                    'view_masterlist', 'manage_batches', 'manage_grantees',
+                    'validate_documents', 'review_academics', 'run_eligibility',
+                    'generate_reports', 'batches.read', 'documents.read', 'documents.write',
+                    'grantees.read', 'academic.read',
+                ];
+                if (count(array_intersect($permissions, $staffPerms)) > 0) {
+                    return $next($request);
+                }
+            }
+        }
+
         abort_unless($user->hasAnyPermission($permissions), 403);
 
         return $next($request);
