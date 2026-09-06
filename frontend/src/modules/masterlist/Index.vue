@@ -364,37 +364,28 @@ function formatDate(value: string | null) {
 
       <!-- Skeleton state while batches are loading -->
       <template v-if="loadingBatches">
-        <!-- Row 1 Skeleton: Batch selector & Deadline -->
-        <div class="grid gap-4 md:grid-cols-[1fr_auto]">
-          <div class="space-y-1.5">
-            <Skeleton class-name="h-3.5 w-36" />
-            <Skeleton class-name="h-10 w-full rounded-md" />
-          </div>
-          <div class="flex flex-col justify-center rounded-md border bg-surface-muted px-4 py-2 min-w-[200px] space-y-1.5">
-            <Skeleton class-name="h-2.5 w-24" />
-            <Skeleton class-name="h-4 w-32" />
-          </div>
+        <!-- Row 1 Skeleton: Batch selector -->
+        <div class="space-y-1.5">
+          <Skeleton class-name="h-3.5 w-36" />
+          <Skeleton class-name="h-10 w-full rounded-md" />
         </div>
 
-        <!-- Row 2 Skeleton: Upload Zone & Instructions -->
-        <div class="grid gap-6 md:grid-cols-[2fr_1fr]">
-          <div class="space-y-1.5">
+        <!-- Row 2 Skeleton: Upload Zone -->
+        <div class="space-y-1.5">
+          <div class="flex items-center justify-between">
             <Skeleton class-name="h-3.5 w-36" />
-            <div class="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-border bg-surface-muted p-8 text-center space-y-3">
-              <Skeleton class-name="size-12 rounded-full" />
-              <Skeleton class-name="h-4 w-48" />
-              <Skeleton class-name="h-3 w-32" />
-              <div class="mt-2 flex gap-2">
-                <Skeleton class-name="h-6 w-20 rounded" />
-                <Skeleton class-name="h-6 w-16 rounded" />
-                <Skeleton class-name="h-6 w-16 rounded" />
-                <Skeleton class-name="h-6 w-20 rounded" />
-              </div>
-            </div>
+            <Skeleton class-name="h-3.5 w-32" />
           </div>
-          <div class="flex flex-col justify-center gap-4">
-            <CardSkeleton :lines="4" class-name="bg-surface-muted border-border" />
-            <Skeleton class-name="h-9 w-full rounded-md" />
+          <div class="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-border bg-surface-muted p-8 text-center space-y-3">
+            <Skeleton class-name="size-12 rounded-full" />
+            <Skeleton class-name="h-4 w-48" />
+            <Skeleton class-name="h-3 w-32" />
+            <div class="mt-2 flex gap-2">
+              <Skeleton class-name="h-6 w-20 rounded" />
+              <Skeleton class-name="h-6 w-16 rounded" />
+              <Skeleton class-name="h-6 w-16 rounded" />
+              <Skeleton class-name="h-6 w-20 rounded" />
+            </div>
           </div>
         </div>
       </template>
@@ -417,8 +408,8 @@ function formatDate(value: string | null) {
       </div>
 
       <template v-else>
-        <!-- Row 1: Batch selection & Deadline -->
-        <div class="grid gap-4 md:grid-cols-[1fr_auto]">
+        <!-- Row 1: Batch selection -->
+        <div>
           <label class="block">
             <span class="mb-1.5 block text-xs font-medium">1. Select Target Batch</span>
             <select v-model.number="uploadBatchId" class="h-10 w-full rounded-md border px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary">
@@ -428,67 +419,43 @@ function formatDate(value: string | null) {
               </option>
             </select>
           </label>
-
-          <div v-if="selectedUploadBatch?.submission_deadline" class="flex flex-col justify-center rounded-md border bg-surface-muted px-4 py-1.5 min-w-[200px]">
-            <span class="text-2xs font-semibold uppercase tracking-wider text-text-muted">Batch Deadline</span>
-            <div class="mt-0.5 flex items-center gap-2">
-              <span class="text-sm font-semibold text-text">{{ formatDate(selectedUploadBatch.submission_deadline) }}</span>
-            </div>
-          </div>
         </div>
 
         <!-- Row 2: Upload Zone -->
-        <div class="grid gap-6 md:grid-cols-[2fr_1fr]">
-          
-          <!-- Dropzone Area -->
-          <div>
-            <span class="mb-1.5 block text-xs font-medium">2. Upload Masterlist</span>
-            <div
-              class="relative flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-border bg-surface-muted p-8 text-center transition-colors hover:border-primary hover:bg-primary/5"
-              @click="openFilePicker"
-            >
-              <input
-                ref="fileInput"
-                type="file"
-                accept=".csv,.xlsx,.xls,.pdf,.docx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                class="hidden"
-                @change="chooseFile"
-              />
-              <span class="mb-3 grid size-12 place-items-center rounded-full bg-primary/10 text-primary">
-                <IconFileSpreadsheet :size="24" />
-              </span>
-              <p class="text-base font-semibold text-text">Drag & drop your masterlist here</p>
-              <p class="mt-1 text-sm text-text-muted">or <span class="text-primary hover:underline">browse files</span></p>
-              
-              <div class="mt-4 flex flex-wrap justify-center gap-2 text-xs text-text-muted">
-                <span class="rounded bg-surface px-2 py-1 border shadow-sm">Excel (.xlsx)</span>
-                <span class="rounded bg-surface px-2 py-1 border shadow-sm">CSV (.csv)</span>
-                <span class="rounded bg-surface px-2 py-1 border shadow-sm">PDF (.pdf)</span>
-                <span class="rounded bg-surface px-2 py-1 border shadow-sm">Word (.docx)</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Requirements & Template -->
-          <div class="flex flex-col justify-center gap-4">
-            <div class="rounded-lg border bg-surface-muted p-4">
-              <p class="text-xs font-semibold text-text">Required Columns</p>
-              <ul class="mt-2 space-y-1.5 text-xs text-text-muted">
-                <li class="flex items-center gap-1.5"><IconCheck :size="14" class="text-success" /> student_id</li>
-                <li class="flex items-center gap-1.5"><IconCheck :size="14" class="text-success" /> name</li>
-                <li class="flex items-center gap-1.5"><IconCheck :size="14" class="text-success" /> email</li>
-                <li class="flex items-center gap-1.5"><IconCheck :size="14" class="text-success" /> program</li>
-                <li class="flex items-center gap-1.5"><IconCheck :size="14" class="text-success" /> year_level</li>
-                <li class="flex items-center gap-1.5 text-text-soft"><span class="ml-1 text-2xs border rounded-full px-1">O</span> student_number (optional)</li>
-              </ul>
-            </div>
-            
+        <div>
+          <div class="mb-1.5 flex items-center justify-between">
+            <span class="block text-xs font-medium">2. Upload Masterlist</span>
             <button
-              class="flex w-full items-center justify-center gap-2 rounded-md border bg-surface py-2 text-xs font-semibold text-text shadow-sm hover:bg-surface-muted"
+              type="button"
+              class="inline-flex items-center gap-1.5 text-xs font-medium text-text-muted hover:text-primary transition"
               @click="downloadTemplate"
             >
-              <IconFileSpreadsheet :size="16" /> Download Template
+              <IconFileSpreadsheet :size="15" class="text-primary" /> Download Template
             </button>
+          </div>
+          <div
+            class="relative flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-border bg-surface-muted p-8 text-center transition-colors hover:border-primary hover:bg-primary/5"
+            @click="openFilePicker"
+          >
+            <input
+              ref="fileInput"
+              type="file"
+              accept=".csv,.xlsx,.xls,.pdf,.docx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+              class="hidden"
+              @change="chooseFile"
+            />
+            <span class="mb-3 grid size-12 place-items-center rounded-full bg-primary/10 text-primary">
+              <IconFileSpreadsheet :size="24" />
+            </span>
+            <p class="text-base font-semibold text-text">Drag & drop your masterlist here</p>
+            <p class="mt-1 text-sm text-text-muted">or <span class="text-primary hover:underline">browse files</span></p>
+            
+            <div class="mt-4 flex flex-wrap justify-center gap-2 text-xs text-text-muted">
+              <span class="rounded bg-surface px-2 py-1 border shadow-sm">Excel (.xlsx)</span>
+              <span class="rounded bg-surface px-2 py-1 border shadow-sm">CSV (.csv)</span>
+              <span class="rounded bg-surface px-2 py-1 border shadow-sm">PDF (.pdf)</span>
+              <span class="rounded bg-surface px-2 py-1 border shadow-sm">Word (.docx)</span>
+            </div>
           </div>
         </div>
 

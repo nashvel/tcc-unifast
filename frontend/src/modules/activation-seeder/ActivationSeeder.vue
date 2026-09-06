@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * Activation Seeder â€” Admin UI
+ * Activation Seeder — Admin UI
  *
  * Allows admins to create activation-ready grantees without CLI.
  * Redesigned as a full data table with persistent history and service manager.
@@ -24,7 +24,7 @@ import { apiFetch } from "@/api";
 
 const queryClient = useQueryClient();
 
-// â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Types ─────────────────────────────────────────────────────────────
 
 type BatchOption = {
   id: number;
@@ -47,7 +47,7 @@ type HistoryRecord = {
   token_expires_at?: string;
 };
 
-// â”€â”€ State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── State ─────────────────────────────────────────────────────────────
 const showModal = ref(false);
 const batchMode = ref<"existing" | "new">("existing");
 const copiedIds = ref<Record<number, boolean>>({});
@@ -69,7 +69,7 @@ const form = reactive({
 
 const errors = reactive<Record<string, string>>({});
 
-// â”€â”€ Persist generated links across reloads (sessionStorage) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Persist generated links across reloads (sessionStorage) ──────────
 const SESSION_KEY = 'seeder_generated_links';
 
 function loadGeneratedLinks(): Record<number, string> {
@@ -89,7 +89,7 @@ function saveGeneratedLinks(links: Record<number, string>) {
 
 const newlyGenerated = ref<Record<number, string>>(loadGeneratedLinks()); // Maps grantee_id -> activation_url
 
-// â”€â”€ Queries â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Queries ───────────────────────────────────────────────────────────
 
 const batchesQuery = useQuery({
   queryKey: ["activation-seeder-batches"],
@@ -111,13 +111,13 @@ const servicesQuery = useQuery({
 // Track the live tunnel URL (updated after cloudflare starts)
 const tunnelUrl = ref<string | null>(null);
 
-// Safe accessor â€” prevents template from crashing if services API fails
+// Safe accessor — prevents template from crashing if services API fails
 const services = computed(() => servicesQuery.data.value?.data ?? { cloudflare: false, ocr: false, activation_base: '' });
 
 const batchOptions = computed(() => batchesQuery.data.value?.data ?? []);
 const history = computed(() => historyQuery.data.value?.data ?? []);
 
-// â”€â”€ Mutations â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Mutations ─────────────────────────────────────────────────────────
 
 const seedMutation = useMutation({
   mutationFn: (payload: Record<string, unknown>) =>
@@ -189,7 +189,7 @@ const stopOcrMutation = useMutation({
 });
 
 
-// â”€â”€ Actions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Actions ───────────────────────────────────────────────────────────
 
 function validate(): boolean {
   Object.keys(errors).forEach((k) => delete (errors as Record<string, string>)[k]);
@@ -441,7 +441,7 @@ function formatExpiry(iso: string): string {
       </button>
     </div>
 
-    <!-- â”€â”€ Data Table â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+    <!-- ── Data Table ────────────────────────────────────────────────── -->
     <div class="rounded-xl border bg-surface shadow-sm overflow-hidden">
       <div class="flex items-center justify-between p-4 border-b">
         <h2 class="text-sm font-semibold text-text">Seeded Grantees</h2>
@@ -527,7 +527,7 @@ function formatExpiry(iso: string): string {
     </div>
   </div>
 
-  <!-- â”€â”€ New Seed Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+  <!-- ── New Seed Modal ────────────────────────────────────────────── -->
   <div v-if="showModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
     <div class="w-full max-w-2xl rounded-xl bg-surface shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
       <div class="flex items-center justify-between border-b px-6 py-4 bg-surface-muted/30">
@@ -547,7 +547,7 @@ function formatExpiry(iso: string): string {
 
       <div class="flex-1 overflow-y-auto p-6">
         <form id="activation-seeder-form" @submit.prevent="onSubmit" class="space-y-6">
-          <!-- â”€â”€ Batch Section â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+          <!-- ── Batch Section ────────────────────────────────────────────── -->
           <fieldset class="space-y-3">
             <legend class="text-xs font-semibold uppercase tracking-wide text-text-muted">Batch</legend>
 
@@ -585,20 +585,20 @@ function formatExpiry(iso: string): string {
                   class="h-10 w-full appearance-none rounded-lg border bg-surface px-3 pr-8 text-sm focus:border-primary focus:ring-2 focus:ring-primary/20"
                   :class="errors.batch_id ? 'border-danger' : ''"
                 >
-                  <option :value="null" disabled>â€” Select batch â€”</option>
+                  <option :value="null" disabled>— Select batch —</option>
                   <option
                     v-for="b in batchOptions"
                     :key="b.id"
                     :value="b.id"
                   >
                     {{ b.name }} ({{ b.academic_year }} {{ b.semester }})
-                    {{ b.is_active ? "âœ“ Active" : "" }}
+                    {{ b.is_active ? "✓ Active" : "" }}
                   </option>
                 </select>
                 <IconChevronDown class="pointer-events-none absolute right-2.5 top-2.5 text-text-muted" :size="16" />
               </div>
               <p v-if="errors.batch_id" class="mt-1 text-xs text-danger">{{ errors.batch_id }}</p>
-              <p v-if="batchesQuery.isLoading.value" class="mt-1 text-xs text-text-muted">Loading batchesâ€¦</p>
+              <p v-if="batchesQuery.isLoading.value" class="mt-1 text-xs text-text-muted">Loading batches...</p>
             </div>
 
             <!-- New batch fields -->
@@ -644,7 +644,7 @@ function formatExpiry(iso: string): string {
 
           <div class="border-t" />
 
-          <!-- â”€â”€ Grantee Fields â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+          <!-- ── Grantee Fields ────────────────────────────────────────────── -->
           <fieldset class="space-y-3">
             <legend class="text-xs font-semibold uppercase tracking-wide text-text-muted">Grantee Info</legend>
 
@@ -748,7 +748,7 @@ function formatExpiry(iso: string): string {
 
           <div class="border-t" />
 
-          <!-- â”€â”€ Options â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+          <!-- ── Options ───────────────────────────────────────────────────── -->
           <div class="flex items-start gap-3">
             <input
               id="reset-kyc"
@@ -796,7 +796,7 @@ function formatExpiry(iso: string): string {
         >
           <IconRefresh v-if="seedMutation.isPending.value" :size="16" class="animate-spin" />
           <IconUserPlus v-else :size="16" />
-          {{ seedMutation.isPending.value ? "Seedingâ€¦" : "Generate Activation Link" }}
+          {{ seedMutation.isPending.value ? "Seeding..." : "Generate Activation Link" }}
         </button>
       </div>
     </div>
