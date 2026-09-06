@@ -1,7 +1,32 @@
 # n8n and Google Workspace Continuity Mirror
 
-Status: Proposed for approval  
+Status: Implementation authorized; student upload destination amendment pending
 Date: 2026-09-06
+
+## Implementation findings (2026-09-06)
+
+Implementation tracking: `tasks/continuity-implementation.md`.
+
+Google's [Forms question documentation](https://support.google.com/docs/answer/7322334)
+states that file-upload questions cannot be used when a Form is stored in a
+Shared Drive. The [Forms API reference](https://developers.google.com/workspace/forms/api/reference/rest/v1/forms)
+also states that the API cannot create file-upload questions. The original
+student-upload layout below therefore needs an amendment before it can be
+implemented.
+
+Proposed amendment, awaiting the user's choice: keep upload Forms and temporary
+intake in a dedicated school-owned Workspace account's My Drive, manually add
+the file-upload questions, and transfer validated files into the private Shared
+Drive. While Laravel is unavailable, submissions stay in private intake until
+the transfer service can resume. This exception does not change Shared Drive
+as the intended primary storage for accepted application business files.
+
+The merge service can compare complete normalized snapshots, but Sheets
+read-then-write operations do not lock out human editors. A durable inbound
+change journal or another tested write-coordination mechanism is required
+before enabling concurrent bidirectional edits; checksums alone are insufficient.
+This requirement follows Google's documented
+[collaborative update semantics](https://developers.google.com/workspace/sheets/api/reference/rest/v4/spreadsheets/batchUpdate).
 
 ## Objective
 
