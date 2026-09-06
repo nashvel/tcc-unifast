@@ -170,6 +170,45 @@ function areaPath(values: number[]) {
       </div>
     </header>
 
+    <!-- Hick's Law: Immediate Operational Triage Banner -->
+    <section class="rounded-xl border border-primary/25 bg-gradient-to-r from-primary/10 via-primary/5 to-surface p-4 sm:p-5 shadow-2xs">
+      <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="relative flex h-2.5 w-2.5">
+              <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
+              <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
+            </span>
+            <h2 class="text-sm font-semibold text-text">Operational Priority Triage</h2>
+            <span class="rounded-full bg-primary/15 px-2 py-0.5 text-2xs font-semibold text-primary">
+              Active AY Cycle
+            </span>
+          </div>
+          <p class="mt-1 text-xs text-text-muted">
+            <strong class="text-text font-semibold">184 student submissions</strong> awaiting document review ·
+            <strong class="text-text font-semibold">3 biometric face reviews</strong> uncertain ·
+            <strong class="text-text font-semibold">3 active batches</strong>.
+          </p>
+        </div>
+
+        <div class="flex items-center gap-2 shrink-0">
+          <RouterLink
+            :to="withLang('/app/documents', route.query.lang)"
+            class="inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-3.5 text-xs font-semibold text-white shadow-xs transition hover:bg-primary/90"
+          >
+            <component :is="FileCheck2" :size="15" />
+            Review Queue &rarr;
+          </RouterLink>
+          <RouterLink
+            :to="withLang('/app/face-reviews', route.query.lang)"
+            class="inline-flex h-9 items-center gap-1.5 rounded-lg border border-border bg-surface px-3 text-xs font-medium text-text hover:bg-surface-muted transition"
+          >
+            Face Reviews (3)
+          </RouterLink>
+        </div>
+      </div>
+    </section>
+
     <template v-if="variant === 'operations'">
       <section
         class="dashboard-panel grid grid-cols-2 gap-4 lg:grid-cols-4"

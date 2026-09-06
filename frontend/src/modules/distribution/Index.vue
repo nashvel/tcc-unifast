@@ -8,6 +8,15 @@ import { apiFetch, buildQuery } from "@/api/client";
 import type { PaginatedResponse, PaginationMeta } from "@/api/types";
 import { toast } from "@/composables/useToast";
 
+const props = withDefaults(
+  defineProps<{
+    hideHeader?: boolean;
+  }>(),
+  {
+    hideHeader: false,
+  }
+);
+
 type Batch = {
   id: number;
   name: string;
@@ -127,6 +136,7 @@ function downloadReport(report: DistributionReportRow) {
 <template>
   <div>
     <PageHeader
+      v-if="!props.hideHeader"
       title="Distribution Report"
       description="Generate a CHED-compliant distribution summary after the stipend period closes — verified totals, per-grantee status, and exclusion reasons."
     />

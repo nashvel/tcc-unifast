@@ -86,20 +86,35 @@ class BillingAndDistributionReportTest extends TestCase
             ->assertOk();
     }
 
-    public function test_staff_cannot_generate_but_can_list(): void
+    public function test_staff_can_generate_and_list(): void
     {
         Storage::fake('public');
 
         $staff = User::factory()->create(['role' => 'staff', 'account_status' => 'active']);
         $batch = $this->makeBatch();
+        $this->seedGrantees($batch);
 
         $this->actingAs($staff)
             ->postJson('/api/billing-reports', ['batch_id' => $batch->id])
-            ->assertForbidden();
+            ->assertCreated();
 
         $this->actingAs($staff)
             ->getJson('/api/billing-reports')
             ->assertOk();
+    }
+
+    public function test_student_cannot_generate_or_list_reports(): void
+    {
+        $student = User::factory()->create(['role' => 'student', 'account_status' => 'active']);
+        $batch = $this->makeBatch();
+
+        $this->actingAs($student)
+            ->postJson('/api/billing-reports', ['batch_id' => $batch->id])
+            ->assertForbidden();
+
+        $this->actingAs($student)
+            ->getJson('/api/billing-reports')
+            ->assertForbidden();
     }
 
     private function makeBatch(): Batch

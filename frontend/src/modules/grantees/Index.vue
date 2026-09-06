@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
-import { IconDownload, IconSearch } from "@tabler/icons-vue";
+import { computed, ref, watch } from "vue";
+import { IconAdjustmentsHorizontal, IconDownload, IconFilter, IconSearch } from "@tabler/icons-vue";
 import PageHeader from "@/components/ui/PageHeader.vue";
 import DataTable from "@/components/tables/DataTable.vue";
 import TablePagination from "@/components/tables/TablePagination.vue";
@@ -14,7 +14,40 @@ const debouncedSearch = ref("");
 const account = ref("all");
 const submission = ref("all");
 const page = ref(1);
+const showAdvanced = ref(false);
+const smartPill = ref<"all" | "needs_review" | "awaiting_docs" | "pending_kyc" | "unverified">("all");
 const { online } = useOnline();
+
+function setPill(pill: typeof smartPill.value) {
+  smartPill.value = pill;
+  page.value = 1;
+  if (pill === "all") {
+    account.value = "all";
+    submission.value = "all";
+  } else if (pill === "needs_review") {
+    account.value = "active";
+    submission.value = "docs_submitted";
+  } else if (pill === "awaiting_docs") {
+    account.value = "all";
+    submission.value = "not_submitted";
+  } else if (pill === "pending_kyc") {
+    account.value = "pending_kyc";
+    submission.value = "all";
+  } else if (pill === "unverified") {
+    account.value = "unverified";
+    submission.value = "all";
+  }
+}
+
+// Sync smart pill if dropdowns are touched manually
+watch([account, submission], () => {
+  if (account.value === "all" && submission.value === "all") smartPill.value = "all";
+  else if (account.value === "active" && submission.value === "docs_submitted") smartPill.value = "needs_review";
+  else if (account.value === "all" && submission.value === "not_submitted") smartPill.value = "awaiting_docs";
+  else if (account.value === "pending_kyc" && submission.value === "all") smartPill.value = "pending_kyc";
+  else if (account.value === "unverified" && submission.value === "all") smartPill.value = "unverified";
+  else smartPill.value = "all";
+});
 
 let searchTimer: ReturnType<typeof setTimeout> | undefined;
 watch([query, account, submission], () => {
@@ -34,9 +67,88 @@ const { rows, meta, query: granteesQuery } = useGranteeList({
 </script>
 
 <template>
-  <div>
+  <div class="space-y-4">
     <PageHeader title="Grantees" description="View and filter all active scholarship grantees." />
-    <div class="mb-4 grid gap-2 md:grid-cols-[1fr_120px_120px_120px]">
+
+    <!-- Hick's Law Task-Oriented Smart Filter Pills -->
+    <div class="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 pb-3">
+      <div class="flex flex-wrap items-center gap-1.5" role="tablist" aria-label="Grantee Status Filters">
+        <button
+          type="button"
+          :class="[
+            'inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition',
+            smartPill === 'all'
+              ? 'bg-primary text-white shadow-xs'
+              : 'border border-border/80 bg-surface text-text-muted hover:bg-surface-muted hover:text-text',
+          ]"
+          @click="setPill('all')"
+        >
+          All Grantees
+        </button>
+        <button
+          type="button"
+          :class="[
+            'inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition',
+            smartPill === 'needs_review'
+              ? 'bg-primary text-white shadow-xs'
+              : 'border border-border/80 bg-surface text-text-muted hover:bg-surface-muted hover:text-text',
+          ]"
+          @click="setPill('needs_review')"
+        >
+          <span class="size-2 rounded-full bg-emerald-500" />
+          Needs Review (Docs Submitted)
+        </button>
+        <button
+          type="button"
+          :class="[
+            'inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition',
+            smartPill === 'awaiting_docs'
+              ? 'bg-primary text-white shadow-xs'
+              : 'border border-border/80 bg-surface text-text-muted hover:bg-surface-muted hover:text-text',
+          ]"
+          @click="setPill('awaiting_docs')"
+        >
+          <span class="size-2 rounded-full bg-amber-500" />
+          Awaiting Docs
+        </button>
+        <button
+          type="button"
+          :class="[
+            'inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition',
+            smartPill === 'pending_kyc'
+              ? 'bg-primary text-white shadow-xs'
+              : 'border border-border/80 bg-surface text-text-muted hover:bg-surface-muted hover:text-text',
+          ]"
+          @click="setPill('pending_kyc')"
+        >
+          Pending KYC
+        </button>
+        <button
+          type="button"
+          :class="[
+            'inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition',
+            smartPill === 'unverified'
+              ? 'bg-primary text-white shadow-xs'
+              : 'border border-border/80 bg-surface text-text-muted hover:bg-surface-muted hover:text-text',
+          ]"
+          @click="setPill('unverified')"
+        >
+          Unverified
+        </button>
+      </div>
+
+      <button
+        type="button"
+        class="inline-flex items-center gap-1 text-xs font-medium text-text-muted hover:text-primary transition"
+        @click="showAdvanced = !showAdvanced"
+      >
+        <IconAdjustmentsHorizontal :size="14" />
+        {{ showAdvanced ? "Hide Advanced Filters" : "Advanced Filters" }}
+      </button>
+    </div>
+
+    <!-- Search & Filter Controls -->
+    <div class="grid gap-2" :class="showAdvanced ? 'md:grid-cols-[1fr_140px_140px_110px]' : 'md:grid-cols-[1fr_110px]'">
       <div class="relative">
         <IconSearch :size="14" class="absolute left-3 top-1/2 -translate-y-1/2 text-text-soft" />
         <input
@@ -45,19 +157,23 @@ const { rows, meta, query: granteesQuery } = useGranteeList({
           placeholder="Search by name, ID, or program"
         />
       </div>
-      <select v-model="account" class="h-9 rounded-md border bg-surface px-3 text-xs">
-        <option value="all">All accounts</option>
-        <option value="active">Active</option>
-        <option value="unverified">Unverified</option>
-        <option value="pending_kyc">Pending KYC</option>
-        <option value="blocked">Blocked</option>
-      </select>
-      <select v-model="submission" class="h-9 rounded-md border bg-surface px-3 text-xs">
-        <option value="all">All submissions</option>
-        <option value="not_submitted">Not submitted</option>
-        <option value="docs_submitted">Docs submitted</option>
-      </select>
-      <button class="inline-flex h-9 items-center justify-center gap-1 rounded-md border text-xs">
+
+      <template v-if="showAdvanced">
+        <select v-model="account" class="h-9 rounded-md border bg-surface px-3 text-xs">
+          <option value="all">All accounts</option>
+          <option value="active">Active</option>
+          <option value="unverified">Unverified</option>
+          <option value="pending_kyc">Pending KYC</option>
+          <option value="blocked">Blocked</option>
+        </select>
+        <select v-model="submission" class="h-9 rounded-md border bg-surface px-3 text-xs">
+          <option value="all">All submissions</option>
+          <option value="not_submitted">Not submitted</option>
+          <option value="docs_submitted">Docs submitted</option>
+        </select>
+      </template>
+
+      <button class="inline-flex h-9 items-center justify-center gap-1 rounded-md border text-xs hover:bg-surface-muted transition">
         <IconDownload :size="14" /> Export
       </button>
     </div>

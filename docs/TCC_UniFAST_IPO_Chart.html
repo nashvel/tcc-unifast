@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IPO Chart - TCC UniFAST TES Grantee Management System</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+
+        body {
+            background-color: #f0f3f8;
+            color: #222;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* ── Header ── */
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            background: white;
+            padding: 18px 32px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+            max-width: 1300px;
+            width: 100%;
+        }
+        .header h1 { font-size: 22px; color: #1a365d; margin-bottom: 4px; }
+        .header p  { color: #4a5568; font-size: 13px; }
+        .btn-container { margin-top: 12px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+        .btn {
+            background: #2b6cb0; color: white;
+            padding: 7px 18px; border-radius: 6px;
+            font-size: 12px; font-weight: 600;
+            cursor: pointer; border: none; text-decoration: none;
+            transition: background 0.2s;
+        }
+        .btn:hover { background: #1a4e8a; }
+        .btn.secondary { background: #4a5568; }
+        .btn.secondary:hover { background: #2d3748; }
+
+        /* ── Tab Bar ── */
+        .tab-bar {
+            display: flex; gap: 6px; margin-bottom: 16px;
+            max-width: 1300px; width: 100%; flex-wrap: wrap;
+        }
+        .tab {
+            padding: 8px 18px; border-radius: 8px 8px 0 0;
+            background: #dbe4f0; color: #2d3748;
+            cursor: pointer; font-size: 13px; font-weight: 600;
+            border: 2px solid transparent; border-bottom: none;
+            transition: all 0.2s;
+        }
+        .tab.active   { background: white; color: #1a365d; border-color: #c3d4ea; }
+        .tab:hover:not(.active) { background: #c3d4ea; }
+
+        /* ── Panel Wrapper ── */
+        .panel { display: none; max-width: 1300px; width: 100%; }
+        .panel.active { display: block; }
+
+        /* ══════════════════════════════
+           SYSTEM-LEVEL PANEL
+        ══════════════════════════════ */
+        .ipo-system-wrap {
+            background: white; border-radius: 10px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+
+        /* Flow arrow connector */
+        .ipo-flow {
+            display: grid;
+            grid-template-columns: 1fr 48px 1fr 48px 1fr;
+            align-items: stretch;
+            min-height: 520px;
+        }
+
+        .ipo-col {
+            padding: 24px 20px;
+            display: flex; flex-direction: column; gap: 0;
+        }
+        .ipo-col.input-col  { background: #ebf5fb; }
+        .ipo-col.proc-col   { background: #eafaf1; }
+        .ipo-col.output-col { background: #fef9f0; }
+
+        .col-header {
+            text-align: center; font-size: 15px; font-weight: 700;
+            padding: 10px 16px; border-radius: 8px; margin-bottom: 16px;
+            letter-spacing: 1px;
+        }
+        .input-col  .col-header { background: #1a5276; color: white; }
+        .proc-col   .col-header { background: #1b4f36; color: white; }
+        .output-col .col-header { background: #7d3c00; color: white; }
+
+        /* Arrow column */
+        .ipo-arrow {
+            display: flex; align-items: center; justify-content: center;
+            background: #f0f3f8;
+        }
+        .arrow-svg { width: 32px; height: 32px; }
+
+        /* Input group */
+        .input-group { margin-bottom: 14px; }
+        .input-group-label {
+            font-size: 12px; font-weight: 700;
+            color: #1a365d; margin-bottom: 4px;
+        }
+        .input-group ul { list-style: none; padding-left: 10px; }
+        .input-group ul li {
+            font-size: 11px; color: #2d3748;
+            padding: 2px 0; display: flex; gap: 6px; align-items: flex-start;
+        }
+        .input-group ul li::before { content: '•'; color: #2980b9; font-weight: 700; flex-shrink: 0; }
+
+        /* Process list */
+        .proc-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+        .proc-list li {
+            display: flex; gap: 10px; align-items: flex-start;
+            background: white; border-left: 3px solid #27ae60;
+            padding: 8px 10px; border-radius: 0 6px 6px 0;
+            font-size: 12px; color: #1a3c2a; font-weight: 600;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+        }
+        .proc-num {
+            background: #27ae60; color: white;
+            border-radius: 50%; width: 20px; height: 20px;
+            font-size: 10px; font-weight: 700;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+
+        /* Output list */
+        .output-list { list-style: none; display: flex; flex-direction: column; gap: 7px; }
+        .output-list li {
+            display: flex; gap: 8px; align-items: flex-start;
+            background: white; border-left: 3px solid #e67e22;
+            padding: 8px 10px; border-radius: 0 6px 6px 0;
+            font-size: 12px; color: #4a2c00;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+        }
+        .output-list li::before { content: '→'; color: #e67e22; font-weight: 700; flex-shrink: 0; }
+
+        /* ══════════════════════════════
+           MODULE PANEL
+        ══════════════════════════════ */
+        .module-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 18px;
+        }
+        .module-card {
+            background: white; border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+            overflow: hidden; display: flex; flex-direction: column;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .module-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+        }
+        .module-card-header {
+            background: linear-gradient(135deg, #1e3a5f, #2d6a9f);
+            color: white; padding: 12px 16px;
+            font-size: 13px; font-weight: 700;
+        }
+        .module-card-header .desk-badge {
+            display: inline-block; margin-top: 4px;
+            background: rgba(255,255,255,0.2);
+            padding: 2px 8px; border-radius: 10px;
+            font-size: 10px; font-weight: 500;
+        }
+        .module-card-body { display: flex; flex-direction: column; flex: 1; }
+
+        .mc-section { padding: 12px 14px; border-bottom: 1px solid #f0f3f8; }
+        .mc-section:last-child { border-bottom: none; }
+
+        .mc-label {
+            font-size: 10px; font-weight: 700; letter-spacing: 0.8px;
+            margin-bottom: 8px; display: flex; align-items: center; gap: 6px;
+        }
+        .mc-label.lbl-in  { color: #1a5276; }
+        .mc-label.lbl-pr  { color: #1b4f36; }
+        .mc-label.lbl-out { color: #7d3c00; }
+        .mc-label::before {
+            content: ''; display: inline-block;
+            width: 10px; height: 10px; border-radius: 2px;
+        }
+        .lbl-in::before  { background: #1a5276; }
+        .lbl-pr::before  { background: #27ae60; }
+        .lbl-out::before { background: #e67e22; }
+
+        /* Module input groups */
+        .mc-input-group { margin-bottom: 8px; }
+        .mc-input-group-label { font-size: 11px; font-weight: 700; color: #1a365d; margin-bottom: 3px; }
+        .mc-input-group ul { list-style: none; padding-left: 10px; }
+        .mc-input-group ul li {
+            font-size: 10.5px; color: #4a5568;
+            padding: 1px 0; display: flex; gap: 5px;
+        }
+        .mc-input-group ul li::before { content: '•'; color: #2980b9; flex-shrink: 0; }
+
+        /* Module process */
+        .mc-proc-list { list-style: none; display: flex; flex-direction: column; gap: 4px; }
+        .mc-proc-list li {
+            font-size: 10.5px; color: #1a3c2a;
+            display: flex; gap: 6px; align-items: flex-start;
+            padding: 4px 6px; background: #f0faf4; border-radius: 4px;
+        }
+        .mc-proc-num {
+            background: #27ae60; color: white;
+            border-radius: 50%; width: 16px; height: 16px;
+            font-size: 9px; font-weight: 700;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0; margin-top: 1px;
+        }
+
+        /* Module output */
+        .mc-out-list { list-style: none; display: flex; flex-direction: column; gap: 4px; }
+        .mc-out-list li {
+            font-size: 10.5px; color: #4a2c00;
+            display: flex; gap: 6px;
+            padding: 4px 6px; background: #fef6ec; border-radius: 4px;
+        }
+        .mc-out-list li::before { content: '→'; color: #e67e22; font-weight: 700; flex-shrink: 0; }
+
+        /* ── Legend ── */
+        .legend {
+            max-width: 1300px; width: 100%;
+            background: white; border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            padding: 14px 24px; margin-top: 18px;
+            font-size: 12px; color: #334155;
+        }
+        .legend h2 { font-size: 13px; color: #1a365d; margin-bottom: 8px; }
+        .legend-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px,1fr)); gap: 6px 24px; }
+        .legend-item { display: flex; align-items: center; gap: 8px; }
+        .legend-dot { width: 12px; height: 12px; border-radius: 2px; flex-shrink: 0; }
+
+        /* Print */
+        @media print {
+            body { background: white; padding: 0; }
+            .btn-container, .tab-bar { display: none; }
+            .panel { display: block !important; }
+            .module-card { break-inside: avoid; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+    <h1>TCC UniFAST TES Grantee Management and Document Validation System</h1>
+    <p>Input – Process – Output (IPO) Chart &nbsp;|&nbsp; Academic Year 2025–2026</p>
+    <div class="btn-container">
+        <button class="btn" onclick="window.print()">&#128438; Print / Save PDF</button>
+        <button class="btn secondary" onclick="toggleAll()">&#9776; Expand All Modules</button>
+    </div>
+</div>
+
+<!-- Tab Bar -->
+<div class="tab-bar">
+    <div class="tab active" onclick="switchTab('system')">&#127968; System-Level IPO</div>
+    <div class="tab" onclick="switchTab('modules')">&#9881; Per-Module IPO</div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     PANEL 1 — SYSTEM LEVEL
+════════════════════════════════════════════ -->
+<div class="panel active" id="panel-system">
+    <div class="ipo-system-wrap">
+        <div class="ipo-flow">
+
+            <!-- INPUT -->
+            <div class="ipo-col input-col">
+                <div class="col-header">INPUT</div>
+
+                <div class="input-group">
+                    <div class="input-group-label">User Account Data</div>
+                    <ul>
+                        <li>Name and email address</li>
+                        <li>Assigned role (Staff, Admin, Grantee)</li>
+                        <li>Staff activation link</li>
+                    </ul>
+                </div>
+
+                <div class="input-group">
+                    <div class="input-group-label">TES Grantee Personal Information</div>
+                    <ul>
+                        <li>Full name, birthday, gender</li>
+                        <li>Home address and contact number</li>
+                        <li>Guardian name and contact</li>
+                        <li>TES / UniFAST ID number</li>
+                    </ul>
+                </div>
+
+                <div class="input-group">
+                    <div class="input-group-label">TES Grantee Masterlist Data</div>
+                    <ul>
+                        <li>CHED / UniFAST CSV masterlist file</li>
+                        <li>Batch assignment for imported records</li>
+                    </ul>
+                </div>
+
+                <div class="input-group">
+                    <div class="input-group-label">Batch Information Data</div>
+                    <ul>
+                        <li>Batch name and school year</li>
+                        <li>Submission start date and deadline</li>
+                        <li>Eligibility criteria (minimum GWA, required documents)</li>
+                    </ul>
+                </div>
+
+                <div class="input-group">
+                    <div class="input-group-label">Submitted Requirement Data</div>
+                    <ul>
+                        <li>Certificate of Grades, Birth Certificate</li>
+                        <li>Registration Form and other required files</li>
+                        <li>Requirement type and submission slot</li>
+                    </ul>
+                </div>
+
+                <div class="input-group">
+                    <div class="input-group-label">Identity Verification Data</div>
+                    <ul>
+                        <li>Government-issued ID (front photo)</li>
+                        <li>Selfie / face scan for liveness check</li>
+                        <li>KYC personal information</li>
+                    </ul>
+                </div>
+
+                <div class="input-group">
+                    <div class="input-group-label">TES Eligibility and Retention Criteria</div>
+                    <ul>
+                        <li>Minimum GWA threshold per batch</li>
+                        <li>Required approved documents</li>
+                        <li>Enrollment and unit load requirements</li>
+                    </ul>
+                </div>
+
+                <div class="input-group">
+                    <div class="input-group-label">Notification and Announcement Data</div>
+                    <ul>
+                        <li>Announcement title, body, and attachments</li>
+                        <li>Target audience and scheduled release date</li>
+                        <li>Support ticket subject, message, and attachments</li>
+                    </ul>
+                </div>
+
+                <div class="input-group">
+                    <div class="input-group-label">Billing and Financial Data</div>
+                    <ul>
+                        <li>Stipend amount and allowance rate</li>
+                        <li>Billing period and reporting cutoff date</li>
+                    </ul>
+                </div>
+
+                <div class="input-group">
+                    <div class="input-group-label">Dynamic Form Data</div>
+                    <ul>
+                        <li>Form schema (field types, labels, validation rules)</li>
+                        <li>Grantee form responses</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- ARROW 1 -->
+            <div class="ipo-arrow">
+                <svg class="arrow-svg" viewBox="0 0 40 40" fill="none">
+                    <path d="M8 20 H28 M22 13 L30 20 L22 27" stroke="#2d6a9f" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+
+            <!-- PROCESS -->
+            <div class="ipo-col proc-col">
+                <div class="col-header">PROCESS</div>
+                <div style="text-align:center; font-size:12px; font-weight:700; color:#1b4f36; margin-bottom:14px; padding:8px; background:white; border-radius:6px; border:1px solid #c3e6cb;">
+                    Design and Development of TCC UniFAST TES Grantee Management and Document Validation System
+                </div>
+                <ul class="proc-list">
+                    <li><span class="proc-num">1</span>User and Staff Access Management</li>
+                    <li><span class="proc-num">2</span>Grantee Registry and Masterlist Management</li>
+                    <li><span class="proc-num">3</span>Batch Creation and Management</li>
+                    <li><span class="proc-num">4</span>Grantee Onboarding and Identity Verification</li>
+                    <li><span class="proc-num">5</span>Document Vault Review and Validation</li>
+                    <li><span class="proc-num">6</span>Academic Record Review and Grade Tracking</li>
+                    <li><span class="proc-num">7</span>Eligibility Evaluation and Status Updating</li>
+                    <li><span class="proc-num">8</span>Billing and Distribution Report Generation</li>
+                    <li><span class="proc-num">9</span>Announcements and Social Media Publishing</li>
+                    <li><span class="proc-num">10</span>Support Ticket Management</li>
+                    <li><span class="proc-num">11</span>Dynamic Form Creation and Submission</li>
+                    <li><span class="proc-num">12</span>System Audit Logging and Security Monitoring</li>
+                </ul>
+            </div>
+
+            <!-- ARROW 2 -->
+            <div class="ipo-arrow">
+                <svg class="arrow-svg" viewBox="0 0 40 40" fill="none">
+                    <path d="M8 20 H28 M22 13 L30 20 L22 27" stroke="#e67e22" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+
+            <!-- OUTPUT -->
+            <div class="ipo-col output-col">
+                <div class="col-header">OUTPUT</div>
+                <ul class="output-list">
+                    <li>User Account List</li>
+                    <li>TES Grantee Profile Records</li>
+                    <li>Imported Masterlist Records</li>
+                    <li>Batch Records</li>
+                    <li>Submitted Requirements List</li>
+                    <li>Document Validation Results</li>
+                    <li>Academic Record Tracking Report</li>
+                    <li>Identity Verification Result</li>
+                    <li>Risk Assessment Results</li>
+                    <li>Eligible and Ineligible Grantee List</li>
+                    <li>Grantee Status Report</li>
+                    <li>Notification and Announcement Logs</li>
+                    <li>Audit Trail Report</li>
+                    <li>Billing and Distribution Report</li>
+                    <li>Dynamic Form Response Records</li>
+                    <li>TES Grantee Management and Office Reports</li>
+                </ul>
+            </div>
+
+        </div><!-- end ipo-flow -->
+    </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     PANEL 2 — PER MODULE
+════════════════════════════════════════════ -->
+<div class="panel" id="panel-modules">
+    <div class="module-grid" id="module-grid">
+
+        <!-- Module cards injected by JS -->
+
+    </div>
+</div>
+
+<!-- Legend -->
+<div class="legend">
+    <h2>Legend</h2>
+    <div class="legend-grid">
+        <div class="legend-item"><div class="legend-dot" style="background:#1a5276"></div> INPUT — Data entering the module</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#27ae60"></div> PROCESS — Actions performed by the system</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#e67e22"></div> OUTPUT — Results produced by the module</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#1e3a5f"></div> Operations Desk — Grantee &amp; Batch management</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#4a5568"></div> Validation Desk — Documents, Grades, Eligibility</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#7d3c00"></div> Communication &amp; Reports — Announcements, Billing</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#2c3e50"></div> Administration &amp; Security — Users, Audit</div>
+    </div>
+</div>
+
+<script>
+// ── Tab switching ──────────────────────────────────────────
+function switchTab(id) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('panel-' + id).classList.add('active');
+    event.target.classList.add('active');
+}
+
+function toggleAll() {
+    const cards = document.querySelectorAll('.module-card');
+    cards.forEach(c => c.style.display = c.style.display === 'none' ? '' : '');
+}
+
+// ── Module data ────────────────────────────────────────────
+const MODULES = [
+  {
+    name: "1. User and Staff Access Management",
+    desk: "Administration & Security",
+    inputs: [
+      { label: "Staff or Admin Account Details", items: ["Full name and email address", "Assigned role (Staff or Admin)"] },
+      { label: "Module Permission Assignment", items: ["Modules to grant per user", "Permission update command from admin"] },
+      { label: "Staff Activation Link", items: ["Token-based activation accepted by new staff"] },
+    ],
+    processes: [
+      "Create and register staff or admin account",
+      "Send activation link to new staff via email",
+      "Admin assigns module access per user via Permission Matrix",
+      "System enforces access rules on every request",
+      "Developer accounts cannot be modified (permanent superusers)",
+      "Grantee modules cannot be assigned to staff or admin",
+    ],
+    outputs: [
+      "Registered staff or admin account with assigned role",
+      "Module access record per user",
+      "Access granted or denied per assigned permissions",
+      "Audit record of account and permission changes",
+    ],
+  },
+  {
+    name: "2. Grantee Registry Management",
+    desk: "Operations Desk",
+    inputs: [
+      { label: "Grantee Personal Information", items: ["Full name, birthday, gender", "Home address and contact number", "Guardian name and contact"] },
+      { label: "Academic Information", items: ["School, course, and year level"] },
+      { label: "Identification", items: ["TES / UniFAST ID number"] },
+    ],
+    processes: [
+      "Register grantee profile linked to active batch",
+      "Validate completeness and uniqueness of record",
+      "Send account activation link via email",
+      "Staff manages grantee profiles from registry desk",
+    ],
+    outputs: [
+      "Verified grantee profile record",
+      "Grantee linked to active scholarship batch",
+      "Account activation notice sent",
+      "Grantee profile and registry report",
+    ],
+  },
+  {
+    name: "3. Grantee Masterlist Management",
+    desk: "Operations Desk",
+    inputs: [
+      { label: "CHED / UniFAST Masterlist File", items: ["CSV masterlist file uploaded by staff"] },
+      { label: "Batch Assignment", items: ["Target batch for imported records"] },
+      { label: "Confirmation Command", items: ["Staff review and confirmation of imported records"] },
+    ],
+    processes: [
+      "Upload and preview the masterlist CSV file",
+      "Match imported records against existing grantee accounts",
+      "Confirm and save reconciled masterlist to batch",
+      "Allow staff to delete or re-import records",
+    ],
+    outputs: [
+      "Imported and reconciled masterlist records",
+      "Matched and unmatched grantee report",
+      "Confirmed batch masterlist ready for processing",
+    ],
+  },
+  {
+    name: "4. Batch Creation and Management",
+    desk: "Operations Desk",
+    inputs: [
+      { label: "Batch Configuration", items: ["Batch name and school year", "Submission start date and deadline"] },
+      { label: "Eligibility Criteria", items: ["Minimum GWA threshold", "List of required documents"] },
+      { label: "Batch Status Command", items: ["Activate, deactivate, or extend deadline"] },
+    ],
+    processes: [
+      "Create and configure a new scholarship batch",
+      "Activate or deactivate batches (open/close window)",
+      "Extend submission deadline as needed",
+      "Send batch activation notification to grantees",
+    ],
+    outputs: [
+      "Active batch record with full configuration",
+      "Submission window opened or closed",
+      "Batch activation notification delivered",
+      "Batch status history and audit log",
+    ],
+  },
+  {
+    name: "5. Grantee Onboarding and Identity Verification",
+    desk: "Validation Desk",
+    inputs: [
+      { label: "Government-Issued ID", items: ["Front photo of the ID captured via camera"] },
+      { label: "Biometric Face Scan", items: ["Selfie captured for liveness verification"] },
+      { label: "KYC Personal Information", items: ["Name, birthday, and address during onboarding"] },
+    ],
+    processes: [
+      "Capture and scan government ID via OCR service",
+      "Extract name, birthday, and ID number from scan",
+      "Perform face liveness detection",
+      "Match face scan against ID photo",
+      "Staff reviews and approves or rejects face review",
+      "Grantee account unlocked upon approval",
+    ],
+    outputs: [
+      "Verified grantee identity record",
+      "Face review record with approval or rejection",
+      "Identity verification result sent to grantee",
+      "Grantee account unlocked for submission",
+    ],
+  },
+  {
+    name: "6. Document Vault Review and Validation",
+    desk: "Validation Desk",
+    inputs: [
+      { label: "Uploaded Requirement Documents", items: ["Certificate of Grades", "Birth Certificate", "Registration Form and other files"] },
+      { label: "Submission Slot", items: ["Requirement type and assigned slot from batch"] },
+      { label: "Staff Review Decision", items: ["Approve, Reject, or Request Resubmission"] },
+    ],
+    processes: [
+      "Grantee uploads documents through requirement vault",
+      "System validates file type and stores securely",
+      "Staff opens and reviews each submitted document",
+      "Staff approves or rejects with written reason",
+      "Grantee notified of review result",
+    ],
+    outputs: [
+      "Stored document record (Pending / Approved / Rejected)",
+      "Rejection reason sent to grantee for resubmission",
+      "Submitted requirements list per grantee",
+      "Audit record of all document review actions",
+    ],
+  },
+  {
+    name: "7. Academic Record Review and Grade Tracking",
+    desk: "Validation Desk",
+    inputs: [
+      { label: "Grade Documents", items: ["Certificate of Grades or Form 138"] },
+      { label: "OCR-Extracted Data", items: ["Subject names, units, and grade values"] },
+      { label: "Manual Correction", items: ["Staff grade correction or override"] },
+      { label: "Period Identifier", items: ["School year and semester"] },
+    ],
+    processes: [
+      "Extract grade data from uploaded documents",
+      "Store subject-level grade records per grantee",
+      "Compute General Weighted Average (GWA)",
+      "Staff reviews and corrects grade records",
+    ],
+    outputs: [
+      "Complete grade record per grantee per semester",
+      "Computed GWA on grantee profile",
+      "Academic record tracking report",
+      "Flagged records requiring manual review",
+    ],
+  },
+  {
+    name: "8. Eligibility Evaluation and Status Updating",
+    desk: "Validation Desk",
+    inputs: [
+      { label: "Grantee Academic Data", items: ["GWA and grade records per grantee"] },
+      { label: "Batch Eligibility Criteria", items: ["Minimum GWA requirement", "Required approved documents"] },
+      { label: "Document Approval Status", items: ["Approved or rejected document records"] },
+      { label: "Enrollment Data", items: ["Enrollment status and unit load"] },
+    ],
+    processes: [
+      "Check GWA against batch minimum requirement",
+      "Confirm all required documents are approved",
+      "Verify enrollment status and unit load",
+      "Determine eligibility verdict (Eligible / Ineligible / Conditional)",
+      "Staff sends eligibility result notice",
+    ],
+    outputs: [
+      "Eligibility status per grantee (Eligible / Ineligible / Conditional)",
+      "Per-criteria pass or fail breakdown",
+      "Eligible and ineligible grantee list",
+      "Eligibility result notice sent to grantee",
+    ],
+  },
+  {
+    name: "9. Billing and Distribution Report Generation",
+    desk: "Communication & Reports",
+    inputs: [
+      { label: "Eligible Grantee List", items: ["Approved eligible grantees from the batch"] },
+      { label: "Financial Configuration", items: ["Stipend amount and allowance rate"] },
+      { label: "Billing Period", items: ["Reporting period and cutoff date"] },
+    ],
+    processes: [
+      "Compute total billing amount per eligible grantee",
+      "Generate billing report for the period",
+      "Generate distribution report showing disbursement status",
+      "Staff downloads report for official submission",
+    ],
+    outputs: [
+      "Billing report with per-grantee breakdown (PDF / CSV)",
+      "Distribution report (released and pending disbursements)",
+      "Downloadable report file for CHED submission",
+      "Audit record of report generation",
+    ],
+  },
+  {
+    name: "10. Announcements and Social Media Publishing",
+    desk: "Communication & Reports",
+    inputs: [
+      { label: "Announcement Content", items: ["Title, body text, and media attachments"] },
+      { label: "Target Audience", items: ["All grantees, specific batch, or all staff"] },
+      { label: "Publish Schedule", items: ["Date and time of scheduled release"] },
+      { label: "Social Media Connection", items: ["Connected Facebook page credentials"] },
+    ],
+    processes: [
+      "Create and draft the announcement",
+      "Schedule announcement for automatic release",
+      "Publish to grantee and staff portals",
+      "Push to connected Facebook page via automation",
+    ],
+    outputs: [
+      "Published announcement visible in portal",
+      "Social media post published on connected page",
+      "Notification delivered to target recipients",
+      "Announcement and notification logs",
+    ],
+  },
+  {
+    name: "11. Support Ticket Management",
+    desk: "Communication & Reports",
+    inputs: [
+      { label: "Grantee Support Inquiry", items: ["Ticket subject, category, and description", "Attached files or screenshots"] },
+      { label: "Staff Reply", items: ["Response message from staff"] },
+      { label: "Ticket Status Update", items: ["Open, In Progress, Resolved, or Closed"] },
+    ],
+    processes: [
+      "Create ticket linked to grantee account",
+      "Route ticket to responsible staff by category",
+      "Staff reviews and replies to ticket thread",
+      "Staff updates and closes ticket upon resolution",
+      "Notify grantee on each status change",
+    ],
+    outputs: [
+      "Ticket with full threaded conversation history",
+      "Notification sent to grantee on each update",
+      "Resolved and closed ticket record",
+      "Support ticket report for management review",
+    ],
+  },
+  {
+    name: "12. Dynamic Form Creation and Submission",
+    desk: "Operations Desk",
+    inputs: [
+      { label: "Form Schema", items: ["Field types, labels, and validation rules"] },
+      { label: "Form Assignment", items: ["Target batch or grantee group"] },
+      { label: "Grantee Responses", items: ["Answers submitted by grantees through the form"] },
+    ],
+    processes: [
+      "Staff creates and publishes form with custom fields",
+      "Assign form to target grantees or batch groups",
+      "Grantee fills out and submits the assigned form",
+      "System validates responses against schema rules",
+      "Staff views and exports form response data",
+    ],
+    outputs: [
+      "Published form accessible to assigned grantees",
+      "Stored grantee form response records",
+      "Form submission confirmation sent to grantee",
+      "Exported form response report",
+    ],
+  },
+  {
+    name: "13. System Audit Logging and Security Monitoring",
+    desk: "Administration & Security",
+    inputs: [
+      { label: "System Actions", items: ["Every create, update, delete, login, and logout event"] },
+      { label: "Actor Details", items: ["Staff or grantee name, role, and IP address"] },
+      { label: "Target Record", items: ["Record type and ID affected by each action"] },
+      { label: "Action Timestamp", items: ["Date and time of each system event"] },
+    ],
+    processes: [
+      "Capture all create, update, and delete events",
+      "Log all login, logout, and failed login attempts",
+      "Store before-and-after snapshot of changed records",
+      "Detect repeated failed logins and flag as security risk",
+      "Enforce request rate limits per user",
+    ],
+    outputs: [
+      "Immutable audit log viewable by admin",
+      "Security alert triggered on suspicious activity",
+      "Exportable audit trail report for compliance",
+      "Rate-limit block applied on abuse attempts",
+    ],
+  },
+];
+
+// ── Render module cards ────────────────────────────────────
+const grid = document.getElementById('module-grid');
+
+const deskColors = {
+  "Operations Desk":        "#1e3a5f",
+  "Validation Desk":        "#4a5568",
+  "Communication & Reports":"#7d3c00",
+  "Administration & Security":"#2c3e50",
+};
+
+MODULES.forEach(mod => {
+    const card = document.createElement('div');
+    card.className = 'module-card';
+
+    const deskColor = deskColors[mod.desk] || "#1e3a5f";
+
+    // Header
+    card.innerHTML = `
+        <div class="module-card-header" style="background: linear-gradient(135deg, ${deskColor}, ${deskColor}cc);">
+            ${mod.name}
+            <div><span class="desk-badge">${mod.desk}</span></div>
+        </div>
+        <div class="module-card-body">
+            <div class="mc-section">
+                <div class="mc-label lbl-in">INPUT</div>
+                ${mod.inputs.map(g => `
+                    <div class="mc-input-group">
+                        <div class="mc-input-group-label">${g.label}</div>
+                        <ul>${g.items.map(i => `<li>${i}</li>`).join('')}</ul>
+                    </div>
+                `).join('')}
+            </div>
+            <div class="mc-section">
+                <div class="mc-label lbl-pr">PROCESS</div>
+                <ul class="mc-proc-list">
+                    ${mod.processes.map((p,i) => `<li><span class="mc-proc-num">${i+1}</span>${p}</li>`).join('')}
+                </ul>
+            </div>
+            <div class="mc-section">
+                <div class="mc-label lbl-out">OUTPUT</div>
+                <ul class="mc-out-list">
+                    ${mod.outputs.map(o => `<li>${o}</li>`).join('')}
+                </ul>
+            </div>
+        </div>
+    `;
+    grid.appendChild(card);
+});
+</script>
+</body>
+</html>

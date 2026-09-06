@@ -14,8 +14,19 @@ import {
   assignUserRole,
   removeUserRole,
   getUserRoles,
+  getUserModules,
+  updateUserModule,
+  syncUserModules,
 } from "@/api/rbac";
-import type { CreateRoleForm, RbacRole, RbacRoleDetail, UpdateRoleForm } from "@/api/rbac";
+import type {
+  CreateRoleForm,
+  RbacRole,
+  RbacRoleDetail,
+  UpdateRoleForm,
+  RbacOperationalModule,
+  RbacUserModuleRow,
+  UserModulesResponse,
+} from "@/api/rbac";
 
 // ─── Roles ────────────────────────────────────────────────────────────────────
 
@@ -47,10 +58,10 @@ export function useRbacRoleDetail(id: number) {
 
 // ─── Permissions ──────────────────────────────────────────────────────────────
 
-export function useRbacPermissions() {
+export function useRbacPermissions(scope?: string) {
   const query = useQuery({
-    queryKey: queryKeys.rbacPermissions,
-    queryFn: listPermissions,
+    queryKey: scope ? [...queryKeys.rbacPermissions, scope] : queryKeys.rbacPermissions,
+    queryFn: () => listPermissions(scope),
     staleTime: 60_000,
   });
 
@@ -62,10 +73,32 @@ export function useRbacPermissions() {
   /** Grouped by category — keeps the original structure from the API. */
   const grouped = computed(() => query.data.value ?? {});
 
-  /** Sorted category names for consistent display order. */
-  const categories = computed(() =>
-    Object.keys(query.data.value ?? {}).sort(),
-  );
+  const preferredCategoryOrder = [
+    "Operations",
+    "Validation",
+    "Communication",
+    "Administration",
+    "Users",
+    "Batches",
+    "Documents",
+    "Grantees",
+    "Academic",
+    "Settings",
+    "Audit",
+  ];
+
+  /** Sorted category names for consistent display order, prioritizing operational modules. */
+  const categories = computed(() => {
+    const rawCategories = Object.keys(query.data.value ?? {});
+    return rawCategories.sort((a, b) => {
+      const idxA = preferredCategoryOrder.indexOf(a);
+      const idxB = preferredCategoryOrder.indexOf(b);
+      if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+      if (idxA !== -1) return -1;
+      if (idxB !== -1) return 1;
+      return a.localeCompare(b);
+    });
+  });
 
   return { query, allPermissions, grouped, categories };
 }
@@ -213,4 +246,94 @@ export function useRemoveUserRole(userId: number) {
       void queryClient.invalidateQueries({ queryKey: queryKeys.rbacUserRoles(userId) });
     },
   });
+}
+
+// ─── Per-User Operational Modules ─────────────────────────────────────────────
+
+export const userModulesQueryKey = ["rbac", "user-modules"] as const;
+
+export function useUserModules() {
+  const queryClient = useQueryClient();
+
+  const query = useQuery({
+    queryKey: userModulesQueryKey,
+    queryFn: getUserModules,
+    staleTime: 30_000,
+  });
+
+  const modules = computed<RbacOperationalModule[]>(() => query.data.value?.modules ?? []);
+  const users = computed<RbacUserModuleRow[]>(() => query.data.value?.users ?? []);
+  const developers = computed<RbacUserModuleRow[]>(() => query.data.value?.developers ?? []);
+  const nonAssignable = computed(() => query.data.value?.non_assignable ?? null);
+
+  // Group modules by Desk
+  const desks = computed(() => {
+    const map: Record<string, RbacOperationalModule[]> = {};
+    for (const mod of modules.value) {
+      if (!map[mod.desk]) map[mod.desk] = [];
+      map[mod.desk].push(mod);
+    }
+    return map;
+  });
+
+  const deskOrder = [
+    "Operations Desk",
+    "Validation Desk",
+    "Communication & Reports",
+    "Administration & Security",
+  ];
+
+  const sortedDeskNames = computed(() => {
+    const raw = Object.keys(desks.value);
+    return raw.sort((a, b) => {
+      const idxA = deskOrder.indexOf(a);
+      const idxB = deskOrder.indexOf(b);
+      if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+      if (idxA !== -1) return -1;
+      if (idxB !== -1) return 1;
+      return a.localeCompare(b);
+    });
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ userId, moduleKey, enabled }: { userId: number; moduleKey: string; enabled: boolean }) =>
+      updateUserModule(userId, moduleKey, enabled),
+    onSuccess: (updatedUser) => {
+      queryClient.setQueryData<UserModulesResponse>(userModulesQueryKey, (prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          users: prev.users.map((u) => (u.id === updatedUser.id ? updatedUser : u)),
+        };
+      });
+      void queryClient.invalidateQueries({ queryKey: userModulesQueryKey });
+    },
+  });
+
+  const syncMutation = useMutation({
+    mutationFn: ({ userId, modules }: { userId: number; modules: string[] }) =>
+      syncUserModules(userId, modules),
+    onSuccess: (updatedUser) => {
+      queryClient.setQueryData<UserModulesResponse>(userModulesQueryKey, (prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          users: prev.users.map((u) => (u.id === updatedUser.id ? updatedUser : u)),
+        };
+      });
+      void queryClient.invalidateQueries({ queryKey: userModulesQueryKey });
+    },
+  });
+
+  return {
+    query,
+    modules,
+    users,
+    developers,
+    nonAssignable,
+    desks,
+    sortedDeskNames,
+    updateMutation,
+    syncMutation,
+  };
 }

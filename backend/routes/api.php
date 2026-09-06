@@ -72,7 +72,7 @@ Route::middleware([
     // is verified. /resend is the self-service recovery path for expired links.
     Route::get('/activation/{token}', [ActivationController::class, 'show'])->middleware('throttle:30,1');
     Route::post('/activation/{token}/begin', [ActivationController::class, 'begin'])->middleware('throttle:10,1');
-    Route::post('/activation/resend', [ActivationController::class, 'resend'])->middleware('throttle:3,60');
+    Route::post('/activation/resend', [ActivationController::class, 'resend'])->middleware('throttle:3,60,activation_resend');
 
     // Staff/admin/developer invites: no biometric funnel, so the password IS set
     // from the link. Ownership rests on an admin having authorised the invite (§2.4).
@@ -207,7 +207,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
         Route::get('/billing-reports', [BillingReportController::class, 'index']);
         Route::post('/billing-reports', [BillingReportController::class, 'store'])
-            ->middleware(['role:developer,admin,head', 'permission:generate_reports', 'throttle:10,1']);
+            ->middleware(['role:developer,admin,head,staff', 'permission:generate_reports', 'throttle:10,1,billing_reports']);
         Route::get('/billing-reports/{report}', [BillingReportController::class, 'show']);
         Route::get('/billing-reports/{report}/download', [BillingReportController::class, 'download'])
             ->middleware('permission:generate_reports');
@@ -237,7 +237,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
         Route::get('/distribution-reports', [DistributionReportController::class, 'index']);
         Route::post('/distribution-reports', [DistributionReportController::class, 'store'])
-            ->middleware(['role:developer,admin,head', 'permission:generate_reports', 'throttle:10,1']);
+            ->middleware(['role:developer,admin,head,staff', 'permission:generate_reports', 'throttle:10,1,distribution_reports']);
         Route::get('/distribution-reports/{report}', [DistributionReportController::class, 'show']);
         Route::get('/distribution-reports/{report}/download', [DistributionReportController::class, 'download'])
             ->middleware('permission:generate_reports');
@@ -290,9 +290,10 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::delete('/rbac/permissions/{permission}', [RbacController::class, 'destroyPermission'])->middleware('throttle:30,1');
         Route::get('/rbac/users/{user}/roles', [RbacController::class, 'userRoles'])->middleware('throttle:60,1');
         Route::post('/rbac/users/{user}/roles', [RbacController::class, 'assignUserRole'])->middleware('throttle:30,1');
-        Route::delete('/rbac/users/{user}/roles/{role}', [RbacController::class, 'removeUserRole'])->middleware('throttle:30,1');
         Route::put('/rbac/users/{user}/roles', [RbacController::class, 'syncUserRoles'])->middleware('throttle:30,1');
         Route::post('/rbac/check-permission', [RbacController::class, 'checkPermission'])->middleware('throttle:60,1');
+        Route::get('/rbac/user-modules', [RbacController::class, 'userModules'])->middleware('throttle:60,1');
+        Route::put('/rbac/user-modules/{user}', [RbacController::class, 'updateUserModules'])->middleware('throttle:30,1');
 
         // Terms & Conditions management
         Route::get('/terms', [TermController::class, 'index']);

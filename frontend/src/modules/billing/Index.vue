@@ -8,6 +8,15 @@ import { apiFetch, buildQuery } from "@/api/client";
 import type { PaginatedResponse, PaginationMeta } from "@/api/types";
 import { toast } from "@/composables/useToast";
 
+const props = withDefaults(
+  defineProps<{
+    hideHeader?: boolean;
+  }>(),
+  {
+    hideHeader: false,
+  }
+);
+
 type Batch = {
   id: number;
   name: string;
@@ -126,6 +135,7 @@ function downloadReport(report: BillingReportRow) {
 <template>
   <div>
     <PageHeader
+      v-if="!props.hideHeader"
       title="Billing / Call-for-Billing"
       description="Generate a CHED call-for-billing PDF for verified grantees only (PHP 10,000 stipend per semester)."
     />

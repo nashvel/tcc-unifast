@@ -57,6 +57,13 @@ class CollaboratorController extends Controller
             'access' => 'nullable|array',
         ]);
 
+        $actor = $request->user();
+        if ($validated['role'] === 'developer' && $actor?->role !== 'developer') {
+            return response()->json([
+                'message' => 'Only developers can invite developer accounts.',
+            ], 403);
+        }
+
         $name = explode('@', $validated['email'])[0];
 
         // Unusable random hash — never a shared literal. Previously this was
