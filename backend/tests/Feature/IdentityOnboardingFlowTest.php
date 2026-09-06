@@ -51,7 +51,7 @@ class IdentityOnboardingFlowTest extends TestCase
         Storage::fake('public');
         Storage::fake('local');
         Http::fake([
-            'http://127.0.0.1:8001/ocr/image' => Http::response([
+            'http://127.0.0.1:8081/ocr/image' => Http::response([
                 'result' => ['cleaned_text' => "Maria Santos\nSTU-1\nBSIT"],
             ], 200),
         ]);
@@ -356,7 +356,7 @@ class IdentityOnboardingFlowTest extends TestCase
     {
         Storage::fake('public');
         Storage::fake('local');
-        Http::fakeSequence('http://127.0.0.1:8001/ocr/image')
+        Http::fakeSequence('http://127.0.0.1:8081/ocr/image')
             ->push(['result' => ['cleaned_text' => "Maria Santos\nSTU-1\nBSIT"]], 200)
             ->push(['result' => ['cleaned_text' => '']], 200);
 
@@ -389,7 +389,7 @@ class IdentityOnboardingFlowTest extends TestCase
     public function test_id_scan_fails_clearly_when_back_ocr_service_errors(): void
     {
         Storage::fake('local');
-        Http::fakeSequence('http://127.0.0.1:8001/ocr/image')
+        Http::fakeSequence('http://127.0.0.1:8081/ocr/image')
             ->push(['result' => ['cleaned_text' => "Maria Santos\nSTU-1\nBSIT"]], 200)
             ->push(['error' => ['message' => 'Tesseract OCR is not available.']], 503);
 
@@ -417,7 +417,7 @@ class IdentityOnboardingFlowTest extends TestCase
     {
         Storage::fake('public');
         Storage::fake('local');
-        Http::fakeSequence('http://127.0.0.1:8001/ocr/image')
+        Http::fakeSequence('http://127.0.0.1:8081/ocr/image')
             ->push([
                 'result' => ['cleaned_text' => "Maria Santos\nSTU-1\nBSIT"],
                 'qr_code' => ['found' => false, 'value' => null],
@@ -467,7 +467,7 @@ class IdentityOnboardingFlowTest extends TestCase
     {
         Storage::fake('public');
         Storage::fake('local');
-        Http::fakeSequence('http://127.0.0.1:8001/ocr/image')
+        Http::fakeSequence('http://127.0.0.1:8081/ocr/image')
             ->push(['result' => ['cleaned_text' => "Maria Santos\nSTU-1\nBSIT"]], 200)
             ->push([
                 'result' => [
@@ -505,7 +505,7 @@ class IdentityOnboardingFlowTest extends TestCase
     public function test_ocr_health_proxy_reports_unavailable_when_service_down(): void
     {
         Http::fake([
-            'http://127.0.0.1:8001/health' => Http::failedConnection(),
+            'http://127.0.0.1:8081/health' => Http::failedConnection(),
         ]);
 
         [$student] = $this->studentWithMasterlist();
@@ -514,13 +514,13 @@ class IdentityOnboardingFlowTest extends TestCase
         $this->actingAs($student)->getJson('/api/student/identity-onboarding/ocr-health')
             ->assertOk()
             ->assertJsonPath('data.ok', false)
-            ->assertJsonPath('data.message', 'Local OCR (:8001) is unavailable');
+            ->assertJsonPath('data.message', 'Local OCR (:8081) is unavailable');
     }
 
     public function test_ocr_health_proxy_reports_ok_when_service_up(): void
     {
         Http::fake([
-            'http://127.0.0.1:8001/health' => Http::response([
+            'http://127.0.0.1:8081/health' => Http::response([
                 'status' => 'healthy',
                 'tesseract_available' => true,
             ], 200),
@@ -539,7 +539,7 @@ class IdentityOnboardingFlowTest extends TestCase
     {
         Storage::fake('local');
         Http::fake([
-            'http://127.0.0.1:8001/ocr/image' => Http::response([
+            'http://127.0.0.1:8081/ocr/image' => Http::response([
                 'result' => ['cleaned_text' => "Someone Else\nSTU-1"],
             ], 200),
         ]);
@@ -571,7 +571,7 @@ class IdentityOnboardingFlowTest extends TestCase
     {
         Storage::fake('local');
         Http::fake([
-            'http://127.0.0.1:8001/ocr/image' => Http::response([
+            'http://127.0.0.1:8081/ocr/image' => Http::response([
                 'result' => ['cleaned_text' => "Maria Santos\nSTU-1\nBSIT"],
             ], 200),
         ]);
@@ -605,7 +605,7 @@ class IdentityOnboardingFlowTest extends TestCase
     {
         Storage::fake('local');
         Http::fake([
-            'http://127.0.0.1:8001/ocr/image' => Http::response([
+            'http://127.0.0.1:8081/ocr/image' => Http::response([
                 'result' => ['cleaned_text' => "Someone Else\nSTU-1"],
             ], 200),
         ]);

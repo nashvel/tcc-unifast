@@ -14,7 +14,7 @@ class IdCardOcrServiceTest extends TestCase
     public function extract_text_allow_empty_treats_empty_text_as_success(): void
     {
         Http::fake([
-            'http://127.0.0.1:8001/ocr/image' => Http::response([
+            'http://127.0.0.1:8081/ocr/image' => Http::response([
                 'result' => ['cleaned_text' => ''],
             ], 200),
         ]);
@@ -34,7 +34,7 @@ class IdCardOcrServiceTest extends TestCase
     public function extract_text_parses_qr_from_local_payload(): void
     {
         Http::fake([
-            'http://127.0.0.1:8001/ocr/image' => Http::response([
+            'http://127.0.0.1:8081/ocr/image' => Http::response([
                 'result' => ['cleaned_text' => 'hello'],
                 'qr_code' => [
                     'found' => true,
@@ -264,7 +264,7 @@ class IdCardOcrServiceTest extends TestCase
     public function extract_text_allow_empty_throws_when_service_returns_error(): void
     {
         Http::fake([
-            'http://127.0.0.1:8001/ocr/image' => Http::response([
+            'http://127.0.0.1:8081/ocr/image' => Http::response([
                 'error' => ['message' => 'Tesseract OCR is not available.'],
             ], 503),
         ]);

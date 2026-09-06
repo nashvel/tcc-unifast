@@ -67,7 +67,7 @@ return [
     ],
 
     'ocr' => [
-        'url' => env('OCR_SERVICE_URL', 'http://127.0.0.1:8001'),
+        'url' => env('OCR_SERVICE_URL', 'http://127.0.0.1:8081'),
         'timeout' => (int) env('OCR_SERVICE_TIMEOUT', 120),
         // Shared secret sent as X-OCR-Key. Must match OCR_API_KEY in the
         // ocr-service environment; blank leaves the service open (local only).

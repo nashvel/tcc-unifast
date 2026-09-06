@@ -158,7 +158,7 @@ class IdCardOcrService
     {
         $baseUrl = rtrim((string) config('services.ocr.url'), '/');
         if ($baseUrl === '') {
-            throw new \RuntimeException('No OCR provider configured. Set OCR_SERVICE_URL (local :8001) for development.');
+            throw new \RuntimeException('No OCR provider configured. Set OCR_SERVICE_URL (local :8081) for development.');
         }
 
         try {
@@ -169,7 +169,7 @@ class IdCardOcrService
                 ->post($baseUrl.'/ocr/image');
         } catch (ConnectionException $exception) {
             throw new \RuntimeException(
-                'Local OCR service is unavailable on '.$baseUrl.'. Start backend/ocr-service (uvicorn :8001). Never bind PHP on 8001.',
+                'Local OCR service is unavailable on '.$baseUrl.'. Start backend/ocr-service (uvicorn :8081). Never bind PHP on 8081.',
                 0,
                 $exception,
             );
@@ -180,7 +180,7 @@ class IdCardOcrService
             throw new \RuntimeException(
                 $message !== ''
                     ? 'Local OCR failed: '.$message
-                    : 'Local OCR service returned an error. Check ocr-service logs on :8001.',
+                    : 'Local OCR service returned an error. Check ocr-service logs on :8081.',
             );
         }
 

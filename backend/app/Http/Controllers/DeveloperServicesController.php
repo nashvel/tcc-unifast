@@ -48,10 +48,10 @@ class DeveloperServicesController extends Controller
             Cache::forget('runtime_activation_frontend_url');
         }
 
-        // Check OCR by hitting its health endpoint (port 8001)
+        // Check OCR by hitting its health endpoint (port 8081)
         $ocrRunning = false;
         try {
-            $response = Http::timeout(2)->get('http://127.0.0.1:8001/health');
+            $response = Http::timeout(2)->get('http://127.0.0.1:8081/health');
             if ($response->successful()) {
                 $ocrRunning = true;
             }
@@ -190,20 +190,20 @@ class DeveloperServicesController extends Controller
             ], 404);
         }
 
-        // Clean restart: kill whatever process is currently on port 8001
-        exec('powershell -NoProfile -Command "(Get-NetTCPConnection -LocalPort 8001 -ErrorAction SilentlyContinue).OwningProcess | ForEach-Object { Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue }" 2>NUL');
+        // Clean restart: kill whatever process is currently on port 8081
+        exec('powershell -NoProfile -Command "(Get-NetTCPConnection -LocalPort 8081 -ErrorAction SilentlyContinue).OwningProcess | ForEach-Object { Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue }" 2>NUL');
         exec('taskkill /F /IM uvicorn.exe 2>NUL');
         sleep(1);
 
         $cmd = sprintf(
-            'powershell -NoProfile -NonInteractive -Command "Start-Process -FilePath \'%s\' -ArgumentList \'app.main:app --host 127.0.0.1 --port 8001\' -WorkingDirectory \'%s\' -WindowStyle Hidden"',
+            'powershell -NoProfile -NonInteractive -Command "Start-Process -FilePath \'%s\' -ArgumentList \'app.main:app --host 127.0.0.1 --port 8081\' -WorkingDirectory \'%s\' -WindowStyle Hidden"',
             addslashes($uvicorn),
             addslashes($ocrDir)
         );
         exec($cmd);
 
         return response()->json([
-            'message' => 'OCR service starting in background on port 8001. Refresh status in a few seconds.',
+            'message' => 'OCR service starting in background on port 8081. Refresh status in a few seconds.',
         ]);
     }
 
@@ -214,7 +214,7 @@ class DeveloperServicesController extends Controller
     {
         $this->assertLocalEnvironment();
 
-        exec('powershell -NoProfile -Command "(Get-NetTCPConnection -LocalPort 8001 -ErrorAction SilentlyContinue).OwningProcess | ForEach-Object { Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue }" 2>NUL');
+        exec('powershell -NoProfile -Command "(Get-NetTCPConnection -LocalPort 8081 -ErrorAction SilentlyContinue).OwningProcess | ForEach-Object { Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue }" 2>NUL');
         exec('taskkill /F /IM uvicorn.exe 2>NUL');
 
         return response()->json([

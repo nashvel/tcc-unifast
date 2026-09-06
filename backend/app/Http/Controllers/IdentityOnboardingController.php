@@ -105,11 +105,11 @@ class IdentityOnboardingController extends Controller
     }
 
     /**
-     * Proxy local OCR service /health so the browser avoids CORS to :8001.
+     * Proxy local OCR service /health so the browser avoids CORS to :8081.
      */
     public function ocrHealth(): JsonResponse
     {
-        $baseUrl = rtrim((string) config('services.ocr.url', 'http://127.0.0.1:8001'), '/');
+        $baseUrl = rtrim((string) config('services.ocr.url', 'http://127.0.0.1:8081'), '/');
         if ($baseUrl === '') {
             return response()->json([
                 'data' => [
@@ -129,7 +129,7 @@ class IdentityOnboardingController extends Controller
                     'ok' => false,
                     'status' => 'unavailable',
                     'url' => $baseUrl,
-                    'message' => 'Local OCR (:8001) is unavailable',
+                    'message' => 'Local OCR (:8081) is unavailable',
                     'detail' => $exception->getMessage(),
                 ],
             ]);
@@ -141,7 +141,7 @@ class IdentityOnboardingController extends Controller
                     'ok' => false,
                     'status' => 'error',
                     'url' => $baseUrl,
-                    'message' => 'Local OCR (:8001) is unavailable',
+                    'message' => 'Local OCR (:8081) is unavailable',
                     'http_status' => $response->status(),
                 ],
             ]);
