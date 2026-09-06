@@ -214,7 +214,7 @@ class StoreIdentityIdScanService
     private function frontOcrFailMessage(string $detail): string
     {
         if (stripos($detail, 'unavailable') !== false || stripos($detail, 'No OCR provider') !== false) {
-            return 'Front of School ID: Local OCR (:8001) is unavailable. Start ocr-service, then retry.';
+            return 'Front of School ID: Local OCR (:8081) is unavailable. Start ocr-service, then retry.';
         }
 
         return 'Front of School ID: '.$detail;
@@ -223,7 +223,7 @@ class StoreIdentityIdScanService
     private function backOcrUnavailableMessage(string $detail): string
     {
         if (stripos($detail, 'unavailable') !== false || stripos($detail, 'No OCR provider') !== false) {
-            return 'Back of School ID: Local OCR (:8001) is unavailable. Start ocr-service, then retry. (This is not a Front OCR name mismatch.)';
+            return 'Back of School ID: Local OCR (:8081) is unavailable. Start ocr-service, then retry. (This is not a Front OCR name mismatch.)';
         }
 
         return 'Back of School ID: '.$detail;

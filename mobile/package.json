@@ -1,0 +1,24 @@
+{
+  "name": "tcc-unifast-mobile",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Android Capacitor wrapper for the TCC UniFAST portal",
+  "type": "module",
+  "scripts": {
+    "sync": "cap sync android",
+    "open:android": "cap open android",
+    "run:android": "cap run android",
+    "build:android": "cap sync android && cap build android"
+  },
+  "dependencies": {
+    "@capacitor/android": "8.5.1",
+    "@capacitor/core": "8.5.1"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.5.1",
+    "typescript": "^5.9.3"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}

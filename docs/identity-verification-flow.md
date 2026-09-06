@@ -347,9 +347,9 @@ Last updated: 2026-07-26
 ### Env vars
 
 ```
-OCR_SERVICE_URL=http://127.0.0.1:8001
+OCR_SERVICE_URL=http://127.0.0.1:8081
 OCR_SERVICE_TIMEOUT=120
-OCR_SPACE_API_KEY=           # leave empty in local/dev (free) so PHP always uses ocr-service :8001
+OCR_SPACE_API_KEY=           # leave empty in local/dev (free) so PHP always uses ocr-service :8081
 OCR_SPACE_TIMEOUT=60
 TCC_REGISTRAR_DOMAINS=registrar.tcc.edu.ph,sis.tcc.edu.ph,tcc.edu.ph
 VITE_TCC_REGISTRAR_DOMAINS=registrar.tcc.edu.ph,sis.tcc.edu.ph,tcc.edu.ph
@@ -364,7 +364,7 @@ TCC_UNIFAST_N8N_WEBHOOK_HEADER=X-TCC-UniFAST-Key
 TCC_UNIFAST_N8N_WEBHOOK_SECRET=
 ```
 
-**Dev ports:** Laravel `:8000`, Vite `:5173`, OCR uvicorn `:8001` only (never bind PHP on 8001). School ID back QR is best-effort via pyzbar/OpenCV and is not required to pass onboarding.
+**Dev ports:** Laravel `:8000`, Vite `:5173`, OCR uvicorn `:8081` only (never bind PHP on 8081). School ID back QR is best-effort via pyzbar/OpenCV and is not required to pass onboarding.
 
 ---
 
@@ -406,4 +406,3 @@ Flow after opening the activation URL:
 3. Liveness confident → `active`; uncertain → `pending_face_review` (staff `/app/face-reviews`); mismatch → retry liveness (not blocked)
 
 Re-running the seeder resets users to `unverified`, invalidates unused tokens, and prints fresh activation links.
-

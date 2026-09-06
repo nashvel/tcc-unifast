@@ -1,6 +1,7 @@
 # Local n8n
 
-This folder runs local n8n and OCR services for TCC UniFAST workflow development.
+This folder runs the same three Docker-supported services as the root Compose
+file: n8n, OCR, and Redis. The frontend, backend, and MySQL run on the host.
 
 ## Start
 
@@ -13,8 +14,9 @@ Open:
 
 ```text
 n8n: http://localhost:5678
-OCR health: http://localhost:8001/health
-OCR Swagger: http://localhost:8001/docs
+OCR health: http://localhost:8081/health
+OCR Swagger: http://localhost:8081/docs
+Redis: localhost:6380
 ```
 
 On first launch, n8n asks you to create the local owner account.
@@ -64,13 +66,21 @@ docs/n8n-facebook-batch-announcement.md
 For the Laravel backend running on your host machine, keep:
 
 ```env
-OCR_SERVICE_URL=http://127.0.0.1:8001
+OCR_SERVICE_URL=http://127.0.0.1:8081
 OCR_SERVICE_TIMEOUT=120
 OCR_SPACE_API_KEY=
 ```
 
-If Laravel is later run inside the same Compose network, use
-`OCR_SERVICE_URL=http://ocr-service:8001` from that container instead.
+For the normal host-run backend, also set:
+
+```env
+REDIS_HOST=127.0.0.1
+REDIS_PORT=6380
+TCC_UNIFAST_N8N_WEBHOOK_URL=http://127.0.0.1:5678/webhook/tcc-unifast/social-posts/facebook
+```
+
+n8n uses `LARAVEL_API_URL=http://host.docker.internal:8000` to call the
+host-run Laravel API.
 
 The OCR container includes Tesseract OCR and ZBar/pyzbar support for best-effort
 School ID back QR decoding.

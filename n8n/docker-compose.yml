@@ -1,4 +1,18 @@
 services:
+  redis:
+    image: redis:7.4-alpine
+    container_name: tcc-unifast-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6380}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
   n8n:
     image: docker.n8n.io/n8nio/n8n:latest
     container_name: tcc-unifast-n8n
@@ -15,11 +29,13 @@ services:
       N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS: "true"
       N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:-}
       N8N_BLOCK_ENV_ACCESS_IN_NODE: "false"
-      LARAVEL_API_URL: ${LARAVEL_API_URL:-}
+      LARAVEL_API_URL: ${LARAVEL_API_URL:-http://host.docker.internal:8000}
       TCC_UNIFAST_N8N_WEBHOOK_SECRET: ${TCC_UNIFAST_N8N_WEBHOOK_SECRET:-}
       TCC_UNIFAST_SYNC_ENDPOINT_SECRET: ${TCC_UNIFAST_SYNC_ENDPOINT_SECRET:-}
       FACEBOOK_PAGE_ID: ${FACEBOOK_PAGE_ID:-}
       FACEBOOK_PAGE_ACCESS_TOKEN: ${FACEBOOK_PAGE_ACCESS_TOKEN:-}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - n8n_data:/home/node/.n8n
       - ./local-files:/files
@@ -30,14 +46,16 @@ services:
     container_name: tcc-unifast-ocr-service
     restart: unless-stopped
     ports:
-      - "${OCR_SERVICE_PORT:-8001}:8001"
+      - "${OCR_SERVICE_PORT:-8081}:8001"
     environment:
       TESSERACT_CMD: /usr/bin/tesseract
       TESSERACT_PSM: ${TESSERACT_PSM:-6}
       SAVE_DEBUG_IMAGES: ${SAVE_DEBUG_IMAGES:-false}
+      OCR_API_KEY: ${OCR_API_KEY:-}
     volumes:
       - ocr_outputs:/app/outputs
 
 volumes:
+  redis_data:
   n8n_data:
   ocr_outputs:

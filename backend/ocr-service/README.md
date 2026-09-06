@@ -54,15 +54,15 @@ OCR still succeeds when QR is missing or pyzbar is unavailable (`qr_code.found=f
 pytest
 ```
 
-7. Start FastAPI on **8001 only** (never bind Laravel/PHP on 8001):
+7. Start FastAPI on **8081 only** (never bind Laravel/PHP on 8081):
 
 ```powershell
-uvicorn app.main:app --host 127.0.0.1 --port 8001 --reload
+uvicorn app.main:app --host 127.0.0.1 --port 8081 --reload
 ```
 
 8. Open Swagger:
 
-<http://127.0.0.1:8001/docs>
+<http://127.0.0.1:8081/docs>
 
 ## Ubuntu Setup
 
@@ -92,12 +92,12 @@ pytest
 Start FastAPI:
 
 ```bash
-uvicorn app.main:app --host 127.0.0.1 --port 8001 --reload
+uvicorn app.main:app --host 127.0.0.1 --port 8081 --reload
 ```
 
 Open Swagger:
 
-<http://127.0.0.1:8001/docs>
+<http://127.0.0.1:8081/docs>
 
 ## Environment
 
@@ -112,7 +112,7 @@ ZBAR_DLL_PATH=
 
 `TESSERACT_CMD` is optional and should point to the Tesseract executable only when it is not available on `PATH`. `SAVE_DEBUG_IMAGES=true` saves processed images under `outputs/debug/`.
 
-Keep Laravel `OCR_SPACE_API_KEY` unset in local/dev so PHP always calls this service at `OCR_SERVICE_URL=http://127.0.0.1:8001`.
+Keep Laravel `OCR_SPACE_API_KEY` unset in local/dev so PHP always calls this service at `OCR_SERVICE_URL=http://127.0.0.1:8081`.
 
 ## API
 
@@ -156,7 +156,7 @@ It prints readable JSON to the terminal.
 ## Testing an ID Image and PDF
 
 1. Start the server.
-2. Open <http://127.0.0.1:8001/docs>.
+2. Open <http://127.0.0.1:8081/docs>.
 3. Use `POST /ocr/image` for a JPEG, PNG, or WebP image of a fictional or consented document.
 4. Use `POST /ocr/pdf` for a digital or scanned PDF.
 5. Review `raw_text`, `cleaned_text`, word confidence, bounding boxes, metadata, QR result, and preprocessing information.

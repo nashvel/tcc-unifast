@@ -302,10 +302,10 @@ async function checkOcrHealth() {
     ocrHealthOk.value = ok;
     ocrHealthMessage.value = ok
       ? ""
-      : String(payload?.data?.message || "Local OCR (:8001) is unavailable");
+      : String(payload?.data?.message || "Local OCR (:8081) is unavailable");
   } catch {
     ocrHealthOk.value = false;
-    ocrHealthMessage.value = "Local OCR (:8001) is unavailable";
+    ocrHealthMessage.value = "Local OCR (:8081) is unavailable";
   } finally {
     ocrHealthChecking.value = false;
   }
@@ -821,7 +821,7 @@ function onPrimaryClick() {
       >
         <span class="flex items-center gap-2 font-medium">
           <IconAlertTriangle :size="16" />
-          {{ ocrHealthMessage || "Local OCR (:8001) is unavailable" }}
+          {{ ocrHealthMessage || "Local OCR (:8081) is unavailable" }}
         </span>
         <button
           class="inline-flex h-8 items-center gap-1.5 rounded-md border border-amber-500/40 bg-surface px-3 text-xs font-medium"

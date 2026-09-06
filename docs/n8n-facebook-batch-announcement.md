@@ -209,10 +209,11 @@ The status endpoint reports evidence from the Laravel database; a configured web
 
 ### Troubleshooting: no real Page appears
 
-1. Check whether the Docker-backed Laravel database contains a post:
+1. Check whether the host-run Laravel database contains a post:
 
    ```bash
-   docker exec tcc-unifast-backend php artisan tinker --execute="dump(App\\Models\\SocialMediaPost::query()->latest()->get(['id','status','approval_mode','n8n_status','external_post_id'])->toArray());"
+   cd backend
+   php artisan tinker --execute="dump(App\\Models\\SocialMediaPost::query()->latest()->get(['id','status','approval_mode','n8n_status','external_post_id'])->toArray());"
    ```
 
 2. If the result is `[]`, no post was saved in the same backend/database used by the UI. Save a draft in the Social Posts module first.
@@ -227,8 +228,8 @@ The status endpoint reports evidence from the Laravel database; a configured web
    Update Laravel with Facebook Result
    ```
 
-6. Inside Docker, callback URLs must use `http://backend:8080`, not `localhost`. The callback secret must match `TCC_UNIFAST_SYNC_ENDPOINT_SECRET` in Laravel and n8n.
-7. The backend and frontend source are baked into Docker images in this project. Rebuild/recreate the affected service after source changes.
+6. From n8n, callback URLs must use `http://host.docker.internal:8000`, not `localhost`. The callback secret must match `TCC_UNIFAST_SYNC_ENDPOINT_SECRET` in Laravel and n8n.
+7. Laravel and Vue run on the host, so backend and frontend source changes do not require rebuilding Docker images.
 
 ---
 

@@ -37,7 +37,7 @@ class IdentityFirstJourneyTest extends TestCase
         Storage::fake('local');
         Storage::fake('public');
         Http::fake([
-            'http://127.0.0.1:8001/ocr/image' => Http::response([
+            'http://127.0.0.1:8081/ocr/image' => Http::response([
                 'result' => ['cleaned_text' => "Maria Santos\nSTU-1\nBSIT"],
             ], 200),
         ]);
@@ -195,7 +195,7 @@ class IdentityFirstJourneyTest extends TestCase
     {
         Storage::fake('local');
         Http::fake([
-            'http://127.0.0.1:8001/ocr/image' => Http::response([
+            'http://127.0.0.1:8081/ocr/image' => Http::response([
                 'result' => ['cleaned_text' => "Maria Santos\nSTU-1\nBSIT"],
             ], 200),
         ]);
