@@ -61,10 +61,16 @@ class AuthTokenService
         Request $request,
         ?string $familyId = null,
         string $scope = RefreshToken::SCOPE_FULL,
+        ?bool $rememberMe = null,
+        ?\Illuminate\Support\Carbon $absoluteExpiry = null,
+        ?int $ssoConnectionId = null,
     ): void {
         $accessMinutes = $this->accessTtlMinutes();
         $refreshDays = $this->refreshTtlDays();
         $familyId = $familyId ?? (string) Str::uuid();
+        $absoluteExpiry ??= $rememberMe !== null ? now()->addDays($rememberMe ? 30 : $refreshDays) : null;
+        $expires = $absoluteExpiry ?? now()->addDays($refreshDays);
+        $accessMinutes = min($accessMinutes, max(1, (int) now()->diffInMinutes($expires)));
 
         $access = $user->createToken('access', self::abilitiesFor($scope), now()->addMinutes($accessMinutes));
         $plainRefresh = Str::random(64);
@@ -74,13 +80,16 @@ class AuthTokenService
             'token_hash' => hash('sha256', $plainRefresh),
             'family_id' => $familyId,
             'scope' => $scope,
-            'expires_at' => now()->addDays($refreshDays),
+            'expires_at' => $expires,
+            'absolute_expires_at' => $absoluteExpiry,
+            'remembered' => $rememberMe === true,
+            'sso_connection_id' => $ssoConnectionId,
             'ip_address' => $request->ip(),
             'user_agent' => Str::limit((string) $request->userAgent(), 512, ''),
         ]);
 
-        $this->queueAccessCookie($access->plainTextToken, $accessMinutes);
-        $this->queueRefreshCookie($plainRefresh, $refreshDays * 24 * 60);
+        $this->queueAccessCookie($access->plainTextToken, $rememberMe === false ? 0 : $accessMinutes);
+        $this->queueRefreshCookie($plainRefresh, $rememberMe === false ? 0 : max(1, (int) now()->diffInMinutes($expires)));
     }
 
     /**
@@ -159,12 +168,22 @@ class AuthTokenService
         /** @var User $user */
         $user = $row->user()->firstOrFail();
 
+        if (in_array($user->account_status, ['blocked', 'suspended', 'inactive', 'disabled'], true)
+            || ($row->absolute_expires_at && $row->absolute_expires_at->isPast())
+            || ($row->sso_connection_id && (! \App\Services\Sso\SsoRolloutService::studentAllowed($user)
+                || ! \App\Models\ExternalIdentity::where('connection_id', $row->sso_connection_id)->where('user_id', $user->id)->where('enabled', true)->exists())
+                && ! app(\App\Services\Sso\SsoIdentityReviewService::class)->restricted($user))) {
+            $this->revokeAll($user);
+            throw new UnauthorizedHttpException('Bearer', 'Unauthenticated.');
+        }
+
         $row->update(['revoked_at' => now()]);
         $user->tokens()->delete();
 
         // Carry the scope forward rather than re-deriving it: rotation must never
         // widen privileges (invariant I3).
-        $this->issuePair($user, $request, (string) $row->family_id, (string) ($row->scope ?: RefreshToken::SCOPE_FULL));
+        $this->issuePair($user, $request, (string) $row->family_id, (string) ($row->scope ?: RefreshToken::SCOPE_FULL),
+            $row->absolute_expires_at ? $row->remembered : null, $row->absolute_expires_at, $row->sso_connection_id);
 
         $replacement = RefreshToken::query()
             ->where('user_id', $user->id)

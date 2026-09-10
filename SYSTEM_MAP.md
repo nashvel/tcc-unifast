@@ -59,6 +59,9 @@ tcc-unifast (Docker Compose)
 - `POST /api/auth/2fa/verify` → [[AuthController]]
 - `GET  /api/auth/google/redirect` → [[Google OAuth]]
 - `GET  /api/auth/google/callback` → [[Google OAuth]]
+- `GET  /api/auth/capabilities` → [[SIS OIDC SSO]]
+- `POST /api/auth/sis/redirect` → [[SIS OIDC SSO]]
+- `GET  /api/auth/sis/callback` → [[SIS OIDC SSO]]
 - `POST /api/auth/refresh` → [[AuthTokenService]]
 
 **Flow — Password Login:**
@@ -116,6 +119,13 @@ unifast_refresh (rotating refresh token, ~7 days)
 - Each token belongs to a `family_id`
 - Reuse of a rotated (revoked) token → **entire family is revoked** (session hijack detection)
 - Frontend `client.ts` does transparent 401 → refresh → retry
+
+**SIS OIDC SSO:**
+- One administrator-configured external provider; disabled until Discovery/JWKS validation and pilot rollout succeed.
+- Authorization Code + PKCE S256 stores state, nonce, verifier, and remember choice server-side for ten minutes.
+- Only existing active student accounts match by normalized student ID plus verified email; issuer + subject becomes the durable binding.
+- Cross-account claims block sign-in; name/email changes route students to restricted SIS verification until an administrator decides.
+- Password and Google remain fallback methods, while local rotating cookie sessions retain ownership of login, 2FA, revocation, and logout.
 
 ---
 

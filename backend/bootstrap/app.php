@@ -57,6 +57,7 @@ return Application::configure(basePath: dirname(__DIR__))
             EncryptCookies::class,
             AddQueuedCookiesToResponse::class,
             AuthenticateFromAccessCookie::class,
+            \App\Http\Middleware\EnsureSsoIdentityAccess::class,
         ]);
         $middleware->redirectGuestsTo(fn (Request $request) => $request->is('api/*') ? null : '/login');
     })

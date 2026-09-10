@@ -15,6 +15,9 @@ import LanguageSwitcher from "@/components/LanguageSwitcher.vue";
 import { withLang } from "@/i18n/routeLang";
 import VueRecaptcha from "vue3-recaptcha2";
 import DOMPurify from "dompurify";
+import SisLoginButton from "@/modules/sis/LoginButton.vue";
+import { sisMessages } from "@/modules/sis/messages";
+import { sisMutation } from "@/modules/sis/api";
 
 // Force light mode on login page - never use dark mode here
 onMounted(() => {
@@ -24,6 +27,8 @@ onMounted(() => {
 const route = useRoute();
 const router = useRouter();
 const { t } = useI18n();
+const { t: ssoText } = useI18n({ useScope: "local", messages: sisMessages });
+const sisTwoFactor = ref(route.query.sso_result === "two_factor");
 const { isFlare } = useTheme();
 const email = ref("");
 const password = ref("");
@@ -124,7 +129,7 @@ async function submit() {
 }
 
 async function submitTwoFactor() {
-  if (!twoFactorChallenge.value || !twoFactorCode.value.trim()) {
+  if ((!twoFactorChallenge.value && !sisTwoFactor.value) || !twoFactorCode.value.trim()) {
     error.value = "Enter your six-digit authenticator code or a recovery code.";
     return;
   }
@@ -132,7 +137,9 @@ async function submitTwoFactor() {
   busy.value = true;
   error.value = "";
   try {
-    const user = await verifyTwoFactor(twoFactorChallenge.value, twoFactorCode.value);
+    const user = sisTwoFactor.value
+      ? (await sisMutation<{ user: NonNullable<typeof authSession.user> }>("/api/auth/sis/2fa", "POST", { code: twoFactorCode.value })).user
+      : await verifyTwoFactor(twoFactorChallenge.value, twoFactorCode.value);
     await finishSignIn(user);
   } catch (exception) {
     error.value = exception instanceof Error ? exception.message : "Two-factor verification failed.";
@@ -176,6 +183,11 @@ function demoAccountLabel(role: string) {
 }
 
 onMounted(async () => {
+  const sisResult = route.query.sso_result;
+  if (sisResult === "two_factor") isTwoFactorStep.value = true;
+  else if (typeof sisResult === "string" && !["signed_in", "under_verification"].includes(sisResult)) {
+    error.value = ssoText(sisResult === "sso_not_eligible" ? "notEligible" : sisResult === "sso_account_blocked" ? "blocked" : sisResult === "sso_identity_review" ? "reviewBody" : "unavailable");
+  }
   const oauthError = route.query.oauth_error;
   const oauth2fa = route.query.oauth_2fa;
   if (typeof oauthError === "string") {
@@ -414,6 +426,7 @@ onMounted(async () => {
             </svg>
             Continue with Google
           </button>
+          <SisLoginButton v-if="mode === 'login' && !isTwoFactorStep" :disabled="busy" />
           <button
             v-if="isTwoFactorStep"
             type="button"

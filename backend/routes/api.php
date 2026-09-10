@@ -54,6 +54,27 @@ use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Route;
 
 // Public auth routes (session for CSRF; cookies via api middleware stack)
+Route::get('/auth/capabilities', [\App\Http\Controllers\SisSsoAuthController::class, 'capabilities'])->middleware('throttle:60,1');
+Route::middleware([StartSession::class, 'throttle:10,1'])->group(function (): void {
+    Route::post('/auth/sis/redirect', [\App\Http\Controllers\SisSsoAuthController::class, 'redirect']);
+    Route::post('/auth/sis/pilot/{token}/redirect', [\App\Http\Controllers\SisSsoAuthController::class, 'redirect']);
+    Route::get('/auth/sis/callback', [\App\Http\Controllers\SisSsoAuthController::class, 'callback']);
+    Route::post('/auth/sis/2fa', [\App\Http\Controllers\SisSsoAuthController::class, 'verifyTwoFactor']);
+});
+Route::middleware(['auth:sanctum', 'full-session', 'role:admin,developer', \App\Http\Middleware\EnsureContinuityAccountActive::class, 'throttle:30,1'])
+    ->prefix('integrations/sis-sso')->group(function (): void {
+        Route::get('/', [\App\Http\Controllers\SisSsoSettingsController::class, 'show']);
+        Route::put('/', [\App\Http\Controllers\SisSsoSettingsController::class, 'update']);
+        Route::put('/rollout', [\App\Http\Controllers\SisSsoSettingsController::class, 'rollout']);
+        Route::post('/validate', [\App\Http\Controllers\SisSsoSettingsController::class, 'validateConnection'])->middleware('throttle:5,1');
+        Route::get('/pilots', [\App\Http\Controllers\SisSsoSettingsController::class, 'pilots']);
+        Route::post('/pilots', [\App\Http\Controllers\SisSsoSettingsController::class, 'addPilot']);
+        Route::delete('/pilots/{user}', [\App\Http\Controllers\SisSsoSettingsController::class, 'removePilot']);
+        Route::post('/pilots/{user}/invite', [\App\Http\Controllers\SisSsoSettingsController::class, 'invite']);
+        Route::get('/reviews', [\App\Http\Controllers\SisSsoSettingsController::class, 'reviews']);
+        Route::post('/reviews/{review}/decide', [\App\Http\Controllers\SisSsoSettingsController::class, 'decide']);
+        Route::delete('/connection', [\App\Http\Controllers\SisSsoSettingsController::class, 'disconnect']);
+    });
 Route::middleware([
     StartSession::class,
 ])->group(function (): void {
@@ -123,6 +144,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
     // Intentionally reachable by onboarding sessions: the funnel needs to resolve
     // the current user and to sign out.
     Route::get('/auth/me', [AuthController::class, 'me']);
+    Route::get('/auth/sis/status', [\App\Http\Controllers\SisSsoAuthController::class, 'status']);
     Route::post('/auth/logout', [AuthController::class, 'logout']);
 
     // 2FA management belongs to credentialed accounts only.

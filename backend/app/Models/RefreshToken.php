@@ -19,6 +19,8 @@ class RefreshToken extends Model
     {
         return [
             'expires_at' => 'datetime',
+            'absolute_expires_at' => 'datetime',
+            'remembered' => 'boolean',
             'revoked_at' => 'datetime',
         ];
     }

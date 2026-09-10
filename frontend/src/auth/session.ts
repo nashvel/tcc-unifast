@@ -21,6 +21,7 @@ export type AuthUser = {
   kyc_status?: string | null;
   has_security_pin?: boolean;
   onboarding_next_step?:
+    | "sso_review"
     | "blocked"
     | "kyc"
     | "id_scan"

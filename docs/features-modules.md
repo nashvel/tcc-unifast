@@ -6,6 +6,25 @@
 
 ---
 
+## SIS OpenID Connect Single Sign-On
+
+Using OIDC Discovery, Authorization Code Flow, and PKCE S256 — administrator-controlled SIS integration
+
+**Description:** Existing active students may use the organization-operated SIS for authentication after an administrator validates the connection and enables a reversible pilot rollout. UniFAST never creates an account from SIS claims and retains ownership of authorization, onboarding, eligibility, local sessions, and 2FA.
+
+**Steps:**
+
+1. Administrator enters the issuer, client ID, write-only secret, and student-ID claim, then validates Discovery and signing keys
+2. Administrator selects existing students and gives each an expiring, one-time private pilot link
+3. UniFAST creates a server-owned state, nonce, PKCE verifier, browser binding, and short-lived transaction
+4. The SIS callback is validated with exact issuer/audience/nonce checks and RS256 signing keys
+5. UniFAST matches the SIS student ID and verified email to one existing active student before binding issuer plus subject
+6. Cross-account collisions are blocked; name or email changes create an identity review and restrict portal access
+7. After successful pilots and no pending reviews, an administrator explicitly enables public SIS sign-in for all existing students
+8. Password and Google sign-in continue as fallbacks; local logout does not globally log the student out of the SIS
+
+---
+
 ## a) Grantee Profiling and KYC Validation
 
 Using Laravel 11 — Al-Tuhaifi et al., 2025
