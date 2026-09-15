@@ -2,7 +2,7 @@
 import { computed, onMounted, ref } from "vue";
 import { IconLifebuoy, IconSearch, IconPlus, IconMessage, IconLoader, IconSend, IconRefresh, IconAlertTriangle } from "@tabler/icons-vue";
 import PageHeader from "@/components/ui/PageHeader.vue";
-import { apiFetch, isMockMode } from "@/api/client";
+import { apiFetch } from "@/api/client";
 import { toast } from "@/composables/useToast";
 
 type TicketReply = {
@@ -26,11 +26,6 @@ type Ticket = {
   description?: string;
 };
 
-const initialTickets: Ticket[] = [
-  { id: 1, ticket_id: "TK-001", title: "Face verification timeout after 30s", category: "bug", priority: "High", status: "Open", reporter: "Maria Santos", assignee: "System Developer", createdAt: "Jul 12, 2026", replies: [], description: "Face verification API times out on weak mobile connections." },
-  { id: 2, ticket_id: "TK-002", title: "Request: CSV export for audit trail", category: "feature", priority: "Normal", status: "In Progress", reporter: "Office Administrator", assignee: "System Developer", createdAt: "Jul 11, 2026", replies: [], description: "Admin requested CSV export capability for developer audit logs." },
-  { id: 3, ticket_id: "TK-003", title: "OCR mismatch on non-standard font transcripts", category: "bug", priority: "Normal", status: "Waiting", reporter: "UniFAST Staff", assignee: "System Developer", createdAt: "Jul 10, 2026", replies: [], description: "Special characters on course names cause low confidence score." },
-];
 
 const tickets = ref<Ticket[]>([]);
 const loading = ref(false);
@@ -52,16 +47,12 @@ async function loadTickets() {
     if (res.data && res.data.length > 0) {
       tickets.value = res.data;
     } else {
-      tickets.value = isMockMode ? initialTickets : [];
-    }
-  } catch (err: any) {
-    if (isMockMode) {
-      tickets.value = initialTickets;
-    } else {
-      errorMessage.value = err?.message || "Failed to connect to backend support ticket API.";
-      toast.error(errorMessage.value);
       tickets.value = [];
     }
+  } catch (err: any) {
+    errorMessage.value = err?.message || "Failed to connect to backend support ticket API.";
+    toast.error(errorMessage.value);
+    tickets.value = [];
   } finally {
     loading.value = false;
     if (tickets.value.length > 0 && !selectedTicket.value) {
@@ -87,29 +78,7 @@ async function createTicket() {
     createDialog.value = false;
     newTicket.value = { title: "", category: "bug", priority: "Normal", description: "" };
   } catch (err: any) {
-    if (isMockMode) {
-      const mockId = `TK-${String(tickets.value.length + 1).padStart(3, '0')}`;
-      const created: Ticket = {
-        id: Date.now(),
-        ticket_id: mockId,
-        title: newTicket.value.title,
-        category: newTicket.value.category,
-        priority: newTicket.value.priority,
-        status: "Open",
-        reporter: "System Developer",
-        assignee: "System Developer",
-        createdAt: new Date().toLocaleDateString(),
-        replies: [],
-        description: newTicket.value.description,
-      };
-      tickets.value.unshift(created);
-      selectedTicket.value = created;
-      toast.success("Support ticket created (Mock mode)");
-      createDialog.value = false;
-      newTicket.value = { title: "", category: "bug", priority: "Normal", description: "" };
-    } else {
-      toast.error(err?.message || "Failed to create ticket on server.");
-    }
+    toast.error(err?.message || "Failed to create ticket on server.");
   }
 }
 
@@ -126,11 +95,7 @@ async function updateStatus(newStatus: Ticket["status"]) {
     });
     toast.success(`Ticket marked as ${newStatus}`);
   } catch (err: any) {
-    if (isMockMode) {
-      toast.success(`Ticket marked as ${newStatus} (Mock mode)`);
-    } else {
-      toast.error(err?.message || "Failed to update ticket status on server.");
-    }
+    toast.error(err?.message || "Failed to update ticket status on server.");
   }
 }
 
@@ -150,19 +115,7 @@ async function addReply() {
     replyText.value = "";
     toast.success("Reply posted");
   } catch (err: any) {
-    if (isMockMode) {
-      const currentReplies = Array.isArray(selectedTicket.value.replies) ? selectedTicket.value.replies : [];
-      currentReplies.push({
-        author: "System Developer",
-        message: msg,
-        created_at: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      });
-      selectedTicket.value.replies = currentReplies;
-      replyText.value = "";
-      toast.success("Reply posted (Mock mode)");
-    } else {
-      toast.error(err?.message || "Failed to post reply to server.");
-    }
+    toast.error(err?.message || "Failed to post reply to server.");
   } finally {
     sendingReply.value = false;
   }
