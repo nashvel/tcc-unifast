@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/vue-query';
 import { listFormResponses, exportFormResponses } from '@/api/forms';
 import { apiFetch } from '@/api/client';
 import AppDialog from '@/components/dialogs/AppDialog.vue';
-import type { FormDetail, FormResponse } from '@/api/types';
+import type { FormDetail, FormResponse, FormResponseDetail } from '@/api/types';
 import { 
   IconDownload, 
   IconEye, 
@@ -26,7 +26,7 @@ const { data: responseData, isLoading } = useQuery({
 });
 
 const isExporting = ref(false);
-const selectedResponse = ref<(FormResponse & { responses?: Record<string, unknown> }) | null>(null);
+const selectedResponse = ref<FormResponseDetail | null>(null);
 const detailLoading = ref(false);
 const detailDialogOpen = ref(false);
 const detailError = ref("");
@@ -37,7 +37,7 @@ async function showResponseDetail(responseId: number) {
   selectedResponse.value = null;
   detailError.value = "";
   try {
-    const result = await apiFetch<{ data: FormResponse & { responses: Record<string, unknown> } }>(`/api/forms/${props.form.id}/responses/${responseId}`);
+    const result = await apiFetch<{ data: FormResponseDetail }>(`/api/forms/${props.form.id}/responses/${responseId}`);
     selectedResponse.value = result.data;
   } catch (error) {
     detailError.value = error instanceof Error ? error.message : "Unable to load this response.";
