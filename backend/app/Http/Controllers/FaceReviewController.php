@@ -204,12 +204,13 @@ class FaceReviewController extends Controller
     }
 
     /**
-     * Delete review-only challenge stills. Keep id_reference_face, onboarding_selfie, and descriptors
-     * so Requirements Slot 1 matching continues to work after staff decision.
+     * Delete review-only challenge stills and liveness video replay. Keep id_reference_face,
+     * onboarding_selfie, and descriptors so Requirements Slot 1 matching continues to work
+     * after staff decision.
      */
     private function purgeChallengeStills(GranteeIdentityProfile $profile): void
     {
-        foreach (['liveness_challenge_1_path', 'liveness_challenge_2_path'] as $column) {
+        foreach (['liveness_challenge_1_path', 'liveness_challenge_2_path', 'liveness_video_path'] as $column) {
             $path = $profile->{$column};
             if (is_string($path) && $path !== '') {
                 VaultFileStorage::deleteIfOwned($path);
@@ -220,6 +221,7 @@ class FaceReviewController extends Controller
             'liveness_challenge_1_path' => null,
             'liveness_challenge_2_path' => null,
             'liveness_challenge_labels' => null,
+            'liveness_video_path' => null,
         ])->save();
     }
 
@@ -270,6 +272,10 @@ class FaceReviewController extends Controller
                 ? VaultFileStorage::authStaffIdentityUrl($granteeId, 'liveness_challenge_2.jpg')
                 : null,
             'liveness_challenge_labels' => $labels,
+            'liveness_video_url' => $profile->liveness_video_path
+                // Resolve to whichever extension was stored (webm or mp4).
+                ? VaultFileStorage::authStaffIdentityUrl($granteeId, 'liveness_replay.'.pathinfo((string) $profile->liveness_video_path, PATHINFO_EXTENSION))
+                : null,
             'account_status' => $profile->user?->account_status,
         ];
     }

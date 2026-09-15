@@ -18,7 +18,7 @@ use Illuminate\Validation\ValidationException;
 
 class BillingReportService
 {
-    public const DISK = 'public';
+    public const DISK = 'local';
 
     public function generateCallForBilling(Batch $batch, User $actor, Request $request): BillingReport
     {

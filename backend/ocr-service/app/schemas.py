@@ -132,3 +132,15 @@ class CliResult(BaseModel):
     result: Optional[Any] = None
     error: Optional[ErrorDetail] = None
 
+
+class FaceMatchResponse(BaseModel):
+    """Response from the /face/match endpoint."""
+
+    success: Literal[True] = True
+    matched: bool
+    score: float  # 0–100 cosine similarity percentage
+    cosine_distance: float  # 0–2; lower = more similar
+    l2_distance: float  # Euclidean distance in embedding space
+    reference_face_found: bool
+    live_face_found: bool
+    error: Optional[str] = None

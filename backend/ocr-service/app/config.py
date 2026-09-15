@@ -22,6 +22,11 @@ class Settings(BaseSettings):
     # is only acceptable on a developer machine — see require_api_key in main.py.
     api_key: str = ""
 
+    # SFace cosine-similarity threshold for /face/match.
+    # score >= threshold → matched. OpenCV Zoo default: 0.363.
+    # Tune via FACE_MATCH_THRESHOLD env var if needed.
+    face_match_threshold: float = 0.363
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

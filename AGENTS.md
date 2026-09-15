@@ -228,3 +228,34 @@ A change is complete when the requested behavior is implemented, relevant
 tests and static checks pass, configuration validates, security boundaries are
 preserved, documentation is current, and the final handoff identifies any
 checks that could not be run.
+
+## Known Intentional Test Breakage
+
+### Biometric Minimum-Distance Guard (September 2026)
+
+**What changed:** `FaceDescriptorMath::classify()` now returns `ZONE_UNCERTAIN`
+(staff review) instead of `ZONE_CONFIDENT` (auto-activate) when `$distance < 0.05`.
+This prevents DevTools replay attacks where a student copies the 128-float
+face descriptor from the ID scan step and replays it verbatim during liveness,
+producing an exact `0.0000` distance that previously auto-passed.
+
+**Which tests break and why:**
+
+Several happy-path tests in `tests/Feature/IdentityOnboardingFlowTest.php` and
+`tests/Feature/IdentityFirstJourneyTest.php` used the *same* fixture descriptor
+(`faceDescriptor(0)`) as both the stored ID reference and the live liveness
+submission. This produced `distance = 0.0000`, which was classified as
+`ZONE_CONFIDENT`. After the guard, it is classified as `ZONE_UNCERTAIN`.
+
+**The fix (already applied alongside the guard):** Update every affected
+happy-path test to use `faceDescriptorAtDistance(0.20)` as the live descriptor.
+This simulates a realistic different-but-close capture (`distance = 0.20 < 0.45
+pass_max`), which is still classified as `ZONE_CONFIDENT`. The reference stored
+in `GranteeIdentityProfile::id_reference_face_descriptor` stays `faceDescriptor(0)`.
+
+**If you see `IdentityOnboardingFlowTest` failures after pulling this change:**
+Run `php artisan test tests/Feature/IdentityOnboardingFlowTest.php --filter replay`
+first to confirm the new replay-attack test passes, then check that all
+happy-path tests use `faceDescriptorAtDistance(0.20)` as the live descriptor.
+Do **not** revert the `FaceDescriptorMath` guard to make the old test pass —
+that would re-open the security vulnerability.

@@ -33,6 +33,8 @@ type FaceReview = {
   liveness_challenge_1_url: string | null;
   liveness_challenge_2_url: string | null;
   liveness_challenge_labels: string[];
+  /** Authenticated URL to the short liveness motion video (WebM/MP4). Null for auto-passed students. */
+  liveness_video_url: string | null;
   account_status: string | null;
   updated_at: string | null;
 };
@@ -118,6 +120,10 @@ const idBackSrc = ref<string | null>(null);
 const selfieSrc = ref<string | null>(null);
 const challenge1Src = ref<string | null>(null);
 const challenge2Src = ref<string | null>(null);
+/** Blob object URL for the liveness replay video (WebM/MP4). Null if not available. */
+const videoSrc = ref<string | null>(null);
+/** Staff-facing playback speed: normal (1x) or slow-motion (0.5x). */
+const videoSpeed = ref<1 | 0.5>(1);
 
 const idSide = ref<"front" | "back">("front");
 const zoomImage = ref<{ src: string; title: string } | null>(null);
@@ -154,22 +160,32 @@ watch(
       detail.value?.onboarding_selfie_url,
       detail.value?.liveness_challenge_1_url,
       detail.value?.liveness_challenge_2_url,
+      detail.value?.liveness_video_url,
       selectedId.value,
     ] as const,
-  async ([idUrl, frontUrl, backUrl, selfieUrl, c1Url, c2Url]) => {
+  async ([idUrl, frontUrl, backUrl, selfieUrl, c1Url, c2Url, vidUrl]) => {
     revokePhoto(idRefSrc);
     revokePhoto(idFrontSrc);
     revokePhoto(idBackSrc);
     revokePhoto(selfieSrc);
     revokePhoto(challenge1Src);
     revokePhoto(challenge2Src);
-    if (!idUrl && !frontUrl && !backUrl && !selfieUrl && !c1Url && !c2Url) return;
+    revokePhoto(videoSrc);
+    videoSpeed.value = 1;
+    if (!idUrl && !frontUrl && !backUrl && !selfieUrl && !c1Url && !c2Url && !vidUrl) return;
     idRefSrc.value = await loadAuthImage(idUrl);
     idFrontSrc.value = await loadAuthImage(frontUrl);
     idBackSrc.value = await loadAuthImage(backUrl);
     selfieSrc.value = await loadAuthImage(selfieUrl);
     challenge1Src.value = await loadAuthImage(c1Url);
     challenge2Src.value = await loadAuthImage(c2Url);
+    // Load video blob via authenticated fetch so session cookies are sent.
+    if (vidUrl) {
+      try {
+        const res = await apiFetchBlob(vidUrl, { headers: { Accept: "video/webm,video/mp4,video/*" } });
+        if (res.ok) videoSrc.value = URL.createObjectURL(await res.blob());
+      } catch { /* silent fallback */ }
+    }
   },
   { immediate: true },
 );
@@ -421,6 +437,38 @@ async function decide(action: "approve" | "reject") {
             </div>
           </figure>
         </div>
+
+        <!-- Liveness Motion Video Replay — only shown when video was captured (uncertain/flagged cases) -->
+        <section v-if="videoSrc" class="rounded-lg border bg-surface p-4">
+          <div class="mb-3 flex items-center justify-between">
+            <div>
+              <h3 class="text-xs font-semibold">Liveness Motion Replay</h3>
+              <p class="text-xs text-text-muted">Recorded live during the challenge sequence. Use slow motion to inspect for signs of spoofing.</p>
+            </div>
+            <div class="flex gap-1.5">
+              <button
+                type="button"
+                :class="['h-7 rounded px-2.5 text-xs font-medium transition', videoSpeed === 1 ? 'bg-primary text-white' : 'border hover:bg-surface-muted']"
+                @click="videoSpeed = 1"
+              >1× Normal</button>
+              <button
+                type="button"
+                :class="['h-7 rounded px-2.5 text-xs font-medium transition', videoSpeed === 0.5 ? 'bg-primary text-white' : 'border hover:bg-surface-muted']"
+                @click="videoSpeed = 0.5"
+              >0.5× Slow</button>
+            </div>
+          </div>
+          <video
+            :src="videoSrc"
+            :playbackRate="videoSpeed"
+            controls
+            loop
+            class="w-full max-h-72 rounded-md bg-black object-contain"
+            aria-label="Student liveness motion video replay"
+            @ratechange="(e) => { (e.target as HTMLVideoElement).playbackRate = videoSpeed; }"
+            :ref="(el) => { if (el) (el as HTMLVideoElement).playbackRate = videoSpeed; }"
+          />
+        </section>
 
         <section class="rounded-lg border bg-surface p-4">
           <label class="mb-3 block text-xs font-medium"

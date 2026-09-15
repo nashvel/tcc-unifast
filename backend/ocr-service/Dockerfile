@@ -9,6 +9,7 @@ RUN apt-get update \
         libzbar0 \
         tesseract-ocr \
         tesseract-ocr-eng \
+        libgl1 \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -18,6 +19,7 @@ RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -r requirements.txt
 
 COPY app ./app
+RUN mkdir -p /app/models
 
 EXPOSE 8001
 

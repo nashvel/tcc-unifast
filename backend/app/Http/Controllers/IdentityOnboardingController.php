@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\AuditLog;
 use App\Models\Grantee;
 use App\Models\GranteeIdentityProfile;
+use App\Services\FaceVerificationService;
 use App\Services\IdentityOnboarding\StoreIdentityIdScanService;
 use App\Services\StudentOnboardingNavigator;
 use App\Support\FaceDescriptorMath;
@@ -22,6 +23,9 @@ class IdentityOnboardingController extends Controller
 {
     /** @var list<string> */
     private const IMAGE_MIMES = ['image/jpeg', 'image/png', 'image/webp'];
+
+    /** @var list<string> */
+    private const VIDEO_MIMES = ['video/webm', 'video/mp4'];
 
     public function show(Request $request, StudentOnboardingNavigator $navigator): JsonResponse
     {
@@ -200,28 +204,81 @@ class IdentityOnboardingController extends Controller
             // Client distance is ignored; accepted only for backward-compatible payloads.
             'distance' => ['nullable', 'numeric', 'min:0'],
             'liveness_confirmed' => ['accepted'],
+            // Short WebM/MP4 liveness motion clip (~300 KB typical, 10 MB hard cap).
+            // Optional — devices or browsers that do not support MediaRecorder omit this silently.
+            'video_replay' => ['nullable', 'file', 'mimetypes:video/webm,video/mp4', 'max:10240'],
         ]);
 
         SecureUpload::assertAllowedMime($validated['selfie'], self::IMAGE_MIMES, 'selfie');
         SecureUpload::assertAllowedMime($validated['challenge_still_1'], self::IMAGE_MIMES, 'challenge_still_1');
         SecureUpload::assertAllowedMime($validated['challenge_still_2'], self::IMAGE_MIMES, 'challenge_still_2');
-        $liveDescriptor = FaceDescriptorMath::normalize($validated['face_descriptor']);
-        $referenceDescriptor = FaceDescriptorMath::normalize(
-            $profile->id_reference_face_descriptor,
-            'id_reference_face_descriptor',
-        );
-        $distance = FaceDescriptorMath::euclidean($referenceDescriptor, $liveDescriptor);
-        $zone = FaceDescriptorMath::classify($distance);
-
         $previousSelfie = $profile->onboarding_selfie_path;
         $selfiePath = VaultFileStorage::storeIdentity(
             $validated['selfie'],
             $grantee->id,
             'onboarding_selfie',
         );
+
+        $liveDescriptor = FaceDescriptorMath::normalize($validated['face_descriptor']);
+        $provider = (string) config('services.face_api.provider', 'mock');
+
+        if ($provider === 'ocr_service') {
+            if (! VaultFileStorage::exists($profile->id_reference_face_path)) {
+                VaultFileStorage::deleteIfOwned($selfiePath);
+                throw ValidationException::withMessages([
+                    'id_scan' => 'School ID reference photo is missing from storage. Please retake the ID scan step.',
+                ]);
+            }
+
+            $refAbsPath = VaultFileStorage::absolutePath($profile->id_reference_face_path);
+            $selfieAbsPath = VaultFileStorage::absolutePath($selfiePath);
+
+            try {
+                $verification = app(FaceVerificationService::class)->compare($refAbsPath, $selfieAbsPath);
+            } catch (\RuntimeException $e) {
+                VaultFileStorage::deleteIfOwned($selfiePath);
+                if ($e->getCode() === 503) {
+                    return response()->json([
+                        'message' => 'Face verification service is temporarily unavailable. Please try again in a few minutes.',
+                    ], 503);
+                }
+                throw ValidationException::withMessages([
+                    'face_verification' => $e->getMessage(),
+                ]);
+            }
+
+            if (! $verification['reference_face_found']) {
+                VaultFileStorage::deleteIfOwned($selfiePath);
+                throw ValidationException::withMessages([
+                    'id_scan' => 'No face was detected in the stored School ID reference photo. Please retake the ID scan step.',
+                ]);
+            }
+
+            if (! $verification['live_face_found']) {
+                VaultFileStorage::deleteIfOwned($selfiePath);
+                throw ValidationException::withMessages([
+                    'selfie' => 'No face was detected in the live selfie. Please ensure your face is well lit and clearly visible.',
+                ]);
+            }
+
+            $distance = (float) $verification['cosine_distance'];
+            $distanceSource = 'ocr_service';
+        } else {
+            $referenceDescriptor = FaceDescriptorMath::normalize(
+                $profile->id_reference_face_descriptor,
+                'id_reference_face_descriptor',
+            );
+            $distance = FaceDescriptorMath::euclidean($referenceDescriptor, $liveDescriptor);
+            $distanceSource = 'server';
+        }
+
         if (is_string($previousSelfie) && $previousSelfie !== '' && $previousSelfie !== $selfiePath) {
             VaultFileStorage::deleteIfOwned($previousSelfie);
         }
+
+        $zone = FaceDescriptorMath::classify($distance);
+        // Flag when the distance is suspiciously low (near-zero = probable replay attack).
+        $suspiciousReplay = $distance < FaceDescriptorMath::MIN_DISTANCE;
 
         $challengePaths = $this->storeChallengeStills(
             $profile,
@@ -253,7 +310,8 @@ class IdentityOnboardingController extends Controller
                 'target' => "Grantee #{$grantee->id}",
                 'context' => [
                     'distance' => $distance,
-                    'distance_source' => 'server',
+                    'distance_source' => $distanceSource,
+                    'face_api_provider' => $provider,
                     'zone' => $zone,
                     'pass_max' => FaceDescriptorMath::passMax(),
                     'review_max' => FaceDescriptorMath::reviewMax(),
@@ -270,6 +328,23 @@ class IdentityOnboardingController extends Controller
         }
 
         if ($zone === FaceDescriptorMath::ZONE_UNCERTAIN) {
+            // Store liveness video replay for staff inspection (if device captured one).
+            $videoPath = null;
+            if (isset($validated['video_replay']) && $validated['video_replay'] instanceof UploadedFile) {
+                SecureUpload::assertAllowedMime($validated['video_replay'], self::VIDEO_MIMES, 'video_replay');
+                $videoPath = VaultFileStorage::storeIdentity(
+                    $validated['video_replay'],
+                    $grantee->id,
+                    'liveness_replay',
+                );
+            }
+
+            // Delete any previous video replay left from a prior uncertain attempt.
+            $previousVideo = $profile->liveness_video_path;
+            if (is_string($previousVideo) && $previousVideo !== '' && $previousVideo !== $videoPath) {
+                VaultFileStorage::deleteIfOwned($previousVideo);
+            }
+
             $profile->update([
                 'status' => 'pending_face_review',
                 'onboarding_selfie_path' => $selfiePath,
@@ -279,6 +354,7 @@ class IdentityOnboardingController extends Controller
                 'liveness_challenge_1_path' => $challengePaths[0],
                 'liveness_challenge_2_path' => $challengePaths[1],
                 'liveness_challenge_labels' => $challengeLabels,
+                'liveness_video_path' => $videoPath,
                 'last_liveness_ip' => $request->ip(),
             ]);
 
@@ -293,12 +369,15 @@ class IdentityOnboardingController extends Controller
                 'target' => "Grantee #{$grantee->id}",
                 'context' => [
                     'distance' => $distance,
-                    'distance_source' => 'server',
+                    'distance_source' => $distanceSource,
+                    'face_api_provider' => $provider,
                     'zone' => $zone,
                     'pass_max' => FaceDescriptorMath::passMax(),
                     'review_max' => FaceDescriptorMath::reviewMax(),
                     'liveness_confirmed' => true,
                     'result' => 'uncertain',
+                    'suspicious_replay' => $suspiciousReplay,
+                    'video_replay_stored' => $videoPath !== null,
                     'account_status' => 'pending_face_review',
                 ],
                 'ip_address' => $request->ip(),
@@ -316,6 +395,13 @@ class IdentityOnboardingController extends Controller
             ]);
         }
 
+        // ZONE_CONFIDENT — data minimization: discard any uploaded video; it is not needed.
+        // Also purge any video stored from a prior uncertain attempt that later re-verified.
+        $previousVideo = $profile->liveness_video_path;
+        if (is_string($previousVideo) && $previousVideo !== '') {
+            VaultFileStorage::deleteIfOwned($previousVideo);
+        }
+
         $profile->update([
             'status' => 'completed',
             'onboarding_selfie_path' => $selfiePath,
@@ -325,6 +411,7 @@ class IdentityOnboardingController extends Controller
             'liveness_challenge_1_path' => $challengePaths[0],
             'liveness_challenge_2_path' => $challengePaths[1],
             'liveness_challenge_labels' => $challengeLabels,
+            'liveness_video_path' => null,
             'onboarding_completed_at' => now(),
             'last_liveness_ip' => $request->ip(),
         ]);
@@ -342,7 +429,8 @@ class IdentityOnboardingController extends Controller
             'target' => "Grantee #{$grantee->id}",
             'context' => [
                 'distance' => $distance,
-                'distance_source' => 'server',
+                'distance_source' => $distanceSource,
+                'face_api_provider' => $provider,
                 'zone' => $zone,
                 'pass_max' => FaceDescriptorMath::passMax(),
                 'review_max' => FaceDescriptorMath::reviewMax(),
