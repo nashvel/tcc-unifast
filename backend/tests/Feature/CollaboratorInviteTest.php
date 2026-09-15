@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Mail\StaffInviteMail;
 use App\Models\ActivationToken;
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
@@ -24,7 +25,7 @@ class CollaboratorInviteTest extends TestCase
     public function test_invited_collaborator_gets_no_usable_password(): void
     {
         Mail::fake();
-        $admin = User::factory()->create(['role' => 'developer', 'account_status' => 'active']);
+        $admin = $this->developer();
 
         $this->actingAs($admin)
             ->postJson('/api/collaborators/invite', [
@@ -38,6 +39,7 @@ class CollaboratorInviteTest extends TestCase
 
         $this->assertFalse(Hash::check('password', $invited->password));
         $this->assertFalse(Hash::check('', $invited->password));
+        $this->assertTrue($invited->hasRole('staff'));
         Mail::assertSent(StaffInviteMail::class);
         $this->assertDatabaseHas('activation_tokens', ['user_id' => $invited->id, 'used_at' => null]);
     }
@@ -45,7 +47,7 @@ class CollaboratorInviteTest extends TestCase
     public function test_invited_developer_also_gets_no_usable_password(): void
     {
         Mail::fake();
-        $admin = User::factory()->create(['role' => 'developer', 'account_status' => 'active']);
+        $admin = $this->developer();
 
         $this->actingAs($admin)
             ->postJson('/api/collaborators/invite', [
@@ -56,6 +58,7 @@ class CollaboratorInviteTest extends TestCase
 
         $invited = User::query()->where('email', 'second.dev@unifast.gov.ph')->firstOrFail();
         $this->assertFalse(Hash::check('password', $invited->password));
+        $this->assertTrue($invited->hasRole('developer'));
     }
 
     public function test_staff_can_set_their_password_from_the_invite_link(): void
@@ -113,5 +116,22 @@ class CollaboratorInviteTest extends TestCase
 
         $this->assertFalse(Hash::check('Str0ng-Passw0rd!', $student->fresh()->password));
         $this->assertSame('unverified', $student->fresh()->account_status);
+    }
+
+    private function developer(): User
+    {
+        $role = Role::firstOrCreate([
+            'name' => 'developer',
+        ], [
+            'description' => 'Developer',
+            'is_system' => true,
+        ]);
+        foreach (['admin' => 'Administrator', 'staff' => 'Staff'] as $name => $description) {
+            Role::firstOrCreate(['name' => $name], ['description' => $description, 'is_system' => true]);
+        }
+        $user = User::factory()->create(['role' => 'developer', 'account_status' => 'active']);
+        $user->roles()->attach($role);
+
+        return $user;
     }
 }

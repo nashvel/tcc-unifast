@@ -3,7 +3,7 @@ import type { ListQuery } from "./types";
 import { clearAuthSession, hasMockSession, setMockSession } from "@/auth/session";
 
 export const isMockMode = import.meta.env.VITE_USE_MOCK === "true";
-const useMock = isMockMode || (!API_BASE && import.meta.env.VITE_USE_MOCK !== "false");
+const useMock = isMockMode;
 
 export class ApiError extends Error {
   status: number;

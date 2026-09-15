@@ -11,18 +11,18 @@ import {
   IconTrendingUp,
 } from "@tabler/icons-vue";
 import PageHeader from "@/components/ui/PageHeader.vue";
-import { apiFetch, isMockMode } from "@/api/client";
+import { apiFetch } from "@/api/client";
 import { toast } from "@/composables/useToast";
 
 type TableItem = {
   name: string;
   rows: number;
   columns: number;
-  engine: string;
-  collation: string;
-  size: string;
   column_names: string[];
 };
+
+type Column = { name: string; type: string; nullable: boolean; default: string | null; primary: boolean };
+type TableDetail = { name: string; columns: Column[]; row_count: number };
 
 type DbSummary = {
   total_tables: number;
@@ -31,20 +31,13 @@ type DbSummary = {
   largest_table: string;
 };
 
-const mockTables: TableItem[] = [
-  { name: "users", rows: 4, columns: 12, engine: "InnoDB", collation: "utf8mb4_unicode_ci", size: "48 KB", column_names: ["id", "name", "email", "role", "student_id", "account_status", "created_at"] },
-  { name: "batches", rows: 12, columns: 8, engine: "InnoDB", collation: "utf8mb4_unicode_ci", size: "64 KB", column_names: ["id", "batch_no", "academic_year", "semester", "status", "created_at"] },
-  { name: "document_submissions", rows: 4, columns: 10, engine: "InnoDB", collation: "utf8mb4_unicode_ci", size: "32 KB", column_names: ["id", "student_id", "document_type", "status", "submitted_at"] },
-  { name: "grantees", rows: 5, columns: 9, engine: "InnoDB", collation: "utf8mb4_unicode_ci", size: "40 KB", column_names: ["id", "grantee_no", "full_name", "program", "year_level", "created_at"] },
-  { name: "academic_records", rows: 3, columns: 7, engine: "InnoDB", collation: "utf8mb4_unicode_ci", size: "24 KB", column_names: ["id", "student_id", "gpa", "units_completed", "updated_at"] },
-  { name: "audit_logs", rows: 4, columns: 8, engine: "InnoDB", collation: "utf8mb4_unicode_ci", size: "36 KB", column_names: ["id", "actor", "action", "module", "target", "ip_address", "created_at"] },
-  { name: "support_tickets", rows: 3, columns: 9, engine: "InnoDB", collation: "utf8mb4_unicode_ci", size: "28 KB", column_names: ["id", "ticket_id", "title", "status", "priority", "created_at"] },
-];
-
 const tables = ref<TableItem[]>([]);
 const summary = ref<DbSummary | null>(null);
-const selectedTable = ref<TableItem | null>(null);
+const selectedTableName = ref<string | null>(null);
+const selectedTable = computed(() => tables.value.find((table) => table.name === selectedTableName.value) ?? null);
+const selectedTableDetail = ref<TableDetail | null>(null);
 const loading = ref(false);
+const detailLoading = ref(false);
 const search = ref("");
 const errorMessage = ref("");
 
@@ -53,48 +46,33 @@ async function fetchTables() {
   errorMessage.value = "";
   try {
     const res = await apiFetch<{ data: TableItem[]; summary?: DbSummary }>("/api/database/tables");
-    if (res.data && res.data.length > 0) {
-      tables.value = res.data;
-      if (res.summary) {
-        summary.value = res.summary;
-      } else {
-        const totalRows = res.data.reduce((acc, t) => acc + (t.rows || 0), 0);
-        summary.value = {
-          total_tables: res.data.length,
-          total_rows: totalRows,
-          database: "Active",
-          largest_table: res.data[0]?.name ? `${res.data[0].name} (${res.data[0].rows || 0} rows)` : "None",
-        };
-      }
-    } else {
-      tables.value = isMockMode ? mockTables : [];
-      summary.value = isMockMode ? {
-        total_tables: mockTables.length,
-        total_rows: mockTables.reduce((acc, t) => acc + t.rows, 0),
-        database: "SQLITE (tcc_unifast.sqlite)",
-        largest_table: "batches (12 rows)",
-      } : null;
-    }
+    tables.value = res.data ?? [];
+    summary.value = res.summary ?? null;
   } catch (err: any) {
-    if (isMockMode) {
-      tables.value = mockTables;
-      summary.value = {
-        total_tables: mockTables.length,
-        total_rows: mockTables.reduce((acc, t) => acc + t.rows, 0),
-        database: "SQLITE (tcc_unifast.sqlite)",
-        largest_table: "batches (12 rows)",
-      };
-    } else {
-      errorMessage.value = err?.message || "Failed to inspect database structure from server.";
-      toast.error(errorMessage.value);
-      tables.value = [];
-      summary.value = null;
-    }
+    errorMessage.value = err?.message || "Failed to inspect database structure from server.";
+    toast.error(errorMessage.value);
+    tables.value = [];
+    summary.value = null;
   } finally {
     loading.value = false;
-    if (tables.value.length > 0 && !selectedTable.value) {
-      selectedTable.value = tables.value[0];
+    if (tables.value.length > 0 && !selectedTableName.value) {
+      await inspectTable(tables.value[0].name);
     }
+  }
+}
+
+async function inspectTable(tableName: string) {
+  selectedTableName.value = tableName;
+  selectedTableDetail.value = null;
+  detailLoading.value = true;
+  try {
+    const response = await apiFetch<{ data: TableDetail }>(`/api/database/tables/${tableName}`);
+    selectedTableDetail.value = response.data;
+  } catch (err: any) {
+    errorMessage.value = err?.message || `Failed to inspect ${tableName}.`;
+    toast.error(errorMessage.value);
+  } finally {
+    detailLoading.value = false;
   }
 }
 
@@ -201,7 +179,7 @@ onMounted(fetchTables);
             'w-full text-left px-3 py-2 rounded-md text-xs flex items-center justify-between font-mono transition',
             selectedTable?.name === t.name ? 'bg-[var(--primary-soft)] text-[var(--primary)] font-bold border-l-2 border-[var(--primary)]' : 'hover:bg-[var(--surface-muted)] text-[var(--text)]',
           ]"
-          @click="selectedTable = t"
+          @click="inspectTable(t.name)"
         >
           <div class="flex items-center gap-2 truncate">
             <IconTable :size="14" />
@@ -217,11 +195,11 @@ onMounted(fetchTables);
           <div>
             <h2 class="text-base font-bold font-mono text-text">`{{ selectedTable.name }}`</h2>
             <p class="text-2xs text-text-muted mt-0.5">
-              Engine: {{ selectedTable.engine || 'InnoDB' }} | Collation: {{ selectedTable.collation || 'utf8mb4_unicode_ci' }} | Size: {{ selectedTable.size || 'Active' }}
+              Live schema metadata from the connected database.
             </p>
           </div>
           <span class="rounded bg-surface-muted px-2 py-1 text-2xs font-mono text-text">
-            {{ selectedTable.columns }} columns, {{ selectedTable.rows }} total rows
+            {{ selectedTableDetail?.columns.length ?? selectedTable.columns }} columns, {{ selectedTableDetail?.row_count ?? selectedTable.rows }} total rows
           </span>
         </div>
 
@@ -237,17 +215,19 @@ onMounted(fetchTables);
                 </tr>
               </thead>
               <tbody>
+                <tr v-if="detailLoading"><td colspan="3" class="px-3 py-6 text-center text-text-muted">Loading column metadata…</td></tr>
                 <tr
-                  v-for="(col, i) in selectedTable.column_names"
-                  :key="col"
+                  v-for="(col, i) in selectedTableDetail?.columns ?? []"
+                  :key="col.name"
                   class="border-b last:border-0 hover:bg-surface-muted/50 font-mono"
                 >
                   <td class="px-3 py-2 text-text-muted">{{ i + 1 }}</td>
-                  <td class="px-3 py-2 font-semibold text-text">{{ col }}</td>
+                  <td class="px-3 py-2 font-semibold text-text">{{ col.name }}</td>
                   <td class="px-3 py-2 text-text-muted">
-                    {{ i === 0 ? "BIGINT(20) UNSIGNED PRIMARY" : "VARCHAR(255)" }}
+                    {{ col.type }}{{ col.primary ? ' PRIMARY' : '' }}{{ col.nullable ? ' NULL' : ' NOT NULL' }}
                   </td>
                 </tr>
+                <tr v-if="!detailLoading && !selectedTableDetail"><td colspan="3" class="px-3 py-6 text-center text-text-muted">Column metadata is unavailable.</td></tr>
               </tbody>
             </table>
           </div>

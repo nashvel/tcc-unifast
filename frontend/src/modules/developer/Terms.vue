@@ -1,36 +1,18 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
-import { IconFileText, IconCheck, IconHistory, IconDeviceFloppy, IconLoader, IconRefresh } from "@tabler/icons-vue";
+import { IconDeviceFloppy, IconLoader } from "@tabler/icons-vue";
 import PageHeader from "@/components/ui/PageHeader.vue";
-import { apiFetch, isMockMode } from "@/api/client";
+import { apiFetch } from "@/api/client";
 import { toast } from "@/composables/useToast";
 
 type TermsDoc = {
   id?: number;
   title?: string;
   version: string;
-  effectiveDate?: string;
   content: string;
 };
 
-const defaultTerms: TermsDoc = {
-  id: 1,
-  title: "TERMS AND CONDITIONS FOR TCC-UNIFAST TES PORTAL",
-  version: "v2.1.0",
-  effectiveDate: "July 1, 2026",
-  content: `TERMS AND CONDITIONS FOR TCC-UNIFAST TES PORTAL
-
-1. ACCEPTANCE OF TERMS
-By accessing and utilizing the Tagoloan Community College (TCC) UniFAST Tertiary Education Subsidy (TES) Portal, students and administrators agree to adhere to all terms, policies, and regulations governed by UniFAST guidelines.
-
-2. ACCURACY OF SUBMITTED DOCUMENTS
-All documents uploaded (Certificate of Indigency, Transcript of Records, Student IDs, and Proof of Income) must be authentic. Falsification of documents will lead to immediate disqualification and legal escalation under RA 10931.
-
-3. DATA PRIVACY COMPLIANCE
-In compliance with Republic Act 10173 (Data Privacy Act of 2012), all student records collected through this portal will be processed exclusively for subsidy qualification verification and reporting.`,
-};
-
-const termsDoc = ref<TermsDoc>(defaultTerms);
+const termsDoc = ref<TermsDoc | null>(null);
 const loading = ref(false);
 const saving = ref(false);
 const errorMessage = ref("");
@@ -42,21 +24,11 @@ async function loadTerms() {
     const res = await apiFetch<{ data: TermsDoc | TermsDoc[] }>("/api/terms");
     if (res.data) {
       const doc = Array.isArray(res.data) ? res.data[0] : res.data;
-      if (doc && doc.content) {
-        termsDoc.value = doc;
-      } else {
-        termsDoc.value = defaultTerms;
-      }
-    } else {
-      termsDoc.value = defaultTerms;
+      termsDoc.value = doc?.content ? doc : null;
     }
   } catch (err: any) {
-    if (isMockMode) {
-      termsDoc.value = defaultTerms;
-    } else {
-      errorMessage.value = err?.message || "Failed to connect to backend server. Using default template.";
-      termsDoc.value = defaultTerms;
-    }
+    errorMessage.value = err?.message || "Failed to load Terms & Conditions from the backend server.";
+    termsDoc.value = null;
   } finally {
     loading.value = false;
   }
@@ -85,11 +57,7 @@ async function saveTerms() {
     if (res.data) termsDoc.value = res.data;
     toast.success("Terms & Conditions published to system.");
   } catch (err: any) {
-    if (isMockMode) {
-      toast.success("Terms & Conditions published (Mock mode).");
-    } else {
-      toast.error(err?.message || "Failed to save Terms & Conditions on server.");
-    }
+    toast.error(err?.message || "Failed to save Terms & Conditions on server.");
   } finally {
     saving.value = false;
   }
@@ -123,22 +91,14 @@ onMounted(loadTerms);
       <IconLoader :size="24" class="animate-spin text-text-muted" />
     </div>
 
-    <div v-else class="space-y-4">
-      <div class="grid gap-3 sm:grid-cols-2">
+    <div v-else-if="termsDoc" class="space-y-4">
+      <div>
         <label class="block text-xs font-medium text-text">
           Document Version
           <input
             v-model="termsDoc.version"
             class="mt-1 h-9 w-full rounded-md border border-border px-3 text-xs bg-surface text-text"
             placeholder="v2.1.0"
-          />
-        </label>
-        <label class="block text-xs font-medium text-text">
-          Effective Date
-          <input
-            v-model="termsDoc.effectiveDate"
-            class="mt-1 h-9 w-full rounded-md border border-border px-3 text-xs bg-surface text-text"
-            placeholder="July 1, 2026"
           />
         </label>
       </div>
@@ -151,6 +111,10 @@ onMounted(loadTerms);
           class="w-full rounded-lg border border-border bg-surface p-4 font-mono text-xs text-text focus:outline-none focus:ring-1 focus:ring-primary"
         />
       </div>
+    </div>
+
+    <div v-else class="rounded-lg border border-dashed bg-surface p-12 text-center text-xs text-text-muted">
+      {{ errorMessage ? "Terms could not be loaded from the backend server." : "No Terms & Conditions document is available yet." }}
     </div>
   </div>
 </template>

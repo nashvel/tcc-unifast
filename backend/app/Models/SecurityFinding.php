@@ -14,7 +14,18 @@ class SecurityFinding extends Model
         return ['resolved_at' => 'datetime'];
     }
 
-    public function relatedUser(): BelongsTo { return $this->belongsTo(User::class, 'related_user_id'); }
-    public function reporter(): BelongsTo { return $this->belongsTo(User::class, 'reported_by'); }
-    public function resolver(): BelongsTo { return $this->belongsTo(User::class, 'resolved_by'); }
+    public function relatedUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'related_user_id');
+    }
+
+    public function reporter(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'reported_by');
+    }
+
+    public function resolver(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'resolved_by');
+    }
 }

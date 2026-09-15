@@ -365,6 +365,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
         // Collaborators management
         Route::get('/collaborators', [CollaboratorController::class, 'index'])->middleware('throttle:60,1');
         Route::post('/collaborators/invite', [CollaboratorController::class, 'invite'])->middleware('throttle:20,1');
+        Route::patch('/collaborators/{user}/reactivate', [CollaboratorController::class, 'reactivate'])->middleware('throttle:20,1');
         Route::delete('/collaborators/{user}', [CollaboratorController::class, 'destroy'])->middleware('throttle:20,1');
 
         // System health telemetry

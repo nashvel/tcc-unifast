@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Mail\StaffInviteMail;
 use App\Models\AuditLog;
+use App\Models\Role;
 use App\Models\User;
 use App\Services\ActivationTokenIssuer;
 use App\Support\ActivationLink;
@@ -18,18 +19,21 @@ class CollaboratorController extends Controller
     public function index(): JsonResponse
     {
         $collaborators = User::query()
-            ->whereIn('role', ['developer', 'admin', 'head', 'staff'])
-            ->select(['id', 'name', 'email', 'role', 'account_status', 'created_at'])
+            ->whereHas('roles', fn ($query) => $query->whereIn('name', ['developer', 'admin', 'staff']))
+            ->with(['roles.permissions:id,name'])
+            ->select(['id', 'name', 'email', 'account_status', 'created_at'])
             ->get()
             ->map(function ($u) {
+                $role = $u->roles->first();
+
                 return [
                     'id' => (string) $u->id,
                     'name' => $u->name,
                     'email' => $u->email,
-                    'role' => $u->role === 'head' ? 'admin' : $u->role,
-                    'access' => $u->role === 'developer' ? ['*'] : ['users', 'batches', 'documents', 'settings', 'audit'],
+                    'role' => $role?->name,
+                    'access' => $role?->name === 'developer' ? ['*'] : $role?->permissions->pluck('name')->values()->all(),
                     'status' => $u->account_status ?? 'active',
-                    'invitedAt' => $u->created_at ? $u->created_at->format('M j, Y') : 'Jul 1, 2026',
+                    'invitedAt' => $u->created_at?->toDateString(),
                 ];
             });
 
@@ -58,7 +62,7 @@ class CollaboratorController extends Controller
         ]);
 
         $actor = $request->user();
-        if ($validated['role'] === 'developer' && $actor?->role !== 'developer') {
+        if ($validated['role'] === 'developer' && ! $actor?->hasRole('developer')) {
             return response()->json([
                 'message' => 'Only developers can invite developer accounts.',
             ], 403);
@@ -76,6 +80,7 @@ class CollaboratorController extends Controller
             'role' => $validated['role'],
             'account_status' => 'pending',
         ]);
+        $user->roles()->attach(Role::query()->where('name', $validated['role'])->firstOrFail());
 
         // The invite link is the sole proof of invitation; the collaborator sets
         // their own password via StaffActivationController.
@@ -95,7 +100,7 @@ class CollaboratorController extends Controller
         if ($actor) {
             AuditLog::create([
                 'actor' => $actor->name,
-                'role' => ucfirst($actor->role),
+                'role' => $actor->roles()->value('name') ?? 'Unknown',
                 'action' => 'collaborator_invite',
                 'module' => 'Collaborators',
                 'target' => "Invited {$user->email} as {$user->role}",
@@ -112,7 +117,7 @@ class CollaboratorController extends Controller
                 'role' => $user->role,
                 'access' => $validated['role'] === 'developer' ? ['*'] : ($validated['access'] ?? []),
                 'status' => 'pending',
-                'invitedAt' => now()->format('M j, Y'),
+                'invitedAt' => now()->toDateString(),
                 'invite_link_sent' => $mailed,
             ],
         ], 201);
@@ -125,7 +130,10 @@ class CollaboratorController extends Controller
 
     public function destroy(Request $request, User $user): JsonResponse
     {
-        if ($user->role === 'developer' && User::where('role', 'developer')->where('account_status', 'active')->count() <= 1) {
+        if ($user->hasRole('developer') && User::query()
+            ->where('account_status', 'active')
+            ->whereHas('roles', fn ($query) => $query->where('name', 'developer'))
+            ->count() <= 1) {
             return response()->json(['message' => 'Cannot deactivate the primary system developer.'], 403);
         }
 
@@ -135,7 +143,7 @@ class CollaboratorController extends Controller
         if ($actor) {
             AuditLog::create([
                 'actor' => $actor->name,
-                'role' => ucfirst($actor->role),
+                'role' => $actor->roles()->value('name') ?? 'Unknown',
                 'action' => 'collaborator_deactivate',
                 'module' => 'Collaborators',
                 'target' => "Soft-deleted / deactivated collaborator {$user->email}",
@@ -144,5 +152,26 @@ class CollaboratorController extends Controller
         }
 
         return response()->json(['message' => 'Collaborator deactivated (soft deleted).']);
+    }
+
+    public function reactivate(Request $request, User $user): JsonResponse
+    {
+        $user->update(['account_status' => 'active']);
+
+        if ($actor = $request->user()) {
+            AuditLog::create([
+                'actor' => $actor->name,
+                'role' => $actor->roles()->value('name') ?? 'Unknown',
+                'action' => 'collaborator_reactivate',
+                'module' => 'Collaborators',
+                'target' => "Reactivated collaborator {$user->email}",
+                'ip_address' => $request->ip(),
+            ]);
+        }
+
+        return response()->json(['data' => [
+            'id' => (string) $user->id,
+            'status' => $user->account_status,
+        ]]);
     }
 }
