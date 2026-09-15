@@ -27,6 +27,8 @@ const { data: responseData, isLoading } = useQuery({
 const isExporting = ref(false);
 const selectedResponse = ref<(FormResponse & { responses?: Record<string, unknown> }) | null>(null);
 const detailLoading = ref(false);
+const detailDialogOpen = ref(false);
+const detailError = ref("");
 
 async function handleExport() {
   isExporting.value = true;
@@ -64,11 +66,15 @@ function formatDate(dateStr: string | null) {
 }
 
 async function showResponseDetail(responseId: number) {
+  detailDialogOpen.value = true;
   detailLoading.value = true;
   selectedResponse.value = null;
+  detailError.value = "";
   try {
     const result = await apiFetch<{ data: FormResponse & { responses: Record<string, unknown> } }>(`/api/forms/${props.form.id}/responses/${responseId}`);
     selectedResponse.value = result.data;
+  } catch (error) {
+    detailError.value = error instanceof Error ? error.message : "Unable to load this response.";
   } finally {
     detailLoading.value = false;
   }
@@ -171,8 +177,9 @@ async function showResponseDetail(responseId: number) {
         </div>
       </div>
     </div>
-    <AppDialog :model-value="detailLoading || !!selectedResponse" title="Response details" @update:model-value="selectedResponse = null">
+    <AppDialog :model-value="detailDialogOpen" title="Response details" @update:model-value="detailDialogOpen = false">
       <p v-if="detailLoading" class="text-sm text-text-muted">Loading response…</p>
+      <p v-else-if="detailError" class="text-sm text-danger">{{ detailError }}</p>
       <dl v-else-if="selectedResponse" class="space-y-3 text-sm">
         <div v-for="(value, key) in selectedResponse.responses" :key="key" class="border-b pb-2">
           <dt class="font-medium text-text">{{ key }}</dt>

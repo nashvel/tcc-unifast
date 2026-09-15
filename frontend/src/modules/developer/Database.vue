@@ -23,6 +23,7 @@ type TableItem = {
 
 type Column = { name: string; type: string; nullable: boolean; default: string | null; primary: boolean };
 type TableDetail = { name: string; columns: Column[]; row_count: number };
+type TableRows = { data: Record<string, unknown>[]; meta: { total: number } };
 
 type DbSummary = {
   total_tables: number;
@@ -36,6 +37,8 @@ const summary = ref<DbSummary | null>(null);
 const selectedTableName = ref<string | null>(null);
 const selectedTable = computed(() => tables.value.find((table) => table.name === selectedTableName.value) ?? null);
 const selectedTableDetail = ref<TableDetail | null>(null);
+const selectedTableRows = ref<Record<string, unknown>[]>([]);
+const rowsTotal = ref(0);
 const loading = ref(false);
 const detailLoading = ref(false);
 const search = ref("");
@@ -64,10 +67,17 @@ async function fetchTables() {
 async function inspectTable(tableName: string) {
   selectedTableName.value = tableName;
   selectedTableDetail.value = null;
+  selectedTableRows.value = [];
+  rowsTotal.value = 0;
   detailLoading.value = true;
   try {
-    const response = await apiFetch<{ data: TableDetail }>(`/api/database/tables/${tableName}`);
-    selectedTableDetail.value = response.data;
+    const [detailResponse, rowsResponse] = await Promise.all([
+      apiFetch<{ data: TableDetail }>(`/api/database/tables/${tableName}`),
+      apiFetch<TableRows>(`/api/database/tables/${tableName}/rows?per_page=25`),
+    ]);
+    selectedTableDetail.value = detailResponse.data;
+    selectedTableRows.value = rowsResponse.data ?? [];
+    rowsTotal.value = rowsResponse.meta?.total ?? selectedTableRows.value.length;
   } catch (err: any) {
     errorMessage.value = err?.message || `Failed to inspect ${tableName}.`;
     toast.error(errorMessage.value);
@@ -228,6 +238,31 @@ onMounted(fetchTables);
                   </td>
                 </tr>
                 <tr v-if="!detailLoading && !selectedTableDetail"><td colspan="3" class="px-3 py-6 text-center text-text-muted">Column metadata is unavailable.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div>
+          <div class="mb-2 flex items-center justify-between gap-3">
+            <h3 class="text-xs font-semibold text-text">Redacted Sample Rows</h3>
+            <span class="text-2xs text-text-muted">Showing up to 25 of {{ rowsTotal }} rows</span>
+          </div>
+          <div class="overflow-x-auto rounded border">
+            <table class="w-full text-xs">
+              <thead class="bg-surface-muted text-left text-text-muted">
+                <tr>
+                  <th v-for="column in selectedTableDetail?.columns ?? []" :key="column.name" class="px-3 py-2 font-medium">{{ column.name }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-if="detailLoading"><td :colspan="selectedTableDetail?.columns.length ?? 1" class="px-3 py-6 text-center text-text-muted">Loading rows…</td></tr>
+                <tr v-for="(row, rowIndex) in selectedTableRows" :key="rowIndex" class="border-t hover:bg-surface-muted/50">
+                  <td v-for="column in selectedTableDetail?.columns ?? []" :key="column.name" class="max-w-64 truncate px-3 py-2 text-text-muted" :title="String(row[column.name] ?? '—')">
+                    {{ row[column.name] ?? '—' }}
+                  </td>
+                </tr>
+                <tr v-if="!detailLoading && !selectedTableRows.length"><td :colspan="selectedTableDetail?.columns.length ?? 1" class="px-3 py-6 text-center text-text-muted">No readable rows are available.</td></tr>
               </tbody>
             </table>
           </div>

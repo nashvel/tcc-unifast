@@ -10,6 +10,7 @@ import {
   IconShieldCheck,
 } from "@tabler/icons-vue";
 import { apiFetch } from "@/api/client";
+import AppDialog from "@/components/dialogs/AppDialog.vue";
 import PageHeader from "@/components/ui/PageHeader.vue";
 import DataTable from "@/components/tables/DataTable.vue";
 
@@ -53,6 +54,7 @@ type Finding = {
   category: string;
   severity: string;
   status: string;
+  description?: string | null;
   created_at: string;
   related_user?: { name: string } | null;
 };
@@ -60,6 +62,7 @@ const findingsQuery = useQuery({ queryKey: ["security-findings"], queryFn: () =>
 const findings = computed(() => findingsQuery.data.value?.data.data ?? []);
 const search = ref("");
 const status = ref("all");
+const selectedFinding = ref<Finding | null>(null);
 const filteredFindings = computed(() => findings.value.filter((finding) => {
   const matchesStatus = status.value === "all" || finding.status === status.value;
   const matchesSearch = `${finding.title} ${finding.category} ${finding.severity}`
@@ -151,7 +154,7 @@ const filteredRecords = computed(() =>
           <td class="px-3 py-3 text-text-muted">{{ finding.category }}</td>
           <td class="px-3 py-3 text-success">{{ finding.status }}</td>
           <td class="px-3 py-3 text-text-muted">{{ new Date(finding.created_at).toLocaleDateString() }}</td>
-          <td class="px-3 py-3 text-text-muted">—</td>
+          <td class="px-3 py-3 text-right"><button class="text-primary hover:underline" @click="selectedFinding = finding">View</button></td>
         </tr>
         <tr v-if="!findingsQuery.isLoading.value && !findingsQuery.isError.value && !filteredFindings.length"><td colspan="6" class="p-8 text-center text-text-muted">No security findings match the current filters.</td></tr>
       </DataTable>
@@ -203,5 +206,15 @@ const filteredRecords = computed(() =>
         </tr>
       </DataTable>
     </template>
+
+    <AppDialog :model-value="!!selectedFinding" title="Security Finding" @update:model-value="selectedFinding = null">
+      <dl v-if="selectedFinding" class="space-y-3 text-sm">
+        <div><dt class="text-xs text-text-muted">Title</dt><dd class="font-medium">{{ selectedFinding.title }}</dd></div>
+        <div class="grid grid-cols-2 gap-3"><div><dt class="text-xs text-text-muted">Severity</dt><dd>{{ selectedFinding.severity }}</dd></div><div><dt class="text-xs text-text-muted">Status</dt><dd>{{ selectedFinding.status }}</dd></div></div>
+        <div><dt class="text-xs text-text-muted">Category</dt><dd>{{ selectedFinding.category }}</dd></div>
+        <div><dt class="text-xs text-text-muted">Description</dt><dd class="whitespace-pre-wrap">{{ selectedFinding.description || 'No description was provided.' }}</dd></div>
+        <div><dt class="text-xs text-text-muted">Related user</dt><dd>{{ selectedFinding.related_user?.name ?? '—' }}</dd></div>
+      </dl>
+    </AppDialog>
   </div>
 </template>

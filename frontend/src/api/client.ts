@@ -2,9 +2,6 @@ import { API_BASE } from "@/config";
 import type { ListQuery } from "./types";
 import { clearAuthSession } from "@/auth/session";
 
-/** @deprecated Mock transport was removed; all requests use the Laravel API. */
-export const isMockMode = false;
-
 export class ApiError extends Error {
   status: number;
   constructor(message: string, status: number) {
