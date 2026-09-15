@@ -350,7 +350,7 @@
     "requirePasswordMfa": "Kinahanglan ang password change ug MFA enrollment sa unang sign-in",
     "createUser": "Paghimo og user",
     "accountActionTitle": "{action} account",
-    "accountActionDescription": "{action} para kang {name}. Dili mo-persist kini nga mock action.",
+    "accountActionDescription": "{action} para kang {name}.",
     "resetMethod": "Reset method",
     "sendPasswordResetEmail": "Magpadala og password reset email",
     "generateTemporaryPassword": "Paghimo og temporary password",

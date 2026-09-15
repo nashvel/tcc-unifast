@@ -12,6 +12,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 
 class CollaboratorController extends Controller
@@ -173,5 +174,29 @@ class CollaboratorController extends Controller
             'id' => (string) $user->id,
             'status' => $user->account_status,
         ]]);
+    }
+
+    public function sendPasswordReset(Request $request, User $user): JsonResponse
+    {
+        if ($user->hasRole('developer') && ! $request->user()?->hasRole('developer')) {
+            return response()->json(['message' => 'Only developers can reset a developer account password.'], 403);
+        }
+
+        $status = Password::sendResetLink(['email' => $user->email]);
+        if ($status !== Password::RESET_LINK_SENT) {
+            return response()->json(['message' => __($status)], 422);
+        }
+
+        $actor = $request->user();
+        AuditLog::create([
+            'actor' => $actor?->name ?? 'System',
+            'role' => $actor?->roles()->value('name') ?? 'Unknown',
+            'action' => 'collaborator_password_reset_requested',
+            'module' => 'Collaborators',
+            'target' => "Password reset requested for {$user->email}",
+            'ip_address' => $request->ip(),
+        ]);
+
+        return response()->json(['message' => 'Password reset link sent.']);
     }
 }

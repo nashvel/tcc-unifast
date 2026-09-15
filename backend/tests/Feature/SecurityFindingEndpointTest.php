@@ -61,4 +61,24 @@ class SecurityFindingEndpointTest extends TestCase
             ->getJson('/api/security/findings')
             ->assertForbidden();
     }
+
+    public function test_administrator_can_ignore_a_security_finding(): void
+    {
+        $role = Role::create(['name' => 'admin', 'description' => 'Administrator', 'is_system' => true]);
+        $admin = User::factory()->create(['role' => 'student', 'account_status' => 'active']);
+        $admin->roles()->attach($role);
+        $finding = SecurityFinding::create([
+            'title' => 'Known false positive',
+            'category' => 'authentication',
+            'severity' => 'low',
+            'status' => 'open',
+        ]);
+
+        $this->actingAs($admin)
+            ->patchJson("/api/security/findings/{$finding->id}", ['status' => 'ignored'])
+            ->assertOk()
+            ->assertJsonPath('data.status', 'ignored');
+
+        $this->assertDatabaseHas('security_findings', ['id' => $finding->id, 'status' => 'ignored']);
+    }
 }

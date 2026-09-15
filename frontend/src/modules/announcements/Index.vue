@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { defineAsyncComponent, ref, watch } from "vue";
+import { computed, defineAsyncComponent, ref, watch } from "vue";
+import { useQuery } from "@tanstack/vue-query";
 import { useRoute, useRouter } from "vue-router";
 import {
   IconBrandFacebook,
@@ -9,7 +10,7 @@ import {
   IconPlus,
   IconSpeakerphone,
 } from "@tabler/icons-vue";
-import { announcements } from "@/constants/mockAdmin";
+import { apiFetch } from "@/api/client";
 import PageHeader from "@/components/ui/PageHeader.vue";
 
 const route = useRoute();
@@ -47,6 +48,9 @@ const tabs: { key: Tab; label: string; icon: any }[] = [
   { key: "announcements", label: "Announcements", icon: IconSpeakerphone },
   { key: "social", label: "Social Media Posts", icon: IconBrandFacebook },
 ];
+type Announcement = { id: number; title: string; body: string; audience_type: string; channels: string[]; status: string; created_at: string };
+const announcementsQuery = useQuery({ queryKey: ["announcements"], queryFn: () => apiFetch<{ data: Announcement[] }>("/api/announcements") });
+const announcements = computed(() => announcementsQuery.data.value?.data ?? []);
 </script>
 
 <template>
@@ -91,7 +95,7 @@ const tabs: { key: Tab; label: string; icon: any }[] = [
       <section class="space-y-2" data-tour="announcements-list">
         <article
           v-for="item in announcements"
-          :key="item.title"
+          :key="item.id"
           class="flex flex-col justify-between gap-3 rounded-lg border bg-surface p-4 sm:flex-row sm:items-center"
         >
           <div class="min-w-0">
@@ -104,7 +108,7 @@ const tabs: { key: Tab; label: string; icon: any }[] = [
             <p class="mt-1 text-xs text-text-muted">{{ item.body }}</p>
             <div class="mt-2 flex flex-wrap gap-2">
               <span class="rounded-full bg-primary-soft px-2 py-0.5 text-micro text-primary">{{
-                item.audience
+                item.audience_type
               }}</span>
               <span
                 v-for="channel in item.channels"
@@ -116,11 +120,11 @@ const tabs: { key: Tab; label: string; icon: any }[] = [
                 <IconDeviceMobile v-else :size="10" />
                 {{ channel }}
               </span>
-              <span class="text-micro text-text-soft">{{ item.date }}</span>
+              <span class="text-micro text-text-soft">{{ new Date(item.created_at).toLocaleDateString() }}</span>
             </div>
           </div>
           <div class="flex gap-2">
-            <RouterLink to="/app/announcements/1/edit" class="h-8 rounded-md border px-3 py-2 text-xs">
+            <RouterLink :to="`/app/announcements/${item.id}/edit`" class="h-8 rounded-md border px-3 py-2 text-xs">
               Edit
             </RouterLink>
             <RouterLink to="/app/announcements/logs" class="h-8 rounded-md border px-3 py-2 text-xs">
@@ -128,6 +132,9 @@ const tabs: { key: Tab; label: string; icon: any }[] = [
             </RouterLink>
           </div>
         </article>
+        <p v-if="announcementsQuery.isLoading.value" class="rounded-lg border bg-surface p-8 text-center text-xs text-text-muted">Loading announcements…</p>
+        <p v-else-if="announcementsQuery.isError.value" class="rounded-lg border border-danger bg-surface p-8 text-center text-xs text-danger">Unable to load announcements.</p>
+        <p v-else-if="!announcements.length" class="rounded-lg border border-dashed bg-surface p-8 text-center text-xs text-text-muted">No announcements have been created yet.</p>
       </section>
     </template>
 

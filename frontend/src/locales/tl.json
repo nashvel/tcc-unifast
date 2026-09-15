@@ -350,7 +350,7 @@
     "requirePasswordMfa": "Kailangan ang password change at MFA enrollment sa unang sign-in",
     "createUser": "Gumawa ng user",
     "accountActionTitle": "{action} account",
-    "accountActionDescription": "{action} para kay {name}. Hindi nagpe-persist ang mock action na ito.",
+    "accountActionDescription": "{action} para kay {name}.",
     "resetMethod": "Reset method",
     "sendPasswordResetEmail": "Magpadala ng password reset email",
     "generateTemporaryPassword": "Gumawa ng temporary password",

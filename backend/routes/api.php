@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AcademicProgramController;
+use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\AcademicRecordController;
 use App\Http\Controllers\ActivationController;
 use App\Http\Controllers\ActivationSeederController;
@@ -251,6 +252,12 @@ Route::middleware('auth:sanctum')->group(function (): void {
             ->where('variant', 'primary|secondary')
             ->middleware('throttle:60,1');
         Route::get('/audit-logs', [AuditEventController::class, 'index']);
+        Route::get('/announcements', [AnnouncementController::class, 'index']);
+        Route::post('/announcements', [AnnouncementController::class, 'store'])->middleware(['permission:publish_announcements', 'throttle:20,1']);
+        Route::get('/announcements/{announcement}', [AnnouncementController::class, 'show']);
+        Route::put('/announcements/{announcement}', [AnnouncementController::class, 'update'])->middleware(['permission:publish_announcements', 'throttle:20,1']);
+        Route::post('/announcements/{announcement}/cancel', [AnnouncementController::class, 'cancel'])->middleware(['permission:publish_announcements', 'throttle:20,1']);
+        Route::delete('/announcements/{announcement}', [AnnouncementController::class, 'destroy'])->middleware(['permission:publish_announcements', 'throttle:20,1']);
 
         Route::get('/billing-reports', [BillingReportController::class, 'index']);
         Route::post('/billing-reports', [BillingReportController::class, 'store'])
@@ -361,10 +368,13 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('/support-tickets', [SupportTicketController::class, 'index']);
         Route::post('/support-tickets', [SupportTicketController::class, 'store'])->middleware('throttle:20,1');
         Route::patch('/support-tickets/{supportTicket}', [SupportTicketController::class, 'update'])->middleware('throttle:20,1');
+        Route::post('/support-tickets/{supportTicket}/close', [SupportTicketController::class, 'close'])->middleware('throttle:20,1');
+        Route::post('/support-tickets/{supportTicket}/reopen', [SupportTicketController::class, 'reopen'])->middleware('throttle:20,1');
 
         // Collaborators management
         Route::get('/collaborators', [CollaboratorController::class, 'index'])->middleware('throttle:60,1');
         Route::post('/collaborators/invite', [CollaboratorController::class, 'invite'])->middleware('throttle:20,1');
+        Route::post('/collaborators/{user}/password-reset', [CollaboratorController::class, 'sendPasswordReset'])->middleware('throttle:5,1');
         Route::patch('/collaborators/{user}/reactivate', [CollaboratorController::class, 'reactivate'])->middleware('throttle:20,1');
         Route::delete('/collaborators/{user}', [CollaboratorController::class, 'destroy'])->middleware('throttle:20,1');
 

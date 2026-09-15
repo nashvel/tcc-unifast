@@ -1,11 +1,28 @@
 <script setup lang="ts">
 import { ref } from "vue";
+import { useRouter } from "vue-router";
 import { IconArrowLeft, IconEye, IconSend } from "@tabler/icons-vue";
 import PageHeader from "@/components/ui/PageHeader.vue";
+import { apiFetch } from "@/api/client";
+import { toast } from "@/composables/useToast";
+const router = useRouter();
 const title = ref("");
 const message = ref("");
-const audience = ref("All grantees");
-const channels = ref(["In-app", "Email"]);
+const audience = ref("all");
+const channels = ref(["in_app", "email"]);
+const scheduledAt = ref("");
+const saving = ref(false);
+async function publish() {
+  if (!title.value.trim() || !message.value.trim()) return toast.error("Title and message are required.");
+  saving.value = true;
+  try {
+    await apiFetch("/api/announcements", { method: "POST", body: JSON.stringify({ title: title.value, body: message.value, audience_type: audience.value, channels: channels.value, status: scheduledAt.value ? "scheduled" : "sent", scheduled_at: scheduledAt.value || null }) });
+    toast.success("Announcement published.");
+    router.push("/app/announcements");
+  } catch (error) {
+    toast.error(error instanceof Error ? error.message : "Unable to publish announcement.");
+  } finally { saving.value = false; }
+}
 </script>
 <template>
   <div>
@@ -18,7 +35,7 @@ const channels = ref(["In-app", "Email"]);
       title="Create Announcement"
       description="Compose and publish an update to the selected audience."
     />
-    <form class="grid gap-4 xl:grid-cols-[2fr_1fr]">
+    <form class="grid gap-4 xl:grid-cols-[2fr_1fr]" @submit.prevent="publish">
       <section class="rounded-lg border bg-surface p-5">
         <label class="block text-xs font-medium"
           >Title<input
@@ -39,14 +56,15 @@ const channels = ref(["In-app", "Email"]);
               v-model="audience"
               class="mt-1.5 h-10 w-full rounded-md border bg-surface px-3 text-sm"
             >
-              <option>All grantees</option>
-              <option>Selected batch</option>
-              <option>Staff only</option>
+              <option value="all">All grantees</option>
+              <option value="batch">Selected batch</option>
+              <option value="program">Selected program</option>
             </select></label
           >
           <label class="text-xs font-medium"
             >Publish schedule<input
               type="datetime-local"
+              v-model="scheduledAt"
               class="mt-1.5 h-10 w-full rounded-md border px-3 text-sm"
           /></label>
         </div>
@@ -54,10 +72,10 @@ const channels = ref(["In-app", "Email"]);
           <legend class="text-xs font-medium">Delivery channels</legend>
           <div class="mt-2 flex flex-wrap gap-3">
             <label
-              v-for="channel in ['In-app', 'Email', 'SMS']"
-              :key="channel"
+              v-for="channel in [{ label: 'In-app', value: 'in_app' }, { label: 'Email', value: 'email' }, { label: 'SMS', value: 'sms' }]"
+              :key="channel.value"
               class="flex items-center gap-2 text-xs"
-              ><input v-model="channels" type="checkbox" :value="channel" />{{ channel }}</label
+              ><input v-model="channels" type="checkbox" :value="channel.value" />{{ channel.label }}</label
             >
           </div>
         </fieldset>
@@ -72,9 +90,10 @@ const channels = ref(["In-app", "Email"]);
           <p class="mt-4 text-micro text-text-soft">{{ audience }} · {{ channels.join(", ") }}</p>
         </div>
         <button
-          class="mt-4 inline-flex w-full items-center justify-center gap-1.5 rounded-md bg-primary px-4 py-2.5 text-xs text-white"
+          :disabled="saving"
+          class="mt-4 inline-flex w-full items-center justify-center gap-1.5 rounded-md bg-primary px-4 py-2.5 text-xs text-white disabled:opacity-50"
         >
-          <IconSend :size="14" />Publish announcement
+          <IconSend :size="14" />{{ saving ? 'Publishing…' : 'Publish announcement' }}
         </button>
       </aside>
     </form>

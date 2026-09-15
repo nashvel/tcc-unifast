@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
-import { useQuery } from "@tanstack/vue-query";
+import { useQuery, useQueryClient } from "@tanstack/vue-query";
 import { useRoute, useRouter } from "vue-router";
 import {
   IconAlertTriangle,
@@ -11,11 +11,13 @@ import {
 } from "@tabler/icons-vue";
 import { apiFetch } from "@/api/client";
 import AppDialog from "@/components/dialogs/AppDialog.vue";
+import { toast } from "@/composables/useToast";
 import PageHeader from "@/components/ui/PageHeader.vue";
 import DataTable from "@/components/tables/DataTable.vue";
 
 const route = useRoute();
 const router = useRouter();
+const queryClient = useQueryClient();
 
 // ── Tab state ──────────────────────────────────────────────
 type Tab = "findings" | "memory";
@@ -63,6 +65,7 @@ const findings = computed(() => findingsQuery.data.value?.data.data ?? []);
 const search = ref("");
 const status = ref("all");
 const selectedFinding = ref<Finding | null>(null);
+const updatingFinding = ref(false);
 const filteredFindings = computed(() => findings.value.filter((finding) => {
   const matchesStatus = status.value === "all" || finding.status === status.value;
   const matchesSearch = `${finding.title} ${finding.category} ${finding.severity}`
@@ -76,6 +79,21 @@ const stats = computed(() => [
   ["Ignored", findings.value.filter((finding) => finding.status === "ignored").length, IconInfoCircle],
   ["Total", findings.value.length, IconShieldCheck],
 ]);
+
+async function updateFindingStatus(status: "resolved" | "ignored") {
+  if (!selectedFinding.value) return;
+  updatingFinding.value = true;
+  try {
+    await apiFetch(`/api/security/findings/${selectedFinding.value.id}`, { method: "PATCH", body: JSON.stringify({ status }) });
+    await queryClient.invalidateQueries({ queryKey: ["security-findings"] });
+    selectedFinding.value = null;
+    toast.success(`Finding marked ${status}.`);
+  } catch (error) {
+    toast.error(error instanceof Error ? error.message : "Unable to update finding.");
+  } finally {
+    updatingFinding.value = false;
+  }
+}
 
 // ── Memory tab ─────────────────────────────────────────────
 const query = ref("");
@@ -215,6 +233,12 @@ const filteredRecords = computed(() =>
         <div><dt class="text-xs text-text-muted">Description</dt><dd class="whitespace-pre-wrap">{{ selectedFinding.description || 'No description was provided.' }}</dd></div>
         <div><dt class="text-xs text-text-muted">Related user</dt><dd>{{ selectedFinding.related_user?.name ?? '—' }}</dd></div>
       </dl>
+      <template #footer>
+        <div class="flex justify-end gap-2">
+          <button v-if="selectedFinding?.status === 'open'" :disabled="updatingFinding" class="rounded-md border px-3 py-2 text-xs hover:bg-surface-muted disabled:opacity-50" @click="updateFindingStatus('ignored')">Ignore</button>
+          <button v-if="selectedFinding?.status === 'open'" :disabled="updatingFinding" class="rounded-md bg-primary px-3 py-2 text-xs text-white disabled:opacity-50" @click="updateFindingStatus('resolved')">{{ updatingFinding ? 'Updating…' : 'Resolve' }}</button>
+        </div>
+      </template>
     </AppDialog>
   </div>
 </template>

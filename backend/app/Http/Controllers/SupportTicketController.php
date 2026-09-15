@@ -30,11 +30,6 @@ class SupportTicketController extends Controller
 
         $tickets = $query->latest()->get();
 
-        if ($tickets->isEmpty() && ! SupportTicket::exists()) {
-            $this->seedInitialTickets();
-            $tickets = SupportTicket::with(['reporter', 'assignee', 'replies.user'])->latest()->get();
-        }
-
         return response()->json(['data' => $tickets->map(fn (SupportTicket $ticket) => $this->present($ticket))]);
     }
 
@@ -109,6 +104,32 @@ class SupportTicketController extends Controller
         return response()->json(['data' => $this->present($supportTicket)]);
     }
 
+    public function close(Request $request, SupportTicket $supportTicket): JsonResponse
+    {
+        return $this->transition($request, $supportTicket, 'Resolved', 'ticket_close');
+    }
+
+    public function reopen(Request $request, SupportTicket $supportTicket): JsonResponse
+    {
+        return $this->transition($request, $supportTicket, 'Open', 'ticket_reopen');
+    }
+
+    private function transition(Request $request, SupportTicket $supportTicket, string $status, string $action): JsonResponse
+    {
+        $supportTicket->update(['status' => $status]);
+        $actor = $request->user();
+        AuditLog::create([
+            'actor' => $actor?->name ?? 'System',
+            'role' => $actor?->roles()->value('name') ?? 'Unknown',
+            'action' => $action,
+            'module' => 'Support',
+            'target' => "{$action} {$supportTicket->ticket_id}",
+            'ip_address' => $request->ip(),
+        ]);
+
+        return response()->json(['data' => $this->present($supportTicket->fresh()->load(['reporter', 'assignee', 'replies.user']))]);
+    }
+
     private function present(SupportTicket $ticket): array
     {
         return [
@@ -118,45 +139,5 @@ class SupportTicketController extends Controller
             'reporter' => $ticket->reporter?->name ?? 'System', 'assignee' => $ticket->assignee?->name ?? 'Unassigned',
             'replies' => $ticket->replies->map(fn ($reply) => ['author' => $reply->user?->name ?? 'System', 'message' => $reply->message, 'created_at' => $reply->created_at]),
         ];
-    }
-
-    private function seedInitialTickets(): void
-    {
-        $initial = [
-            [
-                'ticket_id' => 'TK-001',
-                'title' => 'Face verification timeout after 30s',
-                'category' => 'bug',
-                'priority' => 'High',
-                'status' => 'Open',
-                'reporter_id' => null,
-                'assignee_id' => null,
-                'description' => 'Face verification API times out on weak mobile connections.',
-            ],
-            [
-                'ticket_id' => 'TK-002',
-                'title' => 'Request: CSV export for audit trail',
-                'category' => 'feature',
-                'priority' => 'Normal',
-                'status' => 'In Progress',
-                'reporter_id' => null,
-                'assignee_id' => null,
-                'description' => 'Admin requested CSV export capability for developer audit logs.',
-            ],
-            [
-                'ticket_id' => 'TK-003',
-                'title' => 'OCR mismatch on non-standard font transcripts',
-                'category' => 'bug',
-                'priority' => 'Normal',
-                'status' => 'Waiting',
-                'reporter_id' => null,
-                'assignee_id' => null,
-                'description' => 'Special characters on course names cause low confidence score.',
-            ],
-        ];
-
-        foreach ($initial as $data) {
-            SupportTicket::create($data);
-        }
     }
 }

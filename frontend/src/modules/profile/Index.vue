@@ -62,7 +62,7 @@ const passwordUpdated = ref(false);
 
 const user = computed(() => authSession.user);
 
-/** Server onboarding completion — not localStorage mock flags. */
+/** Onboarding completion is derived from the server-authoritative account state. */
 const onboardingDone = computed(() => {
   const u = user.value;
   if (!u) return false;

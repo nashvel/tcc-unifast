@@ -1,8 +1,14 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
+import { useRouter } from "vue-router";
 import { IconArrowLeft, IconInfoCircle, IconPaperclip, IconSend } from "@tabler/icons-vue";
 import PageHeader from "@/components/ui/PageHeader.vue";
-const submitted = ref(false);
+import { apiFetch } from "@/api/client";
+import { toast } from "@/composables/useToast";
+const router = useRouter();
+const title = ref("");
+const description = ref("");
+const saving = ref(false);
 const category = ref("Technical incident");
 const priority = ref("Normal");
 const impact = ref("Single user");
@@ -88,6 +94,17 @@ const sla = computed(() =>
         ? "4-hour response"
         : "1-business-day response",
 );
+const apiCategory = computed(() => category.value === "Feature request" ? "feature" : category.value === "General inquiry" ? "question" : category.value === "Technical incident" ? "bug" : "general");
+const apiPriority = computed(() => priority.value === "Urgent" ? "Critical" : priority.value);
+async function submitTicket() {
+  if (!title.value.trim() || !description.value.trim()) return toast.error("Subject and description are required.");
+  saving.value = true;
+  try {
+    await apiFetch("/api/support-tickets", { method: "POST", body: JSON.stringify({ title: title.value, description: description.value, category: apiCategory.value, priority: apiPriority.value }) });
+    toast.success("Support ticket created.");
+    router.push("/app/support");
+  } catch (error) { toast.error(error instanceof Error ? error.message : "Unable to create ticket."); } finally { saving.value = false; }
+}
 </script>
 <template>
   <div>
@@ -102,7 +119,7 @@ const sla = computed(() =>
     />
     <form
       class="grid gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)]"
-      @submit.prevent="submitted = true"
+      @submit.prevent="submitTicket"
     >
       <div class="space-y-4">
         <section class="rounded-xl border bg-surface p-5">
@@ -111,6 +128,7 @@ const sla = computed(() =>
             <label class="text-xs font-medium sm:col-span-2"
               >Subject<input
                 required
+                v-model="title"
                 class="mt-1.5 h-10 w-full rounded-md border px-3 text-sm"
                 placeholder="Briefly describe the issue or request"
             /></label>
@@ -206,6 +224,7 @@ const sla = computed(() =>
             <label class="block text-xs font-medium"
               >Description<textarea
                 required
+                v-model="description"
                 class="mt-1.5 min-h-36 w-full rounded-md border p-3 text-sm"
                 placeholder="What happened, who is affected, and what outcome do you need?"
               />
@@ -294,13 +313,11 @@ const sla = computed(() =>
           </p>
         </section>
         <button
-          class="inline-flex w-full items-center justify-center gap-1.5 rounded-md bg-primary px-4 py-2.5 text-xs text-white"
+          :disabled="saving"
+          class="inline-flex w-full items-center justify-center gap-1.5 rounded-md bg-primary px-4 py-2.5 text-xs text-white disabled:opacity-50"
         >
-          <IconSend :size="14" />Submit ticket
+          <IconSend :size="14" />{{ saving ? 'Submitting…' : 'Submit ticket' }}
         </button>
-        <p v-if="submitted" class="rounded-md bg-success-soft p-3 text-center text-xs text-success">
-          Mock ticket SUP-2026-0185 created.
-        </p>
       </aside>
     </form>
   </div>
