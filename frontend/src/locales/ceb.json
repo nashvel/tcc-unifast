@@ -105,6 +105,8 @@
     "student": "estudyante"
   },
   "auth": {
+    "logoutConfirmTitle": "Mag-sign out?",
+    "logoutConfirmDescription": "Kinahanglan kang mo-sign in pag-usab aron ma-access ang imong account.",
     "heroTitle": "Mas sayon, mas paspas, ug mas klaro nga serbisyo sa scholarship.",
     "heroDescription": "Usa ka workspace para sa grantees, dokumento, eligibility, releases, ug academic monitoring.",
     "loginTitle": "Sign in sa imong account",

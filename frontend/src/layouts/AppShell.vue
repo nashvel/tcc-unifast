@@ -26,6 +26,7 @@ import {
 } from "@/constants/navigation";
 import logo from "@/assets/system-logo.png";
 import AppBreadcrumbs from "@/components/navigation/AppBreadcrumbs.vue";
+import AppDialog from "@/components/dialogs/AppDialog.vue";
 import LanguageSwitcher from "@/components/LanguageSwitcher.vue";
 import DeveloperSidebar from "./DeveloperSidebar.vue";
 import DiceBearAvatar from "@/components/ui/DiceBearAvatar.vue";
@@ -65,7 +66,7 @@ const jumpOpen = ref(false);
 const jumpQuery = ref("");
 const jumpInput = ref<HTMLInputElement | null>(null);
 const signingOut = ref(false);
-const logoutToast = ref(false);
+const logoutConfirmationOpen = ref(false);
 const isStudent = computed(() => route.path.startsWith("/student"));
 const isDeveloper = computed(() => authSession.user?.role === "developer");
 const role = computed(() => authSession.user?.role ?? "student");
@@ -271,20 +272,24 @@ function toggleTheme() {
   if (typeof localStorage !== "undefined")
     localStorage.setItem("theme", dark.value ? "dark" : "light");
 }
+function requestSignOut() {
+  if (signingOut.value) return;
+  closeMenus();
+  closeJump();
+  logoutConfirmationOpen.value = true;
+}
+
 async function signOut() {
   if (signingOut.value) return;
   signingOut.value = true;
-  logoutToast.value = true;
-  closeMenus();
-  closeJump();
   try {
     await logout();
   } finally {
     authSession.user = null;
     queryClient.clear();
     signingOut.value = false;
+    logoutConfirmationOpen.value = false;
     await router.push(withLang("/login", route.query.lang));
-    logoutToast.value = false;
   }
 }
 
@@ -337,7 +342,7 @@ if (dark.value && typeof document !== "undefined") {
         mobile ? 'translate-x-0' : '-translate-x-full',
       ]"
     >
-      <DeveloperSidebar @logout="signOut" />
+      <DeveloperSidebar @logout="requestSignOut" />
     </aside>
 
     <!-- Standard Sidebar for other roles -->
@@ -716,7 +721,7 @@ if (dark.value && typeof document !== "undefined") {
                 'flex w-full items-center gap-2 rounded px-2.5 py-1.5 text-sm text-danger disabled:opacity-50',
                 isDeveloper ? 'hover:bg-[var(--surface-muted)]' : 'hover:bg-surface-muted',
               ]"
-              @click.stop="signOut"
+              @click.stop="requestSignOut"
             >
               <IconLogout :size="15" />
               {{ signingOut ? t("common.signingOut") : t("common.signOut") }}
@@ -764,27 +769,42 @@ if (dark.value && typeof document !== "undefined") {
       </nav>
     </div>
 
-    <!-- Logout toast overlay -->
-    <Teleport to="body">
-      <Transition name="fade">
-        <div
-          v-if="logoutToast"
-          class="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm"
+    <AppDialog
+      v-model="logoutConfirmationOpen"
+      :title="t('auth.logoutConfirmTitle')"
+      :description="t('auth.logoutConfirmDescription')"
+      size="sm"
+      :closeable="!signingOut"
+    >
+      <template #footer>
+        <button
+          type="button"
+          class="inline-flex h-9 items-center rounded-md border border-border px-3 text-xs font-medium text-text transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60"
+          :disabled="signingOut"
+          @click="logoutConfirmationOpen = false"
         >
-          <div class="flex flex-col items-center gap-4 rounded-2xl bg-white px-10 py-8 shadow-2xl">
-            <svg
-              class="h-8 w-8 animate-spin text-primary"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-            </svg>
-            <p class="text-sm font-semibold text-text">{{ t("common.signingOut") }}</p>
-          </div>
-        </div>
-      </Transition>
-    </Teleport>
+          {{ t("common.cancel") }}
+        </button>
+        <button
+          type="button"
+          class="inline-flex h-9 items-center gap-2 rounded-md bg-danger px-3 text-xs font-medium text-white transition hover:bg-danger/90 disabled:cursor-not-allowed disabled:opacity-60"
+          :disabled="signingOut"
+          @click="signOut"
+        >
+          <svg
+            v-if="signingOut"
+            class="h-3.5 w-3.5 animate-spin"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          </svg>
+          {{ signingOut ? t("common.signingOut") : t("common.signOut") }}
+        </button>
+      </template>
+    </AppDialog>
   </div>
 </template>

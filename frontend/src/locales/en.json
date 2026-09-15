@@ -115,6 +115,8 @@
     "student": "student"
   },
   "auth": {
+    "logoutConfirmTitle": "Sign out?",
+    "logoutConfirmDescription": "You will need to sign in again to access your account.",
     "heroTitle": "Making scholarship services simpler, faster, and more transparent.",
     "heroDescription": "A unified workspace for grantees, documents, eligibility, releases, and academic monitoring.",
     "loginTitle": "Sign in to your account",
