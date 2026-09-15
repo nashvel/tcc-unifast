@@ -126,6 +126,7 @@ Route::middleware(['auth:sanctum', 'full-session', 'role:admin,developer', \App\
 });
 
 Route::get('/terms/active', [TermController::class, 'active'])->middleware('throttle:60,1');
+Route::get('/privacy-policy/active', [TermController::class, 'privacyPolicy'])->middleware('throttle:60,1');
 Route::get('/faqs', [FaqController::class, 'index'])->middleware('throttle:60,1');
 Route::get('/public/tcc-home', TccPublicHomeController::class)->middleware('throttle:30,1');
 

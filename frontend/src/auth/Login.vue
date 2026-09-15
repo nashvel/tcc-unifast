@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
-import { ArrowLeft, ArrowRight, ChevronDown, ChevronUp, Eye, EyeOff, HelpCircle, Lock, Mail, ShieldCheck, UserRound } from "lucide-vue-next";
+import { ArrowLeft, ArrowRight, Eye, EyeOff, HelpCircle, Lock, Mail, ShieldCheck, UserRound } from "lucide-vue-next";
 import logo from "@/assets/system-logo.webp";
 import backgroundLogo from "@/assets/auth/imresizer-TCC_UNIFAST.png";
 import studentsCutout from "@/assets/auth/Faculties_UNifast1.webp";
@@ -11,6 +11,7 @@ import { studentHomePath } from "@/auth/onboardingResume";
 import { beginGoogleLogin, login, verifyTwoFactor } from "@/api/auth";
 import { apiFetch } from "@/api/client";
 import { useTheme } from "@/composables/useTheme";
+import AppDialog from "@/components/dialogs/AppDialog.vue";
 import LanguageSwitcher from "@/components/LanguageSwitcher.vue";
 import { withLang } from "@/i18n/routeLang";
 import VueRecaptcha from "vue3-recaptcha2";
@@ -48,10 +49,36 @@ const mode = route.path.includes("forgot")
     ? "activate"
     : "login";
 
-type Term = { id: number; title: string; content: string; version: string };
+type PolicyDocument = { id: number; title: string; content: string; version: string; document_type?: "terms" | "privacy" };
+type PolicyKind = "terms" | "privacy";
 
-const terms = ref<Term | null>(null);
-const showTerms = ref(false);
+const terms = ref<PolicyDocument | null>(null);
+const privacyPolicy = ref<PolicyDocument | null>(null);
+const policyKind = ref<PolicyKind>("terms");
+const showPolicy = ref(false);
+const activePolicy = computed(() => policyKind.value === "privacy" ? privacyPolicy.value : terms.value);
+const policyUsesHtml = computed(() => /<\/?[a-z][^>]*>/i.test(activePolicy.value?.content ?? ""));
+const policySections = computed(() => {
+  const content = (activePolicy.value?.content ?? "").trim();
+  if (!content || policyUsesHtml.value) return [];
+
+  const blocks = content.split(/\r?\n\s*\r?\n/).map((block) => block.trim()).filter(Boolean);
+  if (blocks[0]?.toLowerCase() === activePolicy.value?.title.trim().toLowerCase()) blocks.shift();
+
+  return blocks.map((block) => {
+    const [firstLine, ...remainingLines] = block.split(/\r?\n/);
+    const isSectionHeading = /^\d+\.\s+/.test(firstLine.trim());
+    return {
+      heading: isSectionHeading ? firstLine.trim() : null,
+      body: (isSectionHeading ? remainingLines : [firstLine, ...remainingLines]).join(" ").replace(/\s+/g, " ").trim(),
+    };
+  });
+});
+
+function openPolicy(kind: PolicyKind) {
+  policyKind.value = kind;
+  showPolicy.value = true;
+}
 
 const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY || "";
 const bypassCaptcha = import.meta.env.VITE_DEV_BYPASS_CAPTCHA === 'true';
@@ -210,9 +237,14 @@ onMounted(async () => {
   }
 
   try {
-    const termsRes = await apiFetch<{ data: Term }>("/api/terms/active");
+    const [termsRes, privacyRes] = await Promise.all([
+      apiFetch<{ data: PolicyDocument }>("/api/terms/active"),
+      apiFetch<{ data: PolicyDocument }>("/api/privacy-policy/active"),
+    ]);
     terms.value = termsRes.data;
+    privacyPolicy.value = privacyRes.data;
   } catch {}
+
 });
 
 </script>
@@ -474,20 +506,49 @@ onMounted(async () => {
           </RouterLink>
         </div>
 
-        <!-- Terms & Conditions -->
-        <div v-if="terms && mode === 'login' && !isTwoFactorStep" class="mt-6 border-t pt-4">
-          <button class="flex w-full items-center gap-2 text-xs font-medium text-text-muted hover:text-text" @click="showTerms = !showTerms">
-            <ShieldCheck :size="14" />
-            <span>{{ terms.title }} (v{{ terms.version }})</span>
-            <component :is="showTerms ? ChevronUp : ChevronDown" :size="14" class="ml-auto" />
-          </button>
-          <div v-if="showTerms" class="mt-3 max-h-48 overflow-y-auto rounded-md border bg-surface p-3 text-xs text-text-muted">
-            <div v-html="DOMPurify.sanitize(terms.content)" />
-          </div>
+        <!-- Sign-in agreement -->
+        <div v-if="mode === 'login' && !isTwoFactorStep" class="mt-6 border-t pt-4">
+          <p class="flex items-start gap-2 text-2xs leading-5 text-text-muted">
+            <ShieldCheck :size="15" class="mt-0.5 shrink-0 text-text-soft" aria-hidden="true" />
+            <span>
+              {{ t("auth.signInAgreementPrefix") }}
+              <button
+                type="button"
+                class="font-medium text-blue-600 underline underline-offset-2 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                @click="openPolicy('terms')"
+              >
+                {{ t("auth.termsOfService") }}
+              </button>
+              {{ t("auth.signInAgreementConnector") }}
+              <button
+                type="button"
+                class="font-medium text-blue-600 underline underline-offset-2 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                @click="openPolicy('privacy')"
+              >
+                {{ t("auth.privacyPolicy") }}
+              </button>.
+            </span>
+          </p>
         </div>
       </div>
     </main>
   </div>
+
+  <AppDialog
+    v-model="showPolicy"
+    :title="activePolicy?.title || (policyKind === 'privacy' ? t('auth.privacyPolicy') : t('auth.termsOfService'))"
+    :description="activePolicy ? `v${activePolicy.version}` : undefined"
+    size="md"
+  >
+    <div v-if="activePolicy && policyUsesHtml" class="prose prose-sm max-w-none text-text-muted" v-html="DOMPurify.sanitize(activePolicy.content)" />
+    <div v-else-if="activePolicy" class="space-y-5 text-sm leading-6 text-text-muted">
+      <section v-for="(section, index) in policySections" :key="index" class="space-y-1.5">
+        <h3 v-if="section.heading" class="text-sm font-semibold text-text">{{ section.heading }}</h3>
+        <p>{{ section.body }}</p>
+      </section>
+    </div>
+    <p v-else class="text-sm text-text-muted">{{ t("common.loading") }}</p>
+  </AppDialog>
 
   <!-- reCAPTCHA Modal Overlay -->
   <div v-if="showCaptchaModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">

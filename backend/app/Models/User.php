@@ -65,7 +65,7 @@ class User extends Authenticatable
 
     public function getAllPermissions(): Collection
     {
-        if ($this->role === 'developer') {
+        if ($this->hasRole('developer')) {
             return Permission::all();
         }
 
@@ -81,7 +81,7 @@ class User extends Authenticatable
 
     public function hasPermission(string $permissionName): bool
     {
-        if ($this->role === 'developer') {
+        if ($this->hasRole('developer')) {
             return true;
         }
 
@@ -90,7 +90,7 @@ class User extends Authenticatable
 
     public function hasAnyPermission(array $permissionNames): bool
     {
-        if ($this->role === 'developer') {
+        if ($this->hasRole('developer')) {
             return true;
         }
 

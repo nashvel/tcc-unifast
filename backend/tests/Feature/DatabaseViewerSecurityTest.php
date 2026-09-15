@@ -71,6 +71,20 @@ class DatabaseViewerSecurityTest extends TestCase
             ->assertNotFound();
     }
 
+    public function test_legacy_developer_value_cannot_bypass_database_viewer_authorization(): void
+    {
+        config(['services.database_viewer.enabled' => true]);
+
+        $user = User::factory()->create([
+            'role' => 'developer',
+            'account_status' => 'active',
+        ]);
+
+        $this->actingAs($user)
+            ->getJson('/api/database/tables')
+            ->assertForbidden();
+    }
+
     public function test_database_viewer_only_lists_allowed_tables(): void
     {
         config([

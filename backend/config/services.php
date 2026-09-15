@@ -169,4 +169,13 @@ return [
         ))),
     ],
 
+    'rbac' => [
+        // Existing test fixtures still use the legacy users.role column. Production
+        // authorization is pivot-role only after the backfill migration runs.
+        'allow_legacy_role_fallback' => filter_var(
+            env('RBAC_ALLOW_LEGACY_ROLE_FALLBACK', env('APP_ENV') === 'testing'),
+            FILTER_VALIDATE_BOOLEAN
+        ),
+    ],
+
 ];

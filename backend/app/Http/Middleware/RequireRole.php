@@ -16,18 +16,13 @@ class RequireRole
 
         $user->loadMissing('roles');
 
-        // Authorization uses the RBAC pivot table exclusively when any roles are assigned.
-        // The legacy flat `user->role` string column is the fallback ONLY for accounts that
-        // pre-date the RBAC migration and have no pivot rows yet.
-        //
-        // WARNING: these two systems can drift. If a user's RBAC roles are revoked via
-        // DELETE /rbac/users/{user}/roles but `users.role` is not cleared, the fallback
-        // will still grant access. Always update BOTH when changing a user's role.
-        // TODO: once all accounts are migrated, remove the fallback and rely on RBAC only.
-        $assignedRoles = $user->roles;
-        $allowed = $assignedRoles->isNotEmpty()
-            ? $assignedRoles->contains(fn ($role) => in_array($role->name, $roles, true))
-            : in_array($user->role, $roles, true);
+        $allowed = $user->roles->contains(
+            fn ($role) => in_array($role->name, $roles, true)
+        );
+
+        if (! $allowed && $user->roles->isEmpty() && (bool) config('services.rbac.allow_legacy_role_fallback', false)) {
+            $allowed = in_array($user->role, $roles, true);
+        }
 
         abort_unless($allowed, 403);
 

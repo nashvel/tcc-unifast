@@ -90,7 +90,7 @@ async function toggleModule(mod: RbacOperationalModule) {
     if (nextEnabled) {
       localAssigned.value = localAssigned.value.filter((k) => k !== mod.key);
     } else {
-      localAssigned.value = localAssigned.value.push(mod.key);
+      localAssigned.value = [...localAssigned.value, mod.key];
     }
     const msg = err instanceof ApiError ? err.message : "Failed to update module assignment.";
     toast.error(msg);

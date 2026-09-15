@@ -634,8 +634,8 @@ if (dark.value && typeof document !== "undefined") {
               >
                 <p class="font-semibold text-text">{{ item.title }}</p>
                 <p class="mt-0.5 text-text-muted">{{ item.body }}</p>
-                <p v-if="item.created_at" class="mt-1 text-2xs text-text-soft">
-                  {{ new Date(item.created_at).toLocaleDateString("en-PH", { month: "short", day: "numeric" }) }}
+                <p v-if="item.time" class="mt-1 text-2xs text-text-soft">
+                  {{ item.time }}
                 </p>
               </div>
             </div>

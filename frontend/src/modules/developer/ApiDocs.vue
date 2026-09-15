@@ -33,6 +33,7 @@ const endpointGroups: EndpointGroup[] = [
       { method: "GET", path: "/api/activation/{token}", summary: "Validate an invitation or activation token.", access: "public", throttle: "20/min", response: '{ "data": { "email": "...", "student": {...} } }' },
       { method: "POST", path: "/api/activation/{token}", summary: "Activate an invited account.", access: "public", throttle: "10/min", request: '{ "password": "...", "password_confirmation": "..." }', response: '{ "user": {...}, "token": "..." }' },
       { method: "GET", path: "/api/terms/active", summary: "Fetch the active public terms and conditions.", access: "public", response: '{ "data": {...} }' },
+      { method: "GET", path: "/api/privacy-policy/active", summary: "Fetch the active public privacy policy.", access: "public", response: '{ "data": {...} }' },
       { method: "GET", path: "/api/faqs", summary: "Fetch published FAQs for public support pages.", access: "public", response: '{ "data": [...] }' },
     ],
   },
