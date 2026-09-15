@@ -36,6 +36,7 @@
     "hello": "Hello {name}"
   },
   "nav": {
+    "workspaceContinuity": "Workspace Continuity",
     "academicRecords": "Academic Records",
     "administration": "Administration",
     "activationSeeder": "Activation Seeder",
@@ -114,12 +115,18 @@
     "student": "student"
   },
   "auth": {
+    "logoutConfirmTitle": "Sign out?",
+    "logoutConfirmDescription": "You will need to sign in again to access your account.",
     "heroTitle": "Making scholarship services simpler, faster, and more transparent.",
     "heroDescription": "A unified workspace for grantees, documents, eligibility, releases, and academic monitoring.",
     "loginTitle": "Sign in to your account",
     "forgotTitle": "Reset your password",
     "activateTitle": "Activate your account",
     "loginDescription": "Use a seeded account or choose a demo role below.",
+    "signInAgreementPrefix": "By continuing, you agree to our ",
+    "signInAgreementConnector": " and ",
+    "termsOfService": "Terms of Service",
+    "privacyPolicy": "Privacy Policy",
     "emailDescription": "Enter your institutional email to continue.",
     "emailPasswordRequired": "Enter email and password.",
     "captchaLabel": "CAPTCHA image",

@@ -292,16 +292,17 @@ async function loadTccPublicContent(): Promise<void> {
 }
 
 function setupHeroLiquidReveal(): void {
-  const container = heroRevealCard.value;
-  const colorImage = heroRevealColorImage.value;
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  if (!container || !colorImage || reducedMotion) return;
+  if (!heroRevealCard.value || !heroRevealColorImage.value || reducedMotion) return;
 
   type TrailPoint = { x: number; y: number; opacity: number };
   let lastPoint: { x: number; y: number } | null = null;
   let points: TrailPoint[] = [];
 
   function onPointerMove(event: PointerEvent): void {
+    const container = heroRevealCard.value;
+    if (!container) return;
+
     const rect = container.getBoundingClientRect();
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
@@ -339,6 +340,12 @@ function setupHeroLiquidReveal(): void {
   }
 
   function applyMask(): void {
+    const colorImage = heroRevealColorImage.value;
+    if (!colorImage) {
+      heroRevealFrame = 0;
+      return;
+    }
+
     if (points.length === 0) {
       colorImage.style.opacity = "0";
       colorImage.style.maskImage = "none";

@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Term extends Model
 {
-    protected $fillable = ['title', 'content', 'version', 'is_active'];
+    protected $fillable = ['title', 'content', 'version', 'document_type', 'is_active'];
 
     protected $casts = ['is_active' => 'boolean'];
 

@@ -80,7 +80,12 @@ class SocialMediaPostController extends Controller
             ->latest($hasPublishedAt ? 'published_at' : 'updated_at')
             ->first();
         $cachedPage = Cache::get('social_media.facebook_page');
-        $page = is_array($cachedPage) ? $cachedPage : null;
+        $callbackPage = data_get($latestPost?->metadata, 'facebook_page');
+        // A signed publish callback is also evidence of a real Page connection.
+        // The cache is populated only by the separate profile-refresh workflow.
+        $page = is_array($cachedPage)
+            ? $cachedPage
+            : (is_array($callbackPage) ? $callbackPage : null);
         $n8nConfigured = trim((string) config('services.tcc_unifast_n8n.webhook_url')) !== ''
             && trim((string) config('services.tcc_unifast_n8n.webhook_secret')) !== '';
         $facebookConfirmed = is_array($page);

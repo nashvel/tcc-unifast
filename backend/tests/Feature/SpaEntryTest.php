@@ -6,17 +6,21 @@ use Tests\TestCase;
 
 class SpaEntryTest extends TestCase
 {
-    public function test_the_vue_application_shell_is_served(): void
+    protected function setUp(): void
     {
-        $this->get('/login')
-            ->assertOk()
-            ->assertSee('id="app"', false)
-            ->assertSee('UniFAST TES');
+        parent::setUp();
+
+        config()->set('app.frontend_url', 'https://portal.test');
     }
 
-    public function test_deep_links_are_handled_by_the_spa_fallback(): void
+    public function test_the_vue_login_route_redirects_to_the_frontend_application(): void
     {
-        $this->get('/app/grantees')->assertOk();
-        $this->get('/student/documents')->assertOk();
+        $this->get('/login')->assertRedirect('https://portal.test/login');
+    }
+
+    public function test_deep_links_and_query_strings_are_forwarded_to_the_frontend_application(): void
+    {
+        $this->get('/app/grantees?lang=tl')->assertRedirect('https://portal.test/app/grantees?lang=tl');
+        $this->get('/student/documents')->assertRedirect('https://portal.test/student/documents');
     }
 }

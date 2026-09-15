@@ -40,6 +40,8 @@ export function studentHomePath(user: {
 
   if (user.role !== "student") return "/app";
 
+  if (user.onboarding_next_step === "sso_review") return "/student/sis-verification";
+
   // Never trust a stale onboarding_path while KYC is still required.
 
   if (needsKyc(user.account_status)) return "/student/kyc";
@@ -95,5 +97,4 @@ export function studentHomePath(user: {
   }
 
 }
-
 

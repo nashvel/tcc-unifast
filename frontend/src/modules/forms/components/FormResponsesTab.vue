@@ -58,6 +58,10 @@ function formatDate(dateStr: string | null) {
   if (!dateStr) return 'N/A';
   return new Date(dateStr).toLocaleString();
 }
+
+function showResponseDetailNotice() {
+  window.alert('Detailed response view coming soon!');
+}
 </script>
 
 <template>
@@ -123,7 +127,7 @@ function formatDate(dateStr: string | null) {
                 <button 
                   class="text-primary hover:text-primary-dark hover:bg-primary-soft p-1.5 rounded transition-colors inline-flex"
                   title="View Details"
-                  @click="alert('Detailed response view coming soon!')"
+                  @click="showResponseDetailNotice"
                 >
                   <IconEye :size="18" />
                 </button>

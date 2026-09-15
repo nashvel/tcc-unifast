@@ -106,9 +106,13 @@ const settingsNav = [
 
 function setMainTab(tab: MainTab) {
   activeTab.value = tab;
-  const query = { ...route.query, tab };
-  if (tab === "overview") delete query.section;
-  void router.replace({ query });
+  if (tab === "overview") {
+    const { section: _section, ...query } = route.query;
+    void router.replace({ query: { ...query, tab } });
+    return;
+  }
+
+  void router.replace({ query: { ...route.query, tab } });
 }
 
 function setSettingsSection(sec: SettingsSubTab) {

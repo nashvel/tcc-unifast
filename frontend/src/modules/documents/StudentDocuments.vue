@@ -106,7 +106,6 @@ const allDocumentsUploaded = computed(
     Boolean(slots.value.grade_slip) &&
     Boolean(slots.value.specimen_signatures),
 );
-const precheckReady = computed(() => Object.values(precheck.value).every(Boolean) && consent.value);
 const canSubmitPackage = computed(
   () => allDocumentsUploaded.value && !packageLocked.value && !inResubmissionMode.value,
 );

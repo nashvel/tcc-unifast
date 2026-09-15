@@ -35,7 +35,7 @@ class SupportTicketController extends Controller
             $tickets = SupportTicket::with(['reporter', 'assignee', 'replies.user'])->latest()->get();
         }
 
-        return response()->json(['data' => $tickets]);
+        return response()->json(['data' => $tickets->map(fn (SupportTicket $ticket) => $this->present($ticket))]);
     }
 
     public function store(Request $request): JsonResponse
@@ -73,7 +73,7 @@ class SupportTicketController extends Controller
             ]);
         }
 
-        return response()->json(['data' => $ticket], 201);
+        return response()->json(['data' => $this->present($ticket->load(['reporter', 'assignee', 'replies.user']))], 201);
     }
 
     public function update(Request $request, SupportTicket $supportTicket): JsonResponse
@@ -106,7 +106,18 @@ class SupportTicketController extends Controller
         $supportTicket->save();
         $supportTicket->load(['reporter', 'assignee', 'replies.user']);
 
-        return response()->json(['data' => $supportTicket]);
+        return response()->json(['data' => $this->present($supportTicket)]);
+    }
+
+    private function present(SupportTicket $ticket): array
+    {
+        return [
+            'id' => $ticket->id, 'ticket_id' => $ticket->ticket_id, 'title' => $ticket->title,
+            'category' => $ticket->category, 'priority' => $ticket->priority, 'status' => $ticket->status,
+            'description' => $ticket->description, 'created_at' => $ticket->created_at,
+            'reporter' => $ticket->reporter?->name ?? 'System', 'assignee' => $ticket->assignee?->name ?? 'Unassigned',
+            'replies' => $ticket->replies->map(fn ($reply) => ['author' => $reply->user?->name ?? 'System', 'message' => $reply->message, 'created_at' => $reply->created_at]),
+        ];
     }
 
     private function seedInitialTickets(): void

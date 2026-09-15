@@ -217,6 +217,18 @@ const handlers: Record<string, MockHandler> = {
   // Terms & Conditions
   "GET /api/terms": () => ({ status: 200, body: { data: [mockTerms] } }),
   "GET /api/terms/active": () => ({ status: 200, body: { data: mockTerms } }),
+  "GET /api/privacy-policy/active": () => ({
+    status: 200,
+    body: {
+      data: {
+        id: 2,
+        title: "PRIVACY POLICY FOR TCC-UNIFAST TES PORTAL",
+        version: "v1.0",
+        document_type: "privacy",
+        content: "PRIVACY POLICY FOR TCC-UNIFAST TES PORTAL\n\n1. INFORMATION WE PROCESS\nThe portal processes account, academic, eligibility, document, identity-verification, security, and audit information needed to administer TES services.\n\n2. PURPOSES OF PROCESSING\nInformation is used for TES administration, document validation, identity and eligibility verification, security, audit, and lawful reporting.\n\n3. YOUR RIGHTS\nContact Tagoloan Community College through its official channels to exercise applicable data privacy rights.",
+      },
+    },
+  }),
 
   // FAQ
   "GET /api/faqs": () => ({ status: 200, body: { data: mockFaqs } }),

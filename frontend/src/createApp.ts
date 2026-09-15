@@ -36,6 +36,8 @@ const appChildren: RouteRecordRaw[] = [
   { path: "users", component: () => import("@/modules/users/Index.vue") },
   { path: "users/permissions", component: () => import("@/modules/users/Permissions.vue") },
   { path: "settings", component: () => import("@/modules/settings/Index.vue") },
+  { path: "integrations/workspace", component: () => import("@/modules/continuity/Workspace.vue") },
+  { path: "integrations/sis-sso", component: () => import("@/modules/sis/Settings.vue") },
   { path: "activation-seeder", component: () => import("@/modules/activation-seeder/ActivationSeeder.vue") },
   { path: "appearance", component: () => import("@/modules/appearance/Index.vue") },
   { path: "style-guide", component: () => import("@/modules/style-guide/Index.vue") },
@@ -145,6 +147,8 @@ function createAppRouter(): Router {
       { path: "/unifast", component: () => import("@/public/UnifastInfo.vue") },
       { path: "/tagoloan-community-college", component: () => import("@/public/TccInfo.vue") },
       { path: "/login", component: () => import("@/auth/Login.vue") },
+      { path: "/sis-pilot", component: () => import("@/modules/sis/Pilot.vue") },
+      { path: "/student/sis-verification", component: () => import("@/modules/sis/Verification.vue") },
       { path: "/forgot-password", component: () => import("@/auth/ForgotPassword.vue") },
       { path: "/activate", component: () => import("@/auth/Activate.vue") },
       { path: "/activate/:token", component: () => import("@/auth/Activate.vue") },
@@ -179,6 +183,10 @@ function createAppRouter(): Router {
     if (!protectedArea && to.path !== "/login") return true;
     const user = authSession.loaded ? authSession.user : await loadAuthUser();
     if (!user) return protectedArea ? withLang("/login", to.query.lang) : true;
+    if (user.role === "student" && user.onboarding_next_step === "sso_review") {
+      return to.path === "/student/sis-verification" ? true : withLang("/student/sis-verification", to.query.lang);
+    }
+    if (to.path === "/student/sis-verification") return withLang(studentHomePath(user), to.query.lang);
     if (to.path === "/login") {
       return withLang(studentHomePath(user), to.query.lang);
     }

@@ -66,6 +66,18 @@ activated. n8n reaches host-run Laravel through
 `http://host.docker.internal:8000`, configured by `LARAVEL_API_URL` in the root
 Compose environment. Set matching webhook secrets in both environments.
 
+## SIS OpenID Connect SSO
+
+SIS SSO has no `.env` credentials. An active administrator or developer stores
+the provider issuer, client ID, and write-only client secret through Integration
+Settings; Laravel encrypts the secret at rest. Register the exact callback URL
+shown there with the SIS operator. The callback uses the public API host, so set
+`APP_URL` and `FRONTEND_URL` to their final HTTPS values before validation.
+
+The connection stays disabled until Discovery/JWKS validation and a fictional
+student pilot succeed. Use the SIS operator guide and administrator guide in
+`docs/` for the required claims, private pilot links, rollout, and rollback.
+
 ## Kubernetes
 
 Kubernetes is a separate deployment path and does not participate in the local

@@ -20,6 +20,10 @@ class StudentOnboardingNavigator
             return 'blocked';
         }
 
+        if (app(\App\Services\Sso\SsoIdentityReviewService::class)->restricted($user)) {
+            return 'sso_review';
+        }
+
         // Rejected identity is recoverable: restart the funnel rather than lock out.
         if (in_array($status, ['unverified', 'pending_kyc', 'identity_rejected'], true)) {
             return 'kyc';
@@ -62,6 +66,7 @@ class StudentOnboardingNavigator
     public function frontendPath(string $nextStep): string
     {
         return match ($nextStep) {
+            'sso_review' => '/student/sis-verification',
             'kyc' => '/student/kyc',
             'id_scan' => '/student/onboarding/id-scan',
             'liveness' => '/student/onboarding/liveness',

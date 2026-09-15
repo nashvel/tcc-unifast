@@ -60,7 +60,7 @@ export function useRbacRoleDetail(id: number) {
 
 export function useRbacPermissions(scope?: string) {
   const query = useQuery({
-    queryKey: scope ? [...queryKeys.rbacPermissions, scope] : queryKeys.rbacPermissions,
+    queryKey: ["rbac", "permissions", scope ?? "all"] as const,
     queryFn: () => listPermissions(scope),
     staleTime: 60_000,
   });

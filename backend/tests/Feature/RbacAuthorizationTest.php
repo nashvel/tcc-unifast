@@ -47,15 +47,19 @@ class RbacAuthorizationTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_legacy_role_column_still_authorizes_users_without_rbac_assignments(): void
+    public function test_legacy_role_column_cannot_authorize_a_user_without_rbac_assignments(): void
     {
+        config()->set('services.rbac.allow_legacy_role_fallback', false);
+
         $user = User::factory()->create([
             'role' => 'admin',
             'account_status' => 'active',
         ]);
 
+        $user->roles()->detach();
+
         $this->actingAs($user)
             ->getJson('/api/batches')
-            ->assertOk();
+            ->assertForbidden();
     }
 }

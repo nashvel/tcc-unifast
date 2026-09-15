@@ -105,12 +105,18 @@
     "student": "estudyante"
   },
   "auth": {
+    "logoutConfirmTitle": "Mag-sign out?",
+    "logoutConfirmDescription": "Kinahanglan kang mo-sign in pag-usab aron ma-access ang imong account.",
     "heroTitle": "Mas sayon, mas paspas, ug mas klaro nga serbisyo sa scholarship.",
     "heroDescription": "Usa ka workspace para sa grantees, dokumento, eligibility, releases, ug academic monitoring.",
     "loginTitle": "Sign in sa imong account",
     "forgotTitle": "I-reset ang imong password",
     "activateTitle": "I-activate ang imong account",
     "loginDescription": "Gamita ang seeded account o pagpili og demo role sa ubos.",
+    "signInAgreementPrefix": "Sa pagpadayon, mouyon ka sa among ",
+    "signInAgreementConnector": " ug ",
+    "termsOfService": "Mga Termino sa Serbisyo",
+    "privacyPolicy": "Polisiya sa Pagkapribado",
     "emailDescription": "Isulod ang institutional email aron makapadayon.",
     "emailPasswordRequired": "Isulod ang email ug password.",
     "captchaLabel": "Larawan sa CAPTCHA",

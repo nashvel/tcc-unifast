@@ -30,6 +30,9 @@ import {
 } from "@/api/auth";
 import { authSession } from "@/auth/session";
 import { withLang } from "@/i18n/routeLang";
+import { useI18n } from "vue-i18n";
+import { sisMessages } from "@/modules/sis/messages";
+const { t: ssoText } = useI18n({ useScope: "local", messages: sisMessages });
 
 type Section = "general" | "organization" | "appearance" | "security" | "sessions";
 
@@ -357,6 +360,7 @@ onMounted(() => {
     </header>
     <div class="grid grid-cols-1 gap-4 lg:grid-cols-[220px_minmax(0,1fr)]">
       <nav class="h-fit rounded-lg border bg-surface p-2 lg:sticky lg:top-20">
+        <RouterLink v-if="['admin', 'developer'].includes(authSession.user?.role ?? '')" :to="withLang('/app/integrations/sis-sso', route.query.lang)" class="mb-2 block rounded-md border px-3 py-2 text-sm hover:bg-surface-muted">{{ ssoText("integrations") }} · {{ ssoText("title") }}</RouterLink>
         <button
           v-for="item in nav"
           :key="item[0] as string"

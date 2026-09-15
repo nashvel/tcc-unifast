@@ -9,6 +9,7 @@ import TablePagination from "@/components/tables/TablePagination.vue";
 import TableStates from "@/components/ui/TableStates.vue";
 import AppDialog from "@/components/dialogs/AppDialog.vue";
 import { apiFetch, apiFetchBlob, apiUrl, ApiError } from "@/api/client";
+import type { PaginationMeta } from "@/api/types";
 import { toast } from "@/composables/useToast";
 import { useOnline } from "@/composables/useOnline";
 import { queryKeys } from "@/api/queryKeys";
@@ -41,7 +42,7 @@ type FaceReview = {
 
 type ListResponse = {
   data: FaceReview[];
-  meta: { current_page: number; last_page: number; per_page: number; total: number };
+  meta: PaginationMeta;
 };
 
 const route = useRoute();
@@ -516,15 +517,15 @@ async function decide(action: "approve" | "reject") {
           <div v-if="confirmAction === 'approve'" class="space-y-3 text-xs">
             <div class="rounded-lg border border-border/60 bg-surface-muted/40 p-3.5 leading-relaxed">
               <p class="font-medium text-text">
-                Grantee: <span class="font-semibold text-text">{{ detailQuery.data.value?.student_name || "Student" }}</span>
-                <span v-if="detailQuery.data.value?.student_id" class="font-mono text-text-muted ml-1">({{ detailQuery.data.value.student_id }})</span>
+                Grantee: <span class="font-semibold text-text">{{ detail?.student_name || "Student" }}</span>
+                <span v-if="detail?.student_id" class="font-mono text-text-muted ml-1">({{ detail.student_id }})</span>
               </p>
               <p class="mt-1 text-text-muted">
                 Face match distance:
                 <strong class="font-mono text-text">
-                  {{ detailQuery.data.value?.onboarding_face_distance != null ? Number(detailQuery.data.value.onboarding_face_distance).toFixed(4) : "—" }}
+                  {{ detail?.onboarding_face_distance != null ? Number(detail.onboarding_face_distance).toFixed(4) : "—" }}
                 </strong>
-                <span class="ml-1 text-text-muted">({{ zoneLabel(detailQuery.data.value?.face_zone) }})</span>
+                <span class="ml-1 text-text-muted">({{ zoneLabel(detail?.face_zone) }})</span>
               </p>
             </div>
             <p class="text-text-muted leading-relaxed">
@@ -538,7 +539,7 @@ async function decide(action: "approve" | "reject") {
               <p class="mt-1 text-text-muted">
                 The grantee’s account is <strong>not</strong> permanently closed or banned. Any current session will be revoked, and a fresh verification link will be emailed to:
               </p>
-              <p class="mt-1 font-mono font-medium text-text">{{ detailQuery.data.value?.email || "the student’s address of record" }}</p>
+              <p class="mt-1 font-mono font-medium text-text">{{ detail?.email || "the student’s address of record" }}</p>
             </div>
 
             <div v-if="rejectReason.trim()" class="rounded-lg border border-border/60 bg-surface-muted/40 p-3">
