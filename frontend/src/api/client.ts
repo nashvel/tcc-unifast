@@ -1,9 +1,9 @@
 import { API_BASE } from "@/config";
 import type { ListQuery } from "./types";
-import { clearAuthSession, hasMockSession, setMockSession } from "@/auth/session";
+import { clearAuthSession } from "@/auth/session";
 
-export const isMockMode = import.meta.env.VITE_USE_MOCK === "true";
-const useMock = isMockMode;
+/** @deprecated Mock transport was removed; all requests use the Laravel API. */
+export const isMockMode = false;
 
 export class ApiError extends Error {
   status: number;
@@ -28,17 +28,8 @@ export function apiUrl(path: string): string {
   return `${API_BASE}${path}`;
 }
 
-let mockHandler: typeof import("@/mock/handlers").handleMockRequest | null = null;
 let refreshInFlight: Promise<boolean> | null = null;
 let csrfReady = false;
-
-async function getMockHandler() {
-  if (!mockHandler) {
-    const mod = await import("@/mock/handlers");
-    mockHandler = mod.handleMockRequest;
-  }
-  return mockHandler;
-}
 
 function readXsrfToken(): string | null {
   if (typeof document === "undefined") return null;
@@ -53,7 +44,7 @@ function readXsrfToken(): string | null {
 
 /** Fetch Sanctum CSRF cookie (readable XSRF-TOKEN) before mutating auth requests. */
 export async function ensureCsrfCookie(): Promise<void> {
-  if (useMock || csrfReady) return;
+  if (csrfReady) return;
   await fetch(apiUrl("/sanctum/csrf-cookie"), {
     method: "GET",
     credentials: "include",
@@ -153,22 +144,6 @@ export async function apiFetch<T>(
   url: string,
   init: RequestInit & { _authRetry?: boolean } = {},
 ): Promise<T> {
-  if (useMock) {
-    await getMockHandler();
-    const method = (init.method || "GET").toUpperCase();
-    const path = url.startsWith("http") ? new URL(url).pathname : url;
-    const body = typeof init.body === "string" ? init.body : undefined;
-    const mockResponse = mockHandler!(method, path.split("?")[0], body);
-    if (mockResponse) {
-      if (mockResponse.status >= 400) {
-        throw new ApiError("Mock error", mockResponse.status);
-      }
-      return mockResponse.body as T;
-    }
-    console.warn(`[mock] No handler for ${method} ${path}`);
-    return {} as T;
-  }
-
   const fullUrl = url.startsWith("http") ? url : apiUrl(url);
   const path = requestPath(fullUrl);
   const headers = new Headers(init.headers);
@@ -223,10 +198,6 @@ export async function apiFetchBlob(
   url: string,
   init: RequestInit & { _authRetry?: boolean } = {},
 ): Promise<Response> {
-  if (useMock) {
-    throw new ApiError("Blob fetch not available in mock mode", 0);
-  }
-
   const fullUrl = url.startsWith("http") ? url : apiUrl(url);
   const path = requestPath(fullUrl);
   const headers = new Headers(init.headers);
@@ -251,6 +222,3 @@ export async function apiFetchBlob(
 
   return response;
 }
-
-// Re-export mock helpers used by auth flows in mock mode.
-export { hasMockSession, setMockSession };

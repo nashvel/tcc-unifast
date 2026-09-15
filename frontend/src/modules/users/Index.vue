@@ -15,7 +15,7 @@ import PermissionsView from "./Permissions.vue";
 import UserPermissionsModal from "./UserPermissionsModal.vue";
 import { translateKnownText } from "@/i18n/knownText";
 import { withLang } from "@/i18n/routeLang";
-import { apiFetch, isMockMode } from "@/api/client";
+import { apiFetch } from "@/api/client";
 import { useToast } from "@/composables/useToast";
 import { useUserModules } from "@/composables/useRbac";
 import type { RbacUserModuleRow } from "@/api/rbac";
@@ -47,35 +47,22 @@ function confirmAccount(action: string, name: string) {
   accountDialog.value = true;
 }
 
-const initialUsers: any[][] = [
-  ["sysadmin", "System Developer", "admin@unifast.gov.ph", "Developer", true, true, "Jul 11, 2026, 7:41 PM"],
-  ["office.head", "Office Administrator", "head@unifast.gov.ph", "Admin", true, true, "Jul 11, 2026, 5:12 PM"],
-  ["unifast.staff", "UniFAST Staff", "staff@unifast.gov.ph", "Staff", false, true, "Jul 11, 2026, 4:48 PM"],
-  ["reviewer.01", "Document Reviewer", "reviewer@unifast.gov.ph", "Staff", false, false, "Jul 8, 2026, 9:16 AM"],
-];
-const users = ref<any[][]>(isMockMode ? initialUsers : []);
+const users = ref<any[][]>([]);
 
 async function loadUsers() {
   try {
     const res = await apiFetch<{ data: any[] }>("/api/collaborators");
-    if (res.data && res.data.length > 0) {
-      users.value = res.data.map((collab) => [
+    users.value = (res.data ?? []).map((collab) => [
         collab.email.split("@")[0],
         collab.name,
         collab.email,
         collab.role.charAt(0).toUpperCase() + collab.role.slice(1),
         true,
         collab.status === "active" || collab.status === "pending",
-        collab.invitedAt || "Recent",
+        collab.invitedAt ?? "—",
       ]);
-    } else if (isMockMode) {
-      users.value = initialUsers;
-    } else {
-      users.value = [];
-    }
   } catch {
-    if (isMockMode) users.value = initialUsers;
-    else users.value = [];
+    users.value = [];
   }
 }
 
@@ -115,17 +102,7 @@ function openUserPermissions(userRow: any[]) {
     selectedUser.value = found;
     permissionsModalOpen.value = true;
   } else {
-    // If not found yet, create fallback object so modal still functions
-    selectedUser.value = {
-      id: 0,
-      name: String(userRow[1]),
-      email: userEmail,
-      role: String(userRow[3]).toLowerCase(),
-      is_developer: false,
-      is_assignable: true,
-      assigned_modules: [],
-    };
-    permissionsModalOpen.value = true;
+    toast.error("User permissions are still loading. Please try again shortly.");
   }
 }
 

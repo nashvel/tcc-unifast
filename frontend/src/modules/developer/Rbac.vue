@@ -17,7 +17,7 @@ import {
   IconSortAscending,
 } from "@tabler/icons-vue";
 import PageHeader from "@/components/ui/PageHeader.vue";
-import { apiFetch, isMockMode } from "@/api/client";
+import { apiFetch } from "@/api/client";
 import { toast } from "@/composables/useToast";
 
 type Role = {
@@ -131,70 +131,6 @@ const menuGroups: DynamicMenuGroup[] = [
   },
 ];
 
-const initialRoles: Role[] = [
-  {
-    id: "developer",
-    name: "Developer",
-    description: "Full system access to developer tools, APIs, database, and system settings",
-    color: "bg-white/10 text-white",
-    userCount: 1,
-    permissions: Array.from(developerDefaultItems),
-  },
-  {
-    id: "admin",
-    name: "Administrator",
-    description: "Manages users, batches, and system settings",
-    color: "bg-blue-100 text-blue-700",
-    userCount: 1,
-    permissions: [
-      "dashboard",
-      "announcements",
-      "reports",
-      "billing",
-      "distribution",
-      "support",
-      "developer.audit",
-      "security.findings",
-      "security.memory",
-      "users",
-      "settings",
-    ],
-  },
-  {
-    id: "staff",
-    name: "Staff",
-    description: "Handles document validation and grantee management",
-    color: "bg-green-100 text-green-700",
-    userCount: 1,
-    permissions: [
-      "dashboard",
-      "onboarding",
-      "masterlist",
-      "batches",
-      "grantees",
-      "documents",
-      "files",
-      "academic",
-      "eligibility",
-    ],
-  },
-  {
-    id: "student",
-    name: "Student",
-    description: "Submits documents and views own records",
-    color: "bg-orange-100 text-orange-700",
-    userCount: 1,
-    permissions: [
-      "student.dashboard",
-      "student.verify",
-      "student.profile",
-      "student.documents",
-      "student.upload",
-      "student.notifications",
-    ],
-  },
-];
-
 const roles = ref<Role[]>([]);
 const selectedRole = ref<Role | null>(null);
 const loading = ref(false);
@@ -262,16 +198,11 @@ async function loadRbac() {
   errorMessage.value = "";
   try {
     const rolesRes = await apiFetch<{ data: Role[] }>("/api/rbac/roles");
-    const rawRoles = rolesRes.data?.length ? rolesRes.data : (isMockMode ? initialRoles : []);
-    roles.value = rawRoles.map(normalizeRole);
+    roles.value = (rolesRes.data ?? []).map(normalizeRole);
   } catch (err: any) {
-    if (isMockMode) {
-      roles.value = initialRoles.map(normalizeRole);
-    } else {
-      errorMessage.value = err?.message || "Failed to load RBAC settings from backend server.";
-      toast.error(errorMessage.value);
-      roles.value = [];
-    }
+    errorMessage.value = err?.message || "Failed to load RBAC settings from backend server.";
+    toast.error(errorMessage.value);
+    roles.value = [];
   } finally {
     loading.value = false;
     if (roles.value.length > 0 && !selectedRole.value) {
@@ -298,6 +229,7 @@ function isGroupAllActive(group: DynamicMenuGroup): boolean {
 
 async function saveRolePermissions(newPermissions: string[]) {
   if (!selectedRole.value) return;
+  const previousPermissions = [...selectedRole.value.permissions];
   selectedRole.value.permissions = newPermissions;
 
   try {
@@ -307,11 +239,8 @@ async function saveRolePermissions(newPermissions: string[]) {
     });
     toast.success("Role menu permissions updated");
   } catch (err: any) {
-    if (isMockMode) {
-      toast.success("Updated (Mock mode)");
-    } else {
-      toast.error(err?.message || "Failed to save menu permission update.");
-    }
+    selectedRole.value.permissions = previousPermissions;
+    toast.error(err?.message || "Failed to save menu permission update.");
   }
 }
 
