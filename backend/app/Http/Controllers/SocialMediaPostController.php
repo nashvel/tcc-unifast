@@ -54,6 +54,7 @@ class SocialMediaPostController extends Controller
         $validated = $request->validate([
             'batch_id' => ['nullable', 'integer', 'exists:batches,id'],
             'channel' => ['nullable', 'string', Rule::in(['facebook'])],
+            'template_type' => ['nullable', 'string', Rule::in(['general', 'deadline', 'activation_urgency', 'requirements', 'release'])],
         ]);
 
         $batch = isset($validated['batch_id'])
@@ -65,7 +66,7 @@ class SocialMediaPostController extends Controller
                 ->first();
 
         return response()->json([
-            'data' => $this->buildTemplate($batch),
+            'data' => $this->buildTemplate($batch, $validated['template_type'] ?? 'general'),
         ]);
     }
 
@@ -975,13 +976,20 @@ class SocialMediaPostController extends Controller
         ], 502);
     }
 
-    private function buildTemplate(?Batch $batch): array
+    private function buildTemplate(?Batch $batch, string $templateType = 'general'): array
     {
         $portalUrl = rtrim((string) config('app.frontend_url'), '/').'/login';
         $supportEmail = (string) config('mail.from.address', 'info@tcc.edu.ph');
-        $campaign = $batch
-            ? Str::of($batch->name)->lower()->replaceMatches('/[^a-z0-9]+/', '_')->trim('_')->value()
-            : 'unifast_tes_announcement';
+        $batchName = $batch?->name ?? 'UniFAST TES';
+        $campaign = match ($templateType) {
+            'activation_urgency' => 'activation_deadline_urgent',
+            'deadline' => 'deadline_reminder',
+            'requirements' => 'requirements_notice',
+            'release' => 'release_update',
+            default => $batch
+                ? Str::of($batch->name)->lower()->replaceMatches('/[^a-z0-9]+/', '_')->trim('_')->value()
+                : 'unifast_tes_announcement',
+        };
 
         if ($campaign === '') {
             $campaign = 'batch_release';
@@ -993,24 +1001,39 @@ class SocialMediaPostController extends Controller
             : 'the deadline announced by the UniFAST/TES office';
         $windowStatus = $batch?->computedWindowStatus();
         $granteeCount = $batch?->grantees_count ?? 0;
-        $batchName = $batch?->name ?? 'UniFAST TES';
         $academicContext = $batch
             ? trim("{$batch->academic_year} {$batch->semester}")
             : 'the current application period';
 
-        $message = implode("\n\n", array_filter([
-            "TCC UniFAST TES Advisory: {$batchName}",
-            "Tagoloan Community College informs qualified TES grantees for {$academicContext} that the student portal is ready for account access, verification, and requirements submission.",
-            $batch ? "Linked batch: {$batch->name}\nSubmission window status: ".Str::headline((string) $windowStatus)."\nListed grantees: ".number_format($granteeCount) : null,
-            "Deadline: {$deadlineText}",
-            'Students are advised to sign in through the official portal, review their requirements, and complete submissions before the deadline. Use only official TCC and UniFAST channels for updates.',
-            "Portal: {$portalUrl}",
-            "For assistance, contact the UniFAST/TES office or email {$supportEmail}.",
-            '#TCCUniFAST #TES #TagoloanCommunityCollege',
-        ]));
+        if ($templateType === 'activation_urgency') {
+            $title = "{$batchName} Urgent Activation & Deadline Advisory";
+            $message = implode("\n\n", array_filter([
+                "⚠️ URGENT ADVISORY: TCC UniFAST TES Submission Deadline Approaching ({$batchName})",
+                "Tagoloan Community College issues an urgent notice to all qualified TES grantees for {$academicContext} who have NOT yet activated their accounts in the student portal.",
+                "🚨 ACTION REQUIRED FOR UNACTIVATED GRANTEES:\nPlease check your registered Gmail inbox (including Spam and Junk folders) for the official activation email sent by TCC UniFAST. You must click your unique activation link, complete online identity verification, and submit all required academic documents before the portal window closes.",
+                $batch ? "Batch: {$batch->name}\nSubmission Window: ".Str::headline((string) $windowStatus)."\nTotal Listed Grantees: ".number_format($granteeCount) : null,
+                "🗓️ Final Submission Deadline: {$deadlineText}",
+                'Failure to activate and submit requirements before the deadline will forfeit your validation for the current TES billing cycle.',
+                "Official Portal: {$portalUrl}",
+                "If you cannot find your activation email or need immediate assistance, please visit the TCC UniFAST/TES Office or email {$supportEmail}.",
+                '#TCCUniFAST #TES #UrgentAdvisory #TagoloanCommunityCollege #CHEDUniFAST',
+            ]));
+        } else {
+            $title = "{$batchName} Facebook Advisory";
+            $message = implode("\n\n", array_filter([
+                "TCC UniFAST TES Advisory: {$batchName}",
+                "Tagoloan Community College informs qualified TES grantees for {$academicContext} that the student portal is ready for account access, verification, and requirements submission.",
+                $batch ? "Linked batch: {$batch->name}\nSubmission window status: ".Str::headline((string) $windowStatus)."\nListed grantees: ".number_format($granteeCount) : null,
+                "Deadline: {$deadlineText}",
+                'Students are advised to sign in through the official portal, review their requirements, and complete submissions before the deadline. Use only official TCC and UniFAST channels for updates.',
+                "Portal: {$portalUrl}",
+                "For assistance, contact the UniFAST/TES office or email {$supportEmail}.",
+                '#TCCUniFAST #TES #TagoloanCommunityCollege',
+            ]));
+        }
 
         return [
-            'title' => "{$batchName} Facebook Advisory",
+            'title' => $title,
             'channel' => 'facebook',
             'campaign' => $campaign,
             'batch_id' => $batch?->id,

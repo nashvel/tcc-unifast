@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
 import { useRoute } from "vue-router";
-import { IconDownload, IconEye, IconX, IconChevronLeft, IconChevronRight } from "@tabler/icons-vue";
+import { IconDownload, IconEye, IconX, IconChevronLeft, IconChevronRight, IconPhoto } from "@tabler/icons-vue";
 import PageHeader from "@/components/ui/PageHeader.vue";
 import TableSkeleton from "@/components/ui/TableSkeleton.vue";
 import EmptyState from "@/components/ui/EmptyState.vue";
@@ -72,6 +72,21 @@ async function doExport() {
 function formatDate(iso: string | null) {
   if (!iso) return "—";
   return new Date(iso).toLocaleString();
+}
+
+function isFormUpload(val: unknown): boolean {
+  return typeof val === "string" && val.startsWith("form-uploads/");
+}
+
+function isImageUpload(val: unknown): boolean {
+  if (!isFormUpload(val)) return false;
+  const str = (val as string).toLowerCase();
+  return str.endsWith(".png") || str.endsWith(".jpg") || str.endsWith(".jpeg") || str.endsWith(".webp");
+}
+
+function fileUrl(fieldName: string): string {
+  if (!detail.value) return "#";
+  return `/api/forms/${formId.value}/responses/${detail.value.id}/files/${encodeURIComponent(fieldName)}`;
 }
 </script>
 
@@ -187,9 +202,42 @@ function formatDate(iso: string | null) {
                 :key="String(key)"
                 class="rounded-lg border p-3"
               >
-                <p class="text-xs font-medium text-text-muted mb-1">{{ String(key) }}</p>
+                <p class="text-xs font-medium text-text-muted mb-1.5">{{ String(key) }}</p>
+                
+                <!-- Uploaded file / image handling -->
+                <div v-if="isFormUpload(value)" class="mt-1">
+                  <div v-if="isImageUpload(value)" class="space-y-2">
+                    <img
+                      :src="fileUrl(String(key))"
+                      alt="Uploaded image attachment"
+                      class="max-h-56 max-w-full rounded-md border object-contain bg-surface-muted/30 p-1"
+                      loading="lazy"
+                    />
+                    <div>
+                      <a
+                        :href="fileUrl(String(key))"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="inline-flex items-center gap-1 text-xs text-primary font-medium hover:underline"
+                      >
+                        <IconPhoto :size="13" /> Open full image
+                      </a>
+                    </div>
+                  </div>
+                  <div v-else>
+                    <a
+                      :href="fileUrl(String(key))"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs text-primary font-medium hover:bg-surface-muted transition"
+                    >
+                      <IconDownload :size="13" /> Download attached file
+                    </a>
+                  </div>
+                </div>
+
                 <!-- Text interpolation only — never v-html -->
-                <p class="text-sm">
+                <p v-else class="text-sm">
                   {{ Array.isArray(value) ? value.join(', ') : String(value ?? '—') }}
                 </p>
               </div>

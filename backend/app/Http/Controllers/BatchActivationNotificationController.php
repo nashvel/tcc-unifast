@@ -2,7 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\GranteeActivationDeadlineReminderMail;
 use App\Mail\GranteeActivationInviteMail;
+use App\Models\AuditLog;
+use App\Models\Batch;
 use App\Models\Grantee;
 use App\Services\ActivationTokenIssuer;
 use Illuminate\Http\JsonResponse;
@@ -65,4 +68,77 @@ class BatchActivationNotificationController extends Controller
         ], $failed === [] ? 200 : 207);
     }
 
+    public function sendDeadlineReminders(Request $request, string $batch, ActivationTokenIssuer $issuer): JsonResponse
+    {
+        $batchModel = Batch::findOrFail($batch);
+
+        if (! $batchModel->submission_deadline) {
+            return response()->json([
+                'message' => 'This batch does not have a submission deadline configured.',
+            ], 422);
+        }
+
+        $force = filter_var($request->input('force', false), FILTER_VALIDATE_BOOLEAN);
+
+        $query = Grantee::query()
+            ->with('user')
+            ->where('batch_id', $batchModel->id)
+            ->whereHas('user', fn ($q) => $q->where('account_status', 'unverified'));
+
+        if (! $force) {
+            $query->where(function ($q): void {
+                $q->whereNull('last_deadline_reminder_sent_at')
+                    ->orWhere('last_deadline_reminder_sent_at', '<=', now()->subHours(24));
+            });
+        }
+
+        $students = $query->get();
+        $sent = 0;
+        $failed = [];
+
+        foreach ($students as $student) {
+            if (! $student->user) {
+                continue;
+            }
+
+            $link = $issuer->issueLinkFor($student->user);
+
+            try {
+                Mail::to($student->email, $student->full_name)->send(new GranteeActivationDeadlineReminderMail(
+                    user: $student->user,
+                    grantee: $student,
+                    batch: $batchModel,
+                    activationUrl: $link['url'],
+                ));
+
+                $student->forceFill([
+                    'last_deadline_reminder_sent_at' => now(),
+                ])->save();
+
+                $sent++;
+            } catch (\Throwable $exception) {
+                report($exception);
+                $failed[] = ['email' => $student->email, 'message' => $exception->getMessage()];
+            }
+        }
+
+        AuditLog::create([
+            'actor' => $request->user()?->name ?? 'Staff',
+            'role' => ucfirst($request->user()?->role ?? 'staff'),
+            'action' => 'batch_activation_deadline_reminders_triggered',
+            'module' => 'Batches',
+            'target' => "Batch #{$batchModel->id} ({$batchModel->name})",
+            'context' => ['sent' => $sent, 'failed' => count($failed), 'force' => $force],
+            'ip_address' => $request->ip(),
+        ]);
+
+        return response()->json([
+            'batch' => $batchModel->id,
+            'batch_name' => $batchModel->name,
+            'deadline' => $batchModel->submission_deadline?->toIso8601String(),
+            'eligible_count' => $students->count(),
+            'sent' => $sent,
+            'failed' => $failed,
+        ], $failed === [] ? 200 : 207);
+    }
 }

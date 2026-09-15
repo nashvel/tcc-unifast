@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useQuery } from '@tanstack/vue-query';
-import { listFormResponses, exportFormResponses } from '@/api/forms';
-import type { FormDetail, FormResponse } from '@/api/types';
+import { listFormResponses, exportFormResponses, getFormResponse } from '@/api/forms';
+import type { FormDetail, FormResponse, FormResponseDetail } from '@/api/types';
 import { 
   IconDownload, 
   IconEye, 
   IconInbox, 
   IconCheck, 
-  IconClock 
+  IconClock,
+  IconX,
+  IconPhoto
 } from '@tabler/icons-vue';
 
 const props = defineProps<{
@@ -24,6 +26,24 @@ const { data: responseData, isLoading } = useQuery({
 
 const isExporting = ref(false);
 
+const showDetail = ref(false);
+const detailLoading = ref(false);
+const detail = ref<FormResponseDetail | null>(null);
+
+async function openDetail(resId: number) {
+  showDetail.value = true;
+  detailLoading.value = true;
+  try {
+    detail.value = await getFormResponse(props.form.id, resId);
+  } catch (error) {
+    console.error('Failed to load response detail:', error);
+    alert('Failed to load response detail.');
+    showDetail.value = false;
+  } finally {
+    detailLoading.value = false;
+  }
+}
+
 async function handleExport() {
   isExporting.value = true;
   try {
@@ -32,7 +52,6 @@ async function handleExport() {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    // Extract filename from Content-Disposition header if possible, else default
     const contentDisposition = response.headers.get('Content-Disposition');
     let filename = `form_${props.form.id}_responses.csv`;
     if (contentDisposition) {
@@ -59,8 +78,19 @@ function formatDate(dateStr: string | null) {
   return new Date(dateStr).toLocaleString();
 }
 
-function showResponseDetailNotice() {
-  window.alert('Detailed response view coming soon!');
+function isFormUpload(val: unknown): boolean {
+  return typeof val === 'string' && val.startsWith('form-uploads/');
+}
+
+function isImageUpload(val: unknown): boolean {
+  if (!isFormUpload(val)) return false;
+  const str = (val as string).toLowerCase();
+  return str.endsWith('.png') || str.endsWith('.jpg') || str.endsWith('.jpeg') || str.endsWith('.webp');
+}
+
+function fileUrl(fieldName: string): string {
+  if (!detail.value) return '#';
+  return `/api/forms/${props.form.id}/responses/${detail.value.id}/files/${encodeURIComponent(fieldName)}`;
 }
 </script>
 
@@ -127,7 +157,7 @@ function showResponseDetailNotice() {
                 <button 
                   class="text-primary hover:text-primary-dark hover:bg-primary-soft p-1.5 rounded transition-colors inline-flex"
                   title="View Details"
-                  @click="showResponseDetailNotice"
+                  @click="openDetail(res.id)"
                 >
                   <IconEye :size="18" />
                 </button>
@@ -157,6 +187,81 @@ function showResponseDetailNotice() {
               Next
             </button>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Detail Modal -->
+    <div v-if="showDetail" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" @click.self="showDetail = false">
+      <div class="w-full max-w-lg rounded-xl border bg-surface shadow-xl flex flex-col max-h-[85vh]">
+        <div class="flex items-center justify-between border-b px-5 py-4">
+          <h2 class="text-sm font-semibold">Response Detail</h2>
+          <button class="grid size-7 place-items-center rounded hover:bg-surface-muted transition" @click="showDetail = false">
+            <IconX :size="15" />
+          </button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto px-5 py-4">
+          <div v-if="detailLoading" class="py-12 text-center text-sm text-text-muted">
+            Loading response…
+          </div>
+          <template v-else-if="detail">
+            <!-- Metadata -->
+            <div class="mb-4 rounded-lg bg-surface-muted/50 p-3 text-xs space-y-1">
+              <p><span class="font-medium">Submitted:</span> {{ formatDate(detail.submitted_at) }}</p>
+              <p><span class="font-medium">Respondent:</span> {{ detail.grantee_name || 'Anonymous' }} <span v-if="detail.student_id" class="font-mono text-text-muted">({{ detail.student_id }})</span></p>
+              <p><span class="font-medium">Authenticated:</span> {{ detail.is_authenticated ? 'Yes' : 'No (public)' }}</p>
+              <p v-if="detail.honeypot_triggered" class="text-danger font-semibold">⚠ Honeypot was triggered</p>
+            </div>
+
+            <!-- Answers -->
+            <div class="space-y-3">
+              <div
+                v-for="(value, key) in detail.responses"
+                :key="String(key)"
+                class="rounded-lg border p-3"
+              >
+                <p class="text-xs font-medium text-text-muted mb-1.5">{{ String(key) }}</p>
+                
+                <!-- Uploaded file / image handling -->
+                <div v-if="isFormUpload(value)" class="mt-1">
+                  <div v-if="isImageUpload(value)" class="space-y-2">
+                    <img
+                      :src="fileUrl(String(key))"
+                      alt="Uploaded image attachment"
+                      class="max-h-56 max-w-full rounded-md border object-contain bg-surface-muted/30 p-1"
+                      loading="lazy"
+                    />
+                    <div>
+                      <a
+                        :href="fileUrl(String(key))"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="inline-flex items-center gap-1 text-xs text-primary font-medium hover:underline"
+                      >
+                        <IconPhoto :size="13" /> Open full image
+                      </a>
+                    </div>
+                  </div>
+                  <div v-else>
+                    <a
+                      :href="fileUrl(String(key))"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs text-primary font-medium hover:bg-surface-muted transition"
+                    >
+                      <IconDownload :size="13" /> Download attached file
+                    </a>
+                  </div>
+                </div>
+
+                <!-- Text interpolation only -->
+                <p v-else class="text-sm font-normal text-text">
+                  {{ Array.isArray(value) ? value.join(', ') : String(value ?? '—') }}
+                </p>
+              </div>
+            </div>
+          </template>
         </div>
       </div>
     </div>

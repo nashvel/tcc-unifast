@@ -7,6 +7,7 @@
  * Never uses v-html for user content.
  */
 import { ref, computed, reactive, watch } from "vue";
+import { IconX, IconPhoto } from "@tabler/icons-vue";
 import type { FormSchema } from "@/api/types";
 
 const props = defineProps<{
@@ -27,6 +28,7 @@ const honeypotValue = ref("");
 const values = reactive<Record<string, any>>({});
 const errors = reactive<Record<string, string>>({});
 const touched = reactive<Record<string, boolean>>({});
+const imagePreviews = reactive<Record<string, string>>({});
 
 // Initialize values reactively
 watch(
@@ -135,6 +137,43 @@ function toggleCheckbox(fieldName: string, option: string) {
   if (idx >= 0) arr.splice(idx, 1);
   else arr.push(option);
   onBlur(fieldName);
+}
+
+// File / Image helpers
+function handleFileChange(fieldName: string, event: Event) {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0] ?? "";
+  values[fieldName] = file;
+  onBlur(fieldName);
+
+  if (file instanceof File && file.type.startsWith("image/")) {
+    if (imagePreviews[fieldName]) {
+      URL.revokeObjectURL(imagePreviews[fieldName]);
+    }
+    imagePreviews[fieldName] = URL.createObjectURL(file);
+  } else if (imagePreviews[fieldName]) {
+    URL.revokeObjectURL(imagePreviews[fieldName]);
+    delete imagePreviews[fieldName];
+  }
+}
+
+function removeFile(fieldName: string) {
+  values[fieldName] = "";
+  if (imagePreviews[fieldName]) {
+    URL.revokeObjectURL(imagePreviews[fieldName]);
+    delete imagePreviews[fieldName];
+  }
+  const el = document.getElementById(`field-${fieldName}`) as HTMLInputElement | null;
+  if (el) el.value = "";
+  onBlur(fieldName);
+}
+
+function formatBytes(bytes: number): string {
+  if (!bytes) return "0 B";
+  const k = 1024;
+  const sizes = ["B", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
 }
 
 // ─── Submit ───────────────────────────────────────────────────────────────────
@@ -361,18 +400,49 @@ defineExpose({ onSuccess, onError });
             </label>
           </div>
 
-          <!-- File -->
-          <div v-else-if="field.field_type === 'file'" class="space-y-1">
+          <!-- File / Image -->
+          <div v-else-if="field.field_type === 'file'" class="space-y-2">
+            <!-- Image Preview Card -->
+            <div
+              v-if="imagePreviews[field.field_name]"
+              class="flex items-center gap-3 rounded-lg border border-primary/30 bg-primary-soft/30 p-2.5 transition"
+            >
+              <img
+                :src="imagePreviews[field.field_name]"
+                alt="Selected image preview"
+                class="size-16 rounded-md object-cover border bg-surface shrink-0"
+              />
+              <div class="flex-1 min-w-0">
+                <p class="text-xs font-semibold truncate text-text">
+                  {{ (values[field.field_name] as File)?.name }}
+                </p>
+                <p class="text-micro text-text-muted mt-0.5">
+                  {{ formatBytes((values[field.field_name] as File)?.size || 0) }}
+                </p>
+                <span class="inline-flex items-center gap-1 text-micro text-primary font-medium mt-1">
+                  <IconPhoto :size="12" /> Image attached
+                </span>
+              </div>
+              <button
+                type="button"
+                class="rounded-md p-1.5 text-text-muted hover:text-danger hover:bg-danger-soft transition"
+                title="Remove image"
+                @click="removeFile(field.field_name)"
+              >
+                <IconX :size="15" />
+              </button>
+            </div>
+
             <input
               :id="`field-${field.field_name}`"
               type="file"
-              :accept="field.accepted_types ?? 'application/pdf,image/jpeg,image/png'"
+              :accept="field.accepted_types ?? 'application/pdf,image/jpeg,image/png,image/webp'"
               class="w-full rounded-md border bg-surface px-3 py-2 text-sm file:mr-3 file:rounded file:border-0 file:bg-primary-soft file:px-2 file:py-1 file:text-xs file:font-medium file:text-primary"
               :class="{ 'border-danger': errors[field.field_name] && touched[field.field_name] }"
-              @change="(e) => { values[field.field_name] = (e.target as HTMLInputElement).files?.[0] ?? ''; onBlur(field.field_name); }"
+              @change="(e) => handleFileChange(field.field_name, e)"
             />
             <p class="text-micro text-text-muted">
-              Accepted: {{ field.accepted_types ?? 'PDF, JPG, PNG' }}
+              Accepted: {{ field.accepted_types ?? 'PDF, JPG, PNG, WEBP' }}
               <template v-if="field.max_file_size"> · Max {{ Math.round(field.max_file_size / 1024) }} MB</template>
             </p>
           </div>

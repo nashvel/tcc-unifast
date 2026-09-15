@@ -11,6 +11,13 @@ class Grantee extends Model
 {
     protected $guarded = [];
 
+    protected function casts(): array
+    {
+        return [
+            'last_deadline_reminder_sent_at' => 'datetime',
+        ];
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

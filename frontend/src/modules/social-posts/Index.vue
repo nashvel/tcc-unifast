@@ -66,7 +66,7 @@ const commentsLoadingPostId = ref<number | null>(null);
 let bodyOverflowBeforeModal: string | null = null;
 let pageProfileRefreshCooldownTimer: number | null = null;
 
-type PostTemplatePresetKey = "general" | "deadline" | "requirements" | "release";
+type PostTemplatePresetKey = "general" | "deadline" | "activation_urgency" | "requirements" | "release";
 
 const form = reactive({
   title: "",
@@ -90,6 +90,12 @@ const postTemplatePresets: Array<{
     label: "General advisory",
     description: "Broad official TES announcement.",
     campaign: "general_advisory",
+  },
+  {
+    key: "activation_urgency",
+    label: "Unactivated grantees warning",
+    description: "Urgent call for grantees to check Gmail and activate before deadline.",
+    campaign: "activation_deadline_urgent",
   },
   {
     key: "deadline",
@@ -298,6 +304,17 @@ function applyTemplatePreset(key: PostTemplatePresetKey) {
         `Use the official portal only: ${portalUrl}`,
         "For assistance, contact the TCC UniFAST/TES office through official school channels.",
         "#TCCUniFAST #TES #TagoloanCommunityCollege",
+      ].join("\n\n"),
+    },
+    activation_urgency: {
+      title: `${batchName} Urgent Activation Warning`,
+      message: [
+        `⚠️ URGENT ADVISORY: ${batchName}`,
+        `All qualified TES grantees for ${academicContext} who have NOT yet completed account activation in the student portal: your submission deadline is approaching on ${deadline}!`,
+        `🚨 ACTION REQUIRED: Check your registered Gmail inbox (including Spam/Junk folders) for the official activation email sent by TCC UniFAST. You must click your unique activation link, complete online identity verification, and submit all required academic documents before the portal window closes.`,
+        `Portal: ${portalUrl}`,
+        "Grantees who fail to activate and submit requirements before the deadline may forfeit validation for the current semester. For assistance, contact the UniFAST/TES Office immediately.",
+        "#TCCUniFAST #TES #UrgentAdvisory #TagoloanCommunityCollege",
       ].join("\n\n"),
     },
     deadline: {

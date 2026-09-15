@@ -10,6 +10,8 @@ use App\Services\FormSubmissionService;
 use App\Support\PaginatedJson;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class FormResponseController extends Controller
@@ -206,10 +208,7 @@ class FormResponseController extends Controller
         // ── Sanitize ────────────────────────────────────────────────
         $cleanData = $this->security->sanitizeSubmission($rawData);
 
-        // ── Schema validation ───────────────────────────────────────
-        $this->submission->validateSchema($form, $cleanData);
-
-        // ── Handle file fields ──────────────────────────────────────
+        // ── Handle file fields before schema validation ─────────────
         foreach ($form->fields->where('field_type', 'file') as $field) {
             $name = $field->field_name;
 
@@ -219,8 +218,15 @@ class FormResponseController extends Controller
                     $path = $this->submission->storeFileField($file, $field, $name);
                     $cleanData[$name] = $path;
                 }
+            } else {
+                if (! array_key_exists($name, $cleanData)) {
+                    $cleanData[$name] = null;
+                }
             }
         }
+
+        // ── Schema validation ───────────────────────────────────────
+        $this->submission->validateSchema($form, $cleanData);
 
         // ── Lock fields once first response is stored ───────────────
         $isFirstResponse = $form->responses()->doesntExist();
@@ -279,6 +285,36 @@ class FormResponseController extends Controller
             'responses' => $r->responses,
             'honeypot_triggered' => $r->honeypot_triggered,
             'submitter_agent' => $r->submitter_agent,
+        ]);
+    }
+
+    /**
+     * GET /api/forms/{id}/responses/{rid}/files/{field}
+     * Stream an uploaded form file (image/PDF) to authenticated staff/admin.
+     */
+    public function file(Request $request, int $id, int $rid, string $fieldName): BinaryFileResponse|JsonResponse
+    {
+        abort_if($id < 1 || $rid < 1, 400, 'Invalid parameters.');
+
+        $form = Form::findOrFail($id);
+        $response = FormResponse::where('form_id', $form->id)->findOrFail($rid);
+
+        $path = data_get($response->responses, $fieldName);
+
+        if (! is_string($path) || ! str_starts_with($path, 'form-uploads/') || str_contains($path, '..')) {
+            abort(404, 'File not found or invalid path.');
+        }
+
+        if (! Storage::disk('local')->exists($path)) {
+            abort(404, 'File not found on storage.');
+        }
+
+        $fullPath = Storage::disk('local')->path($path);
+        $mime = mime_content_type($fullPath) ?: 'application/octet-stream';
+
+        return response()->file($fullPath, [
+            'Content-Type' => $mime,
+            'X-Content-Type-Options' => 'nosniff',
         ]);
     }
 }

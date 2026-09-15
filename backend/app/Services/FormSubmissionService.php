@@ -23,6 +23,7 @@ class FormSubmissionService
         'application/pdf',
         'image/jpeg',
         'image/png',
+        'image/webp',
     ];
 
     private const DEFAULT_MAX_FILE_BYTES = 5 * 1024 * 1024; // 5 MB
@@ -96,10 +97,19 @@ class FormSubmissionService
             'checkbox' => $this->validateMultiChoice($field, $value, $errors),
             'date' => $this->validateDate($field, $value, $errors),
             'text', 'textarea' => $this->validateText($field, $value, $errors),
+            'file' => $this->validateFileValue($field, $value, $errors),
             default => null,
         };
 
         return $errors;
+    }
+
+    /** @param list<string> $errors */
+    private function validateFileValue(FormField $field, mixed $value, array &$errors): void
+    {
+        if (! is_string($value) || ! str_starts_with($value, 'form-uploads/')) {
+            $errors[] = "{$field->label} must be a valid uploaded file.";
+        }
     }
 
     /** @param list<string> $errors */
@@ -253,6 +263,7 @@ class FormSubmissionService
             'application/pdf' => 'pdf',
             'image/jpeg' => 'jpg',
             'image/png' => 'png',
+            'image/webp' => 'webp',
             default => 'bin',
         };
 
@@ -267,11 +278,13 @@ class FormSubmissionService
      */
     public function buildResponseHash(Form $form, ?int $granteeId, array $responses): string
     {
+        ksort($responses);
+
         $payload = json_encode([
             'form_id' => $form->id,
             'grantee_id' => $granteeId,
             'responses' => $responses,
-        ], JSON_UNESCAPED_UNICODE | JSON_SORT_KEYS);
+        ], JSON_UNESCAPED_UNICODE);
 
         return hash('sha256', (string) $payload);
     }

@@ -220,6 +220,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('/grantees/{grantee}', [GranteeController::class, 'show']);
         Route::post('/students/{student}/id-sample', AdminStudentIdSampleController::class)->middleware('throttle:20,1');
         Route::post('/batches/{batch}/activation-notifications', BatchActivationNotificationController::class)->middleware('throttle:5,1');
+        Route::post('/batches/{batch}/deadline-reminders', [BatchActivationNotificationController::class, 'sendDeadlineReminders'])->middleware('throttle:5,1');
         Route::get('/batches', [BatchController::class, 'index']);
         Route::get('/batches/{batch}', [BatchController::class, 'show']);
         Route::get('/masterlist/imports', [MasterlistImportController::class, 'index']);
@@ -438,6 +439,8 @@ Route::middleware(['auth:sanctum', FormSecurityHeaders::class])->group(function 
         Route::get('/forms/{id}/responses', [FormResponseController::class, 'index'])
             ->whereNumber('id');
         Route::get('/forms/{id}/responses/{rid}', [FormResponseController::class, 'show'])
+            ->whereNumber('id')->whereNumber('rid');
+        Route::get('/forms/{id}/responses/{rid}/files/{field}', [FormResponseController::class, 'file'])
             ->whereNumber('id')->whereNumber('rid');
     });
 

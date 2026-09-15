@@ -25,7 +25,8 @@ import {
   IconMapPin,
   IconCoin,
   IconUsers,
-  IconSearch
+  IconSearch,
+  IconPhoto,
 } from "@tabler/icons-vue";
 import type { FieldType } from "@/api/types";
 
@@ -62,8 +63,17 @@ const fieldGroups = [
   {
     name: "File Fields",
     fields: [
-      { type: "file" as FieldType, icon: IconFileUpload, label: "File Upload" },
-      // { type: "file" as FieldType, icon: IconFiles, label: "Multiple Files", preset: { max_files: 5 } }, // Requires multiple file support
+      {
+        type: "file" as FieldType,
+        icon: IconPhoto,
+        label: "Image / Photo Upload",
+        preset: {
+          label: "Image Upload",
+          accepted_types: "image/jpeg,image/png,image/webp",
+          max_file_size: 5120,
+        },
+      },
+      { type: "file" as FieldType, icon: IconFileUpload, label: "Document / File Upload" },
     ],
   },
   /* Layout fields might need dedicated types in the backend to render properly, 
