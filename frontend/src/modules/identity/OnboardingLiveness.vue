@@ -58,6 +58,12 @@ let softFailTicks = 0;
 let blinkTracker = createBlinkTracker();
 let lastChallengeKey: Challenge | null = null;
 
+// Liveness video replay — records the challenge sequence as a short WebM/MP4 clip.
+// Optional: silently omitted if MediaRecorder or video/webm is unsupported (older devices).
+let mediaRecorder: MediaRecorder | null = null;
+let videoChunks: BlobPart[] = [];
+let videoBlob: Blob | null = null;
+
 const challengeLabels: Record<Challenge, string> = {
   blink: "Blink",
   turn_left: "Turn left",
@@ -278,6 +284,26 @@ async function startCamera() {
       video.value.srcObject = stream;
       await video.value.play();
       cameraReady.value = true;
+
+      // Start liveness replay recording. Silently skip if unsupported.
+      videoChunks = [];
+      videoBlob = null;
+      try {
+        const mime = ["video/webm;codecs=vp8", "video/webm", "video/mp4"].find(
+          (m) => typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported(m),
+        );
+        if (mime && stream) {
+          mediaRecorder = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 400_000 });
+          mediaRecorder.ondataavailable = (e) => {
+            if (e.data.size > 0) videoChunks.push(e.data);
+          };
+          mediaRecorder.start(500); // collect in 500 ms chunks
+        }
+      } catch {
+        // Graceful fallback — static stills are still uploaded.
+        mediaRecorder = null;
+      }
+
       startChallengeLoop();
     }
   } catch (exception) {
@@ -290,6 +316,15 @@ function stopCamera() {
   stream = null;
   cameraReady.value = false;
   if (video.value) video.value.srcObject = null;
+  // Clean up recorder without collecting final blob (camera is stopping permanently).
+  if (mediaRecorder && mediaRecorder.state !== "inactive") {
+    try {
+      mediaRecorder.stop();
+    } catch {
+      /* ignore */
+    }
+  }
+  mediaRecorder = null;
 }
 
 function stopChallengeLoop() {
@@ -490,6 +525,21 @@ async function finishLiveness() {
     challengeSequence.value.forEach((step, index) => body.append(`challenge_sequence[${index}]`, step));
     live.descriptor.forEach((value, index) => body.append(`face_descriptor[${index}]`, String(value)));
     body.append("liveness_confirmed", "1");
+
+    // Stop recorder and collect the liveness replay blob (best-effort).
+    if (mediaRecorder && mediaRecorder.state !== "inactive") {
+      await new Promise<void>((resolve) => {
+        if (!mediaRecorder) { resolve(); return; }
+        mediaRecorder.onstop = () => resolve();
+        try { mediaRecorder.stop(); } catch { resolve(); }
+      });
+    }
+    if (videoChunks.length > 0) {
+      const mimeType = mediaRecorder?.mimeType || "video/webm";
+      videoBlob = new Blob(videoChunks, { type: mimeType });
+      const ext = mimeType.includes("mp4") ? "mp4" : "webm";
+      body.append("video_replay", new File([videoBlob], `liveness_replay.${ext}`, { type: mimeType }));
+    }
 
     const response = await fetch(apiUrl("/api/student/identity-onboarding/liveness"), {
       method: "POST",

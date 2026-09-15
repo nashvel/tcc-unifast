@@ -16,6 +16,7 @@ import {
   IconSettings,
   IconUserCog,
   IconHistory,
+  IconSeedling,
 } from "@tabler/icons-vue";
 import logo from "@/assets/system-logo.webp";
 import { withLang } from "@/i18n/routeLang";
@@ -60,6 +61,7 @@ const sections = ref<{ title?: string; items: NavItem[] }[]>([
     title: "Administration",
     items: [
       { label: "Users & Roles", path: "/app/developer/users", icon: IconUserCog },
+      { label: "Activation Seeder", path: "/app/activation-seeder", icon: IconSeedling },
       { label: "Settings", path: "/app/developer/settings", icon: IconSettings },
     ],
   },

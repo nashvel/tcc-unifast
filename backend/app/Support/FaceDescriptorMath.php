@@ -16,6 +16,14 @@ class FaceDescriptorMath
     public const ZONE_MISMATCH = 'mismatch';
 
     /**
+     * Statistically impossible threshold: two independent live camera captures of the same
+     * person never produce a Euclidean distance below this value. An exact 0.0 (or anything
+     * below 0.05) means the client submitted the same descriptor twice — a DevTools replay
+     * attack. Route these to ZONE_UNCERTAIN (staff review) rather than ZONE_CONFIDENT.
+     */
+    public const MIN_DISTANCE = 0.05;
+
+    /**
      * @return list<float>
      */
     public static function normalize(mixed $raw, string $field = 'face_descriptor'): array
@@ -121,6 +129,12 @@ class FaceDescriptorMath
 
         if ($reviewMax < $passMax) {
             $reviewMax = $passMax;
+        }
+
+        // Replay-attack guard: a near-zero distance is statistically impossible from two
+        // distinct live camera captures. Route to ZONE_UNCERTAIN for staff review.
+        if ($distance < self::MIN_DISTANCE) {
+            return self::ZONE_UNCERTAIN;
         }
 
         if ($distance < $passMax) {

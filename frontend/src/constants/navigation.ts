@@ -51,6 +51,7 @@ export const adminNavigation: NavigationSection[] = [
       { labelKey: "nav.auditTrail", path: "/app/audit", icon: IconHistory },
       { labelKey: "nav.security", path: "/app/security", icon: IconShieldCheck },
       { labelKey: "nav.usersRoles", path: "/app/users", icon: IconUserCog },
+      { labelKey: "nav.activationSeeder", path: "/app/activation-seeder", icon: IconSeedling },
       { labelKey: "common.settings", path: "/app/settings", icon: IconSettings },
       { labelKey: "nav.workspaceContinuity", path: "/app/integrations/workspace", icon: IconFolders },
     ],

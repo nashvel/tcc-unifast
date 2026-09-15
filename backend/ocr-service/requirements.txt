@@ -2,7 +2,10 @@ fastapi
 uvicorn
 python-multipart
 pytesseract
-opencv-python-headless
+# Must be >=4.8.0 for cv2.FaceDetectorYN (YuNet) and cv2.FaceRecognizerSF (SFace) DNN APIs.
+opencv-python-headless>=4.8.0
+# For one-time ONNX model weight download at container startup.
+requests>=2.31.0
 Pillow
 PyMuPDF
 numpy

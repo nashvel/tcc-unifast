@@ -75,6 +75,9 @@ return [
     ],
 
     'face_api' => [
+        // 'ocr_service' -> use Python ocr-service /face/match (free, self-hosted OpenCV DNN)
+        // 'mock'        -> client-descriptor Euclidean distance (development default)
+        // 'http'        -> external FACE_API_URL (legacy / cloud paid option)
         'provider' => env('FACE_API_PROVIDER', 'mock'),
         'url' => env('FACE_API_URL'),
         'key' => env('FACE_API_KEY'),

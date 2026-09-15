@@ -18,6 +18,14 @@ class SecureUpload
     public const PDF_SIGNATURES = ['%PDF-'];
 
     /**
+     * Accepted video MIME types for liveness replay uploads.
+     * Validated via magic bytes in matchesMagic().
+     *
+     * @var list<string>
+     */
+    public const VIDEO_MIMES = ['video/webm', 'video/mp4'];
+
+    /**
      * @param  list<string>  $allowedMimes
      */
     public static function assertAllowedMime(UploadedFile $file, array $allowedMimes, string $field = 'file'): string
@@ -66,6 +74,19 @@ class SecureUpload
             return 'application/pdf';
         }
 
+        // Some environments report WebM as video/x-matroska or application/octet-stream.
+        // Re-check by reading the EBML magic bytes directly.
+        if (in_array($mime, ['video/x-matroska', 'application/octet-stream'], true)) {
+            $handle = fopen($absolutePath, 'rb');
+            if ($handle !== false) {
+                $head = fread($handle, 4) ?: '';
+                fclose($handle);
+                if ($head === "\x1A\x45\xDF\xA3") {
+                    return 'video/webm';
+                }
+            }
+        }
+
         return $mime;
     }
 
@@ -95,6 +116,16 @@ class SecureUpload
             return str_starts_with($head, 'RIFF') && substr($head, 8, 4) === 'WEBP';
         }
 
+        // WebM: starts with EBML header 0x1A45DFA3
+        if ($mime === 'video/webm') {
+            return str_starts_with($head, "\x1A\x45\xDF\xA3");
+        }
+
+        // MP4: bytes 4-7 must contain the 'ftyp' box marker
+        if ($mime === 'video/mp4') {
+            return substr($head, 4, 4) === 'ftyp';
+        }
+
         return false;
     }
 
@@ -108,6 +139,8 @@ class SecureUpload
             'image/jpeg' => 'JPEG',
             'image/png' => 'PNG',
             'image/webp' => 'WebP',
+            'video/webm' => 'WebM video',
+            'video/mp4' => 'MP4 video',
             default => $mime,
         }, $mimes);
 

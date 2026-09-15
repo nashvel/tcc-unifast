@@ -99,7 +99,8 @@ class IdentityFirstJourneyTest extends TestCase
         $this->assertSame($invitedHash, $student->fresh()->password, 'Still no credential after ID scan.');
 
         // ── 6. Liveness auto-pass → identity_verified, still no password ──────
-        $this->post('/api/student/identity-onboarding/liveness', $this->livenessPayload($this->faceDescriptor(0)))
+        // distance=0.20 < pass_max=0.45 → ZONE_CONFIDENT → identity_verified
+        $this->post('/api/student/identity-onboarding/liveness', $this->livenessPayload($this->faceDescriptorAtDistance(0.20)))
             ->assertOk()
             ->assertJsonPath('data.account_status', 'identity_verified')
             ->assertJsonPath('data.next_step', 'credentials');

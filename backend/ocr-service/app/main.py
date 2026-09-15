@@ -3,20 +3,41 @@
 import hmac
 import logging
 import time
+from contextlib import asynccontextmanager
+from typing import AsyncGenerator
 
-from fastapi import Depends, FastAPI, File, Header, HTTPException, Request, UploadFile
+from fastapi import Depends, FastAPI, File, Header, HTTPException, Query, Request, UploadFile
 from fastapi.responses import JSONResponse
 
+from app import face_engine
 from app.config import Settings, get_settings
-from app.errors import OCR_PROCESSING_FAILURE, OcrServiceError
+from app.errors import FACE_ENGINE_UNAVAILABLE, FACE_NOT_FOUND, OCR_PROCESSING_FAILURE, OcrServiceError
 from app.ocr_engine import is_tesseract_available
-from app.schemas import ErrorDetail, ErrorResponse, HealthResponse, ImageOcrResponse, PdfOcrResponse
+from app.schemas import (
+    ErrorDetail,
+    ErrorResponse,
+    FaceMatchResponse,
+    HealthResponse,
+    ImageOcrResponse,
+    PdfOcrResponse,
+)
 from app.service import process_image_upload, process_pdf_upload
 
 logger = logging.getLogger("ocr_service")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
-app = FastAPI(title="TCC UniFAST OCR Prototype", version="0.1.0")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+    """Preload face recognition models once at container startup."""
+    try:
+        face_engine.load_models()
+    except Exception:  # noqa: BLE001
+        logger.exception("Face engine failed to load — /face/match will return 503.")
+    yield
+
+
+app = FastAPI(title="TCC UniFAST OCR Prototype", version="0.1.0", lifespan=lifespan)
 
 MAX_UPLOAD_BYTES = 20 * 1024 * 1024
 
@@ -94,6 +115,57 @@ def health(settings: Settings = Depends(get_settings)) -> HealthResponse:
         status="healthy",
         ocr_engine="tesseract",
         tesseract_available=is_tesseract_available(settings),
+    )
+
+
+@app.post("/face/match", response_model=FaceMatchResponse, dependencies=[Depends(require_api_key)])
+async def face_match(
+    reference_file: UploadFile = File(..., description="Reference face image (ID card crop)"),
+    live_file: UploadFile = File(..., description="Live selfie image"),
+    threshold: float = Query(default=None, ge=0.0, le=1.0),
+    settings: Settings = Depends(get_settings),
+) -> FaceMatchResponse:
+    """Compare a reference face image with a live selfie entirely server-side.
+
+    Both images are processed by YuNet (detector) + SFace (embedder) inside this
+    container. The client never computes or submits face descriptors.
+
+    Returns a JSON response with matched bool, similarity score, and distances.
+    Returns HTTP 503 if the face engine did not load at startup.
+    """
+    if not face_engine.is_ready():
+        raise OcrServiceError(
+            code=FACE_ENGINE_UNAVAILABLE,
+            message="Face verification engine is temporarily unavailable. Please try again in a few minutes.",
+            http_status=503,
+        )
+
+    effective_threshold = threshold if threshold is not None else settings.face_match_threshold
+
+    start = time.perf_counter()
+    reference_bytes = await read_bounded_upload(reference_file)
+    live_bytes = await read_bounded_upload(live_file)
+
+    result = face_engine.match_faces(reference_bytes, live_bytes, threshold=effective_threshold)
+
+    duration_ms = round((time.perf_counter() - start) * 1000)
+    logger.info(
+        "endpoint=/face/match duration_ms=%s matched=%s score=%.2f cosine_distance=%.4f l2=%.4f",
+        duration_ms,
+        result.matched,
+        result.score,
+        result.cosine_distance,
+        result.l2_distance,
+    )
+
+    return FaceMatchResponse(
+        matched=result.matched,
+        score=result.score,
+        cosine_distance=result.cosine_distance,
+        l2_distance=result.l2_distance,
+        reference_face_found=result.reference_face_found,
+        live_face_found=result.live_face_found,
+        error=result.error,
     )
 
 

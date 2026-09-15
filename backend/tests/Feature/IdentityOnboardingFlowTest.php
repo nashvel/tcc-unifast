@@ -98,7 +98,8 @@ class IdentityOnboardingFlowTest extends TestCase
         $this->assertFalse((bool) data_get($profileAfterScan->id_ocr_payload, 'back_ocr.qr.found'));
 
         $this->actingAs($student)->post('/api/student/identity-onboarding/liveness', [
-            ...$this->livenessPayload($this->faceDescriptor(0), [
+            ...$this->livenessPayload($this->faceDescriptorAtDistance(0.20), [
+                // distance=0.20 < pass_max=0.45 → ZONE_CONFIDENT → identity_verified
                 'distance' => 0.99, // spoofed client distance must be ignored
             ]),
         ])->assertOk()
@@ -147,7 +148,8 @@ class IdentityOnboardingFlowTest extends TestCase
 
         // Retry with a confident match still works after a hard mismatch.
         $this->actingAs($student)->post('/api/student/identity-onboarding/liveness', [
-            ...$this->livenessPayload($this->faceDescriptor(0), [
+            ...$this->livenessPayload($this->faceDescriptorAtDistance(0.20), [
+                // distance=0.20 < pass_max=0.45 → ZONE_CONFIDENT → identity_verified
                 'challenge_sequence' => ['blink', 'turn_right', 'turn_left'],
             ]),
         ])->assertOk()
@@ -200,6 +202,178 @@ class IdentityOnboardingFlowTest extends TestCase
         $this->assertTrue(Storage::disk('local')->exists($profile->liveness_challenge_1_path));
         $this->assertTrue(Storage::disk('local')->exists($profile->liveness_challenge_2_path));
         $this->assertSame(['blink', 'turn_left'], $profile->liveness_challenge_labels);
+    }
+
+    public function test_liveness_replay_attack_triggers_staff_review(): void
+    {
+        Storage::fake('public');
+        Storage::fake('local');
+        config([
+            'services.identity.face_pass_max' => 0.45,
+            'services.identity.face_review_max' => 0.60,
+        ]);
+
+        [$student, $grantee] = $this->studentWithMasterlist();
+        $student->forceFill(['account_status' => 'pending_identity'])->save();
+        // Reference descriptor stored from the ID scan step.
+        GranteeIdentityProfile::create([
+            'user_id' => $student->id,
+            'grantee_id' => $grantee->id,
+            'status' => 'pending_liveness',
+            'id_reference_face_path' => 'identity/'.$grantee->id.'/id_reference_face.jpg',
+            'id_reference_face_descriptor' => $this->faceDescriptor(0),
+        ]);
+        Storage::disk('local')->put('identity/'.$grantee->id.'/id_reference_face.jpg', "\xFF\xD8\xFFfakejpeg");
+
+        // Attack: send the same descriptor as the reference (distance = 0.0000).
+        // The replay-attack guard (MIN_DISTANCE = 0.05) must route this to ZONE_UNCERTAIN.
+        $this->actingAs($student)->post('/api/student/identity-onboarding/liveness', [
+            ...$this->livenessPayload($this->faceDescriptor(0)),
+        ])->assertOk()
+            ->assertJsonPath('data.account_status', 'pending_face_review')
+            ->assertJsonPath('data.next_step', 'face_review')
+            ->assertJsonPath('data.face_zone', 'uncertain');
+
+        // Must NOT have been auto-activated.
+        $this->assertDatabaseMissing('users', ['id' => $student->id, 'account_status' => 'identity_verified']);
+        $this->assertDatabaseHas('users', ['id' => $student->id, 'account_status' => 'pending_face_review']);
+        $this->assertDatabaseHas('grantee_identity_profiles', [
+            'grantee_id' => $grantee->id,
+            'status' => 'pending_face_review',
+        ]);
+    }
+
+    public function test_liveness_with_ocr_service_provider_auto_activates_on_confident_match(): void
+    {
+        Storage::fake('public');
+        Storage::fake('local');
+        config([
+            'services.face_api.provider' => 'ocr_service',
+            'services.ocr.url' => 'http://127.0.0.1:8081',
+            'services.identity.face_pass_max' => 0.45,
+            'services.identity.face_review_max' => 0.60,
+        ]);
+
+        Http::fake([
+            '*/face/match' => Http::response([
+                'success' => true,
+                'matched' => true,
+                'score' => 88.5,
+                'cosine_distance' => 0.20,
+                'l2_distance' => 0.65,
+                'reference_face_found' => true,
+                'live_face_found' => true,
+            ], 200),
+        ]);
+
+        [$student, $grantee] = $this->studentWithMasterlist();
+        $student->forceFill(['account_status' => 'pending_identity'])->save();
+
+        GranteeIdentityProfile::create([
+            'user_id' => $student->id,
+            'grantee_id' => $grantee->id,
+            'status' => 'pending_liveness',
+            'id_reference_face_path' => 'identity/'.$grantee->id.'/id_reference_face.jpg',
+            'id_reference_face_descriptor' => $this->faceDescriptor(0),
+        ]);
+        Storage::disk('local')->put('identity/'.$grantee->id.'/id_reference_face.jpg', "\xFF\xD8\xFFfakejpeg");
+
+        $response = $this->actingAs($student)->post('/api/student/identity-onboarding/liveness', [
+            ...$this->livenessPayload($this->faceDescriptor(0)),
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('data.account_status', 'identity_verified')
+            ->assertJsonPath('data.next_step', 'credentials')
+            ->assertJsonPath('data.face_zone', 'confident');
+
+        $this->assertDatabaseHas('users', [
+            'id' => $student->id,
+            'account_status' => 'identity_verified',
+        ]);
+        $this->assertDatabaseHas('grantees', [
+            'id' => $grantee->id,
+            'status' => 'verified',
+        ]);
+        $this->assertDatabaseHas('grantee_identity_profiles', [
+            'grantee_id' => $grantee->id,
+            'status' => 'completed',
+            'onboarding_face_distance' => 0.20,
+        ]);
+    }
+
+    public function test_liveness_with_ocr_service_provider_returns_503_when_service_is_down(): void
+    {
+        Storage::fake('public');
+        Storage::fake('local');
+        config([
+            'services.face_api.provider' => 'ocr_service',
+            'services.ocr.url' => 'http://127.0.0.1:8081',
+        ]);
+
+        Http::fake([
+            '*/face/match' => Http::response(['error' => 'Service Unavailable'], 503),
+        ]);
+
+        [$student, $grantee] = $this->studentWithMasterlist();
+        $student->forceFill(['account_status' => 'pending_identity'])->save();
+
+        GranteeIdentityProfile::create([
+            'user_id' => $student->id,
+            'grantee_id' => $grantee->id,
+            'status' => 'pending_liveness',
+            'id_reference_face_path' => 'identity/'.$grantee->id.'/id_reference_face.jpg',
+            'id_reference_face_descriptor' => $this->faceDescriptor(0),
+        ]);
+        Storage::disk('local')->put('identity/'.$grantee->id.'/id_reference_face.jpg', "\xFF\xD8\xFFfakejpeg");
+
+        $response = $this->actingAs($student)->post('/api/student/identity-onboarding/liveness', [
+            ...$this->livenessPayload($this->faceDescriptor(0)),
+        ]);
+
+        $response->assertStatus(503)
+            ->assertJsonPath('message', 'Face verification service is temporarily unavailable. Please try again in a few minutes.');
+    }
+
+    public function test_liveness_with_ocr_service_provider_rejects_when_no_live_face_detected(): void
+    {
+        Storage::fake('public');
+        Storage::fake('local');
+        config([
+            'services.face_api.provider' => 'ocr_service',
+            'services.ocr.url' => 'http://127.0.0.1:8081',
+        ]);
+
+        Http::fake([
+            '*/face/match' => Http::response([
+                'success' => true,
+                'matched' => false,
+                'score' => 0.0,
+                'cosine_distance' => 2.0,
+                'l2_distance' => 999.0,
+                'reference_face_found' => true,
+                'live_face_found' => false,
+            ], 200),
+        ]);
+
+        [$student, $grantee] = $this->studentWithMasterlist();
+        $student->forceFill(['account_status' => 'pending_identity'])->save();
+
+        GranteeIdentityProfile::create([
+            'user_id' => $student->id,
+            'grantee_id' => $grantee->id,
+            'status' => 'pending_liveness',
+            'id_reference_face_path' => 'identity/'.$grantee->id.'/id_reference_face.jpg',
+            'id_reference_face_descriptor' => $this->faceDescriptor(0),
+        ]);
+        Storage::disk('local')->put('identity/'.$grantee->id.'/id_reference_face.jpg', "\xFF\xD8\xFFfakejpeg");
+
+        $response = $this->actingAs($student)->post('/api/student/identity-onboarding/liveness', [
+            ...$this->livenessPayload($this->faceDescriptor(0)),
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['selfie']);
     }
 
     public function test_staff_can_approve_pending_face_review(): void

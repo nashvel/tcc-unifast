@@ -1,150 +1,625 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>System Operational Flowchart - UniFAST TES Grantee Management System</title>
+    <title>System Operational Flowchart (ANSI/ISO Connector Convention) - UniFAST TES Grantee Management System</title>
     <style>
+        :root {
+            --primary: #1a365d;
+            --primary-accent: #2b6cb0;
+            --bg-page: #f1f5f9;
+            --bg-card: #ffffff;
+            --border-color: #cbd5e1;
+            --text-dark: #0f172a;
+            --text-muted: #475569;
+            --connector-gold: #d97706;
+            --connector-bg: #fef3c7;
+        }
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
         }
+
         body {
-            background-color: #f0f3f8;
-            color: #222;
-            padding: 20px;
+            background-color: var(--bg-page);
+            color: var(--text-dark);
+            padding: 24px;
             display: flex;
             flex-direction: column;
             align-items: center;
+            min-height: 100vh;
         }
+
         .header {
             text-align: center;
             margin-bottom: 20px;
-            background: white;
-            padding: 16px 32px;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-            max-width: 1200px;
+            background: var(--bg-card);
+            padding: 24px 32px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+            max-width: 1400px;
             width: 100%;
+            border: 1px solid var(--border-color);
         }
+
+        .header .badge {
+            display: inline-block;
+            background: #e0e7ff;
+            color: #3730a3;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 12px;
+            border-radius: 9999px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 8px;
+        }
+
         .header h1 {
-            font-size: 24px;
-            color: #1a365d;
-            margin-bottom: 4px;
+            font-size: 26px;
+            color: var(--primary);
+            margin-bottom: 6px;
+            font-weight: 800;
         }
-        .header p {
-            color: #4a5568;
-            font-size: 13px;
+
+        .header p.subtitle {
+            color: var(--text-muted);
+            font-size: 14px;
+            max-width: 850px;
+            margin: 0 auto;
+            line-height: 1.5;
         }
+
+        .convention-banner {
+            margin-top: 14px;
+            padding: 12px 18px;
+            background: #fffbeb;
+            border: 1px solid #fde68a;
+            border-radius: 8px;
+            font-size: 12.5px;
+            color: #92400e;
+            text-align: left;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .convention-banner strong {
+            color: #78350f;
+        }
+
         .btn-container {
-            margin-top: 10px;
+            margin-top: 16px;
             display: flex;
             gap: 12px;
             justify-content: center;
+            flex-wrap: wrap;
         }
+
         .btn {
-            background: #2b6cb0;
+            background: var(--primary-accent);
             color: white;
-            padding: 8px 18px;
-            border-radius: 6px;
-            text-decoration: none;
+            padding: 9px 20px;
+            border-radius: 7px;
             font-size: 13px;
-            font-weight: bold;
+            font-weight: 600;
             cursor: pointer;
             border: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
         }
-        .diagram-wrapper {
+
+        .btn:hover {
+            background: #235487;
+            transform: translateY(-1px);
+        }
+
+        .btn-outline {
             background: white;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.08);
-            max-width: 1200px;
+            color: var(--text-dark);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-outline:hover {
+            background: #f8fafc;
+            border-color: #94a3b8;
+        }
+
+        /* View Mode Selector Tabs */
+        .view-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 18px;
+            max-width: 1400px;
             width: 100%;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .view-tab {
+            padding: 9px 18px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            border: 1px solid var(--border-color);
+            background: white;
+            color: var(--text-muted);
+            transition: all 0.2s;
+        }
+
+        .view-tab.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+            box-shadow: 0 2px 6px rgba(26, 54, 93, 0.25);
+        }
+
+        /* Container Layouts */
+        .diagram-container {
+            max-width: 1400px;
+            width: 100%;
+        }
+
+        /* Modular 4-Card Grid */
+        .phases-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        .phase-card {
+            background: white;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .phase-header {
+            padding: 14px 18px;
+            background: #f8fafc;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .phase-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .connector-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 9999px;
+            background: var(--connector-bg);
+            color: var(--connector-gold);
+            border: 1px solid #fcd34d;
+        }
+
+        .connector-circle {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #f59e0b;
+            color: white;
+            font-size: 10px;
+            font-weight: 800;
+            display: grid;
+            place-items: center;
+        }
+
+        .phase-body {
+            padding: 20px;
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
             overflow-x: auto;
         }
+
         .mermaid {
+            width: 100%;
             display: flex;
             justify-content: center;
         }
+
         .mermaid svg {
-            height: auto;
             max-width: 100%;
+            height: auto;
         }
-        .legend {
-            max-width: 1200px;
+
+        /* Defense Talking Points Drawer */
+        .defense-drawer {
+            max-width: 1400px;
             width: 100%;
             background: white;
-            border-radius: 10px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-            padding: 16px 24px;
-            margin-top: 20px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            padding: 20px 24px;
+            margin-bottom: 24px;
+        }
+
+        .defense-drawer h2 {
+            font-size: 16px;
+            color: var(--primary);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .defense-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+            font-size: 12.5px;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        .defense-item {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 12px 14px;
+        }
+
+        .defense-item strong {
+            color: var(--text-dark);
+            display: block;
+            margin-bottom: 4px;
+            font-size: 13px;
+        }
+
+        /* Legend */
+        .legend {
+            max-width: 1400px;
+            width: 100%;
+            background: white;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            padding: 18px 24px;
             font-size: 12px;
             color: #334155;
         }
+
         .legend h2 {
             font-size: 14px;
-            color: #1a365d;
-            margin-bottom: 8px;
+            color: var(--primary);
+            margin-bottom: 10px;
+            font-weight: 700;
         }
+
         .legend ul {
             list-style: none;
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 6px 20px;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 8px 20px;
         }
-        .legend li::before {
-            content: '\25A0';
-            margin-right: 6px;
+
+        .legend li {
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
-        .legend li.admin::before { color: #1e40af; }
-        .legend li.student::before { color: #b45309; }
-        .legend li.staff::before { color: #4338ca; }
-        .legend li.system::before { color: #475569; }
-        .legend li.decision::before { color: #854d0e; }
-        .legend li.store::before { color: #047857; }
-        .fallback {
-            display: none;
-            font-size: 12px;
-            color: #9b2c2c;
-            background: #fff5f5;
-            border: 1px solid #feb2b2;
-            border-radius: 6px;
-            padding: 12px 16px;
+
+        .color-box {
+            width: 14px;
+            height: 14px;
+            border-radius: 3px;
+            border: 1px solid rgba(0, 0, 0, 0.2);
+            flex-shrink: 0;
         }
+
+        .color-admin {
+            background: #dbeafe;
+            border-color: #1e40af;
+        }
+
+        .color-student {
+            background: #fef3c7;
+            border-color: #b45309;
+        }
+
+        .color-staff {
+            background: #e0e7ff;
+            border-color: #4338ca;
+        }
+
+        .color-system {
+            background: #f1f5f9;
+            border-color: #475569;
+        }
+
+        .color-decision {
+            background: #fef9c3;
+            border-color: #854d0e;
+        }
+
+        .color-connector {
+            background: #fef08a;
+            border-color: #ca8a04;
+        }
+
+        .color-db {
+            background: #ecfdf5;
+            border-color: #047857;
+        }
+
         @media print {
-            body { background: white; padding: 0; }
-            .btn-container { display: none; }
-            .diagram-wrapper, .header, .legend { box-shadow: none; border-radius: 0; }
+            body {
+                background: white;
+                padding: 0;
+            }
+
+            .btn-container,
+            .view-tabs {
+                display: none !important;
+            }
+
+            .header,
+            .phase-card,
+            .defense-drawer,
+            .legend {
+                box-shadow: none !important;
+                border: 1px solid #ccc !important;
+            }
+
+            .phases-grid {
+                grid-template-columns: 1fr 1fr;
+            }
         }
     </style>
 </head>
+
 <body>
 
     <div class="header">
+        <span class="badge">ANSI / ISO Standard Flowchart Architecture</span>
         <h1>UniFAST TES Grantee Management System</h1>
-        <p><strong>Figure 3.2: System Operational Flowchart</strong> &mdash; End-to-End Operational Lifecycle</p>
-        <p style="font-size:10.5px; color:#7030a0; margin-top:6px;">
-            <strong>Revised (identity-first activation):</strong>
-            <code>S2</code> read &ldquo;Grantee Sets Password &amp; Activates Account&rdquo;.
-            Password creation moved to <strong>Phase 3B</strong> (<code>S8C</code>), after the biometric
-            paths converge, so the face match gates account ownership rather than document upload.
-            The former <code>S10</code> PIN-unlock step was removed &mdash; the vault PIN is now an
-            opt-in setting verified at confirm. <code>S11</code>/<code>E2</code> corrected from 4 slots to 3.
+        <p class="subtitle">
+            <strong>Figure 3.2: Modular Operational Lifecycle Flowchart</strong> &mdash; Structured into four (4)
+            sequential phases using standard on-page circular connectors (A, B, C) to eliminate line clutter and clearly
+            represent batch submission window enforcement.
         </p>
+
+        <div class="convention-banner">
+            <span style="font-size: 18px;">💡</span>
+            <div>
+                <strong>ANSI/ISO Flowchart Connector Convention Applied:</strong>
+                Long looping arrow lines across pages have been eliminated. Each phase concludes with an on-page
+                circular connector (e.g., <strong>🟡 A</strong>), which serves as the direct entry point into the
+                subsequent phase. Furthermore, Phase 3 now features the strict <strong>Batch Active &amp; Submission
+                    Window Open</strong> decision gate preventing unauthorized document uploads.
+            </div>
+        </div>
+
         <div class="btn-container">
-            <button class="btn" onclick="window.print()">&#128424; Print / Save as PDF</button>
+            <button class="btn" onclick="window.print()">🖨️ Print / Save as PDF for Thesis Defense</button>
+            <button class="btn btn-outline" onclick="toggleDefenseScript()">🎤 Show / Hide Defense Script</button>
         </div>
     </div>
 
-    <div class="diagram-wrapper">
-        <p class="fallback" id="fallback">
-            The flowchart renders with the Mermaid library loaded from a CDN. It looks like that request
-            failed &mdash; reconnect to the network and reload, or read the same chart in
-            <code>system_diagrams_documentation.md</code> &sect;4.2.
-        </p>
-<pre class="mermaid">
+    <!-- Defense Script Drawer -->
+    <div id="defenseScript" class="defense-drawer" style="display: block;">
+        <h2>🎤 Thesis Defense Speaking Points (Flowchart Justification)</h2>
+        <div class="defense-grid">
+            <div class="defense-item">
+                <strong>1. Why use On-Page Connectors (A, B, C)?</strong>
+                <em>"To comply with ANSI/ISO Flowchart Standards and avoid spaghetti arrow routing, the system lifecycle
+                    is decomposed into 4 modular sequential phases using on-page circular connectors A, B, and C. This
+                    ensures modular readability and professional clarity."</em>
+            </div>
+            <div class="defense-item">
+                <strong>2. Phase 1 to Phase 2 Transition (Connector A):</strong>
+                <em>"Phase 1 establishes batch creation and masterlist validation down to dispatching secure invitation
+                    links. At Connector A, the grantee accesses the onboarding portal to complete their student profile
+                    and upload their school ID without setting a password prematurely."</em>
+            </div>
+            <div class="defense-item">
+                <strong>3. Biometric Verification & Facial Matching (Phase 2):</strong>
+                <em>"In Phase 2, the system extracts text and photo from the ID via OCR, then compares the student's
+                    live selfie against the ID photo using Biometric Facial Similarity Matching. If similarity is
+                    inconclusive, it routes to staff for manual verification before the account is activated at
+                    Connector B."</em>
+            </div>
+            <div class="defense-item">
+                <strong>4. Batch Window Verification (Phase 3 Gate):</strong>
+                <em>"In Phase 3, immediately after Connector B, the system enforces a strict decision: 'Is Batch Active
+                    &amp; Submission Window Open?'. If the window has expired or is inactive, upload is blocked with an
+                    informative notice, ensuring strict institutional compliance with CHED deadlines."</em>
+            </div>
+            <div class="defense-item">
+                <strong>5. Academic Retention Evaluation (Connector C to Phase 4):</strong>
+                <em>"Once all 3 required documents pass automated OCR checks and staff evaluation, the system checks
+                    CHED retention standards (GWA and failed units limit) and assigns a compliance risk rating. Once
+                    confirmed ELIGIBLE, Connector C leads into Phase 4 for official CHED billing and fund payroll
+                    rosters."</em>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Mode Tabs -->
+    <div class="view-tabs">
+        <button class="view-tab active" onclick="switchView('modular')">4-Phase Modular View (Recommended)</button>
+        <button class="view-tab" onclick="switchView('unified')">Complete Single Flow (Combined Diagram)</button>
+    </div>
+
+    <!-- MODULAR 4-PHASE VIEW -->
+    <div id="modularView" class="diagram-container">
+        <div class="phases-grid">
+
+            <!-- PHASE 1 -->
+            <div class="phase-card">
+                <div class="phase-header">
+                    <div class="phase-title">Phase 1: Batch Setup &amp; Masterlist</div>
+                    <div class="connector-indicator">
+                        To <span class="connector-circle">A</span>
+                    </div>
+                </div>
+                <div class="phase-body">
+                    <pre class="mermaid">
+flowchart TD
+    classDef startEnd fill:#f8fafc,stroke:#334155,stroke-width:2px,font-weight:bold;
+    classDef adminBlock fill:#dbeafe,stroke:#1e40af,stroke-width:1.5px;
+    classDef sysBlock fill:#f1f5f9,stroke:#475569,stroke-width:1.5px;
+    classDef decisionBlock fill:#fef9c3,stroke:#854d0e,stroke-width:1.5px;
+    classDef connector fill:#fef08a,stroke:#ca8a04,stroke-width:2.5px,font-weight:bold,color:#854d0e;
+
+    Start([● START: Academic Period Begins]):::startEnd --> A1[/Admin Creates Batch &amp; Sets Submission Window/]:::adminBlock
+    A1 --> A2[/Admin Uploads Official CHED Masterlist/]:::adminBlock
+    A2 --> A3[System Validates Student Masterlist Records]:::sysBlock
+    A3 --> D1{Are Masterlist Records Valid?}:::decisionBlock
+    D1 -- "No: Data Formatting Errors" --> A2
+    D1 -- "Yes: Valid Records" --> A4[Admin Finalizes Masterlist &amp; Enrolls Grantees]:::adminBlock
+    A4 --> A5[/System Dispatches Portal Invitation Email with Secure Activation Link/]:::sysBlock
+    A5 --> S1[/Grantee Clicks Secure Activation Link/]:::studentBlock
+    S1 --> S2[System Grants Secure Access to Student Onboarding Portal]:::sysBlock
+    S2 --> ConnA((( A ))):::connector
+                    </pre>
+                </div>
+            </div>
+
+            <!-- PHASE 2 -->
+            <div class="phase-card">
+                <div class="phase-header">
+                    <div class="phase-title">Phase 2: KYC &amp; Biometric Identity</div>
+                    <div class="connector-indicator">
+                        From <span class="connector-circle">A</span> ➔ To <span class="connector-circle">B</span>
+                    </div>
+                </div>
+                <div class="phase-body">
+                    <pre class="mermaid">
+flowchart TD
+    classDef studentBlock fill:#fef3c7,stroke:#b45309,stroke-width:1.5px;
+    classDef staffBlock fill:#e0e7ff,stroke:#4338ca,stroke-width:1.5px;
+    classDef sysBlock fill:#f1f5f9,stroke:#475569,stroke-width:1.5px;
+    classDef decisionBlock fill:#fef9c3,stroke:#854d0e,stroke-width:1.5px;
+    classDef connector fill:#fef08a,stroke:#ca8a04,stroke-width:2.5px,font-weight:bold,color:#854d0e;
+
+    ConnA((( A ))):::connector --> S3[/Grantee Fills Out Student Profile &amp; Personal Details/]:::studentBlock
+    S3 --> S4[System Verifies Details Against CHED Masterlist Record]:::sysBlock
+    S4 --> S5[/Grantee Scans or Uploads School ID Front &amp; Back/]:::studentBlock
+    S5 --> S6[System Extracts Text &amp; ID Photo via OCR]:::sysBlock
+    S6 --> D2{Does ID Pass Image Clarity &amp; Readability Check?}:::decisionBlock
+    D2 -- "No: Unclear / Blurry Scan" --> S5
+    D2 -- "Yes: Valid ID Scan" --> S7[/Grantee Performs Real-Time Liveness Selfie Check/]:::studentBlock
+    S7 --> S8["System Compares Live Selfie Against ID Photo<br/>(Biometric Facial Similarity Match)"]:::sysBlock
+    S8 --> D3{Facial Similarity Match Result}:::decisionBlock
+
+    D3 -- "Inconclusive / Low Similarity" --> ST1[Forwarded to Staff for Manual Identity Verification]:::staffBlock
+    ST1 --> D4{Staff Identity Review Decision}:::decisionBlock
+    D4 -- "Rejected: Unverified" --> S5
+    D4 -- "Approved: Identity Confirmed" --> S8B
+
+    D3 -- "High Similarity: Confirmed Match" --> S8B[Grantee Identity Confirmed &amp; Verified]:::sysBlock
+    S8B --> S8C[/Grantee Creates Permanent Account Password/]:::studentBlock
+    S8C --> S9[Student Portal Account Activated &amp; Enabled]:::sysBlock
+    S9 --> ConnB((( B ))):::connector
+                    </pre>
+                </div>
+            </div>
+
+            <!-- PHASE 3 -->
+            <div class="phase-card">
+                <div class="phase-header">
+                    <div class="phase-title">Phase 3: Vault Submission &amp; Eligibility</div>
+                    <div class="connector-indicator">
+                        From <span class="connector-circle">B</span> ➔ To <span class="connector-circle">C</span>
+                    </div>
+                </div>
+                <div class="phase-body">
+                    <pre class="mermaid">
+flowchart TD
+    classDef studentBlock fill:#fef3c7,stroke:#b45309,stroke-width:1.5px;
+    classDef staffBlock fill:#e0e7ff,stroke:#4338ca,stroke-width:1.5px;
+    classDef sysBlock fill:#f1f5f9,stroke:#475569,stroke-width:1.5px;
+    classDef decisionBlock fill:#fef9c3,stroke:#854d0e,stroke-width:1.5px;
+    classDef connector fill:#fef08a,stroke:#ca8a04,stroke-width:2.5px,font-weight:bold,color:#854d0e;
+
+    ConnB((( B ))):::connector --> D_Window{"Is Batch Active &<br/>Submission Window Open?"}:::decisionBlock
+    
+    D_Window -- "No: Closed / Inactive" --> W_Closed["System Displays 'Submission Window Closed' Notice<br/>(Student cannot submit; waits for Admin to open window)"]:::sysBlock
+    
+    D_Window -- "Yes: Active & Open" --> S11[/"Grantee Uploads 3 Required Documents:<br/>1. Course History (or COR)<br/>2. Official Grade Slip<br/>3. ID Back-to-Back & 3 Specimen Signatures"/]:::studentBlock
+    
+    S11 --> S12["System Runs Automated Document OCR & Authenticity Checks"]:::sysBlock
+    S12 --> S13[/"Grantee Reviews & Submits Complete Document Package"/]:::studentBlock
+    S13 --> ST2["Scholarship Staff Inspects Submitted Documents"]:::staffBlock
+    ST2 --> D5{"Staff Document Evaluation Decision"}:::decisionBlock
+
+    D5 -- "Return for Resubmission" --> N1[/"System Sends Notice to Student for Document Correction"/]:::sysBlock
+    N1 --> S14[/"Grantee Resubmits Corrected Document Slot"/]:::studentBlock
+    S14 --> ST2
+
+    D5 -- "Approved" --> E1["System Initiates Automated Scholarship Retention Evaluation"]:::sysBlock
+    E1 --> E2["System Checks Academic Retention Standards:<br/>General Weighted Average (GWA) & Failed Units Limit"]:::sysBlock
+    E2 --> E3["System Evaluates Document Authenticity & Compliance Risk Level"]:::sysBlock
+    E3 --> D6{"Does Student Meet CHED Retention Criteria?"}:::decisionBlock
+
+    D6 -- "Failed Academic Criteria" --> N2[/"System Issues Scholarship Deficiency Notice (Ineligible)"/]:::sysBlock
+    D6 -- "Passed Academic Criteria" --> E4["Grantee Officially Qualified (Status: ELIGIBLE)"]:::sysBlock
+    E4 --> ConnC((( C ))):::connector
+                    </pre>
+                </div>
+            </div>
+
+            <!-- PHASE 4 -->
+            <div class="phase-card">
+                <div class="phase-header">
+                    <div class="phase-title">Phase 4: Billing Masterlist &amp; Audit Trail</div>
+                    <div class="connector-indicator">
+                        From <span class="connector-circle">C</span> ➔ [END]
+                    </div>
+                </div>
+                <div class="phase-body">
+                    <pre class="mermaid">
+flowchart TD
+    classDef startEnd fill:#f8fafc,stroke:#334155,stroke-width:2px,font-weight:bold;
+    classDef adminBlock fill:#dbeafe,stroke:#1e40af,stroke-width:1.5px;
+    classDef sysBlock fill:#f1f5f9,stroke:#475569,stroke-width:1.5px;
+    classDef dbBlock fill:#ecfdf5,stroke:#047857,stroke-width:1.5px;
+    classDef connector fill:#fef08a,stroke:#ca8a04,stroke-width:2.5px,font-weight:bold,color:#854d0e;
+
+    ConnC((( C ))):::connector --> N3[/"System Dispatches Official Scholarship Eligibility Notice"/]:::sysBlock
+    N3 --> A6[/"Admin Generates Official CHED TES Billing Statement (Annex)"/]:::adminBlock
+    A6 --> A7[/"Admin Generates Grantee Fund Distribution & Payroll Roster"/]:::adminBlock
+    A7 --> A8[("System Records Complete History in Official Audit Trail")]:::dbBlock
+    A8 --> EndNode(["● END: TES Grants Disbursed & Documented in Official Records"]):::startEnd
+                    </pre>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- UNIFIED COMPLETE SINGLE FLOW VIEW (HIDDEN BY DEFAULT) -->
+    <div id="unifiedView" class="diagram-container"
+        style="display: none; background: white; padding: 24px; border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 24px;">
+        <pre class="mermaid">
 flowchart TD
     %% ── STYLES ──
     classDef startEnd fill:#f8fafc,stroke:#334155,stroke-width:2px,font-weight:bold;
@@ -154,107 +629,144 @@ flowchart TD
     classDef sysBlock fill:#f1f5f9,stroke:#475569,stroke-width:1.5px;
     classDef decisionBlock fill:#fef9c3,stroke:#854d0e,stroke-width:1.5px;
     classDef dbBlock fill:#ecfdf5,stroke:#047857,stroke-width:1.5px;
+    classDef connector fill:#fef08a,stroke:#ca8a04,stroke-width:2.5px,font-weight:bold,color:#854d0e;
 
-    %% ── PHASE 1: ADMIN SETUP &amp; INTAKE ──
-    Start([● START: Academic Period Begins]):::startEnd --> A1[/Admin Creates Batch &amp; Sets Submission Window/]:::adminBlock
-    A1 --> A2[/Admin Uploads CHED Masterlist Excel/CSV/PDF/]:::adminBlock
-    A2 --> A3[System Parses &amp; Validates Student Rows]:::sysBlock
-    A3 --> D1{Are Data Rows Valid?}:::decisionBlock
-    D1 -- No: Errors Detected --> A2
-    D1 -- Yes: Valid --> A4[Admin Commits Import &amp; Triggers Batch Activation]:::adminBlock
-    A4 --> A5[/System Dispatches Activation Email with One-Time Token/]:::sysBlock
+    %% ── SUBGRAPH 1: PHASE 1 ──
+    subgraph P1 ["PHASE 1: BATCH SETUP & MASTERLIST INVITATION"]
+        Start([● START: Academic Period Begins]):::startEnd --> A1[/Admin Creates Batch &amp; Sets Submission Window/]:::adminBlock
+        A1 --> A2[/Admin Uploads Official CHED Masterlist/]:::adminBlock
+        A2 --> A3[System Validates Student Masterlist Records]:::sysBlock
+        A3 --> D1{Are Masterlist Records Valid?}:::decisionBlock
+        D1 -- "No: Data Formatting Errors" --> A2
+        D1 -- "Yes: Valid Records" --> A4[Admin Finalizes Masterlist &amp; Enrolls Grantees]:::adminBlock
+        A4 --> A5[/System Dispatches Portal Invitation Email with Secure Activation Link/]:::sysBlock
+        A5 --> S1[/Grantee Clicks Secure Activation Link/]:::studentBlock
+        S1 --> S2[System Grants Secure Access to Student Onboarding Portal]:::sysBlock
+        S2 --> ConnA1((( A ))):::connector
+    end
 
-    %% ── PHASE 2: GRANTEE ACCOUNT ACTIVATION &amp; KYC ──
-    A5 --> S1[/Grantee Receives Email &amp; Clicks Activation Link/]:::studentBlock
-    S1 --> S2[System Issues Scoped Onboarding Session&lt;br&gt;NO password set yet]:::sysBlock
-    S2 --> S3[/Grantee Completes Personal &amp; Academic KYC Profile/]:::studentBlock
-    S3 --> S4[System Saves KYC Profile -> Status: pending_identity]:::sysBlock
+    %% ── SUBGRAPH 2: PHASE 2 ──
+    subgraph P2 ["PHASE 2: KYC & BIOMETRIC IDENTITY VERIFICATION"]
+        ConnA2((( A ))):::connector --> S3[/Grantee Fills Out Student Profile &amp; Personal Details/]:::studentBlock
+        S3 --> S4[System Verifies Details Against CHED Masterlist Record]:::sysBlock
+        S4 --> S5[/Grantee Scans or Uploads School ID Front &amp; Back/]:::studentBlock
+        S5 --> S6[System Extracts Text &amp; ID Photo via OCR]:::sysBlock
+        S6 --> D2{Does ID Pass Image Clarity &amp; Readability Check?}:::decisionBlock
+        D2 -- "No: Unclear / Blurry Scan" --> S5
+        D2 -- "Yes: Valid ID Scan" --> S7[/Grantee Performs Real-Time Liveness Selfie Check/]:::studentBlock
+        S7 --> S8["System Compares Live Selfie Against ID Photo<br/>(Biometric Facial Similarity Match)"]:::sysBlock
+        S8 --> D3{Facial Similarity Match Result}:::decisionBlock
 
-    %% ── PHASE 3: BIOMETRIC IDENTITY &amp; LIVENESS ──
-    S4 --> S5[/Grantee Scans School ID Front &amp; Back/]:::studentBlock
-    S5 --> S6[System Runs OCR: Matches Name &amp; Student ID vs Masterlist]:::sysBlock
-    S6 --> D2{ID OCR &amp; Face Quality >= 0.50?}:::decisionBlock
-    D2 -- No: OCR/Quality Fail --> S5
-    D2 -- Yes: ID Stored --> S7[/Grantee Performs Interactive Liveness Challenge/]:::studentBlock
-    S7 --> S8[System Computes Euclidean Face Descriptor Distance]:::sysBlock
-    S8 --> D3{Face Match Classification}:::decisionBlock
+        D3 -- "Inconclusive / Low Similarity" --> ST1[Forwarded to Staff for Manual Identity Verification]:::staffBlock
+        ST1 --> D4{Staff Identity Review Decision}:::decisionBlock
+        D4 -- "Rejected: Unverified" --> S5
+        D4 -- "Approved: Identity Confirmed" --> S8B
 
-    D3 -- Yellow/Red Zone: Low Score --> ST1[Queue in Staff Biometric Review Queue]:::staffBlock
-    ST1 --> D4{Staff Manual Review Decision}:::decisionBlock
-    D4 -- Rejected: fresh link emailed&lt;br&gt;status identity_rejected --> S5
-    D4 -- Approved: set-password link emailed --> S8B
+        D3 -- "High Similarity: Confirmed Match" --> S8B[Grantee Identity Confirmed &amp; Verified]:::sysBlock
+        S8B --> S8C[/Grantee Creates Permanent Account Password/]:::studentBlock
+        S8C --> S9[Student Portal Account Activated &amp; Enabled]:::sysBlock
+        S9 --> ConnB1((( B ))):::connector
+    end
 
-    D3 -- Green Zone: High Match --> S8B[Status: identity_verified&lt;br&gt;Identity proven, still NO password]:::sysBlock
+    %% ── SUBGRAPH 3: PHASE 3 ──
+    subgraph P3 ["PHASE 3: DOCUMENT VAULT SUBMISSION & ELIGIBILITY EVALUATION"]
+        ConnB2((( B ))):::connector --> D_Window{"Is Batch Active &<br/>Submission Window Open?"}:::decisionBlock
+        
+        D_Window -- "No: Window Closed" --> W_Closed["System Displays 'Submission Window Closed' Notice<br/>(Student waits for Admin to open window)"]:::sysBlock
+        
+        D_Window -- "Yes: Window Open" --> S11[/"Grantee Uploads 3 Required Documents:<br/>1. Course History (or COR)<br/>2. Official Grade Slip<br/>3. ID Back-to-Back & 3 Specimen Signatures"/]:::studentBlock
+        
+        S11 --> S12["System Runs Automated Document OCR & Authenticity Checks"]:::sysBlock
+        S12 --> S13[/"Grantee Reviews & Submits Complete Document Package"/]:::studentBlock
+        S13 --> ST2["Scholarship Staff Inspects Submitted Documents"]:::staffBlock
+        ST2 --> D5{"Staff Document Evaluation Decision"}:::decisionBlock
 
-    %% ── PHASE 3B: CREDENTIAL CREATION (AFTER VERIFICATION) ──
-    S8B --> S8C[/Grantee Chooses Their Password/]:::studentBlock
-    S8C --> S9[System Sets Credential -> Status: active&lt;br&gt;Scoped session upgraded to full session]:::sysBlock
+        D5 -- "Return for Resubmission" --> N1[/"System Sends Notice to Student for Document Correction"/]:::sysBlock
+        N1 --> S14[/"Grantee Resubmits Corrected Document Slot"/]:::studentBlock
+        S14 --> ST2
 
-    %% ── PHASE 4: DOCUMENT SUBMISSION VAULT ──
-    S9 --> S11[/Grantee Uploads 3 Required Documents:&lt;br&gt;1. Course History&lt;br&gt;2. Official Grade Slip&lt;br&gt;3. ID Back-to-Back &amp;amp; 3 Specimen Signatures/]:::studentBlock
-    S11 --> S12[System Runs Document OCR &amp; Previews Extracted Data]:::sysBlock
-    S12 --> S13[/Grantee Confirms Submission Package -> Status: docs_submitted/]:::studentBlock
+        D5 -- "Approved" --> E1["System Initiates Automated Scholarship Retention Evaluation"]:::sysBlock
+        E1 --> E2["System Checks Academic Retention Standards:<br/>General Weighted Average (GWA) & Failed Units Limit"]:::sysBlock
+        E2 --> E3["System Evaluates Document Authenticity & Compliance Risk Level"]:::sysBlock
+        E3 --> D6{"Does Student Meet CHED Retention Criteria?"}:::decisionBlock
 
-    %% ── PHASE 5: STAFF DOCUMENT VALIDATION ──
-    S13 --> ST2[Staff Inspects Document Package in Validation Queue]:::staffBlock
-    ST2 --> D5{Staff Document Review Decision}:::decisionBlock
+        D6 -- "Failed Academic Criteria" --> N2[/"System Issues Scholarship Deficiency Notice (Ineligible)"/]:::sysBlock
+        D6 -- "Passed Academic Criteria" --> E4["Grantee Officially Qualified (Status: ELIGIBLE)"]:::sysBlock
+        E4 --> ConnC1((( C ))):::connector
+    end
 
-    D5 -- Resubmission Requested --> N1[/System Sends Return Notification with Staff Notes/]:::sysBlock
-    N1 --> S14[/Grantee Re-uploads Rejected Document Slot Only/]:::studentBlock
-    S14 --> ST2
-
-    D5 -- Approved --> E1[System Pipeline Triggers Automated Eligibility Assessment]:::sysBlock
-
-    %% ── PHASE 6: ELIGIBILITY ASSESSMENT &amp; RISK SCORING ──
-    E1 --> E2[System Evaluates Retention Rules:&lt;br&gt;1. Active Batch Enrollment&lt;br&gt;2. Complete 3-slot Document Vault&lt;br&gt;3. Failed Subjects &lt;= Threshold]:::sysBlock
-    E2 --> E3[System Computes Risk Score &amp; Compliance Badge]:::sysBlock
-    E3 --> D6{Eligibility Outcome}:::decisionBlock
-
-    D6 -- Needs Update / Deficient --> N2[/System Sends Eligibility Deficiency Notice/]:::sysBlock
-    N2 --> S14
-
-    D6 -- Eligible --> E4[Grantee Status Set to: ELIGIBLE]:::sysBlock
-
-    %% ── PHASE 7: SEQUENTIAL BILLING &amp; AUDIT (CLEAN LINEAR FLOW) ──
-    E4 --> N3[/System Sends Formal Grantee Eligibility Notice/]:::sysBlock
-    N3 --> A6[/Admin Generates CHED TES Billing Masterlist/]:::adminBlock
-    A6 --> A7[/Admin Generates Grantee Fund Distribution &amp; Payroll Report/]:::adminBlock
-    A7 --> A8[(System Writes All Actions to Immutable Audit Logs)]:::dbBlock
-    A8 --> EndNode([● END: TES Grant Disbursed &amp; Audited]):::startEnd
-</pre>
+    %% ── SUBGRAPH 4: PHASE 4 ──
+    subgraph P4 ["PHASE 4: CHED BILLING MASTERLIST & AUDIT TRAIL"]
+        ConnC2((( C ))):::connector --> N3[/"System Dispatches Official Scholarship Eligibility Notice"/]:::sysBlock
+        N3 --> A6[/"Admin Generates Official CHED TES Billing Statement (Annex)"/]:::adminBlock
+        A6 --> A7[/"Admin Generates Grantee Fund Distribution & Payroll Roster"/]:::adminBlock
+        A7 --> A8[("System Records Complete History in Official Audit Trail")]:::dbBlock
+        A8 --> EndNode(["● END: TES Grants Disbursed & Documented in Official Records"]):::startEnd
+    end
+        </pre>
     </div>
 
+    <!-- LEGEND -->
     <div class="legend">
-        <h2>Legend</h2>
+        <h2>Flowchart Legend &amp; ANSI/ISO Symbol Standards</h2>
         <ul>
-            <li class="admin">Admin action</li>
-            <li class="student">Grantee action</li>
-            <li class="staff">Staff action</li>
-            <li class="system">Automated system process</li>
-            <li class="decision">Decision point</li>
-            <li class="store">Data store write</li>
+            <li><span class="color-box color-admin"></span><strong>Admin Action:</strong> Batch setup, masterlist
+                upload, billing generation.</li>
+            <li><span class="color-box color-student"></span><strong>Grantee Action:</strong> Portal activation, KYC
+                data input, document upload.</li>
+            <li><span class="color-box color-staff"></span><strong>Staff Action:</strong> Biometric side-by-side
+                inspection, document validation queue.</li>
+            <li><span class="color-box color-system"></span><strong>System Process:</strong> Automated OCR, facial
+                distance matching, notifications.</li>
+            <li><span class="color-box color-decision"></span><strong>Decision Diamond:</strong> Validation gates,
+                window checks, pass/fail branches.</li>
+            <li><span class="color-box color-connector"></span><strong>On-Page Connector (Circle):</strong> Modular
+                handoff between phases (A, B, C).</li>
+            <li><span class="color-box color-db"></span><strong>Data Store (Cylinder):</strong> Immutable system audit
+                logs &amp; database transactions.</li>
         </ul>
-        <p style="margin-top:8px;">
-            Parallelogram nodes denote manual input/output; rectangles denote processing;
-            diamonds denote decisions; the cylinder denotes a persistent data store.
-        </p>
     </div>
 
     <script type="module">
-        try {
-            const { default: mermaid } = await import('https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs');
-            mermaid.initialize({
-                startOnLoad: false,
-                theme: 'base',
-                flowchart: { htmlLabels: true, curve: 'basis', useMaxWidth: true },
-                themeVariables: { fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif", fontSize: '13px' }
-            });
-            await mermaid.run({ querySelector: '.mermaid' });
-        } catch (error) {
-            document.getElementById('fallback').style.display = 'block';
-            console.error('Mermaid failed to load or render.', error);
-        }
-    </script>
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
 
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'base',
+            flowchart: {
+                htmlLabels: true,
+                curve: 'basis',
+                useMaxWidth: true
+            },
+            themeVariables: {
+                fontFamily: "'Segoe UI', -apple-system, sans-serif",
+                fontSize: '12px'
+            }
+        });
+
+        window.switchView = function (mode) {
+            const modular = document.getElementById('modularView');
+            const unified = document.getElementById('unifiedView');
+            const tabs = document.querySelectorAll('.view-tab');
+
+            if (mode === 'modular') {
+                modular.style.display = 'block';
+                unified.style.display = 'none';
+                tabs[0].classList.add('active');
+                tabs[1].classList.remove('active');
+            } else {
+                modular.style.display = 'none';
+                unified.style.display = 'block';
+                tabs[0].classList.remove('active');
+                tabs[1].classList.add('active');
+            }
+        };
+
+        window.toggleDefenseScript = function () {
+            const el = document.getElementById('defenseScript');
+            el.style.display = el.style.display === 'none' ? 'block' : 'none';
+        };
+    </script>
 </body>
+
 </html>
