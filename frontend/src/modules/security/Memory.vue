@@ -1,40 +1,32 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
+import { useQuery } from "@tanstack/vue-query";
+import { apiFetch } from "@/api/client";
 import { IconDatabase, IconSearch, IconShieldCheck, IconTrash } from "@tabler/icons-vue";
 import PageHeader from "@/components/ui/PageHeader.vue";
 import DataTable from "@/components/tables/DataTable.vue";
 const query = ref("");
-const records = ref([
-  [
-    "SEC-2026-0184",
-    "Repeated failed login pattern",
-    "Authentication",
-    "System Developer",
-    "July 11, 2026",
-    "Active",
-  ],
-  [
-    "SEC-2026-0172",
-    "Document hash duplicate",
-    "File integrity",
-    "Maria Santos",
-    "July 9, 2026",
-    "Retained",
-  ],
-  [
-    "SEC-2026-0158",
-    "Unusual export volume",
-    "Data access",
-    "Staff Account",
-    "July 5, 2026",
-    "Reviewed",
-  ],
-]);
+type Finding = { id: number; title: string; category: string; status: string; created_at: string; related_user?: { name: string } | null };
+const findingsQuery = useQuery({ queryKey: ["security-findings", "memory"], queryFn: () => apiFetch<{ data: { data: Finding[] } }>("/api/security/findings") });
+const records = computed(() => (findingsQuery.data.value?.data.data ?? []).map((finding) => [
+  `SEC-${String(finding.id).padStart(6, "0")}`,
+  finding.title,
+  finding.category,
+  finding.related_user?.name ?? "—",
+  new Date(finding.created_at).toLocaleDateString(),
+  finding.status,
+]));
 const rows = computed(() =>
   records.value.filter((record) =>
     record.join(" ").toLowerCase().includes(query.value.toLowerCase()),
   ),
 );
+const stats = computed(() => [
+  ["Security findings", records.value.length],
+  ["Open", records.value.filter((record) => record[5] === "open").length],
+  ["Resolved", records.value.filter((record) => record[5] === "resolved").length],
+  ["Ignored", records.value.filter((record) => record[5] === "ignored").length],
+]);
 </script>
 <template>
   <div>
@@ -44,12 +36,7 @@ const rows = computed(() =>
     />
     <section class="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
       <article
-        v-for="item in [
-          ['Retained signals', '184'],
-          ['Active patterns', '12'],
-          ['Reviewed', '159'],
-          ['Retention', '365 days'],
-        ]"
+        v-for="item in stats"
         :key="item[0]"
         class="rounded-lg border bg-surface p-4"
       >
@@ -69,8 +56,8 @@ const rows = computed(() =>
       />
     </div>
     <DataTable
-      :headings="['Signal ID', 'Summary', 'Category', 'Subject', 'Last observed', 'Status', '']"
-      ><tr v-for="record in rows" :key="record[0]">
+      :headings="['Signal ID', 'Summary', 'Category', 'Subject', 'Last observed', 'Status']"
+      ><tr v-if="findingsQuery.isLoading.value"><td colspan="7" class="p-8 text-center text-text-muted">Loading retained signals…</td></tr><tr v-for="record in rows" :key="record[0]">
         <td class="px-3 py-3 font-mono">{{ record[0] }}</td>
         <td class="px-3 py-3 font-medium">{{ record[1] }}</td>
         <td class="px-3 py-3 text-text-muted">{{ record[2] }}</td>
@@ -89,7 +76,7 @@ const rows = computed(() =>
         </td>
       </tr>
       <tr v-if="!rows.length">
-        <td colspan="7" class="p-8 text-center text-text-muted">
+        <td colspan="6" class="p-8 text-center text-text-muted">
           No security memory records found.
         </td>
       </tr></DataTable

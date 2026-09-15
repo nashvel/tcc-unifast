@@ -4,7 +4,6 @@ import { useI18n } from "vue-i18n";
 import { useQuery } from "@tanstack/vue-query";
 import { apiFetch } from "@/api/client";
 import { GitCommit, GitBranch, Github, ExternalLink, Loader2, Activity, Calendar, RefreshCcw } from "lucide-vue-next";
-import { isMockMode } from "@/api/client";
 import PageHeader from "@/components/ui/PageHeader.vue";
 import TablePagination from "@/components/tables/TablePagination.vue";
 import type { PaginationMeta } from "@/api";
@@ -158,10 +157,9 @@ const paginationMeta = computed<PaginationMeta>(() => {
           <p class="text-xs font-medium text-text-muted">Repository</p>
           <p class="truncate text-sm font-bold text-text">
             <template v-if="changelog?.repo">
-              <a v-if="!isMockMode" :href="'https://github.com/' + changelog.repo" target="_blank" class="hover:text-primary hover:underline">
+              <a :href="'https://github.com/' + changelog.repo" target="_blank" rel="noopener noreferrer" class="hover:text-primary hover:underline">
                 {{ changelog.repo }}
               </a>
-              <span v-else class="cursor-not-allowed opacity-80">{{ changelog.repo }}</span>
             </template>
             <span v-else>Loading...</span>
           </p>
@@ -183,12 +181,9 @@ const paginationMeta = computed<PaginationMeta>(() => {
           <!-- Avatar -->
           <div class="flex-shrink-0 pt-0.5">
             <template v-if="commitInfo.author">
-              <a v-if="!isMockMode" :href="commitInfo.author.html_url" target="_blank">
+              <a :href="commitInfo.author.html_url" target="_blank" rel="noopener noreferrer">
                 <img :src="commitInfo.author.avatar_url" class="h-8 w-8 rounded-full border border-border shadow-xs" alt="Author" />
               </a>
-              <span v-else class="cursor-not-allowed">
-                <img :src="commitInfo.author.avatar_url" class="h-8 w-8 rounded-full border border-border shadow-xs opacity-80" alt="Author" />
-              </span>
             </template>
             <div v-else class="flex h-8 w-8 items-center justify-center rounded-full bg-surface-muted text-text-soft border border-border shadow-xs">
               <Github :size="16" />
@@ -199,20 +194,14 @@ const paginationMeta = computed<PaginationMeta>(() => {
           <div class="flex-1 min-w-0">
             <div class="flex items-start justify-between gap-4">
               <h4 class="truncate text-sm font-medium text-text">
-                <a v-if="!isMockMode" :href="commitInfo.html_url" target="_blank" class="hover:text-primary hover:underline">
+                <a :href="commitInfo.html_url" target="_blank" rel="noopener noreferrer" class="hover:text-primary hover:underline">
                   {{ commitInfo.commit.message.split('\n')[0] }}
                 </a>
-                <span v-else class="cursor-not-allowed opacity-90">
-                  {{ commitInfo.commit.message.split('\n')[0] }}
-                </span>
               </h4>
-              <a v-if="!isMockMode" :href="commitInfo.html_url" target="_blank" class="flex-shrink-0 text-xs font-mono text-text-muted hover:text-primary">
+              <a :href="commitInfo.html_url" target="_blank" rel="noopener noreferrer" class="flex-shrink-0 text-xs font-mono text-text-muted hover:text-primary">
                 {{ commitInfo.sha.substring(0, 7) }}
                 <ExternalLink :size="12" class="inline-block ml-0.5 -mt-0.5" />
               </a>
-              <span v-else class="flex-shrink-0 text-xs font-mono text-text-muted cursor-not-allowed opacity-80">
-                {{ commitInfo.sha.substring(0, 7) }}
-              </span>
             </div>
             
             <div class="mt-0.5 flex items-center gap-1.5 text-xs text-text-muted">

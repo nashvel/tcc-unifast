@@ -15,7 +15,7 @@ import PermissionsView from "./Permissions.vue";
 import UserPermissionsModal from "./UserPermissionsModal.vue";
 import { translateKnownText } from "@/i18n/knownText";
 import { withLang } from "@/i18n/routeLang";
-import { apiFetch, isMockMode } from "@/api/client";
+import { apiFetch } from "@/api/client";
 import { useToast } from "@/composables/useToast";
 import { useUserModules } from "@/composables/useRbac";
 import type { RbacUserModuleRow } from "@/api/rbac";
@@ -37,45 +37,53 @@ const search = ref("");
 const roleFilter = ref("All roles");
 const statusFilter = ref("All statuses");
 const userDialog = ref(false);
-const accountDialog = ref(false);
-const accountAction = ref("");
-const accountName = ref("");
+const invite = ref({ email: "", role: "staff" });
+const saving = ref(false);
 
-function confirmAccount(action: string, name: string) {
-  accountAction.value = action;
-  accountName.value = name;
-  accountDialog.value = true;
-}
-
-const initialUsers: any[][] = [
-  ["sysadmin", "System Developer", "admin@unifast.gov.ph", "Developer", true, true, "Jul 11, 2026, 7:41 PM"],
-  ["office.head", "Office Administrator", "head@unifast.gov.ph", "Admin", true, true, "Jul 11, 2026, 5:12 PM"],
-  ["unifast.staff", "UniFAST Staff", "staff@unifast.gov.ph", "Staff", false, true, "Jul 11, 2026, 4:48 PM"],
-  ["reviewer.01", "Document Reviewer", "reviewer@unifast.gov.ph", "Staff", false, false, "Jul 8, 2026, 9:16 AM"],
-];
-const users = ref<any[][]>(isMockMode ? initialUsers : []);
+const users = ref<any[][]>([]);
 
 async function loadUsers() {
   try {
     const res = await apiFetch<{ data: any[] }>("/api/collaborators");
-    if (res.data && res.data.length > 0) {
-      users.value = res.data.map((collab) => [
+    users.value = (res.data ?? []).map((collab) => [
         collab.email.split("@")[0],
         collab.name,
         collab.email,
         collab.role.charAt(0).toUpperCase() + collab.role.slice(1),
         true,
         collab.status === "active" || collab.status === "pending",
-        collab.invitedAt || "Recent",
+        collab.invitedAt ?? "—",
+        collab.id,
       ]);
-    } else if (isMockMode) {
-      users.value = initialUsers;
-    } else {
-      users.value = [];
-    }
   } catch {
-    if (isMockMode) users.value = initialUsers;
-    else users.value = [];
+    users.value = [];
+  }
+}
+
+async function accountAction(user: any[], action: "reset" | "activate" | "deactivate") {
+  saving.value = true;
+  try {
+    const id = user[7];
+    if (action === "reset") await apiFetch(`/api/collaborators/${id}/password-reset`, { method: "POST" });
+    else await apiFetch(`/api/collaborators/${id}${action === "activate" ? "/reactivate" : ""}`, { method: action === "activate" ? "PATCH" : "DELETE" });
+    toast.success(action === "reset" ? "Password reset link sent." : `Account ${action}d.`);
+    await loadUsers();
+  } catch (error) { toast.error(error instanceof Error ? error.message : "Unable to update account."); } finally { saving.value = false; }
+}
+
+async function createUser() {
+  if (!invite.value.email.trim()) return toast.error("Email is required.");
+  saving.value = true;
+  try {
+    await apiFetch("/api/collaborators/invite", { method: "POST", body: JSON.stringify(invite.value) });
+    toast.success("Invitation sent.");
+    userDialog.value = false;
+    invite.value = { email: "", role: "staff" };
+    await loadUsers();
+  } catch (error) {
+    toast.error(error instanceof Error ? error.message : "Unable to invite user.");
+  } finally {
+    saving.value = false;
   }
 }
 
@@ -115,17 +123,7 @@ function openUserPermissions(userRow: any[]) {
     selectedUser.value = found;
     permissionsModalOpen.value = true;
   } else {
-    // If not found yet, create fallback object so modal still functions
-    selectedUser.value = {
-      id: 0,
-      name: String(userRow[1]),
-      email: userEmail,
-      role: String(userRow[3]).toLowerCase(),
-      is_developer: false,
-      is_assignable: true,
-      assigned_modules: [],
-    };
-    permissionsModalOpen.value = true;
+    toast.error("User permissions are still loading. Please try again shortly.");
   }
 }
 
@@ -136,6 +134,18 @@ const activeModalUser = computed(() => {
     selectedUser.value
   );
 });
+
+function exportUsers() {
+  const header = ["Username", "Name", "Email", "Role", "Status", "Invited at"];
+  const lines = filtered.value.map((user) => [user[0], user[1], user[2], user[3], user[5] ? "active" : "inactive", user[6]]);
+  const csv = [header, ...lines].map((line) => line.map((value) => `"${String(value).replaceAll('"', '""')}"`).join(",")).join("\n");
+  const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "tcc-unifast-users.csv";
+  link.click();
+  URL.revokeObjectURL(url);
+}
 </script>
 
 <template>
@@ -152,7 +162,7 @@ const activeModalUser = computed(() => {
         </div>
         <div class="flex gap-2">
           <AppTour />
-          <button class="inline-flex h-9 items-center gap-1.5 rounded-md border bg-surface px-3 text-xs">
+          <button class="inline-flex h-9 items-center gap-1.5 rounded-md border bg-surface px-3 text-xs" @click="exportUsers">
             <IconDownload :size="14" />{{ t("common.export") }}
           </button>
           <RouterLink
@@ -237,13 +247,15 @@ const activeModalUser = computed(() => {
                   </button>
                   <button
                     class="inline-flex items-center gap-1 text-text-muted hover:text-text"
-                    @click="confirmAccount('Reset password', String(user[1]))"
+                    :disabled="saving"
+                    @click="accountAction(user, 'reset')"
                   >
                     <IconKey :size="12" />{{ t("users.reset") }}
                   </button>
                   <button
                     class="text-text-muted hover:text-danger"
-                    @click="confirmAccount(user[5] ? 'Deactivate' : 'Activate', String(user[1]))"
+                    :disabled="saving"
+                    @click="accountAction(user, user[5] ? 'deactivate' : 'activate')"
                   >
                     {{ user[5] ? t("users.deactivate") : t("users.activate") }}
                   </button>
@@ -261,34 +273,19 @@ const activeModalUser = computed(() => {
       <!-- Create user dialog -->
       <AppDialog v-model="userDialog" :title="t('users.createStaffUser')" :description="t('users.createStaffUserDescription')" size="lg">
         <div class="grid gap-4 sm:grid-cols-2">
-          <label class="text-xs font-medium">{{ t("users.fullName") }}<input class="mt-1.5 h-10 w-full rounded-md border px-3 text-sm" :placeholder="t('users.fullName')" /></label>
-          <label class="text-xs font-medium">{{ t("users.username") }}<input class="mt-1.5 h-10 w-full rounded-md border px-3 text-sm" :placeholder="t('users.usernamePlaceholder')" /></label>
-          <label class="text-xs font-medium">{{ t("common.email") }}<input type="email" class="mt-1.5 h-10 w-full rounded-md border px-3 text-sm" placeholder="name@unifast.gov.ph" /></label>
-          <label class="text-xs font-medium">{{ t("users.role") }}<select class="mt-1.5 h-10 w-full rounded-md border bg-surface px-3 text-sm">
-            <option>{{ t("roles.staff") }}</option>
-            <option>{{ t("roles.admin") }}</option>
+          <label class="text-xs font-medium sm:col-span-2">{{ t("common.email") }}<input v-model="invite.email" type="email" required class="mt-1.5 h-10 w-full rounded-md border px-3 text-sm" placeholder="name@unifast.gov.ph" /></label>
+          <label class="text-xs font-medium">{{ t("users.role") }}<select v-model="invite.role" class="mt-1.5 h-10 w-full rounded-md border bg-surface px-3 text-sm">
+            <option value="staff">{{ t("roles.staff") }}</option>
+            <option value="admin">{{ t("roles.admin") }}</option>
           </select></label>
           <label class="flex items-center gap-2 text-xs sm:col-span-2"><input type="checkbox" checked />{{ t("users.requirePasswordMfa") }}</label>
         </div>
         <template #footer="{ close }">
           <button class="rounded-md border px-4 py-2 text-xs" @click="close">{{ t("common.cancel") }}</button>
-          <button class="rounded-md bg-primary px-4 py-2 text-xs text-white" @click="close">{{ t("users.createUser") }}</button>
+          <button :disabled="saving" class="rounded-md bg-primary px-4 py-2 text-xs text-white disabled:opacity-50" @click="createUser">{{ saving ? 'Sending…' : t("users.createUser") }}</button>
         </template>
       </AppDialog>
 
-      <!-- Account action dialog -->
-      <AppDialog v-model="accountDialog" :title="t('users.accountActionTitle', { action: translateKnownText(t, accountAction) })" :description="t('users.accountActionDescription', { action: translateKnownText(t, accountAction), name: accountName })" size="sm">
-        <label v-if="accountAction === 'Reset password'" class="text-xs font-medium">{{ t("users.resetMethod") }}<select class="mt-1.5 h-10 w-full rounded-md border bg-surface px-3 text-sm">
-          <option>{{ t("users.sendPasswordResetEmail") }}</option>
-          <option>{{ t("users.generateTemporaryPassword") }}</option>
-          <option>{{ t("users.forceResetAtNextLogin") }}</option>
-        </select></label>
-        <p v-else class="text-sm text-text-muted">{{ t("users.confirmAccountAction", { action: translateKnownText(t, accountAction.toLowerCase()) }) }}</p>
-        <template #footer="{ close }">
-          <button class="rounded-md border px-4 py-2 text-xs" @click="close">{{ t("common.cancel") }}</button>
-          <button class="rounded-md bg-primary px-4 py-2 text-xs text-white" @click="close">{{ t("common.confirm") }}</button>
-        </template>
-      </AppDialog>
     </div>
 
     <!-- User Module Permissions Modal -->

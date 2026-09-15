@@ -2,7 +2,7 @@
 import { onMounted, ref } from "vue";
 import { IconHelpCircle, IconPlus, IconEdit, IconTrash, IconLoader, IconAlertTriangle } from "@tabler/icons-vue";
 import PageHeader from "@/components/ui/PageHeader.vue";
-import { apiFetch, isMockMode } from "@/api/client";
+import { apiFetch } from "@/api/client";
 import { toast } from "@/composables/useToast";
 
 type FaqItem = {
@@ -12,12 +12,6 @@ type FaqItem = {
   category: string;
   is_active?: boolean;
 };
-
-const initialFaqs: FaqItem[] = [
-  { id: 1, question: "Who is eligible for the Tertiary Education Subsidy (TES)?", answer: "Filipino students currently enrolled in accredited State Universities and Colleges (SUCs) or Local Universities and Colleges (LUCs) like Tagoloan Community College with valid Listahanan 2.0 or 3.0 registration.", category: "Grants & Eligibility", is_active: true },
-  { id: 2, question: "What documents are required for initial verification?", answer: "Enrolled students must submit a Certificate of Indigency, Transcript of Records or Grade Slip, Official Student ID, and Proof of Family Income.", category: "Document Vault", is_active: true },
-  { id: 3, question: "How will subsidy disbursements be distributed?", answer: "Subsidy disbursements are directly deposited to verified Landbank cash cards or issued via official TCC institutional payroll checks under UniFAST supervision.", category: "Disbursement", is_active: true },
-];
 
 const faqs = ref<FaqItem[]>([]);
 const loading = ref(false);
@@ -32,19 +26,11 @@ async function loadFaqs() {
   errorMessage.value = "";
   try {
     const res = await apiFetch<{ data: FaqItem[] }>("/api/faqs/all");
-    if (res.data && res.data.length > 0) {
-      faqs.value = res.data;
-    } else {
-      faqs.value = isMockMode ? initialFaqs : [];
-    }
+    faqs.value = res.data ?? [];
   } catch (err: any) {
-    if (isMockMode) {
-      faqs.value = initialFaqs;
-    } else {
-      errorMessage.value = err?.message || "Failed to load FAQs from backend server.";
-      toast.error(errorMessage.value);
-      faqs.value = [];
-    }
+    errorMessage.value = err?.message || "Failed to load FAQs from backend server.";
+    toast.error(errorMessage.value);
+    faqs.value = [];
   } finally {
     loading.value = false;
   }
@@ -74,18 +60,7 @@ async function saveFaq() {
     toast.success(isEdit ? "FAQ updated" : "FAQ created");
     dialog.value = false;
   } catch (err: any) {
-    if (isMockMode) {
-      if (isEdit) {
-        const idx = faqs.value.findIndex((f) => f.id === form.value.id);
-        if (idx !== -1) faqs.value[idx] = { ...form.value };
-      } else {
-        faqs.value.push({ ...form.value, id: Date.now(), is_active: true });
-      }
-      toast.success(isEdit ? "FAQ updated (Mock mode)" : "FAQ created (Mock mode)");
-      dialog.value = false;
-    } else {
-      toast.error(err?.message || "Failed to save FAQ on server.");
-    }
+    toast.error(err?.message || "Failed to save FAQ on server.");
   }
 }
 
@@ -106,15 +81,7 @@ async function confirmDelete() {
     }
     toast.success("FAQ deactivated (soft deleted).");
   } catch (err: any) {
-    if (isMockMode) {
-      const target = faqs.value.find((f) => f.id === faq.id);
-      if (target) {
-        target.is_active = false;
-      }
-      toast.success("FAQ deactivated (Mock mode)");
-    } else {
-      toast.error(err?.message || "Failed to deactivate FAQ on server.");
-    }
+    toast.error(err?.message || "Failed to deactivate FAQ on server.");
   } finally {
     confirmDeleteDialog.value = false;
     selectedFaq.value = null;

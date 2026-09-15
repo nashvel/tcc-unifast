@@ -209,7 +209,7 @@ export const TOURS: Record<string, Tour> = {
       {
         target: '[data-tour="support-conversation"]',
         title: "Conversation view",
-        body: "Read the thread, open the full ticket, and send a mocked support reply.",
+        body: "Read the thread, open the full ticket, and send a support reply.",
       },
     ],
   },

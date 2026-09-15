@@ -1,15 +1,16 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useQuery } from '@tanstack/vue-query';
-import { listFormResponses, exportFormResponses, getFormResponse } from '@/api/forms';
-import type { FormDetail, FormResponse, FormResponseDetail } from '@/api/types';
+import { listFormResponses, exportFormResponses } from '@/api/forms';
+import { apiFetch } from '@/api/client';
+import AppDialog from '@/components/dialogs/AppDialog.vue';
+import type { FormDetail, FormResponse } from '@/api/types';
 import { 
   IconDownload, 
   IconEye, 
   IconInbox, 
   IconCheck, 
   IconClock,
-  IconX,
   IconPhoto
 } from '@tabler/icons-vue';
 
@@ -25,20 +26,21 @@ const { data: responseData, isLoading } = useQuery({
 });
 
 const isExporting = ref(false);
-
-const showDetail = ref(false);
+const selectedResponse = ref<(FormResponse & { responses?: Record<string, unknown> }) | null>(null);
 const detailLoading = ref(false);
-const detail = ref<FormResponseDetail | null>(null);
+const detailDialogOpen = ref(false);
+const detailError = ref("");
 
-async function openDetail(resId: number) {
-  showDetail.value = true;
+async function showResponseDetail(responseId: number) {
+  detailDialogOpen.value = true;
   detailLoading.value = true;
+  selectedResponse.value = null;
+  detailError.value = "";
   try {
-    detail.value = await getFormResponse(props.form.id, resId);
+    const result = await apiFetch<{ data: FormResponse & { responses: Record<string, unknown> } }>(`/api/forms/${props.form.id}/responses/${responseId}`);
+    selectedResponse.value = result.data;
   } catch (error) {
-    console.error('Failed to load response detail:', error);
-    alert('Failed to load response detail.');
-    showDetail.value = false;
+    detailError.value = error instanceof Error ? error.message : "Unable to load this response.";
   } finally {
     detailLoading.value = false;
   }
@@ -89,8 +91,8 @@ function isImageUpload(val: unknown): boolean {
 }
 
 function fileUrl(fieldName: string): string {
-  if (!detail.value) return '#';
-  return `/api/forms/${props.form.id}/responses/${detail.value.id}/files/${encodeURIComponent(fieldName)}`;
+  if (!selectedResponse.value) return '#';
+  return `/api/forms/${props.form.id}/responses/${selectedResponse.value.id}/files/${encodeURIComponent(fieldName)}`;
 }
 </script>
 
@@ -114,42 +116,56 @@ function fileUrl(fieldName: string): string {
       </button>
     </div>
 
-    <!-- Table Area -->
+    <!-- Content -->
     <div class="flex-1 overflow-auto p-6">
-      <div v-if="isLoading" class="space-y-4 animate-pulse">
-        <div class="h-12 bg-surface-muted rounded-lg" v-for="i in 5" :key="i"></div>
+      <div v-if="isLoading" class="flex justify-center items-center h-48">
+        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
 
-      <div v-else-if="!responseData?.data?.length" class="flex flex-col items-center justify-center h-64 text-text-muted border-2 border-dashed rounded-xl border-border">
-        <IconInbox :size="48" class="opacity-20 mb-4" />
-        <p class="font-medium text-lg text-text">No responses yet</p>
-        <p class="text-sm">Once users submit the form, their answers will appear here.</p>
+      <div v-else-if="!responseData?.data || responseData.data.length === 0" class="flex flex-col items-center justify-center h-64 text-center">
+        <div class="w-12 h-12 rounded-full bg-surface-muted flex items-center justify-center text-text-muted mb-3">
+          <IconInbox :size="24" />
+        </div>
+        <h3 class="font-semibold text-lg text-text">No responses yet</h3>
+        <p class="text-text-muted text-sm max-w-sm mt-1">
+          Responses will appear here once users start submitting the form.
+        </p>
       </div>
 
-      <div v-else class="bg-surface border rounded-xl overflow-hidden shadow-sm">
-        <table class="w-full text-left text-sm whitespace-nowrap">
-          <thead class="bg-surface-muted border-b text-xs uppercase text-text-muted font-semibold">
-            <tr>
-              <th class="px-6 py-4">ID</th>
-              <th class="px-6 py-4">Respondent</th>
-              <th class="px-6 py-4">Student ID</th>
-              <th class="px-6 py-4">Batch</th>
-              <th class="px-6 py-4">Submitted At</th>
-              <th class="px-6 py-4 text-right">Actions</th>
+      <div v-else class="border rounded-xl bg-surface overflow-hidden shadow-sm">
+        <table class="w-full text-left border-collapse text-sm">
+          <thead>
+            <tr class="border-b bg-surface-muted/50 text-text-muted font-medium">
+              <th class="px-6 py-3.5">Respondent</th>
+              <th class="px-6 py-3.5">Status</th>
+              <th class="px-6 py-3.5">Submitted At</th>
+              <th class="px-6 py-3.5 text-right">Actions</th>
             </tr>
           </thead>
           <tbody class="divide-y">
-            <tr v-for="res in responseData.data" :key="res.id" class="hover:bg-surface-muted/50 transition-colors">
-              <td class="px-6 py-4 text-text-muted">#{{ res.id }}</td>
+            <tr 
+              v-for="res in responseData.data" 
+              :key="res.id"
+              class="hover:bg-surface-muted/20 transition-colors"
+            >
               <td class="px-6 py-4">
-                <div class="font-medium text-text flex items-center gap-2">
+                <div class="font-medium text-text">
                   {{ res.grantee_name || 'Anonymous' }}
-                  <span v-if="res.is_authenticated" class="bg-success-soft text-success text-[10px] px-1.5 py-0.5 rounded font-bold" title="Authenticated User">AUTH</span>
+                </div>
+                <div v-if="res.student_id" class="text-xs text-text-muted">
+                  {{ res.student_id }}
                 </div>
               </td>
-              <td class="px-6 py-4 text-text-muted">{{ res.student_id || '—' }}</td>
-              <td class="px-6 py-4 text-text-muted">{{ res.batch_name || '—' }}</td>
-              <td class="px-6 py-4 text-text-muted flex items-center gap-1.5">
+              <td class="px-6 py-4">
+                <span 
+                  class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium"
+                  :class="res.is_authenticated ? 'bg-success/10 text-success' : 'bg-surface-muted text-text-muted'"
+                >
+                  <IconCheck v-if="res.is_authenticated" :size="12" />
+                  {{ res.is_authenticated ? 'Authenticated' : 'Public' }}
+                </span>
+              </td>
+              <td class="px-6 py-4 text-text-muted flex items-center gap-1.5 mt-1">
                 <IconClock :size="14" class="opacity-50" />
                 {{ formatDate(res.submitted_at) }}
               </td>
@@ -157,7 +173,7 @@ function fileUrl(fieldName: string): string {
                 <button 
                   class="text-primary hover:text-primary-dark hover:bg-primary-soft p-1.5 rounded transition-colors inline-flex"
                   title="View Details"
-                  @click="openDetail(res.id)"
+                  @click="showResponseDetail(res.id)"
                 >
                   <IconEye :size="18" />
                 </button>
@@ -191,79 +207,59 @@ function fileUrl(fieldName: string): string {
       </div>
     </div>
 
-    <!-- Detail Modal -->
-    <div v-if="showDetail" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" @click.self="showDetail = false">
-      <div class="w-full max-w-lg rounded-xl border bg-surface shadow-xl flex flex-col max-h-[85vh]">
-        <div class="flex items-center justify-between border-b px-5 py-4">
-          <h2 class="text-sm font-semibold">Response Detail</h2>
-          <button class="grid size-7 place-items-center rounded hover:bg-surface-muted transition" @click="showDetail = false">
-            <IconX :size="15" />
-          </button>
+    <!-- Response Details Dialog -->
+    <AppDialog :model-value="detailDialogOpen" title="Response details" @update:model-value="detailDialogOpen = false">
+      <p v-if="detailLoading" class="text-sm text-text-muted">Loading response…</p>
+      <p v-else-if="detailError" class="text-sm text-danger">{{ detailError }}</p>
+      <div v-else-if="selectedResponse" class="space-y-4 text-sm max-h-[70vh] overflow-y-auto pr-1">
+        <!-- Metadata -->
+        <div class="rounded-lg bg-surface-muted/50 p-3 text-xs space-y-1">
+          <p><span class="font-medium">Submitted:</span> {{ formatDate(selectedResponse.submitted_at) }}</p>
+          <p><span class="font-medium">Respondent:</span> {{ selectedResponse.grantee_name || 'Anonymous' }} <span v-if="selectedResponse.student_id" class="font-mono text-text-muted">({{ selectedResponse.student_id }})</span></p>
+          <p><span class="font-medium">Authenticated:</span> {{ selectedResponse.is_authenticated ? 'Yes' : 'No (public)' }}</p>
+          <p v-if="selectedResponse.honeypot_triggered" class="text-danger font-semibold">⚠ Honeypot was triggered</p>
         </div>
 
-        <div class="flex-1 overflow-y-auto px-5 py-4">
-          <div v-if="detailLoading" class="py-12 text-center text-sm text-text-muted">
-            Loading response…
-          </div>
-          <template v-else-if="detail">
-            <!-- Metadata -->
-            <div class="mb-4 rounded-lg bg-surface-muted/50 p-3 text-xs space-y-1">
-              <p><span class="font-medium">Submitted:</span> {{ formatDate(detail.submitted_at) }}</p>
-              <p><span class="font-medium">Respondent:</span> {{ detail.grantee_name || 'Anonymous' }} <span v-if="detail.student_id" class="font-mono text-text-muted">({{ detail.student_id }})</span></p>
-              <p><span class="font-medium">Authenticated:</span> {{ detail.is_authenticated ? 'Yes' : 'No (public)' }}</p>
-              <p v-if="detail.honeypot_triggered" class="text-danger font-semibold">⚠ Honeypot was triggered</p>
-            </div>
-
-            <!-- Answers -->
-            <div class="space-y-3">
-              <div
-                v-for="(value, key) in detail.responses"
-                :key="String(key)"
-                class="rounded-lg border p-3"
-              >
-                <p class="text-xs font-medium text-text-muted mb-1.5">{{ String(key) }}</p>
-                
-                <!-- Uploaded file / image handling -->
-                <div v-if="isFormUpload(value)" class="mt-1">
-                  <div v-if="isImageUpload(value)" class="space-y-2">
-                    <img
-                      :src="fileUrl(String(key))"
-                      alt="Uploaded image attachment"
-                      class="max-h-56 max-w-full rounded-md border object-contain bg-surface-muted/30 p-1"
-                      loading="lazy"
-                    />
-                    <div>
-                      <a
-                        :href="fileUrl(String(key))"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        class="inline-flex items-center gap-1 text-xs text-primary font-medium hover:underline"
-                      >
-                        <IconPhoto :size="13" /> Open full image
-                      </a>
-                    </div>
-                  </div>
-                  <div v-else>
+        <dl class="space-y-3 text-sm">
+          <div v-for="(value, key) in selectedResponse.responses" :key="key" class="border-b pb-3">
+            <dt class="font-medium text-text text-xs mb-1">{{ key }}</dt>
+            <dd class="text-text-muted">
+              <!-- Uploaded file / image handling -->
+              <div v-if="isFormUpload(value)" class="mt-1">
+                <div v-if="isImageUpload(value)" class="space-y-2">
+                  <img
+                    :src="fileUrl(String(key))"
+                    alt="Uploaded image attachment"
+                    class="max-h-52 max-w-full rounded-md border object-contain bg-surface-muted/30 p-1"
+                    loading="lazy"
+                  />
+                  <div>
                     <a
                       :href="fileUrl(String(key))"
                       target="_blank"
                       rel="noopener noreferrer"
-                      class="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs text-primary font-medium hover:bg-surface-muted transition"
+                      class="inline-flex items-center gap-1 text-xs text-primary font-medium hover:underline"
                     >
-                      <IconDownload :size="13" /> Download attached file
+                      <IconPhoto :size="13" /> Open full image
                     </a>
                   </div>
                 </div>
-
-                <!-- Text interpolation only -->
-                <p v-else class="text-sm font-normal text-text">
-                  {{ Array.isArray(value) ? value.join(', ') : String(value ?? '—') }}
-                </p>
+                <div v-else>
+                  <a
+                    :href="fileUrl(String(key))"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs text-primary font-medium hover:bg-surface-muted transition"
+                  >
+                    <IconDownload :size="13" /> Download attached file
+                  </a>
+                </div>
               </div>
-            </div>
-          </template>
-        </div>
+              <span v-else class="whitespace-pre-wrap">{{ Array.isArray(value) ? value.join(', ') : String(value ?? '—') }}</span>
+            </dd>
+          </div>
+        </dl>
       </div>
-    </div>
+    </AppDialog>
   </div>
 </template>

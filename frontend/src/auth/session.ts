@@ -32,28 +32,13 @@ export type AuthUser = {
   onboarding_path?: string;
 };
 
-/** In-memory mock-only session flag (never used for real auth cookies). */
-const MOCK_SESSION_KEY = "unifast_mock_session";
-
 export const authSession = reactive<{ user: AuthUser | null; loaded: boolean }>({
   user: null,
   loaded: false,
 });
 
-export function hasMockSession(): boolean {
-  if (typeof sessionStorage === "undefined") return false;
-  return sessionStorage.getItem(MOCK_SESSION_KEY) === "1";
-}
-
-export function setMockSession(active: boolean) {
-  if (typeof sessionStorage === "undefined") return;
-  if (active) sessionStorage.setItem(MOCK_SESSION_KEY, "1");
-  else sessionStorage.removeItem(MOCK_SESSION_KEY);
-}
-
 export function clearAuthSession() {
   authSession.user = null;
-  setMockSession(false);
 }
 
 export async function loadAuthUser() {

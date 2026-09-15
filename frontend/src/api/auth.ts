@@ -1,5 +1,5 @@
 import { apiFetch, ensureCsrfCookie } from "./client";
-import { clearAuthSession, setMockSession, type AuthUser } from "@/auth/session";
+import { clearAuthSession, type AuthUser } from "@/auth/session";
 
 export type LoginResult =
   | { user: AuthUser }
@@ -35,7 +35,6 @@ export async function login(email: string, password: string, captcha?: string): 
     method: "POST",
     body: JSON.stringify({ email, password, captcha: captcha ?? "" }),
   });
-  if ("user" in payload) setMockSession(true);
   return payload;
 }
 
@@ -45,7 +44,6 @@ export async function verifyTwoFactor(challengeId: string, code: string): Promis
     method: "POST",
     body: JSON.stringify({ challenge_id: challengeId, code }),
   });
-  setMockSession(true);
   return payload.user;
 }
 

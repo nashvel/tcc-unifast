@@ -361,7 +361,7 @@
     "requirePasswordMfa": "Require password change and MFA enrollment on first sign-in",
     "createUser": "Create user",
     "accountActionTitle": "{action} account",
-    "accountActionDescription": "{action} for {name}. This mock action does not persist.",
+    "accountActionDescription": "{action} for {name}.",
     "resetMethod": "Reset method",
     "sendPasswordResetEmail": "Send password reset email",
     "generateTemporaryPassword": "Generate temporary password",

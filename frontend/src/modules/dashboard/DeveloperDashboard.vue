@@ -14,7 +14,7 @@ import {
   Terminal,
   Users,
 } from "lucide-vue-next";
-import { apiFetch, isMockMode } from "@/api/client";
+import { apiFetch } from "@/api/client";
 
 type HealthItem = {
   name: string;
@@ -114,8 +114,7 @@ onMounted(loadTelemetry);
         <h1 class="text-lg font-semibold text-[var(--text)]">Developer Dashboard</h1>
         <p class="text-2xs text-[var(--text-muted)]">
           Live system health metrics, real database telemetry, and event stream.
-          <span v-if="isMockMode" class="ml-2 rounded bg-amber-500/20 px-1.5 py-0.5 text-amber-400 font-mono">Mock Mode Active</span>
-          <span v-else class="ml-2 rounded bg-emerald-500/20 px-1.5 py-0.5 text-emerald-400 font-mono">Real API Mode</span>
+            <span class="ml-2 rounded bg-emerald-500/20 px-1.5 py-0.5 text-emerald-400 font-mono">Real API Mode</span>
         </p>
       </div>
       <button

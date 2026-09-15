@@ -13,7 +13,7 @@ import {
   IconRotateClockwise,
 } from "@tabler/icons-vue";
 import PageHeader from "@/components/ui/PageHeader.vue";
-import { apiFetch, isMockMode } from "@/api/client";
+import { apiFetch } from "@/api/client";
 import { toast } from "@/composables/useToast";
 
 type Collaborator = {
@@ -33,13 +33,6 @@ type CollabSummary = {
   developers: number;
 };
 
-const initialCollaborators: Collaborator[] = [
-  { id: "1", name: "System Developer", email: "admin@unifast.gov.ph", role: "developer", access: ["*"], status: "active", invitedAt: "Jul 1, 2026" },
-  { id: "2", name: "Office Administrator", email: "head@unifast.gov.ph", role: "admin", access: ["users", "batches", "settings", "audit"], status: "active", invitedAt: "Jul 1, 2026" },
-  { id: "3", name: "UniFAST Staff", email: "staff@unifast.gov.ph", role: "staff", access: ["users", "batches", "documents", "settings", "audit"], status: "active", invitedAt: "Jul 1, 2026" },
-  { id: "4", name: "Dev Assistant", email: "dev2@unifast.gov.ph", role: "staff", access: ["documents", "grantees", "academic"], status: "pending", invitedAt: "Jul 12, 2026" },
-];
-
 const collaborators = ref<Collaborator[]>([]);
 const summary = ref<CollabSummary | null>(null);
 const loading = ref(false);
@@ -55,27 +48,13 @@ async function loadCollaborators() {
   errorMessage.value = "";
   try {
     const res = await apiFetch<{ data: Collaborator[]; summary?: CollabSummary }>("/api/collaborators");
-    if (res.data && res.data.length > 0) {
-      collaborators.value = res.data;
-      if (res.summary) {
-        summary.value = res.summary;
-      } else {
-        calculateSummary(res.data);
-      }
-    } else {
-      collaborators.value = isMockMode ? initialCollaborators : [];
-      calculateSummary(collaborators.value);
-    }
+    collaborators.value = res.data ?? [];
+    summary.value = res.summary ?? null;
   } catch (err: any) {
-    if (isMockMode) {
-      collaborators.value = initialCollaborators;
-      calculateSummary(initialCollaborators);
-    } else {
-      errorMessage.value = err?.message || "Failed to load team collaborators from server.";
-      toast.error(errorMessage.value);
-      collaborators.value = [];
-      summary.value = null;
-    }
+    errorMessage.value = err?.message || "Failed to load team collaborators from server.";
+    toast.error(errorMessage.value);
+    collaborators.value = [];
+    summary.value = null;
   } finally {
     loading.value = false;
   }
@@ -90,17 +69,16 @@ function calculateSummary(list: Collaborator[]) {
   };
 }
 
-// Filter out current logged-in developer's name & apply selected status filter
+// Apply the selected status filter to real collaborator records.
 const displayedCollaborators = computed(() => {
   return collaborators.value.filter((c) => {
-    if (c.name === "System Developer" || c.email === "admin@unifast.gov.ph") return false;
     if (statusFilter.value === "all") return true;
     return c.status === statusFilter.value;
   });
 });
 
 const inactiveCount = computed(() => {
-  return collaborators.value.filter((c) => c.status === "inactive" && c.email !== "admin@unifast.gov.ph").length;
+  return collaborators.value.filter((c) => c.status === "inactive").length;
 });
 
 function promptDeactivate(collab: Collaborator) {
@@ -121,16 +99,7 @@ async function confirmDeactivate() {
     calculateSummary(collaborators.value);
     toast.success(`Collaborator ${collab.email} set to inactive (soft deleted).`);
   } catch (err: any) {
-    if (isMockMode) {
-      const target = collaborators.value.find((c) => c.id === collab.id);
-      if (target) {
-        target.status = "inactive";
-      }
-      calculateSummary(collaborators.value);
-      toast.success(`Collaborator ${collab.email} set to inactive (Mock mode).`);
-    } else {
-      toast.error(err?.message || "Failed to deactivate collaborator on server.");
-    }
+    toast.error(err?.message || "Failed to deactivate collaborator on server.");
   } finally {
     confirmDeleteDialog.value = false;
     selectedCollab.value = null;
@@ -139,6 +108,7 @@ async function confirmDeactivate() {
 
 async function reactivateCollab(collab: Collaborator) {
   try {
+    await apiFetch(`/api/collaborators/${collab.id}/reactivate`, { method: "PATCH" });
     const target = collaborators.value.find((c) => c.id === collab.id);
     if (target) {
       target.status = "active";
@@ -167,23 +137,7 @@ async function sendInvite() {
     inviteDialog.value = false;
     newInvite.value = { email: "", role: "staff", access: [] };
   } catch (err: any) {
-    if (isMockMode) {
-      collaborators.value.push({
-        id: String(Date.now()),
-        name: newInvite.value.email.split("@")[0],
-        email: newInvite.value.email,
-        role: newInvite.value.role,
-        access: newInvite.value.access,
-        status: "pending",
-        invitedAt: "Just now",
-      });
-      calculateSummary(collaborators.value);
-      toast.success(`Invitation sent (Mock mode)`);
-      inviteDialog.value = false;
-      newInvite.value = { email: "", role: "staff", access: [] };
-    } else {
-      toast.error(err?.message || "Failed to send invitation to server.");
-    }
+    toast.error(err?.message || "Failed to send invitation to server.");
   }
 }
 

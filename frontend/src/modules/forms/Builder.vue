@@ -534,7 +534,7 @@ onMounted(() => {
           >
             <!-- Form Renderer -->
             <div class="bg-surface rounded-xl shadow-sm border p-0 overflow-hidden min-h-[400px]">
-              <!-- Mock Header -->
+              <!-- Form header accent -->
               <div class="bg-primary h-3"></div>
               
               <div class="p-6 md:p-8">

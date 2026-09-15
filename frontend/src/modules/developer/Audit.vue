@@ -11,7 +11,7 @@ import {
   IconChevronsRight,
 } from "@tabler/icons-vue";
 import PageHeader from "@/components/ui/PageHeader.vue";
-import { apiFetch, isMockMode } from "@/api/client";
+import { apiFetch } from "@/api/client";
 import { toast } from "@/composables/useToast";
 
 type AuditLog = {
@@ -31,13 +31,6 @@ type PaginationMeta = {
   total: number;
   last_page: number;
 };
-
-const mockLogs: AuditLog[] = [
-  { id: 1, timestamp: "Jul 12, 2026 10:42 AM", actor: "System Developer", role: "Developer", action: "route_view", module: "Dashboard", target: "/app", ip: "192.168.1.14" },
-  { id: 2, timestamp: "Jul 12, 2026 10:31 AM", actor: "System Developer", role: "Developer", action: "config_change", module: "Settings", target: "Updated CORS settings", ip: "192.168.1.14" },
-  { id: 3, timestamp: "Jul 12, 2026 10:15 AM", actor: "Office Administrator", role: "Admin", action: "user_create", module: "Users", target: "Created staff@unifast.gov.ph", ip: "192.168.1.10" },
-  { id: 4, timestamp: "Jul 12, 2026 09:55 AM", actor: "UniFAST Staff", role: "Staff", action: "document_review", module: "Documents", target: "Approved submission #1234", ip: "192.168.1.22" },
-];
 
 const logs = ref<AuditLog[]>([]);
 const loading = ref(false);
@@ -65,51 +58,27 @@ async function loadLogs() {
     }
 
     const res = await apiFetch<{ data: any[]; meta?: PaginationMeta }>(`/api/audit-logs?${params.toString()}`);
-    if (res.data && res.data.length > 0) {
-      logs.value = res.data.map((item) => ({
-        id: item.id,
-        timestamp: item.created_at ? new Date(item.created_at).toLocaleString() : item.timestamp || "Just now",
-        actor: item.actor || "System Developer",
-        role: item.role || "Developer",
-        action: item.action || "system_event",
-        module: item.module || "System",
-        target: item.target || "System operation",
-        ip: item.ip_address || item.ip || "127.0.0.1",
-      }));
-      if (res.meta) {
-        meta.value = res.meta;
-      } else {
-        meta.value = {
-          current_page: page.value,
-          per_page: perPage.value,
-          total: res.data.length,
-          last_page: 1,
-        };
-      }
-    } else {
-      logs.value = isMockMode ? mockLogs : [];
-      meta.value = {
-        current_page: 1,
-        per_page: perPage.value,
-        total: isMockMode ? mockLogs.length : 0,
-        last_page: 1,
-      };
-    }
+    logs.value = (res.data ?? []).map((item) => ({
+      id: item.id,
+      timestamp: item.created_at ? new Date(item.created_at).toLocaleString() : "—",
+      actor: item.actor ?? "—",
+      role: item.role ?? "—",
+      action: item.action ?? "system_event",
+      module: item.module ?? "—",
+      target: item.target ?? "—",
+      ip: item.ip_address ?? item.ip ?? "—",
+    }));
+    meta.value = res.meta ?? {
+      current_page: page.value,
+      per_page: perPage.value,
+      total: logs.value.length,
+      last_page: 1,
+    };
   } catch (err: any) {
-    if (isMockMode) {
-      logs.value = mockLogs;
-      meta.value = {
-        current_page: 1,
-        per_page: perPage.value,
-        total: mockLogs.length,
-        last_page: 1,
-      };
-    } else {
-      errorMessage.value = err?.message || "Failed to load audit trail from API server.";
-      toast.error(errorMessage.value);
-      logs.value = [];
-      meta.value = { current_page: 1, per_page: perPage.value, total: 0, last_page: 1 };
-    }
+    errorMessage.value = err?.message || "Failed to load audit trail from API server.";
+    toast.error(errorMessage.value);
+    logs.value = [];
+    meta.value = { current_page: 1, per_page: perPage.value, total: 0, last_page: 1 };
   } finally {
     loading.value = false;
   }
