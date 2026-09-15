@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
+import { useQuery } from "@tanstack/vue-query";
 import { useRoute, useRouter } from "vue-router";
 import {
   IconAlertTriangle,
@@ -10,7 +11,7 @@ import {
   IconShieldCheck,
   IconTrash,
 } from "@tabler/icons-vue";
-import { findings } from "@/constants/mockAdmin";
+import { apiFetch } from "@/api/client";
 import PageHeader from "@/components/ui/PageHeader.vue";
 import DataTable from "@/components/tables/DataTable.vue";
 
@@ -48,12 +49,15 @@ const tabs: { key: Tab; label: string }[] = [
 ];
 
 // ── Findings tab ───────────────────────────────────────────
-const stats = [
-  ["Open", 0, IconAlertTriangle],
-  ["Fixed", 3, IconShieldCheck],
-  ["Ignored", 0, IconInfoCircle],
-  ["Scanners", 3, IconShieldCheck],
-];
+type Finding = { id: number; title: string; category: string; severity: string; status: string; created_at: string };
+const findingsQuery = useQuery({ queryKey: ["security-findings"], queryFn: () => apiFetch<{ data: { data: Finding[] } }>("/api/security/findings") });
+const findings = computed(() => findingsQuery.data.value?.data.data ?? []);
+const stats = computed(() => [
+  ["Open", findings.value.filter((finding) => finding.status === "open").length, IconAlertTriangle],
+  ["Resolved", findings.value.filter((finding) => finding.status === "resolved").length, IconShieldCheck],
+  ["Ignored", findings.value.filter((finding) => finding.status === "ignored").length, IconInfoCircle],
+  ["Total", findings.value.length, IconShieldCheck],
+]);
 
 // ── Memory tab ─────────────────────────────────────────────
 const query = ref("");
@@ -128,14 +132,16 @@ const filteredRecords = computed(() =>
         />
       </div>
       <DataTable :headings="['Severity', 'Finding', 'Scanner', 'State', 'Detected', '']">
-        <tr v-for="finding in findings" :key="finding[1] as string">
+        <tr v-if="findingsQuery.isLoading.value"><td colspan="6" class="p-8 text-center text-text-muted">Loading findings…</td></tr>
+        <tr v-else-if="findingsQuery.isError.value"><td colspan="6" class="p-8 text-center text-danger">Unable to load security findings.</td></tr>
+        <tr v-for="finding in findings" :key="finding.id">
           <td class="px-3 py-3 text-warning">
-            <IconAlertTriangle :size="12" class="mr-1 inline" />{{ finding[0] }}
+            <IconAlertTriangle :size="12" class="mr-1 inline" />{{ finding.severity }}
           </td>
-          <td class="px-3 py-3 font-medium">{{ finding[1] }}</td>
-          <td class="px-3 py-3 text-text-muted">{{ finding[2] }}</td>
-          <td class="px-3 py-3 text-success">{{ finding[3] }}</td>
-          <td class="px-3 py-3 text-text-muted">{{ finding[4] }}</td>
+          <td class="px-3 py-3 font-medium">{{ finding.title }}</td>
+          <td class="px-3 py-3 text-text-muted">{{ finding.category }}</td>
+          <td class="px-3 py-3 text-success">{{ finding.status }}</td>
+          <td class="px-3 py-3 text-text-muted">{{ new Date(finding.created_at).toLocaleDateString() }}</td>
           <td class="px-3 py-3 text-primary">View</td>
         </tr>
       </DataTable>

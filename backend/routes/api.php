@@ -44,6 +44,7 @@ use App\Http\Controllers\StudentSettingsController;
 use App\Http\Controllers\StudentSubmissionWindowController;
 use App\Http\Controllers\SupportTicketController;
 use App\Http\Controllers\SystemHealthController;
+use App\Http\Controllers\SecurityFindingController;
 use App\Http\Controllers\TccPublicHomeController;
 use App\Http\Controllers\TccUnifastStudentsController;
 use App\Http\Controllers\TccUnifastSyncController;
@@ -368,6 +369,8 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
         // System health telemetry
         Route::get('/system/health', [SystemHealthController::class, 'show']);
+        Route::get('/security/findings', [SecurityFindingController::class, 'index']);
+        Route::patch('/security/findings/{securityFinding}', [SecurityFindingController::class, 'update'])->middleware('throttle:20,1');
 
         // Database viewer — exposes raw table data, so the explicit
         // `view_database` permission is required on top of the role guard.

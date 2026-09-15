@@ -2,6 +2,8 @@
 import { ref } from 'vue';
 import { useQuery } from '@tanstack/vue-query';
 import { listFormResponses, exportFormResponses } from '@/api/forms';
+import { apiFetch } from '@/api/client';
+import AppDialog from '@/components/dialogs/AppDialog.vue';
 import type { FormDetail, FormResponse } from '@/api/types';
 import { 
   IconDownload, 
@@ -23,6 +25,8 @@ const { data: responseData, isLoading } = useQuery({
 });
 
 const isExporting = ref(false);
+const selectedResponse = ref<(FormResponse & { responses?: Record<string, unknown> }) | null>(null);
+const detailLoading = ref(false);
 
 async function handleExport() {
   isExporting.value = true;
@@ -59,8 +63,15 @@ function formatDate(dateStr: string | null) {
   return new Date(dateStr).toLocaleString();
 }
 
-function showResponseDetailNotice() {
-  window.alert('Detailed response view coming soon!');
+async function showResponseDetail(responseId: number) {
+  detailLoading.value = true;
+  selectedResponse.value = null;
+  try {
+    const result = await apiFetch<{ data: FormResponse & { responses: Record<string, unknown> } }>(`/api/forms/${props.form.id}/responses/${responseId}`);
+    selectedResponse.value = result.data;
+  } finally {
+    detailLoading.value = false;
+  }
 }
 </script>
 
@@ -127,7 +138,7 @@ function showResponseDetailNotice() {
                 <button 
                   class="text-primary hover:text-primary-dark hover:bg-primary-soft p-1.5 rounded transition-colors inline-flex"
                   title="View Details"
-                  @click="showResponseDetailNotice"
+                  @click="showResponseDetail(res.id)"
                 >
                   <IconEye :size="18" />
                 </button>
@@ -160,5 +171,14 @@ function showResponseDetailNotice() {
         </div>
       </div>
     </div>
+    <AppDialog :model-value="detailLoading || !!selectedResponse" title="Response details" @update:model-value="selectedResponse = null">
+      <p v-if="detailLoading" class="text-sm text-text-muted">Loading response…</p>
+      <dl v-else-if="selectedResponse" class="space-y-3 text-sm">
+        <div v-for="(value, key) in selectedResponse.responses" :key="key" class="border-b pb-2">
+          <dt class="font-medium text-text">{{ key }}</dt>
+          <dd class="mt-1 whitespace-pre-wrap text-text-muted">{{ Array.isArray(value) ? value.join(', ') : String(value ?? '—') }}</dd>
+        </div>
+      </dl>
+    </AppDialog>
   </div>
 </template>

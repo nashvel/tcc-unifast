@@ -1,35 +1,21 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
+import { useQuery } from "@tanstack/vue-query";
+import { apiFetch } from "@/api/client";
 import { IconDatabase, IconSearch, IconShieldCheck, IconTrash } from "@tabler/icons-vue";
 import PageHeader from "@/components/ui/PageHeader.vue";
 import DataTable from "@/components/tables/DataTable.vue";
 const query = ref("");
-const records = ref([
-  [
-    "SEC-2026-0184",
-    "Repeated failed login pattern",
-    "Authentication",
-    "System Developer",
-    "July 11, 2026",
-    "Active",
-  ],
-  [
-    "SEC-2026-0172",
-    "Document hash duplicate",
-    "File integrity",
-    "Maria Santos",
-    "July 9, 2026",
-    "Retained",
-  ],
-  [
-    "SEC-2026-0158",
-    "Unusual export volume",
-    "Data access",
-    "Staff Account",
-    "July 5, 2026",
-    "Reviewed",
-  ],
-]);
+type Finding = { id: number; title: string; category: string; status: string; created_at: string };
+const findingsQuery = useQuery({ queryKey: ["security-findings", "memory"], queryFn: () => apiFetch<{ data: { data: Finding[] } }>("/api/security/findings") });
+const records = computed(() => (findingsQuery.data.value?.data.data ?? []).map((finding) => [
+  `SEC-${String(finding.id).padStart(6, "0")}`,
+  finding.title,
+  finding.category,
+  "System record",
+  new Date(finding.created_at).toLocaleDateString(),
+  finding.status,
+]));
 const rows = computed(() =>
   records.value.filter((record) =>
     record.join(" ").toLowerCase().includes(query.value.toLowerCase()),
@@ -70,7 +56,7 @@ const rows = computed(() =>
     </div>
     <DataTable
       :headings="['Signal ID', 'Summary', 'Category', 'Subject', 'Last observed', 'Status', '']"
-      ><tr v-for="record in rows" :key="record[0]">
+      ><tr v-if="findingsQuery.isLoading.value"><td colspan="7" class="p-8 text-center text-text-muted">Loading retained signals…</td></tr><tr v-for="record in rows" :key="record[0]">
         <td class="px-3 py-3 font-mono">{{ record[0] }}</td>
         <td class="px-3 py-3 font-medium">{{ record[1] }}</td>
         <td class="px-3 py-3 text-text-muted">{{ record[2] }}</td>
