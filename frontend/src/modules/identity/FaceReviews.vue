@@ -38,6 +38,13 @@ type FaceReview = {
   liveness_video_url: string | null;
   account_status: string | null;
   updated_at: string | null;
+  /**
+   * True when the stored face distance is below the MIN_DISTANCE threshold (0.05).
+   * A near-zero Euclidean distance between the ID reference descriptor and the live
+   * liveness submission is statistically impossible from two independent camera captures
+   * and strongly suggests a descriptor replay attack (e.g. DevTools copy-paste).
+   */
+  suspicious_replay: boolean;
 };
 
 type ListResponse = {
@@ -299,6 +306,29 @@ async function decide(action: "approve" | "reject") {
               pass &lt; {{ detail.pass_max ?? 0.45 }} · review &lt; {{ detail.review_max ?? 0.6 }}
             </span>
           </p>
+        </section>
+
+        <!-- Suspicious Replay Warning — shown when distance < 0.05 (probable DevTools replay attack) -->
+        <section
+          v-if="detail.suspicious_replay"
+          class="mb-4 rounded-lg border border-danger/40 bg-danger-soft p-4 text-sm"
+        >
+          <div class="flex items-start gap-3">
+            <span class="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-danger/15 text-danger font-bold text-xs">!</span>
+            <div>
+              <p class="font-semibold text-danger">Suspected descriptor replay attack</p>
+              <p class="mt-1 text-text-muted leading-relaxed">
+                The face match distance
+                <strong class="font-mono text-text">
+                  {{ detail.onboarding_face_distance != null ? Number(detail.onboarding_face_distance).toFixed(4) : "—" }}
+                </strong>
+                is statistically impossible from two independent live camera captures.
+                This strongly suggests the student copied the 128-float face descriptor
+                from the ID scan step and replayed it verbatim during liveness.
+                <strong class="text-text">Carefully compare the ID photo and selfie before approving.</strong>
+              </p>
+            </div>
+          </div>
         </section>
 
         <!-- Full Physical School ID Card -->

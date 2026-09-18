@@ -277,6 +277,11 @@ class FaceReviewController extends Controller
                 ? VaultFileStorage::authStaffIdentityUrl($granteeId, 'liveness_replay.'.pathinfo((string) $profile->liveness_video_path, PATHINFO_EXTENSION))
                 : null,
             'account_status' => $profile->user?->account_status,
+            // True when the face distance is suspiciously low (< MIN_DISTANCE = 0.05).
+            // A near-zero distance between the stored ID descriptor and the live liveness
+            // submission is statistically impossible from two independent camera captures
+            // and strongly suggests the student replayed the same descriptor (DevTools attack).
+            'suspicious_replay' => is_numeric($distance) && (float) $distance < FaceDescriptorMath::MIN_DISTANCE,
         ];
     }
 }
