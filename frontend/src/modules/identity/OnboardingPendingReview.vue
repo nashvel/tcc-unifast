@@ -57,37 +57,72 @@ onBeforeUnmount(() => {
 <template>
   <div class="space-y-5">
     <PageHeader
-      title="Under staff review"
-      description="Uncertain face match — waiting for staff. This is not a block. Portal features stay locked until staff approve or reject."
+      title="Almost there — staff review"
+      description="Your face match is being reviewed by UniFAST staff. No action needed from you right now."
     />
 
+    <!-- Step progress — Goal-Gradient Effect: student sees they are nearly done -->
     <section class="rounded-2xl border bg-surface p-5 shadow-sm sm:p-6">
-      <div class="flex items-start gap-3">
-        <span class="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-warning-soft text-warning">
-          <IconClockHour4 :size="20" />
-        </span>
-        <div class="space-y-2">
-          <p class="text-sm font-semibold">Uncertain ≠ blocked</p>
-          <p class="text-sm text-text-muted">
-            The automatic face comparison was inconclusive (uncertain zone). UniFAST staff will
-            compare your School ID reference photo with your onboarding selfie. If they approve,
-            you will be asked to choose your password; if not, you can retry verification.
-          </p>
-          <p class="text-xs text-text-muted">
-            <span class="font-medium text-text">You will receive an email either way</span>, with a
-            fresh link — so you can safely close this page. Review can take a little while, and you
-            do not need to re-scan while it is pending. This page also refreshes automatically if
-            you leave it open.
-          </p>
-          <button
-            class="mt-2 inline-flex h-9 items-center rounded-md border px-3 text-xs font-medium"
-            type="button"
-            @click="signOut"
-          >
-            Sign out
-          </button>
-        </div>
-      </div>
+      <p class="mb-4 text-xs font-semibold uppercase tracking-wide text-text-muted">Your progress</p>
+      <ol class="space-y-3">
+        <li class="flex items-center gap-3 text-sm">
+          <span class="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-primary text-white text-xs font-bold">✓</span>
+          <span class="text-text-muted line-through">KYC profile</span>
+        </li>
+        <li class="flex items-center gap-3 text-sm">
+          <span class="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-primary text-white text-xs font-bold">✓</span>
+          <span class="text-text-muted line-through">School ID scan</span>
+        </li>
+        <li class="flex items-center gap-3 text-sm">
+          <span class="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-warning text-white text-xs font-bold">
+            <IconClockHour4 :size="13" />
+          </span>
+          <span class="font-semibold text-text">
+            Staff review
+            <span class="ml-1 rounded-full bg-warning-soft px-2 py-0.5 text-[10px] font-medium text-warning">In progress</span>
+          </span>
+        </li>
+        <li class="flex items-center gap-3 text-sm opacity-40">
+          <span class="grid h-6 w-6 shrink-0 place-items-center rounded-full border-2 border-surface-muted text-xs font-bold text-text-muted">4</span>
+          <span class="text-text-muted">Set your password</span>
+        </li>
+      </ol>
     </section>
+
+    <!-- What happens next — scannable, no double-negatives -->
+    <section class="rounded-2xl border bg-surface p-5 shadow-sm sm:p-6 space-y-3 text-sm">
+      <p class="font-semibold">What happens next</p>
+      <ul class="space-y-2 text-text-muted">
+        <li class="flex items-start gap-2">
+          <span class="mt-0.5 font-bold text-primary">→</span>
+          Staff will compare your School ID photo and your onboarding selfie.
+        </li>
+        <li class="flex items-start gap-2">
+          <span class="mt-0.5 font-bold text-primary">→</span>
+          If approved, you will receive an email with a link to set your password.
+        </li>
+        <li class="flex items-start gap-2">
+          <span class="mt-0.5 font-bold text-primary">→</span>
+          If they need a retry, you will receive an email with a fresh verification link.
+        </li>
+      </ul>
+      <p class="pt-1 text-xs text-text-muted">
+        <span class="font-medium text-text">You do not need to stay on this page.</span>
+        Watch your email — a link will be sent either way. This page checks automatically every
+        20 seconds if you leave it open.
+      </p>
+    </section>
+
+    <!-- Primary CTA — Peak-End Rule: end on a calm, forward-looking action -->
+    <div class="flex items-center gap-3">
+      <button
+        class="inline-flex h-9 items-center rounded-md bg-primary px-4 text-xs font-medium text-white transition hover:bg-primary/90"
+        type="button"
+        @click="signOut"
+      >
+        Sign out and wait for email
+      </button>
+      <p class="text-xs text-text-muted">We'll send you a link when staff finish.</p>
+    </div>
   </div>
 </template>
