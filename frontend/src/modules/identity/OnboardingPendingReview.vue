@@ -73,13 +73,18 @@ onBeforeUnmount(() => {
           <span class="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-primary text-white text-xs font-bold">✓</span>
           <span class="text-text-muted line-through">School ID scan</span>
         </li>
-        <li class="flex items-center gap-3 text-sm">
+        <!-- Active step — Von Restorff: highlighted row pops against completed/greyed steps -->
+        <li class="flex items-center gap-3 rounded-lg bg-warning-soft/40 px-3 py-2 text-sm -mx-3">
           <span class="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-warning text-white text-xs font-bold">
             <IconClockHour4 :size="13" />
           </span>
           <span class="font-semibold text-text">
             Staff review
-            <span class="ml-1 rounded-full bg-warning-soft px-2 py-0.5 text-[10px] font-medium text-warning">In progress</span>
+            <span class="ml-1 inline-flex items-center gap-1 rounded-full bg-warning-soft px-2 py-0.5 text-[10px] font-medium text-warning">
+              In progress
+              <!-- Doherty Threshold: pulse dot shows the page is live and checking for updates -->
+              <span class="h-1.5 w-1.5 rounded-full bg-warning animate-pulse" title="Checking for updates every 20 seconds" />
+            </span>
           </span>
         </li>
         <li class="flex items-center gap-3 text-sm opacity-40">
